@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Conductor workspace setup — symlinks git-ignored files from the root repo
+# and bootstraps the development environment.
+set -e
+
+WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT_REPO="${CONDUCTOR_ROOT_PATH:-$(git -C "$WORKSPACE_DIR" worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //')}"
+
+symlink_if_exists() {
+  local file="$1"
+  if [ -f "$ROOT_REPO/$file" ] && [ ! -e "$WORKSPACE_DIR/$file" ]; then
+    ln -s "$ROOT_REPO/$file" "$WORKSPACE_DIR/$file"
+    echo "Symlinked $file from root repo"
+  fi
+}
+
+echo "=== Conductor workspace setup ==="
+echo "Root repo: $ROOT_REPO"
+echo "Workspace: $WORKSPACE_DIR"
+echo ""
+
+# Symlink git-ignored files from root repo
+symlink_if_exists ".env"
+symlink_if_exists "config/master.key"
+symlink_if_exists "config/credentials/development.key"
+symlink_if_exists "config/credentials/production.key"
+
+# Install dependencies
+cd "$WORKSPACE_DIR"
+bundle check || bundle install
+
+# Create databases, run migrations, and load queue/cache schemas
+bin/rails db:prepare
+bin/rails db:schema:load:queue 2>/dev/null || true
+bin/rails db:schema:load:cache 2>/dev/null || true
+bin/rails db:seed
+
+echo ""
+echo "=== Workspace ready on port ${CONDUCTOR_PORT:-3000} ==="

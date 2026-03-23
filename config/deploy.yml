@@ -1,0 +1,39 @@
+# York Factory — Canadian fiscal data pipeline
+service: york_factory
+image: buildcanada/york_factory
+
+servers:
+  web:
+    - 192.168.0.1  # Replace with OVH VPS IP
+
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  secret:
+    - RAILS_MASTER_KEY
+    - DATABASE_URL
+    - ANTHROPIC_API_KEY
+    - R2_ACCESS_KEY_ID
+    - R2_SECRET_ACCESS_KEY
+    - R2_ENDPOINT
+    - R2_BUCKET
+  clear:
+    SOLID_QUEUE_IN_PUMA: true
+    RAILS_LOG_LEVEL: info
+
+aliases:
+  console: app exec --interactive --reuse "bin/rails console"
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f
+  dbc: app exec --interactive --reuse "bin/rails dbconsole --include-password"
+
+volumes:
+  - "york_factory_storage:/rails/storage"
+
+builder:
+  arch: amd64

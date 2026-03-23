@@ -1,0 +1,36 @@
+<h1>Lineage Review</h1>
+<p class="text-muted" style="margin-bottom: 1.5rem;">Entity resolution matches with confidence &lt; 0.8 that need human review.</p>
+
+<% if @entries.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Source Value</th>
+        <th>Resolved To</th>
+        <th>Type</th>
+        <th>Confidence</th>
+        <th>Model</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @entries.each do |entry| %>
+        <tr>
+          <td class="mono"><%= entry.id %></td>
+          <td><%= entry.source_value %></td>
+          <td><%= entry.target_value %></td>
+          <td>
+            <span class="badge badge-blue"><%= entry.transformation_type %></span>
+          </td>
+          <td>
+            <% color = entry.confidence >= 0.6 ? 'yellow' : 'red' %>
+            <span class="badge badge-<%= color %>"><%= (entry.confidence * 100).round(1) %>%</span>
+          </td>
+          <td class="mono text-muted"><%= entry.llm_model || "—" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No entries need review. All matches are above the confidence threshold.</div>
+<% end %>

@@ -1,0 +1,40 @@
+<h1>Ingestions</h1>
+
+<% if @ingestions.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Source</th>
+        <th>Status</th>
+        <th>Fetched At</th>
+        <th>Rows</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @ingestions.each do |ingestion| %>
+        <tr>
+          <td class="mono"><%= ingestion.id %></td>
+          <td><%= ingestion.source.name %></td>
+          <td>
+            <span class="badge badge-<%= ingestion.status == 'complete' ? 'green' : ingestion.status == 'failed' ? 'red' : ingestion.status == 'processing' ? 'blue' : 'yellow' %>">
+              <%= ingestion.status %>
+            </span>
+          </td>
+          <td><%= ingestion.fetched_at&.strftime("%Y-%m-%d %H:%M") || "—" %></td>
+          <td class="text-right"><%= ingestion.row_count || "—" %></td>
+          <td>
+            <% if ingestion.error_message.present? %>
+              <span class="text-muted" title="<%= ingestion.error_message %>"><%= truncate(ingestion.error_message, length: 50) %></span>
+            <% else %>
+              <span class="text-muted">—</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No ingestions yet. Run a fetch to get started.</div>
+<% end %>

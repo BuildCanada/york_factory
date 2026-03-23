@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Start the development server, respecting Conductor's dynamic port assignment.
+export PORT="${CONDUCTOR_PORT:-${PORT:-3000}}"
+export SOLID_QUEUE_IN_PUMA=1
+
+exec ./bin/rails server -p "$PORT" "$@"

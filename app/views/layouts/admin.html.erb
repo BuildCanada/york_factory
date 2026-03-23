@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>York Factory Admin</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d37;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 2rem; }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); text-decoration: none; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
+    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
+    th { text-align: left; padding: 0.6rem 1rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--surface); }
+    td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    tr:last-child td { border-bottom: none; }
+
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+    .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem; }
+    .text-muted { color: var(--muted); }
+    .text-right { text-align: right; }
+    .empty { padding: 2rem; text-align: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">York Factory</span>
+    <div class="nav-links">
+      <a href="/admin" class="<%= 'active' if controller.action_name == 'index' %>">Dashboard</a>
+      <a href="/admin/ingestions" class="<%= 'active' if controller.action_name == 'ingestions' %>">Ingestions</a>
+      <a href="/admin/lineage_review" class="<%= 'active' if controller.action_name == 'lineage_review' %>">Lineage Review</a>
+      <a href="/jobs">Jobs</a>
+    </div>
+  </nav>
+  <div class="container">
+    <%= yield %>
+  </div>
+</body>
+</html>

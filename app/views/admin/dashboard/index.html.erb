@@ -1,0 +1,84 @@
+<h1>Dashboard</h1>
+
+<h2>Record Counts</h2>
+<div class="grid">
+  <% @counts.each do |label, count| %>
+    <div class="card">
+      <div class="label"><%= label.to_s.titleize %></div>
+      <div class="value"><%= number_with_delimiter(count) %></div>
+    </div>
+  <% end %>
+</div>
+
+<h2>Data Sources</h2>
+<% if @sources.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>URL</th>
+        <th>Last Fetched</th>
+        <th>Latest Ingestion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sources.each do |source| %>
+        <tr>
+          <td><strong><%= source[:name] %></strong></td>
+          <td class="mono"><%= truncate(source[:url], length: 60) %></td>
+          <td>
+            <% if source[:last_fetched_at] %>
+              <%= time_ago_in_words(source[:last_fetched_at]) %> ago
+            <% else %>
+              <span class="text-muted">Never</span>
+            <% end %>
+          </td>
+          <td>
+            <% if source[:latest_ingestion] %>
+              <span class="badge badge-<%= source[:latest_ingestion][:status] == 'complete' ? 'green' : source[:latest_ingestion][:status] == 'failed' ? 'red' : 'yellow' %>">
+                <%= source[:latest_ingestion][:status] %>
+              </span>
+            <% else %>
+              <span class="text-muted">None</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No sources configured.</div>
+<% end %>
+
+<% if @low_confidence_count > 0 %>
+  <h2>Attention Required</h2>
+  <div class="card" style="border-color: var(--yellow); margin-bottom: 2rem;">
+    <div class="label">Low Confidence Matches</div>
+    <div class="value" style="color: var(--yellow);"><%= @low_confidence_count %></div>
+    <a href="/admin/lineage_review" style="font-size: 0.85rem;">Review &rarr;</a>
+  </div>
+<% end %>
+
+<% if @anomalies.any? %>
+  <h2>Recent Anomalies</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Organization</th>
+        <th>Fiscal Year</th>
+        <th class="text-right">Variance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @anomalies.each do |a| %>
+        <tr>
+          <td><%= a[:organization] %></td>
+          <td class="mono"><%= a[:fiscal_year] %></td>
+          <td class="text-right">
+            <span class="badge badge-red"><%= a[:variance_pct] %>%</span>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

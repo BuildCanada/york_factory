@@ -18,7 +18,7 @@ class RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
 
   def load(csv_content:)
     rows_processed = 0
-    resolver = Organization.new.entity_resolver
+    resolver = GovernmentEntity.new.entity_resolver
 
     # Force UTF-8, strip BOM, and normalize quoting artifacts from government CSVs
     clean_content = csv_content.dup.force_encoding("UTF-8").scrub("")
@@ -43,7 +43,7 @@ class RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
         vote_number = vote_raw == "S" ? "S" : vote_raw
 
         FiscalExpenditure.find_or_initialize_by(
-          organization: result.organization,
+          government_entity: result.government_entity,
           fiscal_year: row["fy_ef"]&.strip,
           vote_number: vote_number
         ).tap do |fe|

@@ -15,7 +15,7 @@ namespace :data do
     infobase_ingestion.infobase_loader.load(csv_content: infobase_body)
     infobase_ingestion.reload
     puts "  Status: #{infobase_ingestion.status}"
-    puts "  Organizations: #{Organization.count}"
+    puts "  Government Entities: #{GovernmentEntity.count}"
     puts "  Fiscal Expenditures: #{FiscalExpenditure.count}"
 
     puts "\n=== Fetching Main Estimates 2025-26 ==="
@@ -32,8 +32,8 @@ namespace :data do
     puts "  Low confidence: #{LineageEntry.where('confidence < 0.8').where.not(confidence: nil).count}"
 
     puts "\n=== Summary ==="
-    puts "  Organizations:          #{Organization.count}"
-    puts "  Organization Aliases:   #{OrganizationAlias.count}"
+    puts "  Government Entities:    #{GovernmentEntity.count}"
+    puts "  Entity Aliases:         #{GovernmentEntityAlias.count}"
     puts "  Fiscal Expenditures:    #{FiscalExpenditure.count}"
     puts "  Fiscal Authorities:     #{FiscalAuthority.count}"
     puts "  Lineage Entries:        #{LineageEntry.count}"
@@ -54,16 +54,16 @@ namespace :data do
 
     puts "\n=== Done ==="
     puts "  Status: #{ingestion.status}"
-    puts "  Organizations: #{Organization.count}"
-    puts "  Organization Aliases: #{OrganizationAlias.count}"
+    puts "  Government Entities: #{GovernmentEntity.count}"
+    puts "  Entity Aliases: #{GovernmentEntityAlias.count}"
     puts "  Fiscal Expenditures: #{FiscalExpenditure.count}"
     puts "  Lineage Entries: #{LineageEntry.count}"
   end
 
-  desc "Load Estimates data only (requires InfoBase orgs loaded first for entity resolution)"
+  desc "Load Estimates data only (requires entities loaded first for entity resolution)"
   task seed_estimates: :environment do
-    if Organization.count == 0
-      puts "No organizations found. Run `rake data:seed_infobase` first."
+    if GovernmentEntity.count == 0
+      puts "No government entities found. Run `rake data:seed_infobase` first."
       exit 1
     end
 

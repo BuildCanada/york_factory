@@ -6,7 +6,7 @@ class NaturalLanguageQueryTest < ActiveSupport::TestCase
     original = LlmClient.instance
 
     fake = Object.new
-    fake.define_singleton_method(:generate_sql) { |**_| { sql: "DELETE FROM organizations", explanation: "test" } }
+    fake.define_singleton_method(:generate_sql) { |**_| { sql: "DELETE FROM government_entities", explanation: "test" } }
     LlmClient.instance_variable_set(:@instance, fake)
 
     result = query.ask("delete everything")
@@ -20,7 +20,7 @@ class NaturalLanguageQueryTest < ActiveSupport::TestCase
     original = LlmClient.instance
 
     fake = Object.new
-    fake.define_singleton_method(:generate_sql) { |**_| { sql: "DROP TABLE organizations", explanation: "test" } }
+    fake.define_singleton_method(:generate_sql) { |**_| { sql: "DROP TABLE government_entities", explanation: "test" } }
     LlmClient.instance_variable_set(:@instance, fake)
 
     result = query.ask("drop the table")

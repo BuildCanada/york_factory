@@ -7,7 +7,9 @@ class LineageEntry < ApplicationRecord
     encoding_normalized: "encoding_normalized",
     llm_fuzzy: "llm_fuzzy",
     skipped: "skipped",
-    deterministic: "deterministic"
+    deterministic: "deterministic",
+    auto_created_for_review: "auto_created_for_review",
+    corporate_cross_ref: "corporate_cross_ref"
   }
 
   validates :transformation_type, presence: true

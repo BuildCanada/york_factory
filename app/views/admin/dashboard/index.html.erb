@@ -1,3 +1,10 @@
+<% if flash[:notice] %>
+  <div class="flash flash-notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div class="flash flash-alert"><%= flash[:alert] %></div>
+<% end %>
+
 <h1>Dashboard</h1>
 
 <h2>Record Counts</h2>
@@ -11,21 +18,34 @@
 </div>
 
 <h2>Data Sources</h2>
+
+<div style="margin-bottom: 1rem;">
+  <%= form_tag admin_trigger_ingest_all_path, method: :post, style: "display:inline" do %>
+    <button type="submit" class="btn btn-accent" onclick="return confirm('This will queue all data sources for background ingestion. Continue?')">
+      Ingest All Sources
+    </button>
+  <% end %>
+</div>
+
 <% if @sources.any? %>
   <table>
     <thead>
       <tr>
         <th>Source</th>
-        <th>URL</th>
+        <th>Format</th>
         <th>Last Fetched</th>
-        <th>Latest Ingestion</th>
+        <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @sources.each do |source| %>
         <tr>
-          <td><strong><%= source[:name] %></strong></td>
-          <td class="mono"><%= truncate(source[:url], length: 60) %></td>
+          <td>
+            <strong><%= source[:name] %></strong>
+            <div class="text-muted mono" style="font-size: 0.7rem; margin-top: 2px;"><%= truncate(source[:url], length: 50) %></div>
+          </td>
+          <td><span class="badge badge-blue"><%= source[:format] %></span></td>
           <td>
             <% if source[:last_fetched_at] %>
               <%= time_ago_in_words(source[:last_fetched_at]) %> ago
@@ -39,7 +59,16 @@
                 <%= source[:latest_ingestion][:status] %>
               </span>
             <% else %>
-              <span class="text-muted">None</span>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+          <td>
+            <% if source[:ingestable] %>
+              <%= form_tag admin_trigger_ingest_path(source_name: source[:name]), method: :post, style: "display:inline" do %>
+                <button type="submit" class="btn btn-sm">Run</button>
+              <% end %>
+            <% else %>
+              <span class="text-muted">-</span>
             <% end %>
           </td>
         </tr>
@@ -47,7 +76,7 @@
     </tbody>
   </table>
 <% else %>
-  <div class="empty">No sources configured.</div>
+  <div class="empty">No sources configured. Run <code>bin/rails db:seed</code>.</div>
 <% end %>
 
 <% if @low_confidence_count > 0 %>
@@ -64,7 +93,7 @@
   <table>
     <thead>
       <tr>
-        <th>Organization</th>
+        <th>Government Entity</th>
         <th>Fiscal Year</th>
         <th class="text-right">Variance</th>
       </tr>
@@ -72,7 +101,7 @@
     <tbody>
       <% @anomalies.each do |a| %>
         <tr>
-          <td><%= a[:organization] %></td>
+          <td><%= a[:government_entity] %></td>
           <td class="mono"><%= a[:fiscal_year] %></td>
           <td class="text-right">
             <span class="badge badge-red"><%= a[:variance_pct] %>%</span>

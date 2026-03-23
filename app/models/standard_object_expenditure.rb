@@ -1,5 +1,5 @@
 class StandardObjectExpenditure < ApplicationRecord
-  belongs_to :organization
+  belongs_to :government_entity
   belongs_to :raw_ingestion, optional: true
 
   validates :fiscal_year, presence: true

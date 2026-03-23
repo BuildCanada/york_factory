@@ -1,37 +1,37 @@
-class Organization::EntityResolver < ActiveRecord::AssociatedObject
+class GovernmentEntity::EntityResolver < ActiveRecord::AssociatedObject
   # Entity resolution cascade:
-  #   1. Exact match on organization_aliases.alias_name
+  #   1. Exact match on government_entity_aliases.alias_name
   #   2. Case-insensitive match
   #   3. Encoding normalization (curly quotes → straight)
   #   4. LLM fuzzy match with top 5 candidates
   #   5. Confidence gate (>= 0.8 auto-accept, < 0.8 flag for review)
 
-  Result = Data.define(:organization, :lineage_entry)
+  Result = Data.define(:government_entity, :lineage_entry)
 
   def resolve(name:, raw_ingestion: nil)
     # Step 1: Exact match
-    alias_record = OrganizationAlias.find_by(alias_name: name)
+    alias_record = GovernmentEntityAlias.find_by(alias_name: name)
     if alias_record
-      entry = create_lineage(raw_ingestion, name, alias_record.organization, "exact_match", 1.0)
-      return Result.new(organization: alias_record.organization, lineage_entry: entry)
+      entry = create_lineage(raw_ingestion, name, alias_record.government_entity, "exact_match", 1.0)
+      return Result.new(government_entity: alias_record.government_entity, lineage_entry: entry)
     end
 
     # Step 2: Case-insensitive match
-    alias_record = OrganizationAlias.where("LOWER(alias_name) = LOWER(?)", name).first
+    alias_record = GovernmentEntityAlias.where("LOWER(alias_name) = LOWER(?)", name).first
     if alias_record
-      entry = create_lineage(raw_ingestion, name, alias_record.organization, "case_insensitive", 0.99)
-      return Result.new(organization: alias_record.organization, lineage_entry: entry)
+      entry = create_lineage(raw_ingestion, name, alias_record.government_entity, "case_insensitive", 0.99)
+      return Result.new(government_entity: alias_record.government_entity, lineage_entry: entry)
     end
 
     # Step 3: Encoding normalization
     normalized = normalize_encoding(name)
     if normalized != name
-      alias_record = OrganizationAlias.find_by(alias_name: normalized)
+      alias_record = GovernmentEntityAlias.find_by(alias_name: normalized)
       if alias_record
         # Add the original name as a new alias for future exact matches
-        alias_record.organization.organization_aliases.find_or_create_by!(alias_name: name)
-        entry = create_lineage(raw_ingestion, name, alias_record.organization, "encoding_normalized", 0.95)
-        return Result.new(organization: alias_record.organization, lineage_entry: entry)
+        alias_record.government_entity.government_entity_aliases.find_or_create_by!(alias_name: name)
+        entry = create_lineage(raw_ingestion, name, alias_record.government_entity, "encoding_normalized", 0.95)
+        return Result.new(government_entity: alias_record.government_entity, lineage_entry: entry)
       end
     end
 
@@ -41,17 +41,17 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
   # Resolve by InfoBase org_id — deterministic, no LLM needed
   def resolve_by_infobase_id(org_id:, org_name:, raw_ingestion: nil)
-    org = Organization.find_by(org_id_infobase: org_id)
+    entity = GovernmentEntity.find_by(org_id_infobase: org_id)
 
-    unless org
-      org = Organization.create!(canonical_name: org_name, org_id_infobase: org_id)
+    unless entity
+      entity = GovernmentEntity.create!(canonical_name: org_name, org_id_infobase: org_id)
     end
 
     # Ensure alias exists for this name
-    org.organization_aliases.find_or_create_by!(alias_name: org_name)
+    entity.government_entity_aliases.find_or_create_by!(alias_name: org_name)
 
-    entry = create_lineage(raw_ingestion, org_name, org, "deterministic", 1.0)
-    Result.new(organization: org, lineage_entry: entry)
+    entry = create_lineage(raw_ingestion, org_name, entity, "deterministic", 1.0)
+    Result.new(government_entity: entity, lineage_entry: entry)
   end
 
   private
@@ -73,40 +73,40 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
     if candidates.empty?
       entry = create_lineage(raw_ingestion, name, nil, "skipped", 0.0)
-      return Result.new(organization: nil, lineage_entry: entry)
+      return Result.new(government_entity: nil, lineage_entry: entry)
     end
 
     result = llm_call_with_retry(name, candidates)
 
     if result[:match].nil? || result[:confidence] < 0.1
-      # Create as new org flagged for human review
-      org = Organization.find_or_create_by!(canonical_name: name) do |o|
-        o.needs_review = true
+      # Create as new entity flagged for human review
+      entity = GovernmentEntity.find_or_create_by!(canonical_name: name) do |e|
+        e.needs_review = true
       end
-      org.organization_aliases.find_or_create_by!(alias_name: name)
-      entry = create_lineage(raw_ingestion, name, org, "auto_created_for_review", 0.0,
+      entity.government_entity_aliases.find_or_create_by!(alias_name: name)
+      entry = create_lineage(raw_ingestion, name, entity, "auto_created_for_review", 0.0,
         llm_prompt: result[:raw_prompt], llm_response: result[:raw_response])
-      return Result.new(organization: org, lineage_entry: entry)
+      return Result.new(government_entity: entity, lineage_entry: entry)
     end
 
-    matched_org = Organization.find_by(canonical_name: result[:match])
-    return Result.new(organization: nil, lineage_entry: create_lineage(raw_ingestion, name, nil, "skipped", 0.0)) unless matched_org
+    matched_entity = GovernmentEntity.find_by(canonical_name: result[:match])
+    return Result.new(government_entity: nil, lineage_entry: create_lineage(raw_ingestion, name, nil, "skipped", 0.0)) unless matched_entity
 
     confidence = result[:confidence]
 
     # Auto-accept high confidence: create alias for future exact matches
     if confidence >= 0.8
-      matched_org.organization_aliases.find_or_create_by!(alias_name: name)
+      matched_entity.government_entity_aliases.find_or_create_by!(alias_name: name)
     end
 
     entry = create_lineage(
-      raw_ingestion, name, matched_org, "llm_fuzzy", confidence,
+      raw_ingestion, name, matched_entity, "llm_fuzzy", confidence,
       llm_model: LlmClient::MODEL,
       llm_prompt: result[:raw_prompt],
       llm_response: result[:raw_response]
     )
 
-    Result.new(organization: matched_org, lineage_entry: entry)
+    Result.new(government_entity: matched_entity, lineage_entry: entry)
   end
 
   def llm_call_with_retry(name, candidates)
@@ -123,12 +123,12 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
   def find_candidates(name)
     # Find top 5 candidates by substring overlap (simple heuristic)
     # In production, could use pg_trgm for better similarity search
-    all_orgs = Organization.pluck(:id, :canonical_name)
-    scored = all_orgs.map do |id, canonical|
+    all_entities = GovernmentEntity.pluck(:id, :canonical_name)
+    scored = all_entities.map do |id, canonical|
       score = levenshtein_similarity(name.downcase, canonical.downcase)
       [id, canonical, score]
     end
-    scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| Organization.new(id: id, canonical_name: cn) }
+    scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| GovernmentEntity.new(id: id, canonical_name: cn) }
   end
 
   def levenshtein_similarity(a, b)
@@ -147,13 +147,13 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     intersection / union
   end
 
-  def create_lineage(raw_ingestion, source_value, org, transformation_type, confidence, llm_model: nil, llm_prompt: nil, llm_response: nil)
+  def create_lineage(raw_ingestion, source_value, entity, transformation_type, confidence, llm_model: nil, llm_prompt: nil, llm_response: nil)
     LineageEntry.create!(
       raw_ingestion: raw_ingestion,
-      source_field: "organization_name",
+      source_field: "government_entity_name",
       source_value: source_value,
-      target_field: "organization_id",
-      target_value: org&.id&.to_s,
+      target_field: "government_entity_id",
+      target_value: entity&.id&.to_s,
       transformation_type: transformation_type,
       confidence: confidence,
       llm_model: llm_model,

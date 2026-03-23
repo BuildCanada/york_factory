@@ -64,10 +64,10 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    org = Organization.find_by(org_id_infobase: 1)
+    org = GovernmentEntity.find_by(org_id_infobase: 1)
     assert_not_nil org
     assert_equal "Department of Agriculture and Agri-Food", org.canonical_name
-    assert org.organization_aliases.exists?(alias_name: "Department of Agriculture and Agri-Food")
+    assert org.government_entity_aliases.exists?(alias_name: "Department of Agriculture and Agri-Food")
   end
 
   test "is idempotent — re-running same CSV does not duplicate" do
@@ -89,7 +89,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
     ingestion2.infobase_loader.load(csv_content: csv)
 
     # Should still be 1 org and 1 expenditure (updated, not duplicated)
-    assert_equal 1, Organization.count
+    assert_equal 1, GovernmentEntity.count
     assert_equal 1, FiscalExpenditure.count
   end
 

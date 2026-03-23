@@ -1,5 +1,5 @@
 class FiscalExpenditure < ApplicationRecord
-  belongs_to :organization
+  belongs_to :government_entity
   belongs_to :raw_ingestion, optional: true
   belongs_to :lineage_entry, optional: true
 

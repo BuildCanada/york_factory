@@ -12,8 +12,8 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
     )
 
     # Pre-create orgs that would come from InfoBase loader
-    @org = Organization.create!(canonical_name: "Atlantic Canada Opportunities Agency", org_id_infobase: 10)
-    @org.organization_aliases.create!(alias_name: "Atlantic Canada Opportunities Agency")
+    @org = GovernmentEntity.create!(canonical_name: "Atlantic Canada Opportunities Agency", org_id_infobase: 10)
+    @org.government_entity_aliases.create!(alias_name: "Atlantic Canada Opportunities Agency")
   end
 
   test "normalizes Main Estimates CSV" do
@@ -29,7 +29,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
     assert FiscalAuthority.exists?(fiscal_year: "2024-25", document_type: "main")
 
     fa = FiscalAuthority.find_by(fiscal_year: "2025-26")
-    assert_equal @org.id, fa.organization_id
+    assert_equal @org.id, fa.government_entity_id
     assert_equal "operating", fa.vote_type
     assert_equal 70_274_559, fa.amount.to_i
   end

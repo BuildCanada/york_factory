@@ -48,14 +48,26 @@ class Source::Fetcher < ActiveRecord::AssociatedObject
     end
   end
 
+  DISPATCH = {
+    /^infobase/ => ->(ingestion, body) { ingestion.infobase_loader.load(csv_content: body) },
+    /^estimates/ => ->(ingestion, body) { ingestion.estimates_normalizer.normalize(csv_content: body) },
+    /^lobbying/ => ->(ingestion, body) { ingestion.lobbying_normalizer.normalize(csv_content: body) },
+    /^corporate_federal/ => ->(ingestion, body) { ingestion.corporate_normalizer.normalize(file_content: body) },
+    /^corporate_bc/ => ->(ingestion, _body) { ingestion.orgbook_bc_normalizer.normalize },
+    /^corporate_qc/ => ->(ingestion, body) { ingestion.quebec_registry_normalizer.normalize(file_content: body) },
+    /^corporate_on/ => ->(ingestion, _body) { ingestion.ontario_obr_scraper.scrape },
+    /^corporate_ab/ => ->(ingestion, _body) { ingestion.alberta_cores_scraper.scrape },
+    /^corporate_sk/ => ->(ingestion, _body) { ingestion.saskatchewan_isc_scraper.scrape },
+    /^statcan_odbiz/ => ->(ingestion, body) { ingestion.odbiz_normalizer.normalize(file_content: body) },
+    /^statcan_oda/ => ->(ingestion, body) { ingestion.oda_normalizer.normalize(file_content: body) },
+    /^test_/ => ->(ingestion, _body) { Rails.logger.info "[Fetcher] Test source #{ingestion.source.name}, skipping" }
+  }.freeze
+
   def dispatch_loader(ingestion, body)
-    case source.name
-    when /^infobase/
-      ingestion.infobase_loader.load(csv_content: body)
-    when /^estimates/
-      ingestion.estimates_normalizer.normalize(csv_content: body)
-    when /^lobbying/
-      ingestion.lobbying_normalizer.normalize(csv_content: body)
+    handler = DISPATCH.find { |pattern, _| pattern.match?(source.name) }&.last
+
+    if handler
+      handler.call(ingestion, body)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

@@ -21,7 +21,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
   def normalize(csv_content:)
     rows_processed = 0
     rows_skipped = 0
-    resolver = Organization.new.entity_resolver
+    resolver = GovernmentEntity.new.entity_resolver
 
     # Force UTF-8 and strip BOM from government CSVs
     clean_content = csv_content.dup.force_encoding("UTF-8").scrub("")
@@ -40,7 +40,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
       begin
         result = resolver.resolve(name: org_name, raw_ingestion: raw_ingestion)
 
-        if result.organization.nil?
+        if result.government_entity.nil?
           rows_skipped += 1
           Rails.logger.warn "[EstimatesNormalizer] Could not resolve org: #{org_name}"
           next
@@ -55,7 +55,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
           next if amount.nil?
 
           FiscalAuthority.find_or_initialize_by(
-            organization: result.organization,
+            government_entity: result.government_entity,
             fiscal_year: fiscal_year,
             document_type: doc_type,
             vote_number: vote_number

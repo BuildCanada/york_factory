@@ -46,6 +46,12 @@ gem "anthropic"
 # CSV parsing (removed from Ruby 3.4 default gems)
 gem "csv"
 
+# ZIP extraction for ISED + Quebec + ODBiz data
+gem "rubyzip"
+
+# Form-based web scraping for provincial corporate registries
+gem "mechanize"
+
 # HTTP client for fetching CSVs
 gem "httpx"
 

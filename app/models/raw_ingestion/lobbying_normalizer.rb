@@ -4,7 +4,7 @@ class RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
   def normalize(csv_content:)
     rows_processed = 0
     rows_skipped = 0
-    resolver = Organization.new.entity_resolver
+    resolver = GovernmentEntity.new.entity_resolver
 
     CSV.parse(csv_content, headers: true, liberal_parsing: true) do |row|
       begin
@@ -17,13 +17,13 @@ class RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
 
         if govt_institution.present?
           result = resolver.resolve(name: govt_institution, raw_ingestion: raw_ingestion)
-          org = result.organization
+          org = result.government_entity
           lineage = result.lineage_entry
         end
 
         LobbyingActivity.create!(
           lobbyist: lobbyist,
-          organization: org,
+          government_entity: org,
           client_name: row["Client"]&.strip || row["client_name"]&.strip,
           subject_matter: row["Subject Matter"]&.strip || row["subject_matter"]&.strip,
           start_date: parse_date(row["Start Date"] || row["start_date"]),

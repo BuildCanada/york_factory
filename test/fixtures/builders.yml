@@ -1,0 +1,9 @@
+builder_one:
+  slug: terry-fox
+  title_en: Terry Fox
+  title_fr: Terry Fox
+  byline_en: Marathon of Hope
+  byline_fr: Marathon de l'espoir
+  quote_en: "Dreams are made possible if you try"
+  quote_fr: "Les rêves deviennent possibles si vous essayez"
+  published_at: <%= 1.day.ago.to_fs(:db) %>

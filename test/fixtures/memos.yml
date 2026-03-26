@@ -1,0 +1,17 @@
+published_memo:
+  slug: housing-crisis-memo
+  title_en: Housing Crisis Analysis
+  title_fr: Analyse de la crise du logement
+  description_en: A deep dive into housing
+  description_fr: Une plongée dans le logement
+  category: housing
+  featured: true
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  author: alice
+
+draft_memo:
+  slug: draft-memo
+  title_en: Draft Memo
+  category: finance
+  featured: false
+  published_at: null

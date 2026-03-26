@@ -1,0 +1,7 @@
+faq_one:
+  question_en: What is Build Canada?
+  question_fr: Qu'est-ce que Bâtir le Canada?
+  answer_text_en: A community of builders
+  answer_text_fr: Une communauté de bâtisseurs
+  position: 1
+  published_at: <%= 1.day.ago.to_fs(:db) %>

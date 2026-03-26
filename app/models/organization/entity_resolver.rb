@@ -2,9 +2,12 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
   # Entity resolution cascade:
   #   1. Exact match on organization_aliases.alias_name
   #   2. Case-insensitive match
-  #   3. Encoding normalization (curly quotes → straight)
+  #   3. Encoding normalization (curly quotes -> straight)
   #   4. LLM fuzzy match with top 5 candidates
   #   5. Confidence gate (>= 0.8 auto-accept, < 0.8 flag for review)
+
+  LLM_MODEL = "claude-haiku-4-5-20251001"
+  MAX_LLM_CALLS = 1000
 
   Result = Data.define(:organization, :lineage_entry)
 
@@ -39,7 +42,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     llm_resolve(name: name, raw_ingestion: raw_ingestion)
   end
 
-  # Resolve by InfoBase org_id — deterministic, no LLM needed
+  # Resolve by InfoBase org_id -- deterministic, no LLM needed
   def resolve_by_infobase_id(org_id:, org_name:, raw_ingestion: nil)
     org = Organization.find_by(org_id_infobase: org_id)
 
@@ -54,10 +57,13 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     Result.new(organization: org, lineage_entry: entry)
   end
 
+  def reset_llm_call_count!
+    @llm_call_count = 0
+  end
+
   private
 
   def normalize_encoding(name)
-    # Replace curly/smart quotes with straight quotes (byte 0x92 → 0x27)
     name
       .gsub("\u2018", "'")  # left single quote
       .gsub("\u2019", "'")  # right single quote
@@ -76,7 +82,12 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
       return Result.new(organization: nil, lineage_entry: entry)
     end
 
-    result = llm_call_with_retry(name, candidates)
+    result = llm_entity_resolve(name, candidates.map(&:canonical_name))
+
+    # Retry once on failure
+    if result[:match].nil? && result[:confidence] == 0.0
+      result = llm_entity_resolve(name, candidates.map(&:canonical_name))
+    end
 
     if result[:match].nil? || result[:confidence] < 0.1
       # Create as new org flagged for human review
@@ -101,7 +112,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
     entry = create_lineage(
       raw_ingestion, name, matched_org, "llm_fuzzy", confidence,
-      llm_model: LlmClient::MODEL,
+      llm_model: LLM_MODEL,
       llm_prompt: result[:raw_prompt],
       llm_response: result[:raw_response]
     )
@@ -109,15 +120,45 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     Result.new(organization: matched_org, lineage_entry: entry)
   end
 
-  def llm_call_with_retry(name, candidates)
-    result = LlmClient.instance.entity_resolve(org_name: name, candidates: candidates.map(&:canonical_name))
+  def llm_entity_resolve(org_name, candidate_names)
+    @llm_call_count ||= 0
+    raise "LLM call limit exceeded (#{MAX_LLM_CALLS})" if @llm_call_count >= MAX_LLM_CALLS
+    @llm_call_count += 1
 
-    if result[:match].nil? && result[:confidence] == 0.0
-      # Retry once on failure
-      result = LlmClient.instance.entity_resolve(org_name: name, candidates: candidates.map(&:canonical_name))
-    end
+    candidate_list = candidate_names.map.with_index { |c, i| "#{i + 1}. #{c}" }.join("\n")
 
-    result
+    prompt = <<~PROMPT
+      You are matching a government organization name from a budget document to a list of canonical organization names.
+
+      Organization name to match: "#{org_name}"
+
+      Candidate canonical names:
+      #{candidate_list}
+
+      Respond with JSON only:
+      {
+        "match": "exact canonical name from the list above, or null if no match",
+        "confidence": 0.0 to 1.0,
+        "reasoning": "brief explanation"
+      }
+
+      If none of the candidates are a reasonable match, set match to null and confidence to 0.
+    PROMPT
+
+    text = RubyLLM.chat(model: LLM_MODEL).ask(prompt).content.strip
+    parsed = JSON.parse(text)
+
+    {
+      match: parsed["match"],
+      confidence: parsed["confidence"].to_f,
+      reasoning: parsed["reasoning"],
+      raw_prompt: prompt,
+      raw_response: text
+    }
+  rescue JSON::ParserError => e
+    { match: nil, confidence: 0.0, reasoning: "Failed to parse LLM response: #{e.message}", raw_prompt: prompt, raw_response: text }
+  rescue => e
+    { match: nil, confidence: 0.0, reasoning: "LLM API error: #{e.message}", raw_prompt: prompt, raw_response: nil }
   end
 
   def find_candidates(name)
@@ -125,14 +166,13 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     # In production, could use pg_trgm for better similarity search
     all_orgs = Organization.pluck(:id, :canonical_name)
     scored = all_orgs.map do |id, canonical|
-      score = levenshtein_similarity(name.downcase, canonical.downcase)
+      score = trigram_similarity(name.downcase, canonical.downcase)
       [id, canonical, score]
     end
     scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| Organization.new(id: id, canonical_name: cn) }
   end
 
-  def levenshtein_similarity(a, b)
-    # Simple similarity based on shared character n-grams
+  def trigram_similarity(a, b)
     return 1.0 if a == b
     return 0.0 if a.empty? || b.empty?
 

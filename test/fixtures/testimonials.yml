@@ -1,0 +1,6 @@
+testimonial_one:
+  name: Jane Smith
+  quote_en: Build Canada changed my life
+  quote_fr: Bâtir le Canada a changé ma vie
+  position: 1
+  published_at: <%= 1.day.ago.to_fs(:db) %>

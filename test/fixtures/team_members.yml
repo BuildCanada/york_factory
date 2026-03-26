@@ -1,0 +1,17 @@
+alice:
+  name: Alice Builder
+  slug: alice-builder
+  title_en: Director of Engineering
+  title_fr: Directrice de l'ingénierie
+  role: team
+  position: 1
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+bob:
+  name: Bob Advisor
+  slug: bob-advisor
+  title_en: Senior Advisor
+  title_fr: Conseiller principal
+  role: advisor
+  position: 2
+  published_at: <%= 1.day.ago.to_fs(:db) %>

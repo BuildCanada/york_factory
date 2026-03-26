@@ -1,0 +1,13 @@
+admin:
+  email: admin@buildcanada.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  name: Admin User
+  admin: true
+  provider: google_oauth2
+  uid: "123456"
+
+regular:
+  email: user@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  name: Regular User
+  admin: false

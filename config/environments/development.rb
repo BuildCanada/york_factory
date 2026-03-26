@@ -28,6 +28,7 @@ Rails.application.configure do
 
   # Use Solid Cache backed by the cache database.
   config.cache_store = :solid_cache_store
+  config.solid_cache.connects_to = { database: { writing: :cache } }
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local

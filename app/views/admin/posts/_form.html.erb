@@ -1,0 +1,28 @@
+<%= form_with(model: [:admin, post], class: "card") do |f| %>
+  <% if post.errors.any? %>
+    <div class="flash flash-alert">
+      <% post.errors.full_messages.each do |msg| %>
+        <p><%= msg %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= render "admin/shared/translated_text_field", form: f, field: :title %>
+  <%= render "admin/shared/translated_text_field", form: f, field: :summary, input_type: :text_area %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: post.persisted? ? retranslate_admin_post_path(post) : nil %>
+
+  <%= render "admin/shared/file_upload", form: f, field: :seo_image, label: "SEO Image" %>
+
+  <div class="form-group">
+    <label>
+      <%= f.check_box :hidden %> Hidden
+    </label>
+  </div>
+
+  <%= render "admin/shared/publish_fields", form: f %>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= post.persisted? ? admin_post_path(post) : admin_posts_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

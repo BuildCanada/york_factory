@@ -1,0 +1,41 @@
+<div class="page-header">
+  <h1><%= @feed_item.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <a href="<%= edit_admin_feed_item_path(@feed_item) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_feed_item_path(@feed_item), data: { turbo_method: :delete, turbo_confirm: "Delete this feed item?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Type:</strong> <span class="badge badge-blue"><%= @feed_item.item_type %></span></p>
+  <p><strong>Author:</strong> <%= @feed_item.author %></p>
+  <p><strong>Source URL:</strong> <%= @feed_item.source_url %></p>
+  <p><strong>URL:</strong> <%= @feed_item.url %></p>
+  <p><strong>Featured:</strong> <%= @feed_item.featured? ? "Yes" : "No" %></p>
+  <p><strong>Tags:</strong> <%= @feed_item.tags&.join(", ") %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@feed_item.publish_status] %>">
+      <%= @feed_item.publish_status.capitalize %>
+    </span>
+  </p>
+  <% if @feed_item.image.attached? %>
+    <p><strong>Image:</strong></p>
+    <%= image_tag url_for(@feed_item.image), class: "file-preview" %>
+  <% end %>
+  <% if @feed_item.author_photo.attached? %>
+    <p><strong>Author Photo:</strong></p>
+    <%= image_tag url_for(@feed_item.author_photo), class: "file-preview" %>
+  <% end %>
+</div>
+
+<% if @feed_item.subtitle_en.present? %>
+  <div class="card mb-2">
+    <h2>Subtitle (EN)</h2>
+    <p><%= @feed_item.subtitle_en %></p>
+  </div>
+<% end %>
+
+<div class="card">
+  <h2>Body (EN)</h2>
+  <div><%= @feed_item.body_en %></div>
+</div>

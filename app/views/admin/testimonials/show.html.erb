@@ -1,0 +1,25 @@
+<div class="page-header">
+  <h1><%= @testimonial.name %></h1>
+  <div class="btn-group">
+    <a href="<%= edit_admin_testimonial_path(@testimonial) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_testimonial_path(@testimonial), data: { turbo_method: :delete, turbo_confirm: "Delete this testimonial?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Quote (EN):</strong> <%= @testimonial.quote_en %></p>
+  <p><strong>Position:</strong> <%= @testimonial.position %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@testimonial.publish_status] %>">
+      <%= @testimonial.publish_status.capitalize %>
+    </span>
+  </p>
+  <% if @testimonial.profile_photo.attached? %>
+    <p><strong>Profile Photo:</strong></p>
+    <%= image_tag url_for(@testimonial.profile_photo), class: "file-preview" %>
+  <% end %>
+  <% if @testimonial.splash_photo.attached? %>
+    <p><strong>Splash Photo:</strong></p>
+    <%= image_tag url_for(@testimonial.splash_photo), class: "file-preview" %>
+  <% end %>
+</div>

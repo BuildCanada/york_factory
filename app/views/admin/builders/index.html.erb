@@ -1,0 +1,31 @@
+<div class="page-header">
+  <h1>Builders</h1>
+  <a href="<%= new_admin_builder_path %>" class="btn btn-primary">New Builder</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Slug</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @builders.each do |builder| %>
+      <tr>
+        <td><a href="<%= admin_builder_path(builder) %>"><%= builder.title_en || "Untitled" %></a></td>
+        <td class="mono"><%= builder.slug %></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[builder.publish_status] %>">
+            <%= builder.publish_status.capitalize %>
+          </span>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_builder_path(builder) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

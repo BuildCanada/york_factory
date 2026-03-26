@@ -1,0 +1,35 @@
+<div class="page-header">
+  <h1><%= @post.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <% if !@post.published? %>
+      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/posts/<%= @post.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+    <% end %>
+    <a href="<%= edit_admin_post_path(@post) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_post_path(@post), data: { turbo_method: :delete, turbo_confirm: "Delete this post?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <span class="mono"><%= @post.slug %></span></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@post.publish_status] %>">
+      <%= @post.publish_status.capitalize %>
+    </span>
+    <% if @post.hidden? %><span class="badge badge-red">Hidden</span><% end %>
+  </p>
+  <p><strong>Published at:</strong> <%= @post.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @post.seo_image.attached? %>
+    <p><strong>SEO Image:</strong></p>
+    <%= image_tag url_for(@post.seo_image), class: "file-preview" %>
+  <% end %>
+</div>
+
+<div class="card mb-2">
+  <h2>Summary (EN)</h2>
+  <p><%= @post.summary_en %></p>
+</div>
+
+<div class="card">
+  <h2>Body (EN)</h2>
+  <div><%= @post.body_en %></div>
+</div>

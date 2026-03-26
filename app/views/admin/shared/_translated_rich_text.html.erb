@@ -1,0 +1,25 @@
+<%# locals: (form:, field:, label: nil, retranslate_url: nil) %>
+<% field_label = label || field.to_s.humanize %>
+<div class="form-group" data-controller="tabs">
+  <label><%= field_label %></label>
+  <div class="tab-bar">
+    <button type="button" class="tab-btn active" data-tabs-target="tab" data-action="tabs#select">EN</button>
+    <button type="button" class="tab-btn" data-tabs-target="tab" data-action="tabs#select">FR</button>
+  </div>
+  <div class="tab-panel" data-tabs-target="panel">
+    <%= form.rich_text_area :"#{field}_en" %>
+  </div>
+  <div class="tab-panel" data-tabs-target="panel" style="display:none">
+    <%= form.rich_text_area :"#{field}_fr" %>
+    <% if retranslate_url.present? && form.object.persisted? %>
+      <div class="mt-1" data-controller="retranslate">
+        <button type="button" class="btn btn-sm"
+                data-action="retranslate#trigger"
+                data-retranslate-url-value="<%= retranslate_url %>">
+          Re-translate
+        </button>
+        <span data-retranslate-target="status" class="text-muted" style="font-size: 0.8rem;"></span>
+      </div>
+    <% end %>
+  </div>
+</div>

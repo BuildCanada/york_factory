@@ -1,0 +1,31 @@
+<div class="page-header">
+  <h1>Team Members</h1>
+  <a href="<%= new_admin_team_member_path %>" class="btn btn-primary">New Member</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px"></th>
+      <th>Name</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody data-controller="sortable" data-sortable-url-value="<%= reorder_admin_team_members_path %>">
+    <% @team_members.each do |member| %>
+      <tr data-id="<%= member.id %>">
+        <td><span class="drag-handle">&#9776;</span></td>
+        <td><a href="<%= admin_team_member_path(member) %>"><%= member.name %></a></td>
+        <td><%= member.role&.capitalize %></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[member.publish_status] %>">
+            <%= member.publish_status.capitalize %>
+          </span>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_team_member_path(member) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

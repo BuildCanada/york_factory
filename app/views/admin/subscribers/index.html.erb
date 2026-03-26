@@ -1,0 +1,33 @@
+<div class="page-header">
+  <h1>Subscribers</h1>
+</div>
+
+<%= form_tag(admin_subscribers_path, method: :get, style: "margin-bottom: 1rem;") do %>
+  <div style="display: flex; gap: 0.5rem;">
+    <input type="text" name="q" value="<%= params[:q] %>" class="form-control" placeholder="Search by email..." style="max-width: 300px;">
+    <button type="submit" class="btn">Search</button>
+  </div>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Name</th>
+      <th>Postal Code</th>
+      <th>Subscribed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @subscribers.each do |subscriber| %>
+      <tr>
+        <td><%= subscriber.email %></td>
+        <td><%= [subscriber.first_name, subscriber.last_name].compact.join(" ") %></td>
+        <td><%= subscriber.postal_code %></td>
+        <td class="text-muted"><%= subscriber.created_at.strftime("%b %d, %Y") %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

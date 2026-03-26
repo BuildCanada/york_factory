@@ -1,0 +1,23 @@
+<%= form_with(model: [:admin, testimonial], class: "card") do |f| %>
+  <% if testimonial.errors.any? %>
+    <div class="flash flash-alert">
+      <% testimonial.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <label>Name</label>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <%= render "admin/shared/translated_text_field", form: f, field: :quote, input_type: :text_area %>
+
+  <%= render "admin/shared/file_upload", form: f, field: :profile_photo %>
+  <%= render "admin/shared/file_upload", form: f, field: :splash_photo %>
+  <%= render "admin/shared/publish_fields", form: f %>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= testimonial.persisted? ? admin_testimonial_path(testimonial) : admin_testimonials_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

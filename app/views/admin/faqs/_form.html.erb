@@ -1,0 +1,28 @@
+<%= form_with(model: [:admin, faq], class: "card") do |f| %>
+  <% if faq.errors.any? %>
+    <div class="flash flash-alert">
+      <% faq.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <%= render "admin/shared/translated_text_field", form: f, field: :question, input_type: :text_area %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :answer, retranslate_url: faq.persisted? ? retranslate_admin_faq_path(faq) : nil %>
+  <%= render "admin/shared/translated_text_field", form: f, field: :answer_text, input_type: :text_area, label: "Answer (Plain Text)" %>
+
+  <div class="form-group">
+    <label>Link Text</label>
+    <%= f.text_field :link_text, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Link URL</label>
+    <%= f.text_field :link_href, class: "form-control" %>
+  </div>
+
+  <%= render "admin/shared/publish_fields", form: f %>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= faq.persisted? ? admin_faq_path(faq) : admin_faqs_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

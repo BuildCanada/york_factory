@@ -1,0 +1,14 @@
+<%# locals: (form:, field:, label: nil) %>
+<% field_label = label || field.to_s.humanize %>
+<div class="form-group">
+  <label><%= field_label %></label>
+  <% if form.object.send(field).attached? %>
+    <div class="mt-1">
+      <%= image_tag url_for(form.object.send(field)), class: "file-preview" %>
+    </div>
+    <label class="mt-1" style="font-size: 0.8rem;">
+      <%= form.check_box "purge_#{field}", { checked: false }, "1", "0" %> Remove
+    </label>
+  <% end %>
+  <%= form.file_field field, class: "form-control mt-1" %>
+</div>

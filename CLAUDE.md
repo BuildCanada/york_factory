@@ -1,21 +1,25 @@
-# York Factory — Canadian Fiscal Data Pipeline
+# York Factory — Canadian Fiscal Data Pipeline + CMS
 
 ## What is York Factory?
-Automated pipeline that normalizes Canadian federal government fiscal data (Public Accounts, Main Estimates, Supplementary Estimates) into shared, queryable Postgres tables. Built for Build Canada's community of contributors who build government accountability tools.
+Automated pipeline that normalizes Canadian federal government fiscal data (Public Accounts, Main Estimates, Supplementary Estimates) into shared, queryable Postgres tables. Includes a bilingual CMS API for Build Canada's website content (posts, memos, builders, team, tools, FAQs, feed items, testimonials). Built for Build Canada's community of contributors who build government accountability tools.
 
 ## Commands
 ```bash
-bin/rails test                    # run all tests
+bin/rails test                    # run all tests (116 tests)
 bin/rails db:migrate              # apply migrations
 bin/rails db:seed                 # seed data sources
+bin/rails cms:seed                # seed CMS development data
 bin/rails console                 # Rails console
 ```
 
 ## Architecture
 - **Rails 8 API** with Solid Queue (Postgres-backed jobs, no Redis)
 - **Supabase** for managed Postgres (production uses DATABASE_URL)
-- **Cloudflare R2** for raw CSV archival (S3-compatible)
+- **Cloudflare R2** for raw CSV archival and ActiveStorage images (S3-compatible)
 - **Kamal** for deployment to OVH VPS
+- **Mobility** column backend for i18n (EN/FR)
+- **ActionText** with Lexxy editor for rich text content
+- **Devise + JWT** for API authentication, Google OAuth for admin
 
 ## Pipeline (associated objects pattern)
 ```
@@ -26,11 +30,22 @@ RawIngestion::LobbyingNormalizer  → lobbying registry normalization
 Organization::EntityResolver     → shared entity resolution cascade
 ```
 
+## CMS API
+```
+API v1: memos, posts, builders, team_members, tools, faqs, feed_items, testimonials, subscribers, uploads
+Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
+```
+
 ## Key gems
 - `active_record-associated_object` — pipeline logic as associated objects
 - `active_job-performs` — auto-generates job classes from methods
-- `anthropic` — Claude API for entity resolution and NL queries
+- `ruby_llm` — unified LLM interface for entity resolution and translations
 - `aws-sdk-s3` — R2 storage
+- `mobility` — i18n with column backend (title_en, title_fr)
+- `devise` + `devise-jwt` — authentication
+- `friendly_id` — slug generation with history
+- `lexxy` — ActionText editor replacement
+- `pagy` — pagination
 
 ## Entity resolution cascade
 1. Exact match on organization_aliases
@@ -41,5 +56,7 @@ Organization::EntityResolver     → shared entity resolution cascade
 
 ## Environment variables
 - `DATABASE_URL` — Supabase Postgres connection
-- `ANTHROPIC_API_KEY` — Claude API for entity resolution + NL queries
 - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` — Cloudflare R2
+- `CORS_ORIGINS` — Allowed CORS origins (comma-separated, defaults to *)
+- `DEVISE_JWT_SECRET_KEY` — JWT secret for API auth
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth for admin

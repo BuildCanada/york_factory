@@ -9,6 +9,6 @@ class CreateOrganizationAliases < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :organization_aliases, [:alias_name, :valid_from], unique: true
+    add_index :organization_aliases, [ :alias_name, :valid_from ], unique: true
   end
 end

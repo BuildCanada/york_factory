@@ -1,7 +1,7 @@
 module Api
   module V1
     class TestimonialsController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :destroy, :bulk_update]
+      before_action :authenticate_admin!, only: [ :create, :destroy, :bulk_update ]
 
       def index
         scope = preview_mode? ? Testimonial.all : Testimonial.published
@@ -55,7 +55,6 @@ module Api
           splash_photo_url: testimonial.splash_photo.attached? ? url_for(testimonial.splash_photo) : nil
         }
       end
-
     end
   end
 end

@@ -1,8 +1,8 @@
 module Api
   module V1
     class ToolsController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy, :bulk_update]
-      before_action :set_tool, only: [:update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy, :bulk_update ]
+      before_action :set_tool, only: [ :update, :destroy ]
 
       def index
         scope = preview_mode? ? Tool.all : Tool.published
@@ -74,7 +74,6 @@ module Api
           image_url: tool.image.attached? ? url_for(tool.image) : nil
         }
       end
-
     end
   end
 end

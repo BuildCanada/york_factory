@@ -11,7 +11,7 @@ class CreateStandardObjectExpenditures < ActiveRecord::Migration[8.1]
     end
 
     add_index :standard_object_expenditures,
-      [:organization_id, :fiscal_year, :standard_object],
+      [ :organization_id, :fiscal_year, :standard_object ],
       unique: true,
       name: "idx_std_obj_expenditures_unique"
   end

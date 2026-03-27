@@ -1,8 +1,8 @@
 module Api
   module V1
     class TeamMembersController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy, :bulk_update]
-      before_action :set_team_member, only: [:update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy, :bulk_update ]
+      before_action :set_team_member, only: [ :update, :destroy ]
 
       def index
         scope = preview_mode? ? TeamMember.all : TeamMember.published
@@ -73,7 +73,6 @@ module Api
           profile_photo_url: member.profile_photo.attached? ? url_for(member.profile_photo) : nil
         }
       end
-
     end
   end
 end

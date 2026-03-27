@@ -1,6 +1,6 @@
 module Admin
   class ToolsController < BaseController
-    before_action :set_tool, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_tool, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @tools = Tool.ordered

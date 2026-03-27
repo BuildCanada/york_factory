@@ -1,0 +1,33 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "095242855caae364f9d65d0e5d4a6e6bff46761dc2982877543babdcb62d8152",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/api/v1/team_members_controller.rb",
+      "line": 39,
+      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "6de29ec1e94e23aa62d82083e25b5744bdf4dd60514ecc761309fd15cceecba1",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/team_members_controller.rb",
+      "line": 57,
+      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "9e20a8328e9b7f5c2fda3c7a14ef1156dbd14d1d5984ec3537a25cb30d1b5c27",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/api/v1/team_members_controller.rb",
+      "line": 58,
+      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    }
+  ],
+  "updated": "2026-03-26",
+  "brakeman_version": "8.0.4"
+}

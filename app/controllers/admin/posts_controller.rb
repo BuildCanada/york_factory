@@ -1,6 +1,6 @@
 module Admin
   class PostsController < BaseController
-    before_action :set_post, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_post, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @pagy, @posts = pagy(Post.order(created_at: :desc))

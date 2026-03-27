@@ -64,15 +64,16 @@ development:
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
-  primary:
+  primary: &primary_test
     <<: *default
     database: york_factory_test<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
+    url: <%= ENV["DATABASE_URL"] %>
   queue:
-    <<: *default
+    <<: *primary_test
     database: york_factory_test_queue<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/queue_migrate
   cache:
-    <<: *default
+    <<: *primary_test
     database: york_factory_test_cache<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/cache_migrate
 

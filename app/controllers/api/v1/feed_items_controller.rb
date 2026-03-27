@@ -1,8 +1,8 @@
 module Api
   module V1
     class FeedItemsController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy]
-      before_action :set_feed_item, only: [:show, :update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy ]
+      before_action :set_feed_item, only: [ :show, :update, :destroy ]
 
       def index
         scope = preview_mode? ? FeedItem.all : FeedItem.published
@@ -79,7 +79,6 @@ module Api
         end
         data
       end
-
     end
   end
 end

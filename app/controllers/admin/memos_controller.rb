@@ -1,6 +1,6 @@
 module Admin
   class MemosController < BaseController
-    before_action :set_memo, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_memo, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @pagy, @memos = pagy(Memo.order(created_at: :desc))

@@ -50,7 +50,7 @@ gem "httpx"
 gem "rack-cors"
 
 # Load .env files in development/test
-gem "dotenv-rails", groups: [:development, :test]
+gem "dotenv-rails", groups: [ :development, :test ]
 
 # CMS: i18n with column backend
 gem "mobility", "~> 1.3"

@@ -1,8 +1,8 @@
 module Api
   module V1
     class FaqsController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy, :bulk_update]
-      before_action :set_faq, only: [:update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy, :bulk_update ]
+      before_action :set_faq, only: [ :update, :destroy ]
 
       def index
         scope = preview_mode? ? Faq.all : Faq.published
@@ -69,7 +69,6 @@ module Api
           position: faq.position
         }
       end
-
     end
   end
 end

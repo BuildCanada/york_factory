@@ -11,6 +11,6 @@ class CreateRawIngestions < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :raw_ingestions, [:source_id, :checksum], unique: true
+    add_index :raw_ingestions, [ :source_id, :checksum ], unique: true
   end
 end

@@ -15,7 +15,7 @@ class CreateFiscalAuthorities < ActiveRecord::Migration[8.1]
     end
 
     add_index :fiscal_authorities,
-      [:organization_id, :fiscal_year, :document_type, :vote_number],
+      [ :organization_id, :fiscal_year, :document_type, :vote_number ],
       unique: true,
       name: "idx_fiscal_authorities_unique"
   end

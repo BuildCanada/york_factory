@@ -1,6 +1,6 @@
 module Admin
   class TeamMembersController < BaseController
-    before_action :set_team_member, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_team_member, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @team_members = TeamMember.ordered

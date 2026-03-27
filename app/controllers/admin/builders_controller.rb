@@ -1,6 +1,6 @@
 module Admin
   class BuildersController < BaseController
-    before_action :set_builder, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_builder, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @pagy, @builders = pagy(Builder.order(created_at: :desc))

@@ -1,6 +1,6 @@
 module Admin
   class FaqsController < BaseController
-    before_action :set_faq, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_faq, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @faqs = Faq.ordered

@@ -4,8 +4,8 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :organizations, only: [:index, :show]
-      resources :deviations, only: [:index]
+      resources :organizations, only: [ :index, :show ]
+      resources :deviations, only: [ :index ]
 
       namespace :auth do
         post "google", to: "sessions#create"
@@ -28,8 +28,8 @@ Rails.application.routes.draw do
       resources :testimonials do
         put :bulk_update, on: :collection
       end
-      resources :subscribers, only: [:create]
-      resources :uploads, only: [:create]
+      resources :subscribers, only: [ :create ]
+      resources :uploads, only: [ :create ]
     end
   end
 
@@ -75,6 +75,6 @@ Rails.application.routes.draw do
       put :reorder, on: :collection
       post :retranslate, on: :member
     end
-    resources :subscribers, only: [:index]
+    resources :subscribers, only: [ :index ]
   end
 end

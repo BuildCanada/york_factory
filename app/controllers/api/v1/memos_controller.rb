@@ -1,8 +1,8 @@
 module Api
   module V1
     class MemosController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy]
-      before_action :set_memo, only: [:show, :update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy ]
+      before_action :set_memo, only: [ :show, :update, :destroy ]
 
       def index
         scope = preview_mode? ? Memo.all : Memo.published
@@ -90,7 +90,6 @@ module Api
 
         data
       end
-
     end
   end
 end

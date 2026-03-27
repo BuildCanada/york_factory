@@ -14,7 +14,7 @@ module Translatable
   end
 
   included do
-    after_commit :enqueue_translation, on: [:create, :update], if: :translatable_fields_changed?
+    after_commit :enqueue_translation, on: [ :create, :update ], if: :translatable_fields_changed?
   end
 
   private

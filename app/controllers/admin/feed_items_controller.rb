@@ -1,6 +1,6 @@
 module Admin
   class FeedItemsController < BaseController
-    before_action :set_feed_item, only: [:show, :edit, :update, :destroy, :retranslate]
+    before_action :set_feed_item, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
       @pagy, @feed_items = pagy(FeedItem.order(created_at: :desc))

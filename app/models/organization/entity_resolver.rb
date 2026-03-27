@@ -167,7 +167,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     all_orgs = Organization.pluck(:id, :canonical_name)
     scored = all_orgs.map do |id, canonical|
       score = trigram_similarity(name.downcase, canonical.downcase)
-      [id, canonical, score]
+      [ id, canonical, score ]
     end
     scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| Organization.new(id: id, canonical_name: cn) }
   end

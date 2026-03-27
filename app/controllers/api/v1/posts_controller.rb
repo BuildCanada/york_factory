@@ -1,8 +1,8 @@
 module Api
   module V1
     class PostsController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy]
-      before_action :set_post, only: [:show, :update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy ]
+      before_action :set_post, only: [ :show, :update, :destroy ]
 
       def index
         scope = (params[:hidden].present? && current_user&.admin?) ? Post.all : Post.visible
@@ -69,7 +69,6 @@ module Api
         data[:body] = post.body.to_s if full
         data
       end
-
     end
   end
 end

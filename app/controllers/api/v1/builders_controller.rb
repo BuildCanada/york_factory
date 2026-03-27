@@ -1,8 +1,8 @@
 module Api
   module V1
     class BuildersController < CmsBaseController
-      before_action :authenticate_admin!, only: [:create, :update, :destroy]
-      before_action :set_builder, only: [:show, :update, :destroy]
+      before_action :authenticate_admin!, only: [ :create, :update, :destroy ]
+      before_action :set_builder, only: [ :show, :update, :destroy ]
 
       def index
         scope = preview_mode? ? Builder.all : Builder.published
@@ -70,7 +70,6 @@ module Api
         end
         data
       end
-
     end
   end
 end

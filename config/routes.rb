@@ -6,6 +6,14 @@ Rails.application.routes.draw do
       resources :organizations, only: [:index, :show]
       resources :deviations, only: [:index]
       resource :query, only: [:create]
+
+      scope :senior_benefits, controller: :senior_benefits do
+        post :calculate
+        post :marginal_rates
+        post :compare
+        post :project
+        get :personas
+      end
     end
   end
 

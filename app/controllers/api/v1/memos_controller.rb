@@ -55,7 +55,7 @@ module Api
         params.require(:memo).permit(
           :slug, :author_id, :co_author_id, :author_name, :author_title,
           :author_avatar, :category, :twitter_embed, :published_at, :featured, :seo_image,
-          :title_en, :title_fr, :description_en, :description_fr,
+          :title_en, :title_fr,
           :supporters_en, :supporters_fr,
           :body_en, :body_fr, :appendix_en, :appendix_fr,
           key_messages_en: [], key_messages_fr: []
@@ -67,7 +67,6 @@ module Api
           id: memo.id,
           slug: memo.slug,
           title: memo.title,
-          description: memo.description,
           category: memo.category,
           featured: memo.featured,
           published_at: memo.published_at,

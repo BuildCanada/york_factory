@@ -95,7 +95,6 @@ namespace :cms do
 
       memo.assign_attributes(
         title_en:        fd["name"].presence,
-        description_en:  nil, # Webflow doesn't have a separate description
         key_messages_en: key_messages,
         category:        category,
         author:          author,

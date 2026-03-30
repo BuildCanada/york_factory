@@ -34,12 +34,12 @@ module Admin
     end
 
     def retranslate
-      @memo.update(title_fr: nil, description_fr: nil, key_messages_fr: [])
+      @memo.update(title_fr: nil, key_messages_fr: [])
       @memo.body_fr = nil
       @memo.appendix_fr = nil
       @memo.supporters_fr = nil
       @memo.save!
-      TranslateRecordJob.perform_later("Memo", @memo.id)
+      TranslateRecordJob.perform_later(@memo)
       head :ok
     end
 
@@ -53,7 +53,7 @@ module Admin
       params.require(:memo).permit(
         :slug, :author_id, :co_author_id, :author_name, :author_title,
         :author_avatar, :category, :twitter_embed, :published_at, :featured, :seo_image,
-        :title_en, :title_fr, :description_en, :description_fr,
+        :title_en, :title_fr,
         :body_en, :body_fr, :appendix_en, :appendix_fr,
         :supporters_en, :supporters_fr,
         key_messages: []

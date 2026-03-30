@@ -71,11 +71,6 @@ class MemoTest < ActiveSupport::TestCase
     assert_includes results, memos(:published_memo)
   end
 
-  test "search scope matches on English description" do
-    results = Memo.search("deep dive into housing")
-    assert_includes results, memos(:published_memo)
-  end
-
   test "search scope is case insensitive" do
     results = Memo.search("housing crisis")
     assert_includes results, memos(:published_memo)

@@ -44,7 +44,7 @@ module Admin
       @tool.update(title_fr: nil)
       @tool.description_fr = nil
       @tool.save!
-      TranslateRecordJob.perform_later("Tool", @tool.id)
+      TranslateRecordJob.perform_later(@tool)
       head :ok
     end
 

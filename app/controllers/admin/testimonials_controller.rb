@@ -43,7 +43,7 @@ module Admin
 
     def retranslate
       @testimonial.update(quote_fr: nil)
-      TranslateRecordJob.perform_later("Testimonial", @testimonial.id)
+      TranslateRecordJob.perform_later(@testimonial)
       head :ok
     end
 

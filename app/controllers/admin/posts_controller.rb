@@ -37,7 +37,7 @@ module Admin
       @post.update(summary_fr: nil, title_fr: nil)
       @post.body_fr = nil
       @post.save!
-      TranslateRecordJob.perform_later("Post", @post.id)
+      TranslateRecordJob.perform_later(@post)
       head :ok
     end
 

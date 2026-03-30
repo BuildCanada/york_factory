@@ -42,7 +42,7 @@ module Admin
 
     def retranslate
       @team_member.update(title_fr: nil)
-      TranslateRecordJob.perform_later("TeamMember", @team_member.id)
+      TranslateRecordJob.perform_later(@team_member)
       head :ok
     end
 

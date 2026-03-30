@@ -60,4 +60,53 @@ class TranslationServiceTest < ActiveSupport::TestCase
   ensure
     RubyLLM.singleton_class.remove_method(:chat) if RubyLLM.respond_to?(:chat)
   end
+
+  test "translate_hash_fields translates array elements" do
+    fake_response = Struct.new(:content).new("Message traduit")
+    fake_chat = Object.new
+    fake_chat.define_singleton_method(:ask) { |_| fake_response }
+    RubyLLM.define_singleton_method(:chat) { |**_| fake_chat }
+
+    memo = memos(:published_memo)
+    memo.update_columns(
+      key_messages_en: [ "Build housing", "Support innovation" ],
+      key_messages_fr: []
+    )
+
+    @service.send(:translate_hash_fields, memo)
+
+    memo.reload
+    assert_equal [ "Message traduit", "Message traduit" ], memo.key_messages_fr
+  ensure
+    RubyLLM.singleton_class.remove_method(:chat) if RubyLLM.respond_to?(:chat)
+  end
+
+  test "translate_hash_fields skips when FR already populated" do
+    call_count = 0
+    fake_response = Struct.new(:content).new("translated")
+    fake_chat = Object.new
+    fake_chat.define_singleton_method(:ask) { |_| call_count += 1; fake_response }
+    RubyLLM.define_singleton_method(:chat) { |**_| fake_chat }
+
+    memo = memos(:published_memo)
+    memo.update_columns(
+      key_messages_en: [ "Build housing" ],
+      key_messages_fr: [ "Construire des logements" ]
+    )
+
+    @service.send(:translate_hash_fields, memo)
+
+    assert_equal 0, call_count
+  ensure
+    RubyLLM.singleton_class.remove_method(:chat) if RubyLLM.respond_to?(:chat)
+  end
+
+  test "translate_hash_fields handles empty array" do
+    memo = memos(:published_memo)
+    memo.update_columns(key_messages_en: [], key_messages_fr: [])
+
+    assert_nothing_raised do
+      @service.send(:translate_hash_fields, memo)
+    end
+  end
 end

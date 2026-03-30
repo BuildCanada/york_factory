@@ -25,13 +25,6 @@
   <% end %>
 </div>
 
-<% if @memo.description_en.present? %>
-  <div class="card mb-2">
-    <h2>Description (EN)</h2>
-    <p><%= @memo.description_en %></p>
-  </div>
-<% end %>
-
 <% if @memo.key_messages_en.present? %>
   <div class="card mb-2">
     <h2>Key Messages</h2>

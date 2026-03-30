@@ -38,7 +38,7 @@ module Admin
       @feed_item.update(title_fr: nil, subtitle_fr: nil)
       @feed_item.body_fr = nil
       @feed_item.save!
-      TranslateRecordJob.perform_later("FeedItem", @feed_item.id)
+      TranslateRecordJob.perform_later(@feed_item)
       head :ok
     end
 

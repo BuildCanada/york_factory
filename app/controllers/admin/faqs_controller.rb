@@ -43,7 +43,7 @@ module Admin
       @faq.update(question_fr: nil, answer_text_fr: nil)
       @faq.answer_fr = nil
       @faq.save!
-      TranslateRecordJob.perform_later("Faq", @faq.id)
+      TranslateRecordJob.perform_later(@faq)
       head :ok
     end
 

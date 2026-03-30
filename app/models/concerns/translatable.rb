@@ -11,6 +11,11 @@ module Translatable
       @rich_text_fields = fields if fields.any?
       @rich_text_fields || []
     end
+
+    def hash_fields(*fields)
+      @hash_fields = fields if fields.any?
+      @hash_fields || []
+    end
   end
 
   included do
@@ -20,8 +25,8 @@ module Translatable
   private
 
   def enqueue_translation
-    return if self.class.translatable_fields.empty? && self.class.rich_text_fields.empty?
-    TranslateRecordJob.perform_later(self.class.name, id)
+    return if self.class.translatable_fields.empty? && self.class.rich_text_fields.empty? && self.class.hash_fields.empty?
+    TranslateRecordJob.perform_later(self)
   end
 
   def translatable_fields_changed?

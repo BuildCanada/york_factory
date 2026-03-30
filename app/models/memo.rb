@@ -2,7 +2,7 @@ class Memo < ApplicationRecord
   include Translatable, Publishable, HasLocalizedRichText
 
   extend Mobility
-  translates :title, :description, backend: :column
+  translates :title, backend: :column
 
   extend FriendlyId
   friendly_id :title_en, use: :history
@@ -23,9 +23,10 @@ class Memo < ApplicationRecord
   scope :by_category, ->(cat) { where(category: cat) }
   scope :search, ->(q) {
     sanitized = ActiveRecord::Base.sanitize_sql_like(q)
-    where("title_en ILIKE :q OR description_en ILIKE :q", q: "%#{sanitized}%")
+    where("title_en ILIKE :q", q: "%#{sanitized}%")
   }
 
-  translatable_fields :title, :description, :key_messages
+  translatable_fields :title
   rich_text_fields :body, :appendix, :supporters
+  hash_fields :key_messages
 end

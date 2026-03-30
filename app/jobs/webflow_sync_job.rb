@@ -6,7 +6,7 @@ class WebflowSyncJob < ApplicationJob
     result = WebflowSyncService.new.sync!
 
     if result.errors.any?
-      Rails.logger.warn "[WebflowSyncJob] Completed with #{result.errors.size} errors: #{result.errors.first(5).join("; ")}"
+      raise WebflowSyncService::SyncError, "Sync completed with #{result.errors.size} errors: #{result.errors.first(5).join("; ")}"
     end
   end
 end

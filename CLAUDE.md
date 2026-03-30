@@ -15,7 +15,7 @@ bin/rails console                 # Rails console
 ## Architecture
 - **Rails 8 API** with Solid Queue (Postgres-backed jobs, no Redis)
 - **Supabase** for managed Postgres (production uses DATABASE_URL)
-- **Cloudflare R2** for raw CSV archival and ActiveStorage images (S3-compatible)
+- **Cloudflare R2** with separate buckets for archival (R2_BUCKET) and ActiveStorage (R2_ACTIVE_STORAGE_BUCKET)
 - **Kamal** for deployment to OVH VPS
 - **Mobility** column backend for i18n (EN/FR)
 - **ActionText** with Lexxy editor for rich text content
@@ -56,7 +56,8 @@ Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
 
 ## Environment variables
 - `DATABASE_URL` — Supabase Postgres connection
-- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` — Cloudflare R2
+- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT` — Cloudflare R2 credentials
+- `R2_BUCKET` — R2 bucket for raw CSV archival (pipeline)
+- `R2_ACTIVE_STORAGE_BUCKET` — R2 bucket for ActiveStorage uploads (CMS images)
 - `CORS_ORIGINS` — Allowed CORS origins (comma-separated, defaults to *)
-- `DEVISE_JWT_SECRET_KEY` — JWT secret for API auth
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth for admin

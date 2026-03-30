@@ -38,7 +38,7 @@ module Admin
       @builder.body_fr = nil
       @builder.author_fr = nil
       @builder.save!
-      TranslateRecordJob.perform_later("Builder", @builder.id)
+      TranslateRecordJob.perform_later(@builder)
       head :ok
     end
 

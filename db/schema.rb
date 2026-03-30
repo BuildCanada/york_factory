@@ -208,8 +208,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_200001) do
     t.string "category"
     t.bigint "co_author_id"
     t.datetime "created_at", null: false
-    t.text "description_en"
-    t.text "description_fr"
     t.boolean "featured", default: false
     t.jsonb "key_messages_en", default: []
     t.jsonb "key_messages_fr", default: []

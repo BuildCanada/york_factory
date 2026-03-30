@@ -59,7 +59,7 @@ module Api
         end
 
         def devise_jwt_secret
-          ENV.fetch("DEVISE_JWT_SECRET_KEY", Rails.application.secret_key_base)
+          Rails.application.secret_key_base
         end
       end
     end

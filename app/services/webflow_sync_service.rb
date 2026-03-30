@@ -72,7 +72,7 @@ class WebflowSyncService
       member.assign_attributes(
         name: fd["name"],
         role: role,
-        title_translations: { "en" => fd["title"].to_s },
+        title_en: fd["title"].to_s,
         linkedin_url: fd["linkedin"].to_s.presence,
         twitter_url: fd["twitter"].to_s.presence,
         position: fd["team-order"].to_i
@@ -119,20 +119,19 @@ class WebflowSyncService
       }
 
       memo.assign_attributes(
-        title_translations: { "en" => fd["name"].to_s },
-        description_translations: { "en" => fd["description"].to_s },
+        title_en: fd["name"].to_s,
         category: category,
         author: author,
         co_author: co_author,
-        key_messages: key_messages.presence || [],
-        body_translations: { "en" => fd["body"].to_s },
-        appendix_translations: { "en" => fd["appendix"].to_s },
-        supporters_translations: { "en" => fd["supporters"].to_s },
+        key_messages_en: key_messages.presence || [],
         twitter_embed: fd["twitter-embed"].to_s.presence,
         author_name: fd["builder-name"].to_s.presence,
         author_title: fd["builder-title"].to_s.presence,
         author_avatar: fd["builder-avatar"].to_s.presence
       )
+      memo.body_en = fd["body"].to_s if fd["body"].present?
+      memo.appendix_en = fd["appendix"].to_s if fd["appendix"].present?
+      memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?
       memo.published_at ||= Time.zone.parse(item["createdOn"]) rescue Time.current
 
       attach_image(memo, :seo_image, fd.dig("open-graph-image", "url"))
@@ -161,11 +160,11 @@ class WebflowSyncService
 
       post = Post.find_or_initialize_by(slug: slug)
       post.assign_attributes(
-        title_translations: { "en" => fd["name"].to_s },
-        summary_translations: { "en" => fd["post-summary"].to_s },
-        body_translations: { "en" => fd["post-body"].to_s },
+        title_en: fd["name"].to_s,
+        summary_en: fd["post-summary"].to_s,
         hidden: fd["hidden"] == true
       )
+      post.body_en = fd["post-body"].to_s if fd["post-body"].present?
       post.published_at ||= Time.current
 
       if post.save
@@ -192,10 +191,10 @@ class WebflowSyncService
 
       tool = Tool.find_or_initialize_by(slug: slug)
       tool.assign_attributes(
-        title_translations: { "en" => fd["name"].to_s },
-        description_translations: { "en" => fd["description"].to_s },
+        title_en: fd["name"].to_s,
         url: fd["url"].to_s.presence
       )
+      tool.description_en = fd["description"].to_s if fd["description"].present?
       tool.published_at ||= Time.current
 
       attach_image(tool, :image, fd.dig("image", "url"), fd["name"])
@@ -224,12 +223,12 @@ class WebflowSyncService
 
       builder = Builder.find_or_initialize_by(slug: slug)
       builder.assign_attributes(
-        title_translations: { "en" => fd["name"].to_s },
-        byline_translations: { "en" => fd["key-message-1"].to_s },
-        quote_translations: { "en" => fd["quote"].to_s },
-        body_translations: { "en" => fd["body"].to_s },
-        author_translations: { "en" => fd["supporters"].to_s }
+        title_en: fd["name"].to_s,
+        byline_en: fd["key-message-1"].to_s,
+        quote_en: fd["quote"].to_s
       )
+      builder.body_en = fd["body"].to_s if fd["body"].present?
+      builder.author_en = fd["supporters"].to_s if fd["supporters"].present?
       builder.published_at ||= Time.current
 
       attach_image(builder, :image, fd.dig("image", "url"), fd["name"])

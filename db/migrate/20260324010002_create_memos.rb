@@ -2,17 +2,15 @@ class CreateMemos < ActiveRecord::Migration[8.1]
   def change
     create_table :memos do |t|
       t.string :slug, null: false
-      t.jsonb :title_translations, default: {}
-      t.jsonb :description_translations, default: {}
+      t.string :title_en
+      t.string :title_fr
       t.references :author, foreign_key: { to_table: :team_members }
       t.references :co_author, foreign_key: { to_table: :team_members }
       t.string :author_name
       t.string :author_title
       t.string :author_avatar
-      t.jsonb :key_messages, default: []
-      t.jsonb :body_translations, default: {}
-      t.jsonb :appendix_translations, default: {}
-      t.jsonb :supporters_translations, default: {}
+      t.jsonb :key_messages_en, default: []
+      t.jsonb :key_messages_fr, default: []
       t.string :category
       t.text :twitter_embed
       t.datetime :published_at

@@ -9,6 +9,10 @@ servers:
   web:
     hosts:
       - 66.70.179.6
+  worker:
+    hosts:
+      - 66.70.179.6
+    cmd: bin/jobs
 
 proxy:
   ssl: true
@@ -27,7 +31,7 @@ env:
     - R2_BUCKET
     - R2_ACTIVE_STORAGE_BUCKET
   clear:
-    SOLID_QUEUE_IN_PUMA: true
+    SOLID_QUEUE_IN_PUMA: false
     RAILS_LOG_LEVEL: info
     CORS_ORIGINS: "https://buildcanada.com,https://york-factory.eng.canadasbuilding.com"
 

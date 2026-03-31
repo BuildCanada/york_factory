@@ -1,6 +1,7 @@
 module Admin
   class SessionsController < ActionController::Base
     layout "admin_login"
+    skip_forgery_protection
 
     def new
       redirect_to admin_root_path if session[:admin_user_id] && User.find_by(id: session[:admin_user_id])&.admin?

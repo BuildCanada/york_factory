@@ -62,7 +62,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "builders show renders" do
-    get admin_builder_path(builders(:builder_one))
+    get admin_builder_path(builders(:published_builder))
     assert_response :success
   end
 
@@ -72,7 +72,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "builders edit renders" do
-    get edit_admin_builder_path(builders(:builder_one))
+    get edit_admin_builder_path(builders(:published_builder))
     assert_response :success
   end
 
@@ -125,7 +125,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "faqs show renders" do
-    get admin_faq_path(faqs(:faq_one))
+    get admin_faq_path(faqs(:published_faq))
     assert_response :success
   end
 
@@ -135,7 +135,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "faqs edit renders" do
-    get edit_admin_faq_path(faqs(:faq_one))
+    get edit_admin_faq_path(faqs(:published_faq))
     assert_response :success
   end
 
@@ -146,7 +146,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "feed_items show renders" do
-    get admin_feed_item_path(feed_items(:blog_item))
+    get admin_feed_item_path(feed_items(:published_blog))
     assert_response :success
   end
 
@@ -156,7 +156,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "feed_items edit renders" do
-    get edit_admin_feed_item_path(feed_items(:blog_item))
+    get edit_admin_feed_item_path(feed_items(:published_blog))
     assert_response :success
   end
 
@@ -167,7 +167,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "testimonials show renders" do
-    get admin_testimonial_path(testimonials(:testimonial_one))
+    get admin_testimonial_path(testimonials(:published_testimonial))
     assert_response :success
   end
 
@@ -177,7 +177,7 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   test "testimonials edit renders" do
-    get edit_admin_testimonial_path(testimonials(:testimonial_one))
+    get edit_admin_testimonial_path(testimonials(:published_testimonial))
     assert_response :success
   end
 

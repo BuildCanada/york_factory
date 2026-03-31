@@ -16,3 +16,12 @@ basic_tool:
   position: 2
   size: small
   published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_tool:
+  slug: draft-tool
+  title_en: Draft Tool
+  url: https://draft.buildcanada.com
+  featured: false
+  position: 3
+  size: small
+  published_at: null

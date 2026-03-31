@@ -1,7 +1,15 @@
-faq_one:
+published_faq:
   question_en: What is Build Canada?
   question_fr: Qu'est-ce que Bâtir le Canada?
   answer_text_en: A community of builders
   answer_text_fr: Une communauté de bâtisseurs
   position: 1
   published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_faq:
+  question_en: Draft FAQ
+  question_fr: FAQ brouillon
+  answer_text_en: Draft answer
+  answer_text_fr: Réponse brouillon
+  position: 2
+  published_at: null

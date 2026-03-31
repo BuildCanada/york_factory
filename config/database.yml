@@ -19,7 +19,6 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
-
 development:
   primary:
     <<: *default
@@ -106,16 +105,22 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    url: <%= ENV["DATABASE_URL"] %>
+    username: <%= Rails.application.credentials.database&.fetch(:username) %>
+    password: <%= Rails.application.credentials.database&.fetch(:password) %>
+    database: york_factory
+    host: <%= Rails.application.credentials.database&.fetch(:host) %>
+    port: <%= Rails.application.credentials.database&.fetch(:port) %>
+    sslmode: verify-full
+    # sslrootcert: system
   cache:
     <<: *primary_production
-    database: york_factory_production_cache
+    database: york_factory_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: york_factory_production_queue
+    database: york_factory_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: york_factory_production_cable
+    database: york_factory_cable
     migrations_paths: db/cable_migrate

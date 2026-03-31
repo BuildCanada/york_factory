@@ -110,8 +110,7 @@ production:
     database: york_factory
     host: <%= Rails.application.credentials.database&.fetch(:host) %>
     port: <%= Rails.application.credentials.database&.fetch(:port) %>
-    sslmode: verify-full
-    # sslrootcert: system
+    sslmode: require
   cache:
     <<: *primary_production
     database: york_factory_cache

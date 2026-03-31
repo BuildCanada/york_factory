@@ -9,7 +9,6 @@ class WebflowSyncJobTest < ActiveSupport::TestCase
       errors: [ "Memo 'Test': slug can't be blank" ]
     )
 
-    ENV["WEBFLOW_API_KEY"] = "test-key"
     original_sync = WebflowSyncService.instance_method(:sync!)
     WebflowSyncService.define_method(:sync!) { success_result }
 
@@ -18,7 +17,6 @@ class WebflowSyncJobTest < ActiveSupport::TestCase
     end
   ensure
     WebflowSyncService.define_method(:sync!, original_sync) if original_sync
-    ENV.delete("WEBFLOW_API_KEY")
   end
 
   test "completes without retry when sync succeeds" do
@@ -27,7 +25,6 @@ class WebflowSyncJobTest < ActiveSupport::TestCase
       errors: []
     )
 
-    ENV["WEBFLOW_API_KEY"] = "test-key"
     original_sync = WebflowSyncService.instance_method(:sync!)
     WebflowSyncService.define_method(:sync!) { success_result }
 
@@ -36,6 +33,5 @@ class WebflowSyncJobTest < ActiveSupport::TestCase
     end
   ensure
     WebflowSyncService.define_method(:sync!, original_sync) if original_sync
-    ENV.delete("WEBFLOW_API_KEY")
   end
 end

@@ -33,7 +33,7 @@ class WebflowSyncService
   Result = Struct.new(:team_members, :memos, :posts, :tools, :builders, :errors, keyword_init: true)
 
   def initialize(api_token: nil)
-    @api_token = api_token || ENV.fetch("WEBFLOW_API_KEY")
+    @api_token = api_token || Rails.application.credentials.dig(:webflow, :api_token)
     @errors = []
     @team_id_map = {} # webflow_id => TeamMember record
   end

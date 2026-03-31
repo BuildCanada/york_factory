@@ -34,13 +34,19 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    mount MissionControl::Jobs::Engine, at: "jobs"
+    authenticate = ->(request) {
+      user_id = request.session[:admin_user_id]
+      user_id && User.find_by(id: user_id)&.admin?
+    }
+    constraints(authenticate) do
+      mount MissionControl::Jobs::Engine, at: "jobs"
+    end
 
     full = %i[index show new create edit update destroy]
 
     get "login", to: "sessions#new", as: :login
     post "login", to: "sessions#create"
-    delete "logout", to: "sessions#destroy", as: :logout
+    match "logout", to: "sessions#destroy", as: :logout, via: [ :get, :delete ]
 
     get "/", to: "dashboard#index", as: :root
     get "ingestions", to: "dashboard#ingestions"

@@ -9,6 +9,7 @@ module Admin
     def create
       user = User.find_by(email: params[:email])
       if user&.valid_password?(params[:password]) && user.admin?
+        reset_session
         session[:admin_user_id] = user.id
         redirect_to admin_root_path, notice: "Signed in."
       else

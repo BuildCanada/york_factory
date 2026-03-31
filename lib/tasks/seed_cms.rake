@@ -223,7 +223,7 @@ namespace :cms do
     # -----------------------------------------------------------------------
     puts "\n=== Enqueueing Translation Jobs ==="
     records_to_translate.each do |record|
-      TranslateRecordJob.perform_later(record.class.name, record.id)
+      TranslateRecordJob.perform_later(record)
     end
     puts "  Enqueued: #{records_to_translate.size} translation jobs"
 

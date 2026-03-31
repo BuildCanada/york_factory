@@ -13,5 +13,7 @@ class User < ApplicationRecord
       user.name = auth[:name]
       user.avatar_url = auth[:avatar_url]
     end
+  rescue ActiveRecord::RecordNotUnique
+    where(provider: auth[:provider], uid: auth[:uid]).first!
   end
 end

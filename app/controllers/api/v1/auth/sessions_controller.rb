@@ -40,7 +40,8 @@ module Api
         private
 
         def verify_google_token(token)
-          uri = URI("https://oauth2.googleapis.com/tokeninfo?id_token=#{token}")
+          uri = URI("https://oauth2.googleapis.com/tokeninfo")
+          uri.query = URI.encode_www_form(id_token: token)
           response = Net::HTTP.get_response(uri)
           return nil unless response.is_a?(Net::HTTPSuccess)
 
@@ -59,7 +60,7 @@ module Api
         end
 
         def devise_jwt_secret
-          Rails.application.secret_key_base
+          ENV.fetch("DEVISE_JWT_SECRET_KEY", Rails.application.secret_key_base)
         end
       end
     end

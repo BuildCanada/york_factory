@@ -54,7 +54,10 @@ class TranslationService
   def translate_text(text)
     chat = RubyLLM.chat(model: MODEL)
     response = chat.ask(translation_prompt(text))
-    response.content.strip
+    translated = response.content.strip
+    return nil if translated.blank?
+    return nil if translated.length > text.length * 3 # reject wildly long outputs
+    translated
   rescue => e
     Rails.logger.error("Translation failed: #{e.message}")
     nil

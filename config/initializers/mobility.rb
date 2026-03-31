@@ -1,3 +1,5 @@
+require "mobility"
+
 Mobility.configure do
   plugins do
     backend :column

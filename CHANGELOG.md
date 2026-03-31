@@ -2,7 +2,7 @@
 
 All notable changes to York Factory will be documented in this file.
 
-## [0.1.1.0] - 2026-03-26
+## [0.1.2.0] - 2026-03-30
 
 ### Added
 
@@ -20,16 +20,23 @@ All notable changes to York Factory will be documented in this file.
 - Rack::Attack rate limiting for API endpoints
 - 18 database migrations for CMS tables, ActiveStorage, Devise, ActionText, and Mobility restructuring
 - CMS seed task for development data
-- 116 tests covering models, controllers, concerns, and services
+- 172 tests covering models, controllers, concerns, services, and API endpoints
+
+### Fixed
+
+- JWT secret mismatch between token creation and validation when DEVISE_JWT_SECRET_KEY is set
+- Non-admin users could bypass authorization (render_forbidden didn't halt execution)
+- Session fixation vulnerability on admin login (now resets session before setting user)
+- URI parameter encoding in Google OAuth token verification
+- ILIKE wildcard injection in admin subscriber search
+- Race condition in User.from_google for concurrent first-login (handles RecordNotUnique)
+- Seed task passing wrong arguments to TranslateRecordJob
+- LLM translation output now validated for blank/length before writing to database
 
 ### Changed
 
 - Replaced `anthropic` gem with `ruby_llm` for entity resolution (unified LLM interface)
 - Updated admin layout from top-nav to sidebar with Pipeline and CMS sections
-- Added i18n configuration (en/fr locales) and ActionDispatch::Flash middleware
-- Added CORS configuration for API endpoints
-- Added R2 storage service configuration
-- Added solid_cache database connection for dev/prod environments
 
 ### Removed
 

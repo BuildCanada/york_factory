@@ -11,7 +11,7 @@ module Authenticatable
       payload = JWT.decode(token, devise_jwt_secret, true, algorithm: "HS256").first
       return render_unauthorized if JwtDenylist.exists?(jti: payload["jti"])
       @current_user = User.find(payload["sub"])
-      return render_forbidden unless @current_user.admin?
+      return render_forbidden unless @current_user.admin? # rubocop:disable Style/RedundantReturn -- return halts before_action chain
     rescue JWT::DecodeError, ActiveRecord::RecordNotFound
       render_unauthorized
     end

@@ -19,7 +19,7 @@ Rails.application.configure do
   # config.asset_host = "http://assets.example.com"
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
-  config.active_storage.service = :local
+  config.active_storage.service = :r2_active_storage
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   # config.assume_ssl = true
@@ -45,6 +45,7 @@ Rails.application.configure do
 
   # Replace the default in-process memory cache store with a durable alternative.
   config.cache_store = :solid_cache_store
+  config.solid_cache.connects_to = { database: { writing: :cache } }
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue
@@ -75,6 +76,9 @@ Rails.application.configure do
 
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
+
+  # Use session-based admin auth instead of HTTP Basic for Mission Control
+  config.mission_control.jobs.http_basic_auth_enabled = false
 
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [

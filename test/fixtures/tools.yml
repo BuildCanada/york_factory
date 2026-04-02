@@ -1,0 +1,27 @@
+featured_tool:
+  slug: fiscal-tracker
+  title_en: Fiscal Tracker
+  title_fr: Suivi fiscal
+  url: https://tracker.buildcanada.com
+  featured: true
+  position: 1
+  size: big
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+basic_tool:
+  slug: data-explorer
+  title_en: Data Explorer
+  url: https://data.buildcanada.com
+  featured: false
+  position: 2
+  size: small
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_tool:
+  slug: draft-tool
+  title_en: Draft Tool
+  url: https://draft.buildcanada.com
+  featured: false
+  position: 3
+  size: small
+  published_at: null

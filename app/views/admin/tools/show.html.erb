@@ -1,0 +1,32 @@
+<div class="page-header">
+  <h1><%= @tool.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <% if !@tool.published? %>
+      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/tools/<%= @tool.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+    <% end %>
+    <a href="<%= edit_admin_tool_path(@tool) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_tool_path(@tool), data: { turbo_method: :delete, turbo_confirm: "Delete this tool?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <span class="mono"><%= @tool.slug %></span></p>
+  <p><strong>URL:</strong> <%= @tool.url %></p>
+  <p><strong>Size:</strong> <%= @tool.size %></p>
+  <p><strong>Accent Color:</strong> <%= @tool.accent_color %></p>
+  <p><strong>Featured:</strong> <%= @tool.featured? ? "Yes" : "No" %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@tool.publish_status] %>">
+      <%= @tool.publish_status.capitalize %>
+    </span>
+  </p>
+  <% if @tool.image.attached? %>
+    <p><strong>Image:</strong></p>
+    <%= image_tag url_for(@tool.image), class: "file-preview" %>
+  <% end %>
+</div>
+
+<div class="card">
+  <h2>Description (EN)</h2>
+  <div><%= @tool.description_en %></div>
+</div>

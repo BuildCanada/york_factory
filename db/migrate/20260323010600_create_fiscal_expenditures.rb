@@ -15,7 +15,7 @@ class CreateFiscalExpenditures < ActiveRecord::Migration[8.1]
     end
 
     add_index :fiscal_expenditures,
-      [:organization_id, :fiscal_year, :vote_number],
+      [ :organization_id, :fiscal_year, :vote_number ],
       unique: true,
       name: "idx_fiscal_expenditures_unique"
   end

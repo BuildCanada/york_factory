@@ -1,0 +1,32 @@
+<div class="page-header">
+  <h1>Tools</h1>
+  <a href="<%= new_admin_tool_path %>" class="btn btn-primary">New Tool</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px"></th>
+      <th>Title</th>
+      <th>Size</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody data-controller="sortable" data-sortable-url-value="<%= reorder_admin_tools_path %>">
+    <% @tools.each do |tool| %>
+      <tr data-id="<%= tool.id %>">
+        <td><span class="drag-handle">&#9776;</span></td>
+        <td><a href="<%= admin_tool_path(tool) %>"><%= tool.title_en || "Untitled" %></a></td>
+        <td><%= tool.size %></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[tool.publish_status] %>">
+            <%= tool.publish_status.capitalize %>
+          </span>
+          <% if tool.featured? %><span class="badge badge-blue">Featured</span><% end %>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_tool_path(tool) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

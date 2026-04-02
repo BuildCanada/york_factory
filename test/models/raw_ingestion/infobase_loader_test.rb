@@ -105,7 +105,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
     @ingestion.infobase_loader.load(csv_content: csv)
 
     types = FiscalExpenditure.pluck(:vote_type).sort
-    assert_equal ["capital", "grants_contributions", "operating", "statutory"], types
+    assert_equal [ "capital", "grants_contributions", "operating", "statutory" ], types
   end
 
   test "creates lineage entries for each row" do

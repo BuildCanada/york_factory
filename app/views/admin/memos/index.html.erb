@@ -1,0 +1,34 @@
+<div class="page-header">
+  <h1>Memos</h1>
+  <a href="<%= new_admin_memo_path %>" class="btn btn-primary">New Memo</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Category</th>
+      <th>Status</th>
+      <th>Published</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @memos.each do |memo| %>
+      <tr>
+        <td><a href="<%= admin_memo_path(memo) %>"><%= memo.title_en || "Untitled" %></a></td>
+        <td><%= memo.category %></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[memo.publish_status] %>">
+            <%= memo.publish_status.capitalize %>
+          </span>
+          <% if memo.featured? %><span class="badge badge-blue">Featured</span><% end %>
+        </td>
+        <td class="text-muted"><%= memo.published_at&.strftime("%b %d, %Y") || "—" %></td>
+        <td class="text-right"><a href="<%= edit_admin_memo_path(memo) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

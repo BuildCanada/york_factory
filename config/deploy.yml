@@ -2,29 +2,38 @@
 service: york_factory
 image: buildcanada/york_factory
 
+ssh:
+  user: ubuntu
+
 servers:
   web:
-    - 192.168.0.1  # Replace with OVH VPS IP
+    hosts:
+      - 66.70.179.6
+  worker:
+    hosts:
+      - 66.70.179.6
+    cmd: bin/jobs
+
+proxy:
+  ssl: true
+  host: york-factory.eng.canadasbuilding.com
 
 registry:
-  server: ghcr.io
-  username:
-    - KAMAL_REGISTRY_USERNAME
-  password:
-    - KAMAL_REGISTRY_PASSWORD
+  server: localhost:5555
 
 env:
   secret:
     - RAILS_MASTER_KEY
-    - DATABASE_URL
     - ANTHROPIC_API_KEY
     - R2_ACCESS_KEY_ID
     - R2_SECRET_ACCESS_KEY
     - R2_ENDPOINT
     - R2_BUCKET
+    - R2_ACTIVE_STORAGE_BUCKET
   clear:
-    SOLID_QUEUE_IN_PUMA: true
+    SOLID_QUEUE_IN_PUMA: false
     RAILS_LOG_LEVEL: info
+    CORS_ORIGINS: "https://buildcanada.com,https://york-factory.eng.canadasbuilding.com"
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"

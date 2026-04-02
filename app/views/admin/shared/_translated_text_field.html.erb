@@ -1,0 +1,23 @@
+<%# locals: (form:, field:, input_type: :text_field, label: nil) %>
+<% field_label = label || field.to_s.humanize %>
+<div class="form-group" data-controller="tabs">
+  <label><%= field_label %></label>
+  <div class="tab-bar">
+    <button type="button" class="tab-btn active" data-tabs-target="tab" data-action="tabs#select">EN</button>
+    <button type="button" class="tab-btn" data-tabs-target="tab" data-action="tabs#select">FR</button>
+  </div>
+  <div class="tab-panel" data-tabs-target="panel">
+    <% if input_type == :text_area %>
+      <%= form.text_area :"#{field}_en", class: "form-control" %>
+    <% else %>
+      <%= form.text_field :"#{field}_en", class: "form-control" %>
+    <% end %>
+  </div>
+  <div class="tab-panel" data-tabs-target="panel" style="display:none">
+    <% if input_type == :text_area %>
+      <%= form.text_area :"#{field}_fr", class: "form-control", placeholder: "Auto-translated if blank" %>
+    <% else %>
+      <%= form.text_field :"#{field}_fr", class: "form-control", placeholder: "Auto-translated if blank" %>
+    <% end %>
+  </div>
+</div>

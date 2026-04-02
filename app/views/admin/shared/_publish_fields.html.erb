@@ -1,0 +1,23 @@
+<%# locals: (form:) %>
+<div class="form-group">
+  <label>Publish Status</label>
+  <div class="mb-2">
+    <% if form.object.persisted? %>
+      <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[form.object.publish_status] %>">
+        <%= form.object.publish_status.capitalize %>
+      </span>
+    <% else %>
+      <span class="badge badge-yellow">Draft</span>
+    <% end %>
+  </div>
+  <label>Published at</label>
+  <%= form.datetime_local_field :published_at, class: "form-control", value: form.object.published_at&.strftime("%Y-%m-%dT%H:%M") %>
+  <div class="btn-group mt-1">
+    <button type="button" class="btn btn-sm" onclick="this.closest('.form-group').querySelector('input[type=datetime-local]').value = new Date().toISOString().slice(0,16)">
+      Publish Now
+    </button>
+    <button type="button" class="btn btn-sm" onclick="this.closest('.form-group').querySelector('input[type=datetime-local]').value = ''">
+      Unpublish
+    </button>
+  </div>
+</div>

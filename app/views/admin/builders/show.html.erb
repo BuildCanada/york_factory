@@ -1,0 +1,43 @@
+<div class="page-header">
+  <h1><%= @builder.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <% if !@builder.published? %>
+      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/builders/<%= @builder.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+    <% end %>
+    <a href="<%= edit_admin_builder_path(@builder) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_builder_path(@builder), data: { turbo_method: :delete, turbo_confirm: "Delete this builder?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <span class="mono"><%= @builder.slug %></span></p>
+  <p><strong>Byline:</strong> <%= @builder.byline_en %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@builder.publish_status] %>">
+      <%= @builder.publish_status.capitalize %>
+    </span>
+  </p>
+  <% if @builder.image.attached? %>
+    <p><strong>Image:</strong></p>
+    <%= image_tag url_for(@builder.image), class: "file-preview" %>
+  <% end %>
+</div>
+
+<% if @builder.quote_en.present? %>
+  <div class="card mb-2">
+    <h2>Quote</h2>
+    <p><%= @builder.quote_en %></p>
+  </div>
+<% end %>
+
+<% if @builder.author_en.present? %>
+  <div class="card mb-2">
+    <h2>Author (EN)</h2>
+    <div><%= @builder.author_en %></div>
+  </div>
+<% end %>
+
+<div class="card">
+  <h2>Body (EN)</h2>
+  <div><%= @builder.body_en %></div>
+</div>

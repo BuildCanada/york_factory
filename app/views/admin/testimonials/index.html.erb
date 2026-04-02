@@ -1,0 +1,31 @@
+<div class="page-header">
+  <h1>Testimonials</h1>
+  <a href="<%= new_admin_testimonial_path %>" class="btn btn-primary">New Testimonial</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px"></th>
+      <th>Name</th>
+      <th>Quote</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody data-controller="sortable" data-sortable-url-value="<%= reorder_admin_testimonials_path %>">
+    <% @testimonials.each do |testimonial| %>
+      <tr data-id="<%= testimonial.id %>">
+        <td><span class="drag-handle">&#9776;</span></td>
+        <td><a href="<%= admin_testimonial_path(testimonial) %>"><%= testimonial.name %></a></td>
+        <td class="text-muted"><%= truncate(testimonial.quote_en || "", length: 60) %></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[testimonial.publish_status] %>">
+            <%= testimonial.publish_status.capitalize %>
+          </span>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_testimonial_path(testimonial) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

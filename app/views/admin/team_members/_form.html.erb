@@ -1,0 +1,37 @@
+<%= form_with(model: [:admin, team_member], class: "card") do |f| %>
+  <% if team_member.errors.any? %>
+    <div class="flash flash-alert">
+      <% team_member.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <label>Name</label>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <%= render "admin/shared/translated_text_field", form: f, field: :title, label: "Title" %>
+
+  <div class="form-group">
+    <label>Role</label>
+    <%= f.select :role, %w[board team volunteer advisor].map { |r| [r.capitalize, r] }, { include_blank: "— None —" }, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Twitter URL</label>
+    <%= f.text_field :twitter_url, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>LinkedIn URL</label>
+    <%= f.text_field :linkedin_url, class: "form-control" %>
+  </div>
+
+  <%= render "admin/shared/file_upload", form: f, field: :profile_photo %>
+  <%= render "admin/shared/publish_fields", form: f %>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= team_member.persisted? ? admin_team_member_path(team_member) : admin_team_members_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

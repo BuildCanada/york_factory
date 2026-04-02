@@ -13,3 +13,9 @@ module ActiveSupport
     # Add more helper methods to be used by all tests here...
   end
 end
+
+module AdminTestHelper
+  def sign_in_admin
+    post admin_login_path, params: { email: users(:admin).email, password: "password123" }
+  end
+end

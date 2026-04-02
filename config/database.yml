@@ -19,7 +19,6 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
-
 development:
   primary:
     <<: *default
@@ -64,15 +63,16 @@ development:
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
-  primary:
+  primary: &primary_test
     <<: *default
     database: york_factory_test<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
+    url: <%= ENV["DATABASE_URL"] %>
   queue:
-    <<: *default
+    <<: *primary_test
     database: york_factory_test_queue<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/queue_migrate
   cache:
-    <<: *default
+    <<: *primary_test
     database: york_factory_test_cache<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/cache_migrate
 
@@ -105,16 +105,21 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    url: <%= ENV["DATABASE_URL"] %>
+    username: <%= Rails.application.credentials.database&.fetch(:username) %>
+    password: <%= Rails.application.credentials.database&.fetch(:password) %>
+    database: york_factory
+    host: <%= Rails.application.credentials.database&.fetch(:host) %>
+    port: <%= Rails.application.credentials.database&.fetch(:port) %>
+    sslmode: require
   cache:
     <<: *primary_production
-    database: york_factory_production_cache
+    database: york_factory_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: york_factory_production_queue
+    database: york_factory_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: york_factory_production_cable
+    database: york_factory_cable
     migrations_paths: db/cable_migrate

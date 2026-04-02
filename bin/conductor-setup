@@ -31,9 +31,12 @@ bundle check || bundle install
 
 # Create databases, run migrations, and load queue/cache schemas
 bin/rails db:prepare
+bin/rails db:create:queue 2>/dev/null || true
+bin/rails db:create:cache 2>/dev/null || true
 bin/rails db:schema:load:queue 2>/dev/null || true
 bin/rails db:schema:load:cache 2>/dev/null || true
 bin/rails db:seed
+bin/rails cms:seed 2>/dev/null || true
 
 echo ""
 echo "=== Workspace ready on port ${CONDUCTOR_PORT:-3000} ==="

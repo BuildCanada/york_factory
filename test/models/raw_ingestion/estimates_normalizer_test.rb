@@ -56,7 +56,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
     @ingestion.estimates_normalizer.normalize(csv_content: csv)
 
     # Should be partial (skipped row) or complete if it simply couldn't resolve
-    assert_includes ["partial", "complete"], @ingestion.reload.status
+    assert_includes [ "partial", "complete" ], @ingestion.reload.status
   end
 
   test "strips formatting from amounts" do

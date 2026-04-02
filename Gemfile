@@ -40,9 +40,6 @@ gem "active_job-performs"
 # R2/S3-compatible object storage
 gem "aws-sdk-s3"
 
-# Claude API for entity resolution and NL queries
-gem "anthropic"
-
 # CSV parsing (removed from Ruby 3.4 default gems)
 gem "csv"
 
@@ -50,10 +47,47 @@ gem "csv"
 gem "httpx"
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
-# gem "rack-cors"
+gem "rack-cors"
 
 # Load .env files in development/test
-gem "dotenv-rails", groups: [:development, :test]
+gem "dotenv-rails", groups: [ :development, :test ]
+
+# CMS: i18n with column backend
+gem "mobility", "~> 1.3"
+
+# CMS: lightweight pagination
+gem "pagy", "~> 9.0"
+
+# CMS: authentication
+gem "devise"
+gem "devise-jwt"
+
+# CMS: slug generation with history
+gem "friendly_id", "~> 5.5"
+
+# CMS: rich text editor (replaces Trix)
+gem "lexxy", "~> 0.1.26.beta"
+
+# CMS: unified LLM interface for translations
+gem "ruby_llm"
+
+# Admin: Hotwire for admin pages
+gem "turbo-rails"
+gem "stimulus-rails"
+gem "importmap-rails"
+
+# CMS: Google OAuth
+gem "omniauth-google-oauth2"
+gem "omniauth-rails_csrf_protection"
+
+# CMS: rate limiting
+gem "rack-attack"
+
+# CMS: sanitize HTML input
+gem "rails-html-sanitizer"
+
+# CMS: ActiveStorage variants
+gem "image_processing"
 
 group :development, :test do
   # Compact error pages optimized for AI agents

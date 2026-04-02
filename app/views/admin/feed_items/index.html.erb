@@ -1,0 +1,32 @@
+<div class="page-header">
+  <h1>Feed Items</h1>
+  <a href="<%= new_admin_feed_item_path %>" class="btn btn-primary">New Feed Item</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Type</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @feed_items.each do |item| %>
+      <tr>
+        <td><a href="<%= admin_feed_item_path(item) %>"><%= item.title_en || "Untitled" %></a></td>
+        <td><span class="badge badge-blue"><%= item.item_type %></span></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[item.publish_status] %>">
+            <%= item.publish_status.capitalize %>
+          </span>
+          <% if item.featured? %><span class="badge badge-blue">Featured</span><% end %>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_feed_item_path(item) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

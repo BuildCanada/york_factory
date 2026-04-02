@@ -1,0 +1,56 @@
+<div class="page-header">
+  <h1><%= @memo.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <% if !@memo.published? %>
+      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/memos/<%= @memo.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+    <% end %>
+    <a href="<%= edit_admin_memo_path(@memo) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_memo_path(@memo), data: { turbo_method: :delete, turbo_confirm: "Delete this memo?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <span class="mono"><%= @memo.slug %></span></p>
+  <p><strong>Category:</strong> <%= @memo.category || "—" %></p>
+  <p><strong>Author:</strong> <%= @memo.author&.name || @memo.author_name || "—" %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@memo.publish_status] %>">
+      <%= @memo.publish_status.capitalize %>
+    </span>
+  </p>
+  <p><strong>Published at:</strong> <%= @memo.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @memo.seo_image.attached? %>
+    <p><strong>SEO Image:</strong></p>
+    <%= image_tag url_for(@memo.seo_image), class: "file-preview" %>
+  <% end %>
+</div>
+
+<% if @memo.key_messages_en.present? %>
+  <div class="card mb-2">
+    <h2>Key Messages</h2>
+    <ul>
+      <% @memo.key_messages_en.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<% if @memo.supporters_en.present? %>
+  <div class="card mb-2">
+    <h2>Supporters (EN)</h2>
+    <div><%= @memo.supporters_en %></div>
+  </div>
+<% end %>
+
+<div class="card mb-2">
+  <h2>Body (EN)</h2>
+  <div><%= @memo.body_en %></div>
+</div>
+
+<% if @memo.appendix_en.present? %>
+  <div class="card">
+    <h2>Appendix (EN)</h2>
+    <div><%= @memo.appendix_en %></div>
+  </div>
+<% end %>

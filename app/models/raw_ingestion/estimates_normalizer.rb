@@ -107,16 +107,16 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
 
       if header.match?(/\d{4}-\d{2}\s+Main Estimates/i)
         fiscal_year = header.match(/(\d{4}-\d{2})/)[1]
-        results << [header, fiscal_year, "main"]
+        results << [ header, fiscal_year, "main" ]
       elsif header.match?(/\d{4}-\d{2}\s+Supplementary.*?A/i)
         fiscal_year = header.match(/(\d{4}-\d{2})/)[1]
-        results << [header, fiscal_year, "supp_a"]
+        results << [ header, fiscal_year, "supp_a" ]
       elsif header.match?(/\d{4}-\d{2}\s+Supplementary.*?B/i)
         fiscal_year = header.match(/(\d{4}-\d{2})/)[1]
-        results << [header, fiscal_year, "supp_b"]
+        results << [ header, fiscal_year, "supp_b" ]
       elsif header.match?(/\d{4}-\d{2}\s+Supplementary.*?C/i)
         fiscal_year = header.match(/(\d{4}-\d{2})/)[1]
-        results << [header, fiscal_year, "supp_c"]
+        results << [ header, fiscal_year, "supp_c" ]
       end
     end
 
@@ -128,7 +128,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
         next if header.match?(/Expenditures/i) # Skip actuals
 
         fiscal_year = header.match(/(\d{4}-\d{2})/)[1]
-        results << [header, fiscal_year, "main"]
+        results << [ header, fiscal_year, "main" ]
       end
     end
 

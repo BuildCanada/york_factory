@@ -1,0 +1,25 @@
+<div class="page-header">
+  <h1><%= @team_member.name %></h1>
+  <div class="btn-group">
+    <a href="<%= edit_admin_team_member_path(@team_member) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_team_member_path(@team_member), data: { turbo_method: :delete, turbo_confirm: "Delete this team member?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <span class="mono"><%= @team_member.slug %></span></p>
+  <p><strong>Title:</strong> <%= @team_member.title_en %></p>
+  <p><strong>Role:</strong> <%= @team_member.role&.capitalize %></p>
+  <p><strong>Position:</strong> <%= @team_member.position %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@team_member.publish_status] %>">
+      <%= @team_member.publish_status.capitalize %>
+    </span>
+  </p>
+  <% if @team_member.twitter_url.present? %><p><strong>Twitter:</strong> <%= @team_member.twitter_url %></p><% end %>
+  <% if @team_member.linkedin_url.present? %><p><strong>LinkedIn:</strong> <%= @team_member.linkedin_url %></p><% end %>
+  <% if @team_member.profile_photo.attached? %>
+    <p><strong>Photo:</strong></p>
+    <%= image_tag url_for(@team_member.profile_photo), class: "file-preview" %>
+  <% end %>
+</div>

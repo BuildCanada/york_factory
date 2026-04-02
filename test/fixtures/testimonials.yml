@@ -1,0 +1,13 @@
+published_testimonial:
+  name: Jane Smith
+  quote_en: Build Canada changed my life
+  quote_fr: Bâtir le Canada a changé ma vie
+  position: 1
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_testimonial:
+  name: Draft Person
+  quote_en: Draft quote
+  quote_fr: Citation brouillon
+  position: 2
+  published_at: null

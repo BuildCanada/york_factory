@@ -1,0 +1,32 @@
+published_blog:
+  item_type: blog
+  title_en: Latest Blog Post
+  title_fr: Dernier article de blog
+  subtitle_en: Subtitle here
+  author: John Doe
+  url: https://blog.example.com/post-1
+  source_url: https://blog.example.com/post-1
+  featured: true
+  tags:
+    - policy
+    - housing
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_blog:
+  item_type: blog
+  title_en: Draft Blog Post
+  title_fr: Article brouillon
+  author: Jane Doe
+  url: https://blog.example.com/draft
+  source_url: https://blog.example.com/draft
+  featured: false
+  published_at: null
+
+youtube_item:
+  item_type: youtube
+  title_en: Video Post
+  author: Video Author
+  url: https://youtube.com/watch?v=123
+  source_url: https://youtube.com/watch?v=123
+  featured: false
+  published_at: <%= 1.day.ago.to_fs(:db) %>

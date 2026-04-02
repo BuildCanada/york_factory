@@ -1,0 +1,14 @@
+visible_post:
+  slug: first-post
+  title_en: First Post
+  title_fr: Premier article
+  summary_en: A summary
+  summary_fr: Un résumé
+  hidden: false
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+hidden_post:
+  slug: hidden-post
+  title_en: Hidden Post
+  hidden: true
+  published_at: <%= 1.day.ago.to_fs(:db) %>

@@ -1,0 +1,29 @@
+<div class="page-header">
+  <h1>FAQs</h1>
+  <a href="<%= new_admin_faq_path %>" class="btn btn-primary">New FAQ</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px"></th>
+      <th>Question</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody data-controller="sortable" data-sortable-url-value="<%= reorder_admin_faqs_path %>">
+    <% @faqs.each do |faq| %>
+      <tr data-id="<%= faq.id %>">
+        <td><span class="drag-handle">&#9776;</span></td>
+        <td><a href="<%= admin_faq_path(faq) %>"><%= truncate(faq.question_en || "Untitled", length: 80) %></a></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[faq.publish_status] %>">
+            <%= faq.publish_status.capitalize %>
+          </span>
+        </td>
+        <td class="text-right"><a href="<%= edit_admin_faq_path(faq) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

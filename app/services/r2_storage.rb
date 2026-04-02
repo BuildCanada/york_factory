@@ -1,13 +1,14 @@
 class R2Storage
   def initialize
+    r2 = Rails.application.credentials.r2
     @client = Aws::S3::Client.new(
       region: "auto",
-      endpoint: ENV.fetch("R2_ENDPOINT"),
-      access_key_id: ENV.fetch("R2_ACCESS_KEY_ID"),
-      secret_access_key: ENV.fetch("R2_SECRET_ACCESS_KEY"),
+      endpoint: r2.fetch(:endpoint),
+      access_key_id: r2.fetch(:access_key_id),
+      secret_access_key: r2.fetch(:secret_access_key),
       force_path_style: true
     )
-    @bucket = ENV.fetch("R2_BUCKET")
+    @bucket = r2.fetch(:bucket)
   end
 
   def upload(key:, body:)

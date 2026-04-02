@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<%= form_authenticity_token %>">
   <title>York Factory Admin</title>
+  <%= javascript_importmap_tags %>
+  <%= stylesheet_link_tag "lexxy" %>
   <style>
     :root {
       --bg: #0f1117;
@@ -15,56 +18,157 @@
       --green: #22c55e;
       --yellow: #eab308;
       --red: #ef4444;
+      --sidebar-w: 220px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 2rem; }
-    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--text); }
-    .nav-links { display: flex; gap: 1.5rem; }
-    .nav-links a { color: var(--muted); font-size: 0.9rem; }
-    .nav-links a:hover, .nav-links a.active { color: var(--text); text-decoration: none; }
+    /* Layout */
+    .admin-layout { display: flex; min-height: 100vh; }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    /* Sidebar */
+    .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); padding: 1rem 0; flex-shrink: 0; position: fixed; top: 0; bottom: 0; overflow-y: auto; }
+    .sidebar-brand { padding: 0 1rem 1rem; font-weight: 700; font-size: 1.1rem; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+    .sidebar-section-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; cursor: pointer; user-select: none; }
+    .sidebar-section-toggle:hover { color: var(--text); }
+    .chevron { display: inline-block; transition: transform 0.15s; font-size: 0.6rem; }
+    .chevron.open { transform: rotate(90deg); }
+    .sidebar-links { list-style: none; }
+    .sidebar-links li a { display: block; padding: 0.35rem 1rem 0.35rem 1.5rem; font-size: 0.85rem; color: var(--muted); }
+    .sidebar-links li a:hover, .sidebar-links li a.active { color: var(--text); text-decoration: none; background: rgba(255,255,255,0.04); }
+    .sidebar-divider { border-top: 1px solid var(--border); margin: 0.5rem 0; }
+    .sidebar-bottom { position: absolute; bottom: 0; width: 100%; padding: 0.75rem 1rem; border-top: 1px solid var(--border); }
+    .sidebar-bottom a { font-size: 0.8rem; color: var(--muted); }
+
+    /* Main content */
+    .main-content { margin-left: var(--sidebar-w); flex: 1; padding: 1.5rem 2rem; max-width: calc(100% - var(--sidebar-w)); }
+
+    /* Typography */
     h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
     h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
 
+    /* Grid & Cards */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
     .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
 
+    /* Tables */
     table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
     th { text-align: left; padding: 0.6rem 1rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--surface); }
     td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
     tr:last-child td { border-bottom: none; }
 
+    /* Badges */
     .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
     .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
     .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
     .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
     .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
 
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+    .btn:hover { background: var(--border); text-decoration: none; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn-danger:hover { opacity: 0.9; }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
+    .btn-group { display: flex; gap: 0.5rem; align-items: center; }
+
+    /* Forms */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 500; }
+    .form-control { width: 100%; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .form-control:focus { outline: none; border-color: var(--accent); }
+    textarea.form-control { min-height: 120px; resize: vertical; }
+    select.form-control { appearance: auto; }
+    input[type="file"].form-control { padding: 0.35rem 0.5rem; }
+    input[type="datetime-local"].form-control { color-scheme: dark; }
+
+    /* Tabs (EN/FR) */
+    .tab-bar { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid var(--border); }
+    .tab-btn { padding: 0.4rem 1rem; font-size: 0.8rem; font-weight: 500; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { padding-top: 0.75rem; }
+
+    /* Flash messages */
+    .flash { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
+    .flash-notice { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .flash-alert { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+    /* Header bar */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .page-header h1 { margin-bottom: 0; }
+
+    /* File preview */
+    .file-preview { max-width: 120px; max-height: 80px; border-radius: 4px; margin-top: 0.3rem; }
+
+    /* Drag handle */
+    .drag-handle { cursor: grab; color: var(--muted); padding: 0 0.5rem; }
+
+    /* Utility */
     .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem; }
     .text-muted { color: var(--muted); }
     .text-right { text-align: right; }
     .empty { padding: 2rem; text-align: center; color: var(--muted); }
+    .mt-1 { margin-top: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <span class="nav-brand">York Factory</span>
-    <div class="nav-links">
-      <a href="/admin" class="<%= 'active' if controller.action_name == 'index' %>">Dashboard</a>
-      <a href="/admin/ingestions" class="<%= 'active' if controller.action_name == 'ingestions' %>">Ingestions</a>
-      <a href="/admin/lineage_review" class="<%= 'active' if controller.action_name == 'lineage_review' %>">Lineage Review</a>
-      <a href="/jobs">Jobs</a>
-    </div>
-  </nav>
-  <div class="container">
-    <%= yield %>
+  <div class="admin-layout">
+    <nav class="sidebar" data-controller="sidebar">
+      <div class="sidebar-brand">
+        <a href="/admin" style="color: inherit; text-decoration: none;">York Factory</a>
+      </div>
+
+      <% if @current_admin %>
+        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="pipeline">
+          Pipeline <span class="chevron open">&#9654;</span>
+        </div>
+        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="pipeline">
+          <li><a href="/admin" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'index' %>">Dashboard</a></li>
+          <li><a href="/admin/ingestions" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'ingestions' %>">Ingestions</a></li>
+          <li><a href="/admin/lineage_review" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'lineage_review' %>">Lineage Review</a></li>
+          <li><a href="/admin/jobs">Jobs</a></li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="cms">
+          CMS <span class="chevron open">&#9654;</span>
+        </div>
+        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="cms">
+          <li><a href="/admin/posts" class="<%= 'active' if controller_name == 'posts' %>">Posts</a></li>
+          <li><a href="/admin/memos" class="<%= 'active' if controller_name == 'memos' %>">Memos</a></li>
+          <li><a href="/admin/builders" class="<%= 'active' if controller_name == 'builders' %>">Builders</a></li>
+          <li><a href="/admin/team_members" class="<%= 'active' if controller_name == 'team_members' %>">Team</a></li>
+          <li><a href="/admin/tools" class="<%= 'active' if controller_name == 'tools' %>">Tools</a></li>
+          <li><a href="/admin/faqs" class="<%= 'active' if controller_name == 'faqs' %>">FAQs</a></li>
+          <li><a href="/admin/feed_items" class="<%= 'active' if controller_name == 'feed_items' %>">Feed</a></li>
+          <li><a href="/admin/testimonials" class="<%= 'active' if controller_name == 'testimonials' %>">Testimonials</a></li>
+          <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
+        </ul>
+
+        <div class="sidebar-bottom">
+          <span class="text-muted" style="font-size: 0.8rem;"><%= @current_admin.name || @current_admin.email %></span>
+          <%= link_to "Logout", admin_logout_path, data: { turbo_method: :delete }, style: "float: right;" %>
+        </div>
+      <% end %>
+    </nav>
+
+    <main class="main-content">
+      <% if flash[:notice] %>
+        <div class="flash flash-notice"><%= flash[:notice] %></div>
+      <% end %>
+      <% if flash[:alert] %>
+        <div class="flash flash-alert"><%= flash[:alert] %></div>
+      <% end %>
+      <%= yield %>
+    </main>
   </div>
 </body>
 </html>

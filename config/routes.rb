@@ -82,5 +82,11 @@ Rails.application.routes.draw do
       post :retranslate, on: :member
     end
     resources :subscribers, only: [ :index ]
+
+    namespace :metrics do
+      resources :twitter_stats, only: [ :index ] do
+        post :import, on: :collection
+      end
+    end
   end
 end

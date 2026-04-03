@@ -153,6 +153,15 @@
           <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
         </ul>
 
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="metrics">
+          Metrics <span class="chevron open">&#9654;</span>
+        </div>
+        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="metrics">
+          <li><a href="/admin/metrics/twitter_stats" class="<%= 'active' if controller_name == 'twitter_stats' %>">Twitter Stats</a></li>
+        </ul>
+
         <div class="sidebar-bottom">
           <span class="text-muted" style="font-size: 0.8rem;"><%= @current_admin.name || @current_admin.email %></span>
           <%= link_to "Logout", admin_logout_path, data: { turbo_method: :delete }, style: "float: right;" %>

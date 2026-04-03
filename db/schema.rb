@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_26_200001) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_03_210357) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -223,6 +223,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_200001) do
     t.index ["featured"], name: "index_memos_on_featured"
     t.index ["published_at"], name: "index_memos_on_published_at"
     t.index ["slug"], name: "index_memos_on_slug", unique: true
+  end
+
+  create_table "metrics_twitter_stats", force: :cascade do |t|
+    t.string "account", null: false
+    t.integer "bookmarks", default: 0, null: false
+    t.integer "create_post", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.date "date", null: false
+    t.integer "engagements", default: 0, null: false
+    t.integer "impressions", default: 0, null: false
+    t.integer "likes", default: 0, null: false
+    t.integer "media_views", default: 0, null: false
+    t.integer "new_follows", default: 0, null: false
+    t.integer "profile_visits", default: 0, null: false
+    t.integer "replies", default: 0, null: false
+    t.integer "reposts", default: 0, null: false
+    t.integer "shares", default: 0, null: false
+    t.integer "unfollows", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.integer "video_views", default: 0, null: false
+    t.index ["account", "date"], name: "index_metrics_twitter_stats_on_account_and_date", unique: true
   end
 
   create_table "organization_aliases", force: :cascade do |t|

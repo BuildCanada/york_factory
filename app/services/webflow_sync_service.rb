@@ -109,8 +109,11 @@ class WebflowSyncService
       category = CATEGORY_MAP[category_hash]
 
       # Resolve author relationships
-      author = fd["builder"] ? @team_id_map[fd["builder"]] : nil
-      co_author = fd["builder-2"] ? @team_id_map[fd["builder-2"]] : nil
+      # Webflow reference fields may return a string ID or an array of IDs
+      builder_id = Array(fd["builder"]).first
+      co_builder_id = Array(fd["builder-2"]).first
+      author = builder_id ? @team_id_map[builder_id] : nil
+      co_author = co_builder_id ? @team_id_map[co_builder_id] : nil
 
       # Key messages
       key_messages = (1..4).filter_map { |i|

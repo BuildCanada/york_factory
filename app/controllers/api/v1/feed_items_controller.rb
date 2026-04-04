@@ -69,13 +69,13 @@ module Api
           url: item.url,
           featured: item.featured,
           tags: item.tags,
-          image_url: item.image.attached? ? url_for(item.image) : nil
+          image_url: image_url(item.image)
         }
         if full
           data[:body] = item.body.to_s
           data[:embed_code] = item.embed_code
           data[:source_url] = item.source_url
-          data[:author_photo_url] = item.author_photo.attached? ? url_for(item.author_photo) : nil
+          data[:author_photo_url] = image_url(item.author_photo)
         end
         data
       end

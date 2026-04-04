@@ -64,7 +64,7 @@ module Api
           title: post.title,
           summary: post.summary,
           published_at: post.published_at,
-          seo_image_url: post.seo_image.attached? ? url_for(post.seo_image) : nil
+          seo_image_url: image_url(post.seo_image)
         }
         data[:body] = post.body.to_s if full
         data

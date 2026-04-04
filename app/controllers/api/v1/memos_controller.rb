@@ -70,8 +70,8 @@ module Api
           category: memo.category,
           featured: memo.featured,
           published_at: memo.published_at,
-          seo_image_url: memo.seo_image.attached? ? url_for(memo.seo_image) : nil,
-          author: memo.author ? { id: memo.author.id, name: memo.author.name, slug: memo.author.slug } : nil
+          seo_image_url: image_url(memo.seo_image),
+          author: memo.author ? { id: memo.author.id, name: memo.author.name, slug: memo.author.slug, profile_photo_url: image_url(memo.author.profile_photo) } : nil
         }
 
         if full

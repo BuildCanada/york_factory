@@ -284,13 +284,11 @@ class WebflowSyncService
     return if url.blank?
     return if record.send(attachment_name).attached?
 
-    uri = URI(url)
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-      http.request(Net::HTTP::Get.new(uri))
-    end
-    return unless response.is_a?(Net::HTTPSuccess)
+    response = fetch_image(url)
+    return unless response
 
     content_type = response["content-type"] || "image/png"
+    uri = URI(url)
     filename = File.basename(uri.path).gsub("%20", "-")
     filename += image_extension(content_type) unless filename.include?(".")
 
@@ -301,6 +299,22 @@ class WebflowSyncService
     )
   rescue => e
     @errors << "Image attach failed (#{url}): #{e.message}"
+  end
+
+  def fetch_image(url, redirect_limit = 5)
+    return nil if redirect_limit == 0
+
+    uri = URI(url)
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+      http.request(Net::HTTP::Get.new(uri))
+    end
+
+    case response
+    when Net::HTTPSuccess
+      response
+    when Net::HTTPRedirection
+      fetch_image(response["location"], redirect_limit - 1)
+    end
   end
 
   def image_extension(content_type)

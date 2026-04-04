@@ -70,7 +70,7 @@ module Api
           twitter_url: member.twitter_url,
           linkedin_url: member.linkedin_url,
           position: member.position,
-          profile_photo_url: member.profile_photo.attached? ? url_for(member.profile_photo) : nil
+          profile_photo_url: image_url(member.profile_photo)
         }
       end
     end

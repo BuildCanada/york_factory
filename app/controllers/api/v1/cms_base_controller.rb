@@ -7,6 +7,12 @@ module Api
 
       private
 
+      def image_url(attachment)
+        return nil unless attachment.attached?
+
+        rails_storage_proxy_url(attachment)
+      end
+
       def preview_mode?
         params[:preview_token].present? &&
           ENV["DRAFT_MODE_SECRET"].present? &&

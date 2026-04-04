@@ -62,7 +62,7 @@ module Api
           title: builder.title,
           byline: builder.byline,
           quote: builder.quote,
-          image_url: builder.image.attached? ? url_for(builder.image) : nil
+          image_url: image_url(builder.image)
         }
         if full
           data[:body] = builder.body.to_s

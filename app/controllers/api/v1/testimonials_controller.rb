@@ -51,8 +51,8 @@ module Api
           name: testimonial.name,
           quote: testimonial.quote,
           position: testimonial.position,
-          profile_photo_url: testimonial.profile_photo.attached? ? url_for(testimonial.profile_photo) : nil,
-          splash_photo_url: testimonial.splash_photo.attached? ? url_for(testimonial.splash_photo) : nil
+          profile_photo_url: image_url(testimonial.profile_photo),
+          splash_photo_url: image_url(testimonial.splash_photo)
         }
       end
     end

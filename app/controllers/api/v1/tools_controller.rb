@@ -71,7 +71,7 @@ module Api
           position: tool.position,
           accent_color: tool.accent_color,
           size: tool.size,
-          image_url: tool.image.attached? ? url_for(tool.image) : nil
+          image_url: image_url(tool.image)
         }
       end
     end

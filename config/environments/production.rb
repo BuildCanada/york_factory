@@ -55,15 +55,16 @@ Rails.application.configure do
   config.action_mailer.raise_delivery_errors = true
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: Rails.application.credentials.mailer.fetch(:host) }
+  mailer_config = Rails.application.credentials.mailer || {}
+  config.action_mailer.default_url_options = { host: mailer_config.fetch(:host, "mail.example.com") }
 
   # Amazon SES via SMTP
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-    address: Rails.application.credentials.mailer.fetch(:smtp_address),
+    address: mailer_config.fetch(:smtp_address, "email-smtp.ca-central-1.amazonaws.com"),
     port: 587,
-    user_name: Rails.application.credentials.mailer.fetch(:smtp_username),
-    password: Rails.application.credentials.mailer.fetch(:smtp_password),
+    user_name: mailer_config[:smtp_username],
+    password: mailer_config[:smtp_password],
     authentication: :login,
     enable_starttls_auto: true
   }

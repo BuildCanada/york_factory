@@ -20,7 +20,7 @@ module Metrics
       "Profile visits" => :profile_visits,
       "Create Post" => :create_post,
       "Video views" => :video_views,
-      "Media views" => :media_views,
+      "Media views" => :media_views
     }.freeze
 
     validates :account, presence: true, inclusion: { in: ACCOUNTS }
@@ -33,7 +33,7 @@ module Metrics
     class << self
       def upsert_from_csv(account, csv_content)
         rows = parse_csv(csv_content)
-        return { inserted: 0, updated: 0, errors: ["No data rows found"] } if rows.empty?
+        return { inserted: 0, updated: 0, errors: [ "No data rows found" ] } if rows.empty?
 
         inserted = 0
         updated = 0

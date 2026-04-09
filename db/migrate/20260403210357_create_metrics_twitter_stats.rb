@@ -20,6 +20,6 @@ class CreateMetricsTwitterStats < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :metrics_twitter_stats, [:account, :date], unique: true
+    add_index :metrics_twitter_stats, [ :account, :date ], unique: true
   end
 end

@@ -1,7 +1,7 @@
 module Admin
   class BaseController < ActionController::Base
     layout "admin"
-    include Pagy::Backend
+    include Pagy::Method
 
     before_action :require_admin!
 

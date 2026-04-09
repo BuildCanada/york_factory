@@ -56,7 +56,7 @@ gem "dotenv-rails", groups: [ :development, :test ]
 gem "mobility", "~> 1.3"
 
 # CMS: lightweight pagination
-gem "pagy", "~> 9.0"
+gem "pagy", "~> 43.4"
 
 # CMS: authentication
 gem "devise"
@@ -66,7 +66,7 @@ gem "devise-jwt"
 gem "friendly_id", "~> 5.5"
 
 # CMS: rich text editor (replaces Trix)
-gem "lexxy", "~> 0.1.26.beta"
+gem "lexxy", "~> 0.9.3.beta"
 
 # CMS: unified LLM interface for translations
 gem "ruby_llm"

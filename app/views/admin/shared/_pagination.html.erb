@@ -1,8 +1,8 @@
 <%# locals: (pagy:) %>
 <% if pagy.pages > 1 %>
   <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
-    <% if pagy.prev %>
-      <a href="<%= request.path %>?page=<%= pagy.prev %>" class="btn btn-sm">&laquo; Prev</a>
+    <% if pagy.previous %>
+      <a href="<%= request.path %>?page=<%= pagy.previous %>" class="btn btn-sm">&laquo; Prev</a>
     <% end %>
     <span class="text-muted" style="font-size: 0.8rem;">
       Page <%= pagy.page %> of <%= pagy.pages %> (<%= pagy.count %> total)

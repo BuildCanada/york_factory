@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   devise_for :users, path: "", path_names: { sign_in: "login", sign_out: "logout" },
     controllers: { sessions: "users/sessions" },
-    skip: [ :registrations, :passwords, :confirmations, :unlocks ]
+    skip: [ :registrations, :confirmations, :unlocks ]
 
   get "up" => "rails/health#show", as: :rails_health_check
 
@@ -82,7 +82,9 @@ Rails.application.routes.draw do
       post :retranslate, on: :member
     end
     resources :subscribers, only: [ :index ]
-    resources :users, only: %i[index new create edit update destroy]
+    resources :users, only: %i[index new create edit update destroy] do
+      post :send_password_reset, on: :member
+    end
 
     namespace :metrics do
       resources :twitter_stats, only: [ :index ] do

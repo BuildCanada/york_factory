@@ -46,19 +46,22 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Create
-  test "create adds a new admin user" do
+  test "create adds a new admin user and sends password reset" do
     assert_difference "User.count", 1 do
-      post admin_users_path, params: { user: { name: "New Admin", email: "new@buildcanada.com", password: "securepass", role: "admin" } }
+      post admin_users_path, params: { user: { name: "New Admin", email: "new@buildcanada.com", role: "admin" } }
     end
     assert_redirected_to admin_users_path
+    follow_redirect!
+    assert_select ".flash-notice", /password reset/i
 
     user = User.find_by(email: "new@buildcanada.com")
     assert user.admin?
+    assert user.reset_password_token.present? || user.reset_password_sent_at.present?
   end
 
   test "create adds a member user" do
     assert_difference "User.count", 1 do
-      post admin_users_path, params: { user: { name: "New Member", email: "newmember@example.com", password: "securepass", role: "member", postal_code: "K1A 0A6" } }
+      post admin_users_path, params: { user: { name: "New Member", email: "newmember@example.com", role: "member", postal_code: "K1A 0A6" } }
     end
     assert_redirected_to admin_users_path
 
@@ -69,30 +72,38 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "create member without required fields fails" do
     assert_no_difference "User.count" do
-      post admin_users_path, params: { user: { email: "incomplete@example.com", password: "securepass", role: "member" } }
+      post admin_users_path, params: { user: { email: "incomplete@example.com", role: "member" } }
     end
     assert_response :unprocessable_entity
   end
 
   test "create admin without name and postal_code succeeds" do
     assert_difference "User.count", 1 do
-      post admin_users_path, params: { user: { email: "noadmin@buildcanada.com", password: "securepass", role: "admin" } }
+      post admin_users_path, params: { user: { email: "noadmin@buildcanada.com", role: "admin" } }
     end
     assert_redirected_to admin_users_path
   end
 
   test "create with invalid data re-renders form" do
     assert_no_difference "User.count" do
-      post admin_users_path, params: { user: { name: "No Email", email: "", password: "securepass", role: "admin" } }
+      post admin_users_path, params: { user: { name: "No Email", email: "", role: "admin" } }
     end
     assert_response :unprocessable_entity
   end
 
   test "create with duplicate email re-renders form" do
     assert_no_difference "User.count" do
-      post admin_users_path, params: { user: { name: "Dup", email: users(:admin).email, password: "securepass", role: "admin" } }
+      post admin_users_path, params: { user: { name: "Dup", email: users(:admin).email, role: "admin" } }
     end
     assert_response :unprocessable_entity
+  end
+
+  test "password param is ignored in create" do
+    assert_difference "User.count", 1 do
+      post admin_users_path, params: { user: { email: "pwtest@buildcanada.com", role: "admin", password: "attacker_password" } }
+    end
+    user = User.find_by(email: "pwtest@buildcanada.com")
+    assert_not user.valid_password?("attacker_password")
   end
 
   # Edit
@@ -116,9 +127,9 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Name", users(:member).reload.name
   end
 
-  test "update with blank password keeps existing password" do
+  test "update ignores password param" do
     original_password = users(:member).encrypted_password
-    patch admin_user_path(users(:member)), params: { user: { name: "Same Pass", password: "" } }
+    patch admin_user_path(users(:member)), params: { user: { name: "Same Pass", password: "newpassword123" } }
     assert_redirected_to admin_users_path
     assert_equal original_password, users(:member).reload.encrypted_password
   end
@@ -150,6 +161,21 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "123 Main St", user.address_line1
     assert_equal "Ottawa", user.city
     assert_equal "ON", user.province
+  end
+
+  # Send password reset
+  test "send password reset sends email and redirects" do
+    post send_password_reset_admin_user_path(users(:member))
+    assert_redirected_to admin_users_path
+    follow_redirect!
+    assert_select ".flash-notice", /password reset/i
+  end
+
+  test "send password reset for own account redirects with alert" do
+    post send_password_reset_admin_user_path(users(:admin))
+    assert_redirected_to admin_users_path
+    follow_redirect!
+    assert_select ".flash-alert", /cannot manage your own/i
   end
 
   # Destroy — admin cannot delete
@@ -198,7 +224,7 @@ class Admin::UsersControllerSuperadminTest < ActionDispatch::IntegrationTest
 
   test "superadmin can create a superadmin user" do
     assert_difference "User.count", 1 do
-      post admin_users_path, params: { user: { email: "newsuper@buildcanada.com", password: "securepass", role: "superadmin" } }
+      post admin_users_path, params: { user: { email: "newsuper@buildcanada.com", role: "superadmin" } }
     end
     assert_redirected_to admin_users_path
     user = User.find_by(email: "newsuper@buildcanada.com")

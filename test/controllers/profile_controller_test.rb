@@ -44,10 +44,10 @@ class ProfileControllerTest < ActionDispatch::IntegrationTest
     assert_equal "V5K 0A1", user.postal_code
   end
 
-  test "update with blank password keeps existing password" do
+  test "update ignores password param" do
     post user_session_path, params: { email: users(:member).email, password: "password123" }
     original_password = users(:member).encrypted_password
-    patch profile_path, params: { user: { name: "Same Pass", password: "" } }
+    patch profile_path, params: { user: { name: "Same Pass", password: "newpassword123" } }
     assert_redirected_to profile_path
     assert_equal original_password, users(:member).reload.encrypted_password
   end

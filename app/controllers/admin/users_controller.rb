@@ -1,7 +1,7 @@
 module Admin
   class UsersController < BaseController
-    before_action :set_user, only: %i[edit update destroy]
-    before_action :prevent_self_management!, only: %i[edit update destroy]
+    before_action :set_user, only: %i[edit update destroy send_password_reset]
+    before_action :prevent_self_management!, only: %i[edit update destroy send_password_reset]
     before_action :require_superadmin!, only: %i[destroy]
 
     def index
@@ -18,10 +18,11 @@ module Admin
 
     def create
       @user = User.new(user_params)
-      @user.password = user_params[:password]
+      @user.password = Devise.friendly_token(20)
 
       if @user.save
-        redirect_to admin_users_path, notice: "User created."
+        @user.send_reset_password_instructions
+        redirect_to admin_users_path, notice: "User created. Password reset email sent."
       else
         render :new, status: :unprocessable_entity
       end
@@ -38,6 +39,11 @@ module Admin
       else
         render :edit, status: :unprocessable_entity
       end
+    end
+
+    def send_password_reset
+      @user.send_reset_password_instructions
+      redirect_to admin_users_path, notice: "Password reset email sent to #{@user.email}."
     end
 
     def destroy
@@ -62,7 +68,7 @@ module Admin
     end
 
     def user_params
-      permitted = params.require(:user).permit(:name, :email, :password, :role,
+      permitted = params.require(:user).permit(:name, :email, :role,
         :postal_code, :address_line1, :address_line2, :city, :province)
 
       if permitted[:role] == "superadmin" && !current_user.superadmin?

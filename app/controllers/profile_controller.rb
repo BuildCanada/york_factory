@@ -28,7 +28,7 @@ class ProfileController < ActionController::Base
   end
 
   def profile_params
-    params.require(:user).permit(:name, :email, :password,
+    params.require(:user).permit(:name, :email,
       :postal_code, :address_line1, :address_line2, :city, :province)
   end
 end

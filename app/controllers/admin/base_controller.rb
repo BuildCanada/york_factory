@@ -8,8 +8,11 @@ module Admin
     private
 
     def require_admin!
-      @current_admin = User.find_by(id: session[:admin_user_id])
-      redirect_to admin_login_path unless @current_admin&.admin?
+      unless user_signed_in?
+        redirect_to new_user_session_path and return
+      end
+
+      redirect_to new_user_session_path, alert: "Not authorized." unless current_user.admin?
     end
 
     def pagy_metadata(pagy)

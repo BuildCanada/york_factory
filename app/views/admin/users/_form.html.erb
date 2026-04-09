@@ -1,0 +1,64 @@
+<%= form_with(model: user, url: user.persisted? ? admin_user_path(user) : admin_users_path) do |f| %>
+  <% if user.errors.any? %>
+    <div class="flash flash-alert">
+      <% user.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :role %>
+    <% roles = [["Member", "member"], ["Admin", "admin"]] %>
+    <% roles << ["Superadmin", "superadmin"] if current_user.superadmin? %>
+    <%= f.select :role, roles, {}, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :email %>
+    <%= f.email_field :email, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password, user.persisted? ? "Password (leave blank to keep current)" : "Password" %>
+    <%= f.password_field :password, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :postal_code %>
+    <%= f.text_field :postal_code, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :address_line1, "Address Line 1" %>
+    <%= f.text_field :address_line1, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :address_line2, "Address Line 2" %>
+    <%= f.text_field :address_line2, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :city %>
+    <%= f.text_field :city, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :province %>
+    <%= f.text_field :province, class: "form-control" %>
+  </div>
+
+  <div class="btn-group">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= admin_users_path %>" class="btn">Cancel</a>
+    <% if user.persisted? && current_user.superadmin? %>
+      <%= button_to "Delete", admin_user_path(user), method: :delete, class: "btn btn-danger", data: { turbo_confirm: "Are you sure?" } %>
+    <% end %>
+  </div>
+<% end %>

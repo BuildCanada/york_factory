@@ -18,7 +18,7 @@ module Api
               id: user.id,
               email: user.email,
               name: user.name,
-              admin: user.admin?,
+              role: user.role,
               avatar_url: user.avatar_url
             }
           }

@@ -14,6 +14,7 @@ module YorkFactory
     config.i18n.available_locales = %i[en fr]
     config.i18n.default_locale = :en
 
+    config.middleware.use Rack::MethodOverride
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore, key: "_york_factory_session"
     config.middleware.use ActionDispatch::Flash

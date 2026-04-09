@@ -1,13 +1,27 @@
+superadmin:
+  email: super@buildcanada.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  name: Super Admin
+  role: superadmin
+
 admin:
   email: admin@buildcanada.com
   encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
   name: Admin User
-  admin: true
+  role: admin
   provider: google_oauth2
   uid: "123456"
+
+member:
+  email: member@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  name: Member User
+  role: member
+  postal_code: "K1A 0A6"
 
 regular:
   email: user@example.com
   encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
   name: Regular User
-  admin: false
+  role: member
+  postal_code: "V6B 1A1"

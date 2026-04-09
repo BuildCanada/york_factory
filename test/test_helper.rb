@@ -16,6 +16,6 @@ end
 
 module AdminTestHelper
   def sign_in_admin
-    post admin_login_path, params: { email: users(:admin).email, password: "password123" }
+    post user_session_path, params: { email: users(:admin).email, password: "password123" }
   end
 end

@@ -7,7 +7,7 @@ class TestimonialTest < ActiveSupport::TestCase
   test "requires name" do
     t = Testimonial.new
     assert_not t.valid?
-    assert_includes t.errors[:name], "can't be blank"
+    assert t.errors.where(:name, :blank).any?, "expected a blank error on name"
   end
 
   test "valid testimonial with name" do

@@ -12,7 +12,7 @@ class MemoTest < ActiveSupport::TestCase
   test "requires a slug" do
     memo = Memo.new
     assert_not memo.valid?
-    assert_includes memo.errors[:slug], "can't be blank"
+    assert memo.errors.where(:slug, :blank).any?, "expected a blank error on slug"
   end
 
   test "slug is generated from title_en via FriendlyId" do

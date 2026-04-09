@@ -1,0 +1,22 @@
+<div style="max-width: 360px; margin: 4rem auto;">
+  <h1 style="text-align: center; margin-bottom: 2rem;">Reset Password</h1>
+
+  <% if flash[:alert] %>
+    <div class="flash flash-alert"><%= flash[:alert] %></div>
+  <% end %>
+  <% if flash[:notice] %>
+    <div class="flash flash-notice"><%= flash[:notice] %></div>
+  <% end %>
+
+  <%= form_tag(user_password_path, method: :post) do %>
+    <div class="form-group">
+      <label for="user_email">Email</label>
+      <input type="email" name="user[email]" id="user_email" class="form-control" autofocus required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Reset Instructions</button>
+  <% end %>
+
+  <div style="text-align: center; margin-top: 1rem;">
+    <a href="<%= new_user_session_path %>">Back to Sign In</a>
+  </div>
+</div>

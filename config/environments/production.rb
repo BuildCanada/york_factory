@@ -56,7 +56,7 @@ Rails.application.configure do
 
   # Set host to be used by links generated in mailer templates.
   mailer_config = Rails.application.credentials.mailer || {}
-  config.action_mailer.default_url_options = { host: mailer_config.fetch(:host, "mail.example.com") }
+  config.action_mailer.default_url_options = { host: mailer_config.fetch(:host, "mail.example.com"), protocol: "https" }
 
   # Amazon SES via SMTP
   config.action_mailer.delivery_method = :smtp

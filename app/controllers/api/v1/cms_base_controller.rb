@@ -3,7 +3,7 @@ module Api
     class CmsBaseController < ApplicationController
       include Localizable
       include Authenticatable
-      include Pagy::Backend
+      include Pagy::Method
 
       private
 

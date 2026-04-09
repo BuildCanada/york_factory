@@ -192,6 +192,6 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
     reset!
     get admin_posts_path
     assert_response :redirect
-    assert_redirected_to admin_login_path
+    assert_redirected_to new_user_session_path
   end
 end

@@ -1,5 +1,8 @@
 Rails.application.routes.draw do
-  devise_for :users, skip: :all
+  devise_for :users, path: "", path_names: { sign_in: "login", sign_out: "logout" },
+    controllers: { sessions: "users/sessions", passwords: "users/passwords" },
+    skip: [ :registrations, :confirmations, :unlocks ]
+
   get "up" => "rails/health#show", as: :rails_health_check
 
   namespace :api do
@@ -34,21 +37,18 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    authenticate = ->(request) {
-      user_id = request.session[:admin_user_id]
-      user_id && User.find_by(id: user_id)&.admin?
+    superadmin_only = ->(request) {
+      user = request.env["warden"].user(:user)
+      user&.superadmin?
     }
-    constraints(authenticate) do
+    constraints(superadmin_only) do
       mount MissionControl::Jobs::Engine, at: "jobs"
     end
 
     full = %i[index show new create edit update destroy]
 
-    get "login", to: "sessions#new", as: :login
-    post "login", to: "sessions#create"
-    match "logout", to: "sessions#destroy", as: :logout, via: [ :get, :delete ]
-
     get "/", to: "dashboard#index", as: :root
+
     get "ingestions", to: "dashboard#ingestions"
     get "lineage_review", to: "dashboard#lineage_review"
     post "webflow_sync", to: "dashboard#webflow_sync"
@@ -82,6 +82,7 @@ Rails.application.routes.draw do
       post :retranslate, on: :member
     end
     resources :subscribers, only: [ :index ]
+    resources :users, only: %i[index new create edit update destroy]
 
     namespace :metrics do
       resources :twitter_stats, only: [ :index ] do
@@ -89,4 +90,8 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  # Member profile
+  get "profile", to: "profile#show", as: :profile
+  patch "profile", to: "profile#update"
 end

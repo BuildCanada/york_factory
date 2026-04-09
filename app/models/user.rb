@@ -4,7 +4,14 @@ class User < ApplicationRecord
          jwt_revocation_strategy: JwtDenylist,
          omniauth_providers: [ :google_oauth2 ]
 
+  enum :role, { member: "member", admin: "admin", superadmin: "superadmin" }
+
+  def admin?
+    role.in?(%w[admin superadmin])
+  end
+
   validates :email, presence: true, uniqueness: true
+  validates :name, :postal_code, presence: true, if: :member?
 
   def self.from_google(auth)
     where(provider: auth[:provider], uid: auth[:uid]).first_or_create do |user|

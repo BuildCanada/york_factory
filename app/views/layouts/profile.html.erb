@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<%= form_authenticity_token %>">
+  <title>Build Canada — Profile</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d37;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .topbar-brand { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .topbar-right span { font-size: 0.85rem; color: var(--muted); }
+    .topbar-right a { font-size: 0.85rem; }
+    .main-content { max-width: 600px; margin: 2rem auto; padding: 0 1.5rem; }
+    .page-header { margin-bottom: 1.25rem; }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+    .btn:hover { background: var(--border); text-decoration: none; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-group { display: flex; gap: 0.5rem; align-items: center; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 500; }
+    .form-control { width: 100%; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .form-control:focus { outline: none; border-color: var(--accent); }
+    .flash { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
+    .flash-notice { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .flash-alert { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/profile" class="topbar-brand">Build Canada</a>
+    <div class="topbar-right">
+      <span><%= current_user.name || current_user.email %></span>
+      <%= button_to "Logout", destroy_user_session_path, method: :delete, style: "background: none; border: none; color: var(--accent); font-size: inherit; cursor: pointer; padding: 0;" %>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <% if flash[:notice] %>
+      <div class="flash flash-notice"><%= flash[:notice] %></div>
+    <% end %>
+    <% if flash[:alert] %>
+      <div class="flash flash-alert"><%= flash[:alert] %></div>
+    <% end %>
+    <%= yield %>
+  </main>
+</body>
+</html>

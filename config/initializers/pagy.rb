@@ -1,1 +1,1 @@
-Pagy::DEFAULT[:limit] = 20
+# Pagy defaults: limit 20 (matches Pagy::DEFAULT)

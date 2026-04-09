@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_03_210357) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_06_043854) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -371,8 +371,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_03_210357) do
   end
 
   create_table "users", force: :cascade do |t|
-    t.boolean "admin", default: false
+    t.string "address_line1"
+    t.string "address_line2"
     t.string "avatar_url"
+    t.string "city"
     t.datetime "created_at", null: false
     t.datetime "current_sign_in_at"
     t.string "current_sign_in_ip"
@@ -381,10 +383,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_03_210357) do
     t.datetime "last_sign_in_at"
     t.string "last_sign_in_ip"
     t.string "name"
+    t.string "postal_code"
     t.string "provider"
+    t.string "province"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
+    t.string "role", default: "member", null: false
     t.integer "sign_in_count", default: 0, null: false
     t.string "uid"
     t.datetime "updated_at", null: false

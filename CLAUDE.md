@@ -61,3 +61,8 @@ Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
 - `R2_ACTIVE_STORAGE_BUCKET` — R2 bucket for ActiveStorage uploads (CMS images)
 - `CORS_ORIGINS` — Allowed CORS origins (comma-separated, defaults to *)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth for admin
+- Mailer/SES config is read from Rails credentials under `mailer`:
+  - `mailer.smtp_address` — SES SMTP endpoint (defaults to `email-smtp.ca-central-1.amazonaws.com`)
+  - `mailer.smtp_username`, `mailer.smtp_password` — SES SMTP credentials (IAM SMTP user)
+  - `mailer.host` — Host for mailer URL generation (defaults to `api.buildcanada.com`)
+  - `mailer.sender` — From address for Devise emails (defaults to `no-reply@buildcanada.com`)

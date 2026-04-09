@@ -28,14 +28,14 @@ class UserTest < ActiveSupport::TestCase
   test "validates email presence and uniqueness" do
     user = User.new(role: "admin", password: "password123")
     assert_not user.valid?
-    assert_includes user.errors[:email], "can't be blank"
+    assert user.errors.where(:email, :blank).any?, "expected a blank error on email"
   end
 
   test "validates name and postal_code for members" do
     user = User.new(email: "test@example.com", password: "password123", role: "member")
     assert_not user.valid?
-    assert_includes user.errors[:name], "can't be blank"
-    assert_includes user.errors[:postal_code], "can't be blank"
+    assert user.errors.where(:name, :blank).any?, "expected a blank error on name"
+    assert user.errors.where(:postal_code, :blank).any?, "expected a blank error on postal_code"
   end
 
   test "admin does not require name or postal_code" do

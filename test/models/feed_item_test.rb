@@ -12,26 +12,26 @@ class FeedItemTest < ActiveSupport::TestCase
   test "requires item_type" do
     item = FeedItem.new(source_url: "https://example.com/unique")
     assert_not item.valid?
-    assert_includes item.errors[:item_type], "can't be blank"
+    assert item.errors.where(:item_type, :blank).any?, "expected a blank error on item_type"
   end
 
   test "validates item_type inclusion" do
     item = FeedItem.new(item_type: "invalid", source_url: "https://example.com/unique2")
     assert_not item.valid?
-    assert_includes item.errors[:item_type], "is not included in the list"
+    assert item.errors.where(:item_type, :inclusion).any?, "expected an inclusion error on item_type"
   end
 
   test "requires unique source_url" do
     existing = feed_items(:published_blog)
     item = FeedItem.new(item_type: "blog", source_url: existing.source_url)
     assert_not item.valid?
-    assert_includes item.errors[:source_url], "has already been taken"
+    assert item.errors.where(:source_url, :taken).any?, "expected a taken error on source_url"
   end
 
   test "requires source_url presence" do
     item = FeedItem.new(item_type: "blog")
     assert_not item.valid?
-    assert_includes item.errors[:source_url], "can't be blank"
+    assert item.errors.where(:source_url, :blank).any?, "expected a blank error on source_url"
   end
 
   test "featured scope returns only featured items" do

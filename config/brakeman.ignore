@@ -26,6 +26,15 @@
       "file": "app/controllers/api/v1/team_members_controller.rb",
       "line": 58,
       "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "75b6185ab6ddb09bf9ae000ed0dcba379528307d1a12c4a386f2b65e46863ca8",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 66,
+      "note": "User#role assignment is guarded: only superadmins can set superadmin role, enforced in user_params"
     }
   ],
   "updated": "2026-03-26",

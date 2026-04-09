@@ -163,21 +163,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "ON", user.province
   end
 
-  # Send password reset
-  test "send password reset sends email and redirects" do
-    post send_password_reset_admin_user_path(users(:member))
-    assert_redirected_to admin_users_path
-    follow_redirect!
-    assert_select ".flash-notice", /password reset/i
-  end
-
-  test "send password reset for own account redirects with alert" do
-    post send_password_reset_admin_user_path(users(:admin))
-    assert_redirected_to admin_users_path
-    follow_redirect!
-    assert_select ".flash-alert", /cannot manage your own/i
-  end
-
   # Destroy — admin cannot delete
   test "admin cannot destroy a user" do
     assert_no_difference "User.count" do

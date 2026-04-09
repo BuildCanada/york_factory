@@ -1,7 +1,7 @@
 module Admin
   class UsersController < BaseController
-    before_action :set_user, only: %i[edit update destroy send_password_reset]
-    before_action :prevent_self_management!, only: %i[edit update destroy send_password_reset]
+    before_action :set_user, only: %i[edit update destroy]
+    before_action :prevent_self_management!, only: %i[edit update destroy]
     before_action :require_superadmin!, only: %i[destroy]
 
     def index
@@ -39,11 +39,6 @@ module Admin
       else
         render :edit, status: :unprocessable_entity
       end
-    end
-
-    def send_password_reset
-      @user.send_reset_password_instructions
-      redirect_to admin_users_path, notice: "Password reset email sent to #{@user.email}."
     end
 
     def destroy

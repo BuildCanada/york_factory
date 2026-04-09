@@ -82,9 +82,7 @@ Rails.application.routes.draw do
       post :retranslate, on: :member
     end
     resources :subscribers, only: [ :index ]
-    resources :users, only: %i[index new create edit update destroy] do
-      post :send_password_reset, on: :member
-    end
+    resources :users, only: %i[index new create edit update destroy]
 
     namespace :metrics do
       resources :twitter_stats, only: [ :index ] do

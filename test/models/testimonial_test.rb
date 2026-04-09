@@ -1,6 +1,9 @@
 require "test_helper"
 
 class TestimonialTest < ActiveSupport::TestCase
+  setup { I18n.locale = :en }
+  teardown { I18n.locale = :en }
+
   test "requires name" do
     t = Testimonial.new
     assert_not t.valid?

@@ -12,7 +12,7 @@ class TeamMemberTest < ActiveSupport::TestCase
   test "requires a name" do
     member = TeamMember.new
     assert_not member.valid?
-    assert_includes member.errors[:name], "can't be blank"
+    assert member.errors.where(:name, :blank).any?, "expected a blank error on name"
   end
 
   test "slug is generated from name via FriendlyId" do

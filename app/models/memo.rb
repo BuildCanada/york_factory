@@ -1,5 +1,5 @@
 class Memo < ApplicationRecord
-  include Translatable, Publishable, HasLocalizedRichText
+  include Feedable, Translatable, Publishable, HasLocalizedRichText
 
   extend Mobility
   translates :title, backend: :column
@@ -29,4 +29,6 @@ class Memo < ApplicationRecord
   translatable_fields :title
   rich_text_fields :body, :appendix, :supporters
   hash_fields :key_messages
+
+  def self.feed_type_label = "memo"
 end

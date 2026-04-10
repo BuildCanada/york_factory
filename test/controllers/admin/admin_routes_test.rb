@@ -139,24 +139,14 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  # Feed Items
-  test "feed_items index renders" do
-    get admin_feed_items_path
+  # Feed Entries
+  test "feed_entries index renders" do
+    get admin_feed_entries_path
     assert_response :success
   end
 
-  test "feed_items show renders" do
-    get admin_feed_item_path(feed_items(:published_blog))
-    assert_response :success
-  end
-
-  test "feed_items new renders" do
-    get new_admin_feed_item_path
-    assert_response :success
-  end
-
-  test "feed_items edit renders" do
-    get edit_admin_feed_item_path(feed_items(:published_blog))
+  test "feed_entries edit renders" do
+    get edit_admin_feed_entry_path(feed_entries(:memo_entry))
     assert_response :success
   end
 

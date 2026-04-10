@@ -43,6 +43,9 @@ gem "aws-sdk-s3"
 # CSV parsing (removed from Ruby 3.4 default gems)
 gem "csv"
 
+# RSS parsing (removed from Ruby 3.4 default gems)
+gem "rss"
+
 # HTTP client for fetching CSVs
 gem "httpx"
 

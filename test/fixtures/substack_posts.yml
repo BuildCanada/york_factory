@@ -1,0 +1,7 @@
+substack_newsletter:
+  external_url: https://buildcanada.substack.com/p/weekly-update-1
+  title: "Weekly Builder Update #1"
+  subtitle: "This week in Canadian building"
+  body: "<p>Content of the newsletter</p>"
+  author_name: Build Canada
+  posted_at: <%= 1.day.ago.to_fs(:db) %>

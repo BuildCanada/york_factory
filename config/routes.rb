@@ -27,7 +27,9 @@ Rails.application.routes.draw do
       resources :faqs do
         put :bulk_update, on: :collection
       end
-      resources :feed_items, path: "feed"
+      resources :feed_entries, path: "feed", only: [ :index, :show ] do
+        get :picks, on: :collection
+      end
       resources :testimonials do
         put :bulk_update, on: :collection
       end
@@ -74,7 +76,7 @@ Rails.application.routes.draw do
       put :reorder, on: :collection
       post :retranslate, on: :member
     end
-    resources :feed_items, only: full do
+    resources :feed_entries, only: [ :index, :edit, :update ] do
       post :retranslate, on: :member
     end
     resources :testimonials, only: full do

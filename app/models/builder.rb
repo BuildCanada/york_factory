@@ -1,5 +1,5 @@
 class Builder < ApplicationRecord
-  include Translatable, Publishable, HasLocalizedRichText
+  include Feedable, Translatable, Publishable, HasLocalizedRichText
 
   extend Mobility
   translates :title, :byline, :quote, backend: :column
@@ -13,4 +13,6 @@ class Builder < ApplicationRecord
 
   translatable_fields :title, :byline, :quote
   rich_text_fields :body, :author
+
+  def self.feed_type_label = "builder"
 end

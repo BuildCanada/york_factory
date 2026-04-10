@@ -1,0 +1,29 @@
+memo_entry:
+  feedable: published_memo (Memo)
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  featured: true
+
+post_entry:
+  feedable: visible_post (Post)
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  featured: false
+
+builder_entry:
+  feedable: published_builder (Builder)
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  featured: false
+
+x_entry:
+  feedable: x_post (SocialPost::X)
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  featured: false
+
+ig_entry:
+  feedable: ig_post (SocialPost::Instagram)
+  published_at: <%= 2.days.ago.to_fs(:db) %>
+  featured: false
+
+substack_entry:
+  feedable: substack_newsletter (SubstackPost)
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+  featured: false

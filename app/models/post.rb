@@ -1,5 +1,5 @@
 class Post < ApplicationRecord
-  include Translatable, Publishable, HasLocalizedRichText
+  include Feedable, Translatable, Publishable, HasLocalizedRichText
 
   extend Mobility
   translates :title, :summary, backend: :column
@@ -14,4 +14,6 @@ class Post < ApplicationRecord
   rich_text_fields :body
 
   scope :visible, -> { where(hidden: false) }
+
+  def self.feed_type_label = "blog"
 end

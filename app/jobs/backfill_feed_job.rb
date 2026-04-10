@@ -3,8 +3,6 @@ class BackfillFeedJob < ApplicationJob
 
   BACKFILLERS = [
     SocialPost::X::Backfiller,
-    SocialPost::Instagram::Backfiller,
-    SocialPost::TikTok::Backfiller,
     SubstackPost::Backfiller
   ].freeze
 

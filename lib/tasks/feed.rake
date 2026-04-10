@@ -23,9 +23,7 @@ namespace :feed do
   desc "Run all social media backfillers once"
   task backfill_social: :environment do
     [
-      SocialPost::X::Backfiller,
-      SocialPost::Instagram::Backfiller,
-      SocialPost::TikTok::Backfiller
+      SocialPost::X::Backfiller
     ].each do |backfiller|
       puts "Running #{backfiller.name}..."
       backfiller.call

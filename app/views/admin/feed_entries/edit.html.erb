@@ -1,0 +1,24 @@
+<div class="page-header">
+  <h1>Edit Feed Entry</h1>
+</div>
+
+<p class="text-muted">
+  Type: <strong><%= @feed_entry.feedable_type %></strong> |
+  Published: <strong><%= @feed_entry.published_at&.strftime("%b %d, %Y %H:%M") %></strong>
+</p>
+
+<%= form_with(model: [:admin, @feed_entry]) do |f| %>
+  <div class="form-group">
+    <%= f.label :featured %>
+    <%= f.check_box :featured %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :tags %>
+    <%= f.text_field :tags, value: @feed_entry.tags.join(", "), placeholder: "comma-separated tags" %>
+    <small class="text-muted">Separate tags with commas</small>
+  </div>
+
+  <%= f.submit "Update", class: "btn btn-primary" %>
+  <a href="<%= admin_feed_entries_path %>" class="btn">Cancel</a>
+<% end %>

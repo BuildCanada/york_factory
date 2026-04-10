@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_06_043854) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_09_200003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,25 +80,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_06_043854) do
     t.index ["position"], name: "index_faqs_on_position"
   end
 
-  create_table "feed_items", force: :cascade do |t|
-    t.string "author"
+  create_table "feed_entries", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.text "embed_code"
     t.boolean "featured", default: false
-    t.string "item_type", null: false
-    t.datetime "published_at"
-    t.string "source_url", null: false
-    t.string "subtitle_en"
-    t.string "subtitle_fr"
+    t.bigint "feedable_id", null: false
+    t.string "feedable_type", null: false
+    t.datetime "published_at", null: false
     t.string "tags", default: [], array: true
-    t.string "title_en"
-    t.string "title_fr"
     t.datetime "updated_at", null: false
-    t.string "url"
-    t.index ["featured"], name: "index_feed_items_on_featured"
-    t.index ["item_type"], name: "index_feed_items_on_item_type"
-    t.index ["source_url"], name: "index_feed_items_on_source_url", unique: true
-    t.index ["tags"], name: "index_feed_items_on_tags", using: :gin
+    t.index ["featured"], name: "index_feed_entries_on_featured"
+    t.index ["feedable_type", "feedable_id"], name: "index_feed_entries_on_feedable_type_and_feedable_id", unique: true
+    t.index ["published_at"], name: "index_feed_entries_on_published_at", order: :desc
+    t.index ["tags"], name: "index_feed_entries_on_tags", using: :gin
   end
 
   create_table "fiscal_authorities", force: :cascade do |t|
@@ -293,6 +286,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_06_043854) do
     t.index ["source_id"], name: "index_raw_ingestions_on_source_id"
   end
 
+  create_table "social_posts", force: :cascade do |t|
+    t.string "account_handle", null: false
+    t.string "author_avatar_url"
+    t.string "author_name"
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.text "embed_code"
+    t.string "external_id", null: false
+    t.string "image_url"
+    t.jsonb "metadata", default: {}
+    t.datetime "posted_at", null: false
+    t.string "title"
+    t.string "type", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.index ["posted_at"], name: "index_social_posts_on_posted_at", order: :desc
+    t.index ["type", "account_handle"], name: "index_social_posts_on_type_and_account_handle"
+    t.index ["type", "external_id"], name: "index_social_posts_on_type_and_external_id", unique: true
+  end
+
   create_table "sources", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "fetch_frequency"
@@ -325,6 +338,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_06_043854) do
     t.string "postal_code"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_subscribers_on_email", unique: true
+  end
+
+  create_table "substack_posts", force: :cascade do |t|
+    t.string "author_name"
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.string "external_url", null: false
+    t.string "image_url"
+    t.datetime "posted_at", null: false
+    t.string "subtitle"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["external_url"], name: "index_substack_posts_on_external_url", unique: true
+    t.index ["posted_at"], name: "index_substack_posts_on_posted_at", order: :desc
   end
 
   create_table "team_members", force: :cascade do |t|

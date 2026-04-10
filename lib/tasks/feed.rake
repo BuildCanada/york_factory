@@ -3,7 +3,7 @@ namespace :feed do
   task backfill_existing: :environment do
     count = 0
 
-    [Memo, Post, Builder].each do |klass|
+    [ Memo, Post, Builder ].each do |klass|
       klass.published.find_each do |record|
         next if record.feed_entry.present?
 

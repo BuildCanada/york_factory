@@ -1,4 +1,4 @@
-class LobbyingActivity < ApplicationRecord
+class LobbyingActivity < WarehouseRecord
   belongs_to :lobbyist
   belongs_to :organization, optional: true
   belongs_to :raw_ingestion, optional: true

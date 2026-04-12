@@ -1,4 +1,4 @@
-class RawIngestion < ApplicationRecord
+class RawIngestion < WarehouseRecord
   belongs_to :source
   has_many :lineage_entries, dependent: :destroy
 

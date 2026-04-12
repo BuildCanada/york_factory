@@ -1,4 +1,4 @@
-class Source < ApplicationRecord
+class Source < WarehouseRecord
   has_many :raw_ingestions, dependent: :destroy
 
   has_object :fetcher

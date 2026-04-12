@@ -1,4 +1,4 @@
-class OrganizationAlias < ApplicationRecord
+class OrganizationAlias < WarehouseRecord
   belongs_to :organization
 
   validates :alias_name, presence: true

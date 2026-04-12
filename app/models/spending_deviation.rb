@@ -1,5 +1,4 @@
-class SpendingDeviation < ApplicationRecord
-  self.table_name = "spending_deviations"
+class SpendingDeviation < WarehouseRecord
 
   belongs_to :organization
 

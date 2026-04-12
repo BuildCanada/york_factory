@@ -104,6 +104,48 @@ Warehouse::Source.find_or_create_by!(name: "ped_bc") do |s|
   s.fetch_frequency = "manual"
 end
 
+Warehouse::Source.find_or_create_by!(name: "ped_quebec") do |s|
+  s.url = "https://donnees.electionsquebec.qc.ca/autres/provincial/circonscriptions_electorales_2022_shapefile.zip"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_manitoba") do |s|
+  s.url = "https://www.electionsmanitoba.ca/downloads/2018_Final_ED_Manitoba_Public_Urban.zip"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_manitoba_wpg") do |s|
+  s.url = "https://www.electionsmanitoba.ca/downloads/2018_Final_ED_Winnipeg_Public_Urban.zip"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_saskatchewan") do |s|
+  s.url = "https://cdn.elections.sk.ca/scbcmaps/2022-SaskBoundaries-Final-Recommended-ShapeFiles.zip"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_new_brunswick") do |s|
+  s.url = "https://gnb.socrata.com/api/geospatial/c468-yuuy?method=export&format=Shapefile"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_yukon") do |s|
+  s.url = "https://map-data.service.yukon.ca/GeoYukon/Administrative_Boundaries/Yukon_Electoral_Districts/Yukon_Electoral_Districts.shp.zip"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
+Warehouse::Source.find_or_create_by!(name: "ped_nwt") do |s|
+  s.url = "https://www.geomatics.gov.nt.ca/en/electoral-district-boundaries"
+  s.format = "shapefile"
+  s.fetch_frequency = "manual"
+end
+
 # Municipal wards
 Warehouse::Source.find_or_create_by!(name: "ward_toronto") do |s|
   s.url = "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/5e7a8234-f805-43ac-820f-03d7c360b588/resource/35f67d86-cfc8-4483-8d77-50d035b010d9/download/25-ward-model-december-2018-wgs84-latitude-longitude.zip"

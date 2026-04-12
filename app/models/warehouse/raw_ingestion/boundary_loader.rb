@@ -15,11 +15,18 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
     "ped_ontario" => "ped",
     "ped_alberta" => "ped",
     "ped_bc" => "ped",
-    "ward_toronto" => "ward",
-    "sbw_tdsb" => "school_board_ward",
-    "sbw_tcdsb" => "school_board_ward",
-    "sbw_viamonde" => "school_board_ward",
-    "sbw_monavenir" => "school_board_ward"
+    "ped_quebec" => "ped",
+    "ped_manitoba" => "ped",
+    "ped_manitoba_wpg" => "ped",
+    "ped_saskatchewan" => "ped",
+    "ped_new_brunswick" => "ped",
+    "ped_yukon" => "ped",
+    "ped_nwt" => "ped",
+    "ward_toronto" => "med",
+    "sbw_tdsb" => "sbed",
+    "sbw_tcdsb" => "sbed",
+    "sbw_viamonde" => "sbed",
+    "sbw_monavenir" => "sbed"
   }.freeze
 
   # StatsCan standard field maps (used when no CUSTOM_FIELD_MAP entry exists)
@@ -53,12 +60,27 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
   }.freeze
 
   # Sources with non-standard field names (PED, wards, school districts)
+  # source_srid: EPSG code for projected shapefiles that need reprojection to WGS84
   CUSTOM_FIELD_MAP = {
     "elections_canada_fed" => { uid: "FED_NUM", name_en: "ED_NAMEE", name_fr: "ED_NAMEF",
-                                province_from_uid: true, projected: :statscan_lambert },
+                                province_from_uid: true, source_srid: 3347 },
     "ped_ontario" => { uid: "ED_ID", name_en: "ENGLISH_NA", name_fr: "FRENCH_NAM" },
     "ped_alberta" => { uid: "EDNumber20", name_en: "EDName2017", name_fr: nil },
     "ped_bc" => { uid: "ED_ABBREVI", name_en: "ED_NAME", name_fr: nil },
+    "ped_quebec" => { uid: "CO_CEP", name_en: "NM_CEP", name_fr: "NM_CEP",
+                       province_code: "24", source_srid: 32198 },
+    "ped_manitoba" => { uid: "ED", name_en: "ED", name_fr: "ED_French",
+                         province_code: "46", source_srid: 32614 },
+    "ped_manitoba_wpg" => { uid: "ED", name_en: "ED", name_fr: "ED_French",
+                             province_code: "46", source_srid: 32614 },
+    "ped_saskatchewan" => { uid: "Number", name_en: "Name", name_fr: nil,
+                             province_code: "47", source_srid: 32613 },
+    "ped_new_brunswick" => { uid: "dist_id", name_en: "ped_name_e", name_fr: "ped_name_f",
+                              province_code: "13" },
+    "ped_yukon" => { uid: "ELECT_NAME", name_en: "ELECT_NAME", name_fr: "FR_ELECNAM",
+                      province_code: "60", source_srid: 3578 },
+    "ped_nwt" => { uid: "ED", name_en: "ED", name_fr: nil,
+                    province_code: "61", source_srid: 3580 },
     "ward_toronto" => { uid: "AREA_S_CD", name_en: "AREA_NAME", name_fr: nil, province_code: "35" },
     "sbw_tdsb" => { uid: "AREA_NAME", name_en: "AREA_NAME", name_fr: nil, province_code: "35",
                      uid_prefix: "TDSB-", name_prefix: "TDSB Ward " },
@@ -70,8 +92,6 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
                           uid_prefix: "MONAVENIR-", name_prefix: "MonAvenir – " }
   }.freeze
 
-  # EPSG:3347 — Statistics Canada Lambert (used by Elections Canada shapefiles)
-  STATSCAN_LAMBERT_SRID = 3347
   WGS84_SRID = 4326
 
   def load(file_content:)
@@ -118,13 +138,13 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
     name_en_field = custom&.[](:name_en) || NAME_FIELD_MAP[boundary_type]
     name_fr_field = custom&.[](:name_fr)
     fixed_province = custom&.[](:province_code)
-    projected = custom&.[](:projected)
-    factory = if projected
-      RGeo::Geos.factory(srid: STATSCAN_LAMBERT_SRID, proj4: "EPSG:#{STATSCAN_LAMBERT_SRID}")
+    source_srid = custom&.[](:source_srid)
+    factory = if source_srid
+      RGeo::Geos.factory(srid: source_srid, proj4: "EPSG:#{source_srid}")
     else
       RGeo::Cartesian.simple_factory(srid: WGS84_SRID)
     end
-    wgs84_factory = projected ? RGeo::Geos.factory(srid: WGS84_SRID, proj4: "EPSG:#{WGS84_SRID}") : nil
+    wgs84_factory = source_srid ? RGeo::Geos.factory(srid: WGS84_SRID, proj4: "EPSG:#{WGS84_SRID}") : nil
     records = []
     skipped = 0
 
@@ -143,7 +163,7 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
         geo_uid = "#{custom[:uid_prefix]}#{geo_uid}" if custom&.[](:uid_prefix)
 
         geometry = normalize_geometry(record.geometry)
-        geometry = reproject(geometry, wgs84_factory) if geometry && projected
+        geometry = reproject(geometry, wgs84_factory) if geometry && source_srid
         next unless geometry
 
         province_code = if fixed_province

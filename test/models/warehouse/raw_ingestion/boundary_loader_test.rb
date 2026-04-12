@@ -86,7 +86,9 @@ class Warehouse::RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
       statcan_boundary_da statcan_boundary_ct statcan_boundary_csd statcan_boundary_fsa
       elections_canada_fed statcan_boundary_pr statcan_boundary_cd statcan_boundary_er
       statcan_boundary_cma statcan_boundary_popctr
-      ped_ontario ped_alberta ped_bc ward_toronto
+      ped_ontario ped_alberta ped_bc ped_quebec ped_manitoba ped_manitoba_wpg
+      ped_saskatchewan ped_new_brunswick ped_yukon ped_nwt
+      ward_toronto
       sbw_tdsb sbw_tcdsb sbw_viamonde sbw_monavenir
     ]
     expected_sources.each do |source_name|
@@ -102,10 +104,43 @@ class Warehouse::RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
     end
   end
 
-  test "elections_canada_fed has province_from_uid and projected flags" do
+  test "elections_canada_fed has province_from_uid and source_srid" do
     custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP["elections_canada_fed"]
     assert custom[:province_from_uid], "elections_canada_fed should derive province from UID"
-    assert custom[:projected], "elections_canada_fed should be projected"
+    assert_equal 3347, custom[:source_srid], "elections_canada_fed should use EPSG:3347"
+  end
+
+  test "projected PED sources have source_srid" do
+    {
+      "ped_quebec" => 32198,
+      "ped_manitoba" => 32614,
+      "ped_manitoba_wpg" => 32614,
+      "ped_saskatchewan" => 32613,
+      "ped_yukon" => 3578,
+      "ped_nwt" => 3580
+    }.each do |source, expected_srid|
+      custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
+      assert_equal expected_srid, custom[:source_srid], "#{source} should use EPSG:#{expected_srid}"
+    end
+  end
+
+  test "non-projected PED sources have no source_srid" do
+    %w[ped_ontario ped_alberta ped_bc ped_new_brunswick].each do |source|
+      custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
+      assert_nil custom[:source_srid], "#{source} should not have source_srid (WGS84)"
+    end
+  end
+
+  test "all PED sources have province_code or derive province" do
+    ped_sources = Warehouse::RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP.select { |_, v| v == "ped" }
+    ped_sources.each_key do |source|
+      custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
+      next unless custom
+      has_province = custom[:province_code] || custom[:province_from_uid]
+      # Ontario, Alberta, BC have PRUID in the shapefile (no custom province needed)
+      next if %w[ped_ontario ped_alberta ped_bc].include?(source)
+      assert has_province, "#{source} must specify province_code or province_from_uid"
+    end
   end
 
   test "school board ward entries have uid_prefix and name_prefix" do

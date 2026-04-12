@@ -8,12 +8,12 @@ namespace :geo do
       build_spatial_crosswalks
     end
 
-    puts "Done. #{GeoCrosswalk.count} crosswalk entries created."
+    puts "Done. #{Warehouse::GeoCrosswalk.count} crosswalk entries created."
   end
 
   desc "Run full geo pipeline: fetch boundaries, relationships, population, then build crosswalks"
   task pipeline: :environment do
-    boundary_sources = Source.where(
+    boundary_sources = Warehouse::Source.where(
       "name LIKE 'statcan_boundary_%' OR name LIKE 'elections_canada_%' OR name LIKE 'ped_%' OR name LIKE 'ward_%' OR name LIKE 'sbw_%'"
     )
     boundary_sources.each do |source|
@@ -21,13 +21,13 @@ namespace :geo do
       source.fetcher.fetch
     end
 
-    rel_source = Source.find_by(name: "statcan_geo_relationship")
+    rel_source = Warehouse::Source.find_by(name: "statcan_geo_relationship")
     if rel_source
       puts "Fetching geo relationships..."
       rel_source.fetcher.fetch
     end
 
-    pop_source = Source.find_by(name: "statcan_da_population")
+    pop_source = Warehouse::Source.find_by(name: "statcan_da_population")
     if pop_source
       puts "Fetching DA populations..."
       pop_source.fetcher.fetch
@@ -86,7 +86,7 @@ def build_spatial_crosswalks
       }
     end
 
-    GeoRelationship.upsert_all(records, unique_by: :idx_geo_relationships_unique) if records.any?
+    Warehouse::GeoRelationship.upsert_all(records, unique_by: :idx_geo_relationships_unique) if records.any?
 
     # Now build crosswalks from every other type to this spatial type
     %w[fsa ct csd].each do |other_type|
@@ -98,7 +98,7 @@ def build_spatial_crosswalks
 
     # FED ↔ PED crosswalk (both spatial types against each other)
     other_spatial = spatial_type == "fed" ? "ped" : "fed"
-    if GeoBoundary.by_type(other_spatial).exists?
+    if Warehouse::GeoBoundary.by_type(other_spatial).exists?
       puts "    Crosswalk: #{other_spatial} ↔ #{spatial_type}"
       rows = crosswalk_query("da_#{other_spatial}", "da_#{spatial_type}", other_spatial, spatial_type)
       insert_crosswalks(rows)
@@ -160,6 +160,6 @@ def insert_crosswalks(rows)
     r[:weight_target_to_source] = target_pop > 0 ? (overlap / target_pop).round(8) : 0
   end
 
-  GeoCrosswalk.upsert_all(records, unique_by: :idx_geo_crosswalks_unique)
+  Warehouse::GeoCrosswalk.upsert_all(records, unique_by: :idx_geo_crosswalks_unique)
   puts "    → #{records.size} crosswalk entries"
 end

@@ -5,7 +5,7 @@ module Api
         include Pagy::Method
 
         def index
-          scope = GeoBoundary.all
+          scope = Warehouse::GeoBoundary.all
           scope = scope.by_type(params[:boundary_type]) if params[:boundary_type].present?
           scope = scope.in_province(params[:province_code]) if params[:province_code].present?
           scope = scope.search_name(params[:q]) if params[:q].present?

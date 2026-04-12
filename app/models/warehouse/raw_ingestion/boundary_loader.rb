@@ -1,6 +1,6 @@
 require "zip"
 
-class RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
   BOUNDARY_TYPE_MAP = {
     "statcan_boundary_da" => "da",
     "statcan_boundary_ct" => "ct",
@@ -177,7 +177,7 @@ class RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
       end
     end
 
-    GeoBoundary.upsert_all(
+    Warehouse::GeoBoundary.upsert_all(
       records,
       unique_by: :idx_geo_boundaries_unique,
       update_only: [ :name_en, :name_fr, :province_code, :geometry, :area_sq_km, :raw_ingestion_id ]

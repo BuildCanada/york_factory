@@ -2,15 +2,15 @@ require "test_helper"
 
 class Api::V1::Geo::AddressesControllerTest < ActionDispatch::IntegrationTest
   setup do
-    Address.create!(oda_uid: "ODA-001", street_number: "123", street_name: "Main", street_type: "St",
+    Warehouse::Address.create!(oda_uid: "ODA-001", street_number: "123", street_name: "Main", street_type: "St",
                     city: "Toronto", province_code: "35", postal_code: "M5V1A1",
                     full_address: "123 Main St, Toronto ON M5V1A1", csd_uid: "3520005", csd_name: "Toronto",
                     latitude: 43.6426, longitude: -79.3871)
-    Address.create!(oda_uid: "ODA-002", street_number: "456", street_name: "Granville", street_type: "St",
+    Warehouse::Address.create!(oda_uid: "ODA-002", street_number: "456", street_name: "Granville", street_type: "St",
                     city: "Vancouver", province_code: "59", postal_code: "V6B2J2",
                     full_address: "456 Granville St, Vancouver BC V6B2J2", csd_uid: "5915022", csd_name: "Vancouver",
                     latitude: 49.2827, longitude: -123.1207)
-    Address.create!(oda_uid: "ODA-003", street_number: "789", street_name: "King", street_type: "St",
+    Warehouse::Address.create!(oda_uid: "ODA-003", street_number: "789", street_name: "King", street_type: "St",
                     city: "Toronto", province_code: "35", postal_code: "M5V1A1",
                     full_address: "789 King St, Toronto ON M5V1A1", csd_uid: "3520005", csd_name: "Toronto",
                     latitude: 43.6450, longitude: -79.3900)

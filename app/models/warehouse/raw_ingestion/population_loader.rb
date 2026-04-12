@@ -1,4 +1,4 @@
-class RawIngestion::PopulationLoader < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::PopulationLoader < ActiveRecord::AssociatedObject
   def load(csv_content:)
     rows = CSV.parse(csv_content, headers: true, liberal_parsing: true)
     updates = []

@@ -1,6 +1,6 @@
 require "zip"
 
-class RawIngestion::AddressLoader < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::AddressLoader < ActiveRecord::AssociatedObject
   def load(file_content:)
     Dir.mktmpdir do |tmpdir|
       csv_content = extract_csv(file_content, tmpdir)
@@ -58,7 +58,7 @@ class RawIngestion::AddressLoader < ActiveRecord::AssociatedObject
         }
       end
 
-      Address.upsert_all(
+      Warehouse::Address.upsert_all(
         records,
         unique_by: :idx_addresses_oda_uid,
         update_only: [ :street_number, :street_name, :street_type, :street_direction,

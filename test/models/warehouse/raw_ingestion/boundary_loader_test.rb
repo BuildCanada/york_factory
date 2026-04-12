@@ -1,14 +1,14 @@
 require "test_helper"
 require "zip"
 
-class RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
+class Warehouse::RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
   setup do
-    @source = Source.find_or_create_by!(name: "statcan_boundary_fsa") do |s|
+    @source = Warehouse::Source.find_or_create_by!(name: "statcan_boundary_fsa") do |s|
       s.url = "https://example.com/fsa.zip"
       s.format = "shapefile"
       s.fetch_frequency = "manual"
     end
-    @ingestion = RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/fsa", checksum: "abc123", status: :pending)
+    @ingestion = Warehouse::RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/fsa", checksum: "abc123", status: :pending)
   end
 
   test "detect_boundary_type returns correct type for known source" do
@@ -16,22 +16,22 @@ class RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
   end
 
   test "detect_boundary_type returns nil for unknown source" do
-    source = Source.find_or_create_by!(name: "unknown_source_#{SecureRandom.hex(4)}") do |s|
+    source = Warehouse::Source.find_or_create_by!(name: "unknown_source_#{SecureRandom.hex(4)}") do |s|
       s.url = "https://example.com"
       s.format = "shapefile"
       s.fetch_frequency = "manual"
     end
-    ingestion = RawIngestion.create!(source: source, fetched_at: Time.current, raw_file_path: "test/unknown", checksum: "xyz", status: :pending)
+    ingestion = Warehouse::RawIngestion.create!(source: source, fetched_at: Time.current, raw_file_path: "test/unknown", checksum: "xyz", status: :pending)
     assert_nil ingestion.boundary_loader.send(:detect_boundary_type)
   end
 
   test "load fails ingestion for unknown boundary type" do
-    source = Source.find_or_create_by!(name: "unknown_source_#{SecureRandom.hex(4)}") do |s|
+    source = Warehouse::Source.find_or_create_by!(name: "unknown_source_#{SecureRandom.hex(4)}") do |s|
       s.url = "https://example.com"
       s.format = "shapefile"
       s.fetch_frequency = "manual"
     end
-    ingestion = RawIngestion.create!(source: source, fetched_at: Time.current, raw_file_path: "test/unknown", checksum: "xyz2", status: :pending)
+    ingestion = Warehouse::RawIngestion.create!(source: source, fetched_at: Time.current, raw_file_path: "test/unknown", checksum: "xyz2", status: :pending)
 
     ingestion.boundary_loader.load(file_content: "fake")
     ingestion.reload
@@ -90,27 +90,27 @@ class RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
       sbw_tdsb sbw_tcdsb sbw_viamonde sbw_monavenir
     ]
     expected_sources.each do |source_name|
-      assert_includes RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP.keys, source_name,
+      assert_includes Warehouse::RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP.keys, source_name,
         "Missing source: #{source_name}"
     end
   end
 
   test "CUSTOM_FIELD_MAP entries have required keys" do
-    RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP.each do |source, fields|
+    Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP.each do |source, fields|
       assert fields.key?(:uid), "#{source} missing :uid"
       assert fields.key?(:name_en), "#{source} missing :name_en"
     end
   end
 
   test "elections_canada_fed has province_from_uid and projected flags" do
-    custom = RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP["elections_canada_fed"]
+    custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP["elections_canada_fed"]
     assert custom[:province_from_uid], "elections_canada_fed should derive province from UID"
     assert custom[:projected], "elections_canada_fed should be projected"
   end
 
   test "school board ward entries have uid_prefix and name_prefix" do
     %w[sbw_tdsb sbw_tcdsb sbw_viamonde sbw_monavenir].each do |source|
-      custom = RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
+      custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
       assert custom[:uid_prefix], "#{source} missing uid_prefix"
       assert custom[:name_prefix], "#{source} missing name_prefix"
       assert_equal "35", custom[:province_code], "#{source} should be in Ontario (35)"

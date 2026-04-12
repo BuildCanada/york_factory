@@ -1,6 +1,6 @@
-class GeoCrosswalk < WarehouseRecord
-  belongs_to :source, class_name: "GeoBoundary"
-  belongs_to :target, class_name: "GeoBoundary"
+class Warehouse::GeoCrosswalk < Warehouse::Record
+  belongs_to :source, class_name: "Warehouse::GeoBoundary"
+  belongs_to :target, class_name: "Warehouse::GeoBoundary"
 
   validates :source_id, uniqueness: { scope: [ :target_id, :census_year ] }
   validates :source_type, presence: true

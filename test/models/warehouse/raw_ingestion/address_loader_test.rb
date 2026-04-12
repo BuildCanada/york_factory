@@ -1,14 +1,14 @@
 require "test_helper"
 require "zip"
 
-class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
+class Warehouse::RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
   setup do
-    @source = Source.find_or_create_by!(name: "oda_on") do |s|
+    @source = Warehouse::Source.find_or_create_by!(name: "oda_on") do |s|
       s.url = "https://example.com/oda_on.zip"
       s.format = "csv"
       s.fetch_frequency = "manual"
     end
-    @ingestion = RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/oda_on", checksum: "oda123", status: :pending)
+    @ingestion = Warehouse::RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/oda_on", checksum: "oda123", status: :pending)
   end
 
   test "loads addresses from CSV inside ZIP" do
@@ -19,8 +19,8 @@ class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
 
     @ingestion.address_loader.load(file_content: zip_content)
 
-    assert_equal 1, Address.count
-    addr = Address.first
+    assert_equal 1, Warehouse::Address.count
+    addr = Warehouse::Address.first
     assert_equal "ON-001", addr.oda_uid
     assert_equal "123", addr.street_number
     assert_equal "Main", addr.street_name
@@ -43,8 +43,8 @@ class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
     CSV
 
     @ingestion.address_loader.load(file_content: zip_content)
-    assert_equal 1, Address.count
-    assert_equal "ON-002", Address.first.oda_uid
+    assert_equal 1, Warehouse::Address.count
+    assert_equal "ON-002", Warehouse::Address.first.oda_uid
   end
 
   test "handles upsert on duplicate oda_uid" do
@@ -55,7 +55,7 @@ class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
 
     @ingestion.address_loader.load(file_content: zip_content1)
 
-    ingestion2 = RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/oda2", checksum: "oda456", status: :pending)
+    ingestion2 = Warehouse::RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/oda2", checksum: "oda456", status: :pending)
     zip_content2 = create_address_zip(<<~CSV)
       id,street_no,str_name,str_type,str_dir,unit,city,pruid,postal_code,full_addr,csduid,csdname,latitude,longitude,provider
       ON-001,123,Main Updated,Ave,,,Toronto,35,M5V 1A1,123 Main Updated Ave,3520005,Toronto,43.65,-79.38,Municipal
@@ -63,8 +63,8 @@ class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
 
     ingestion2.address_loader.load(file_content: zip_content2)
 
-    assert_equal 1, Address.count
-    assert_equal "Main Updated", Address.first.street_name
+    assert_equal 1, Warehouse::Address.count
+    assert_equal "Main Updated", Warehouse::Address.first.street_name
   end
 
   test "maps PRUID to province_code" do
@@ -74,7 +74,7 @@ class RawIngestion::AddressLoaderTest < ActiveSupport::TestCase
     CSV
 
     @ingestion.address_loader.load(file_content: zip_content)
-    assert_equal "10", Address.first.province_code
+    assert_equal "10", Warehouse::Address.first.province_code
   end
 
   test "fails ingestion on error" do

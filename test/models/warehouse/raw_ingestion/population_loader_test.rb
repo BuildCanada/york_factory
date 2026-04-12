@@ -1,16 +1,16 @@
 require "test_helper"
 
-class RawIngestion::PopulationLoaderTest < ActiveSupport::TestCase
+class Warehouse::RawIngestion::PopulationLoaderTest < ActiveSupport::TestCase
   setup do
-    @source = Source.find_or_create_by!(name: "statcan_da_population") do |s|
+    @source = Warehouse::Source.find_or_create_by!(name: "statcan_da_population") do |s|
       s.url = "https://example.com/pop.csv"
       s.format = "csv"
       s.fetch_frequency = "manual"
     end
-    @ingestion = RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/pop", checksum: "pop123", status: :pending)
+    @ingestion = Warehouse::RawIngestion.create!(source: @source, fetched_at: Time.current, raw_file_path: "test/pop", checksum: "pop123", status: :pending)
 
-    @da1 = GeoBoundary.create!(boundary_type: "da", geo_uid: "35010001", census_year: 2021)
-    @da2 = GeoBoundary.create!(boundary_type: "da", geo_uid: "35010002", census_year: 2021)
+    @da1 = Warehouse::GeoBoundary.create!(boundary_type: "da", geo_uid: "35010001", census_year: 2021)
+    @da2 = Warehouse::GeoBoundary.create!(boundary_type: "da", geo_uid: "35010002", census_year: 2021)
   end
 
   test "updates DA populations from CSV with DAUID column" do

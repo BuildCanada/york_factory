@@ -5,7 +5,7 @@ module Api
         include Pagy::Method
 
         def index
-          scope = Address.all
+          scope = Warehouse::Address.all
           scope = scope.in_province(params[:province_code]) if params[:province_code].present?
           scope = scope.in_postal_code(params[:postal_code]) if params[:postal_code].present?
           scope = scope.in_csd(params[:csd_uid]) if params[:csd_uid].present?

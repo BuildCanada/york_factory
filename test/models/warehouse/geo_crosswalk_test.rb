@@ -1,19 +1,19 @@
 require "test_helper"
 
-class GeoCrosswalkTest < ActiveSupport::TestCase
+class Warehouse::GeoCrosswalkTest < ActiveSupport::TestCase
   setup do
-    @fsa = GeoBoundary.create!(boundary_type: "fsa", geo_uid: "M5V", census_year: 2021, population: 28000)
-    @fed = GeoBoundary.create!(boundary_type: "fed", geo_uid: "35024", name_en: "Toronto Centre", census_year: 2021, population: 100000)
+    @fsa = Warehouse::GeoBoundary.create!(boundary_type: "fsa", geo_uid: "M5V", census_year: 2021, population: 28000)
+    @fed = Warehouse::GeoBoundary.create!(boundary_type: "fed", geo_uid: "35024", name_en: "Toronto Centre", census_year: 2021, population: 100000)
   end
 
   test "validates uniqueness of source_id scoped to target_id and census_year" do
-    GeoCrosswalk.create!(
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed,
       source_type: "fsa", target_type: "fed",
       overlap_population: 20000, weight_source_to_target: 0.71,
       weight_target_to_source: 0.20, da_count: 34, census_year: 2021
     )
-    duplicate = GeoCrosswalk.new(
+    duplicate = Warehouse::GeoCrosswalk.new(
       source: @fsa, target: @fed,
       source_type: "fsa", target_type: "fed",
       census_year: 2021
@@ -22,38 +22,38 @@ class GeoCrosswalkTest < ActiveSupport::TestCase
   end
 
   test "from_type scope filters by source_type" do
-    GeoCrosswalk.create!(
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed,
       source_type: "fsa", target_type: "fed",
       overlap_population: 20000, weight_source_to_target: 0.71,
       da_count: 34, census_year: 2021
     )
-    assert_equal 1, GeoCrosswalk.from_type("fsa").count
-    assert_equal 0, GeoCrosswalk.from_type("ct").count
+    assert_equal 1, Warehouse::GeoCrosswalk.from_type("fsa").count
+    assert_equal 0, Warehouse::GeoCrosswalk.from_type("ct").count
   end
 
   test "to_type scope filters by target_type" do
-    GeoCrosswalk.create!(
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed,
       source_type: "fsa", target_type: "fed",
       overlap_population: 20000, weight_source_to_target: 0.71,
       da_count: 34, census_year: 2021
     )
-    assert_equal 1, GeoCrosswalk.to_type("fed").count
-    assert_equal 0, GeoCrosswalk.to_type("ped").count
+    assert_equal 1, Warehouse::GeoCrosswalk.to_type("fed").count
+    assert_equal 0, Warehouse::GeoCrosswalk.to_type("ped").count
   end
 
   test "population weights are computed correctly" do
     # Simulate: FSA M5V has 2 DAs, one in FED 35024 (pop 300) and one in FED 35025 (pop 700)
-    fed2 = GeoBoundary.create!(boundary_type: "fed", geo_uid: "35025", census_year: 2021)
+    fed2 = Warehouse::GeoBoundary.create!(boundary_type: "fed", geo_uid: "35025", census_year: 2021)
 
-    cw1 = GeoCrosswalk.create!(
+    cw1 = Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed,
       source_type: "fsa", target_type: "fed",
       overlap_population: 300, weight_source_to_target: 0.30,
       weight_target_to_source: 0.003, da_count: 1, census_year: 2021
     )
-    cw2 = GeoCrosswalk.create!(
+    cw2 = Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: fed2,
       source_type: "fsa", target_type: "fed",
       overlap_population: 700, weight_source_to_target: 0.70,

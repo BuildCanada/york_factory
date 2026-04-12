@@ -2,25 +2,25 @@ require "test_helper"
 
 class Api::V1::Geo::CrosswalkControllerTest < ActionDispatch::IntegrationTest
   setup do
-    @fsa = GeoBoundary.create!(
+    @fsa = Warehouse::GeoBoundary.create!(
       boundary_type: "fsa", geo_uid: "M5V", name_en: "M5V",
       province_code: "35", census_year: 2021, population: 1000
     )
-    @fed1 = GeoBoundary.create!(
+    @fed1 = Warehouse::GeoBoundary.create!(
       boundary_type: "fed", geo_uid: "35024", name_en: "Toronto Centre",
       province_code: "35", census_year: 2021, population: 100000
     )
-    @fed2 = GeoBoundary.create!(
+    @fed2 = Warehouse::GeoBoundary.create!(
       boundary_type: "fed", geo_uid: "35025", name_en: "Spadina-Fort York",
       province_code: "35", census_year: 2021, population: 120000
     )
-    GeoCrosswalk.create!(
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed1,
       source_type: "fsa", target_type: "fed",
       overlap_population: 720, weight_source_to_target: 0.72,
       weight_target_to_source: 0.0072, da_count: 20, census_year: 2021
     )
-    GeoCrosswalk.create!(
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: @fed2,
       source_type: "fsa", target_type: "fed",
       overlap_population: 280, weight_source_to_target: 0.28,
@@ -40,8 +40,8 @@ class Api::V1::Geo::CrosswalkControllerTest < ActionDispatch::IntegrationTest
 
   test "show filters by target_type" do
     # Add a CSD crosswalk
-    csd = GeoBoundary.create!(boundary_type: "csd", geo_uid: "3520005", name_en: "Toronto", census_year: 2021)
-    GeoCrosswalk.create!(
+    csd = Warehouse::GeoBoundary.create!(boundary_type: "csd", geo_uid: "3520005", name_en: "Toronto", census_year: 2021)
+    Warehouse::GeoCrosswalk.create!(
       source: @fsa, target: csd,
       source_type: "fsa", target_type: "csd",
       overlap_population: 1000, weight_source_to_target: 1.0,

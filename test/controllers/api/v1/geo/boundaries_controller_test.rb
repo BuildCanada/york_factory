@@ -2,9 +2,9 @@ require "test_helper"
 
 class Api::V1::Geo::BoundariesControllerTest < ActionDispatch::IntegrationTest
   setup do
-    GeoBoundary.create!(boundary_type: "fsa", geo_uid: "M5V", name_en: "M5V", province_code: "35", census_year: 2021, population: 28000)
-    GeoBoundary.create!(boundary_type: "fsa", geo_uid: "V6B", name_en: "V6B", province_code: "59", census_year: 2021, population: 15000)
-    GeoBoundary.create!(boundary_type: "fed", geo_uid: "35024", name_en: "Toronto Centre", province_code: "35", census_year: 2021, population: 100000)
+    Warehouse::GeoBoundary.create!(boundary_type: "fsa", geo_uid: "M5V", name_en: "M5V", province_code: "35", census_year: 2021, population: 28000)
+    Warehouse::GeoBoundary.create!(boundary_type: "fsa", geo_uid: "V6B", name_en: "V6B", province_code: "59", census_year: 2021, population: 15000)
+    Warehouse::GeoBoundary.create!(boundary_type: "fed", geo_uid: "35024", name_en: "Toronto Centre", province_code: "35", census_year: 2021, population: 100000)
   end
 
   test "index returns all boundaries with pagination" do

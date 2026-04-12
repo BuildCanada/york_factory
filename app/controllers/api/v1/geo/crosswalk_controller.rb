@@ -3,12 +3,12 @@ module Api
     module Geo
       class CrosswalkController < ApplicationController
         def show
-          source_boundary = GeoBoundary.find_by!(
+          source_boundary = Warehouse::GeoBoundary.find_by!(
             geo_uid: params[:geo_uid],
             boundary_type: params[:source_type]
           )
 
-          crosswalks = GeoCrosswalk.where(source_id: source_boundary.id)
+          crosswalks = Warehouse::GeoCrosswalk.where(source_id: source_boundary.id)
           crosswalks = crosswalks.to_type(params[:target_type]) if params[:target_type].present?
 
           min_weight = (params[:min_weight] || 0.01).to_f

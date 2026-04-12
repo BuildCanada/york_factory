@@ -1,4 +1,4 @@
-class Address < WarehouseRecord
+class Warehouse::Address < Warehouse::Record
   belongs_to :raw_ingestion, optional: true
 
   validates :oda_uid, presence: true, uniqueness: true

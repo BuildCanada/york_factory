@@ -1,4 +1,4 @@
-class Source::Fetcher < ActiveRecord::AssociatedObject
+class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
   performs :fetch
 
   MAX_RETRIES = 3

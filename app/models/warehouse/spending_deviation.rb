@@ -1,6 +1,4 @@
-class SpendingDeviation < ApplicationRecord
-  self.table_name = "spending_deviations"
-
+class Warehouse::SpendingDeviation < Warehouse::Record
   belongs_to :organization
 
   scope :anomalous, -> { where("ABS(variance_pct) > 20") }

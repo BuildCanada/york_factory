@@ -1,4 +1,4 @@
-class Organization::EntityResolver < ActiveRecord::AssociatedObject
+class Warehouse::Organization::EntityResolver < ActiveRecord::AssociatedObject
   # Entity resolution cascade:
   #   1. Exact match on organization_aliases.alias_name
   #   2. Case-insensitive match
@@ -13,14 +13,14 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
   def resolve(name:, raw_ingestion: nil)
     # Step 1: Exact match
-    alias_record = OrganizationAlias.find_by(alias_name: name)
+    alias_record = Warehouse::OrganizationAlias.find_by(alias_name: name)
     if alias_record
       entry = create_lineage(raw_ingestion, name, alias_record.organization, "exact_match", 1.0)
       return Result.new(organization: alias_record.organization, lineage_entry: entry)
     end
 
     # Step 2: Case-insensitive match
-    alias_record = OrganizationAlias.where("LOWER(alias_name) = LOWER(?)", name).first
+    alias_record = Warehouse::OrganizationAlias.where("LOWER(alias_name) = LOWER(?)", name).first
     if alias_record
       entry = create_lineage(raw_ingestion, name, alias_record.organization, "case_insensitive", 0.99)
       return Result.new(organization: alias_record.organization, lineage_entry: entry)
@@ -29,7 +29,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
     # Step 3: Encoding normalization
     normalized = normalize_encoding(name)
     if normalized != name
-      alias_record = OrganizationAlias.find_by(alias_name: normalized)
+      alias_record = Warehouse::OrganizationAlias.find_by(alias_name: normalized)
       if alias_record
         # Add the original name as a new alias for future exact matches
         alias_record.organization.organization_aliases.find_or_create_by!(alias_name: name)
@@ -44,10 +44,10 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
   # Resolve by InfoBase org_id -- deterministic, no LLM needed
   def resolve_by_infobase_id(org_id:, org_name:, raw_ingestion: nil)
-    org = Organization.find_by(org_id_infobase: org_id)
+    org = Warehouse::Organization.find_by(org_id_infobase: org_id)
 
     unless org
-      org = Organization.create!(canonical_name: org_name, org_id_infobase: org_id)
+      org = Warehouse::Organization.create!(canonical_name: org_name, org_id_infobase: org_id)
     end
 
     # Ensure alias exists for this name
@@ -91,7 +91,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
 
     if result[:match].nil? || result[:confidence] < 0.1
       # Create as new org flagged for human review
-      org = Organization.find_or_create_by!(canonical_name: name) do |o|
+      org = Warehouse::Organization.find_or_create_by!(canonical_name: name) do |o|
         o.needs_review = true
       end
       org.organization_aliases.find_or_create_by!(alias_name: name)
@@ -100,7 +100,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
       return Result.new(organization: org, lineage_entry: entry)
     end
 
-    matched_org = Organization.find_by(canonical_name: result[:match])
+    matched_org = Warehouse::Organization.find_by(canonical_name: result[:match])
     return Result.new(organization: nil, lineage_entry: create_lineage(raw_ingestion, name, nil, "skipped", 0.0)) unless matched_org
 
     confidence = result[:confidence]
@@ -164,12 +164,12 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
   def find_candidates(name)
     # Find top 5 candidates by substring overlap (simple heuristic)
     # In production, could use pg_trgm for better similarity search
-    all_orgs = Organization.pluck(:id, :canonical_name)
+    all_orgs = Warehouse::Organization.pluck(:id, :canonical_name)
     scored = all_orgs.map do |id, canonical|
       score = trigram_similarity(name.downcase, canonical.downcase)
       [ id, canonical, score ]
     end
-    scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| Organization.new(id: id, canonical_name: cn) }
+    scored.sort_by { |_, _, s| -s }.first(5).map { |id, cn, _| Warehouse::Organization.new(id: id, canonical_name: cn) }
   end
 
   def trigram_similarity(a, b)
@@ -188,7 +188,7 @@ class Organization::EntityResolver < ActiveRecord::AssociatedObject
   end
 
   def create_lineage(raw_ingestion, source_value, org, transformation_type, confidence, llm_model: nil, llm_prompt: nil, llm_response: nil)
-    LineageEntry.create!(
+    Warehouse::LineageEntry.create!(
       raw_ingestion: raw_ingestion,
       source_field: "organization_name",
       source_value: source_value,

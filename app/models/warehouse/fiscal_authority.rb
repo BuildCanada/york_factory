@@ -1,7 +1,14 @@
-class FiscalExpenditure < ApplicationRecord
+class Warehouse::FiscalAuthority < Warehouse::Record
   belongs_to :organization
   belongs_to :raw_ingestion, optional: true
   belongs_to :lineage_entry, optional: true
+
+  enum :document_type, {
+    main: "main",
+    supp_a: "supp_a",
+    supp_b: "supp_b",
+    supp_c: "supp_c"
+  }
 
   enum :vote_type, {
     operating: "operating",
@@ -11,5 +18,6 @@ class FiscalExpenditure < ApplicationRecord
   }
 
   validates :fiscal_year, presence: true
+  validates :document_type, presence: true
   validates :vote_type, presence: true
 end

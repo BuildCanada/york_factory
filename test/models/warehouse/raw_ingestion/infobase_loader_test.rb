@@ -1,9 +1,9 @@
 require "test_helper"
 
-class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
+class Warehouse::RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
   setup do
-    @source = Source.create!(name: "infobase_test", url: "https://example.com/test.csv", format: "csv")
-    @ingestion = RawIngestion.create!(
+    @source = Warehouse::Source.create!(name: "infobase_test", url: "https://example.com/test.csv", format: "csv")
+    @ingestion = Warehouse::RawIngestion.create!(
       source: @source,
       fetched_at: Time.current,
       raw_file_path: "raw/test/data.csv",
@@ -21,9 +21,9 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
     @ingestion.infobase_loader.load(csv_content: csv)
 
     assert_equal "complete", @ingestion.reload.status
-    assert_equal 1, FiscalExpenditure.count
+    assert_equal 1, Warehouse::FiscalExpenditure.count
 
-    fe = FiscalExpenditure.first
+    fe = Warehouse::FiscalExpenditure.first
     assert_equal "2023-24", fe.fiscal_year
     assert_equal "operating", fe.vote_type
     assert_equal "1", fe.vote_number
@@ -39,7 +39,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    fe = FiscalExpenditure.first
+    fe = Warehouse::FiscalExpenditure.first
     assert_equal "statutory", fe.vote_type
     assert_equal "S", fe.vote_number
   end
@@ -52,7 +52,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    fe = FiscalExpenditure.first
+    fe = Warehouse::FiscalExpenditure.first
     assert_equal(-253_649.28, fe.actual_expenditure.to_f)
   end
 
@@ -64,7 +64,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    org = Organization.find_by(org_id_infobase: 1)
+    org = Warehouse::Organization.find_by(org_id_infobase: 1)
     assert_not_nil org
     assert_equal "Department of Agriculture and Agri-Food", org.canonical_name
     assert org.organization_aliases.exists?(alias_name: "Department of Agriculture and Agri-Food")
@@ -79,7 +79,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
     @ingestion.infobase_loader.load(csv_content: csv)
 
     # Create a second ingestion with same data
-    ingestion2 = RawIngestion.create!(
+    ingestion2 = Warehouse::RawIngestion.create!(
       source: @source,
       fetched_at: Time.current,
       raw_file_path: "raw/test/data2.csv",
@@ -89,8 +89,8 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
     ingestion2.infobase_loader.load(csv_content: csv)
 
     # Should still be 1 org and 1 expenditure (updated, not duplicated)
-    assert_equal 1, Organization.count
-    assert_equal 1, FiscalExpenditure.count
+    assert_equal 1, Warehouse::Organization.count
+    assert_equal 1, Warehouse::FiscalExpenditure.count
   end
 
   test "maps vote types correctly" do
@@ -104,7 +104,7 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    types = FiscalExpenditure.pluck(:vote_type).sort
+    types = Warehouse::FiscalExpenditure.pluck(:vote_type).sort
     assert_equal [ "capital", "grants_contributions", "operating", "statutory" ], types
   end
 
@@ -116,8 +116,8 @@ class RawIngestion::InfobaseLoaderTest < ActiveSupport::TestCase
 
     @ingestion.infobase_loader.load(csv_content: csv)
 
-    assert_equal 1, LineageEntry.count
-    entry = LineageEntry.first
+    assert_equal 1, Warehouse::LineageEntry.count
+    entry = Warehouse::LineageEntry.first
     assert_equal "deterministic", entry.transformation_type
     assert_equal 1.0, entry.confidence.to_f
   end

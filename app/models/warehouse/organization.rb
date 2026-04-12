@@ -1,4 +1,4 @@
-class Organization < ApplicationRecord
+class Warehouse::Organization < Warehouse::Record
   has_many :organization_aliases, dependent: :destroy
   has_many :fiscal_authorities, dependent: :destroy
   has_many :fiscal_expenditures, dependent: :destroy

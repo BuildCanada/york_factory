@@ -1,4 +1,4 @@
-class StandardObjectExpenditure < ApplicationRecord
+class Warehouse::StandardObjectExpenditure < Warehouse::Record
   belongs_to :organization
   belongs_to :raw_ingestion, optional: true
 

@@ -10,6 +10,7 @@ module YorkFactory
     config.autoload_lib(ignore: %w[assets tasks])
 
     config.api_only = true
+    config.active_record.schema_format = :sql
 
     config.i18n.available_locales = %i[en fr]
     config.i18n.default_locale = :en

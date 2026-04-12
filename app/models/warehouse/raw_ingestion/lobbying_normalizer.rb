@@ -1,10 +1,10 @@
-class RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
   performs :normalize
 
   def normalize(csv_content:)
     rows_processed = 0
     rows_skipped = 0
-    resolver = Organization.new.entity_resolver
+    resolver = Warehouse::Organization.new.entity_resolver
 
     CSV.parse(csv_content, headers: true, liberal_parsing: true) do |row|
       begin
@@ -21,7 +21,7 @@ class RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
           lineage = result.lineage_entry
         end
 
-        LobbyingActivity.create!(
+        Warehouse::LobbyingActivity.create!(
           lobbyist: lobbyist,
           organization: org,
           client_name: row["Client"]&.strip || row["client_name"]&.strip,
@@ -57,12 +57,12 @@ class RawIngestion::LobbyingNormalizer < ActiveRecord::AssociatedObject
     lobbyist_type = row["Type"]&.strip&.downcase || row["lobbyist_type"]&.strip
 
     if reg_num.present?
-      Lobbyist.find_or_create_by!(registration_number: reg_num) do |l|
+      Warehouse::Lobbyist.find_or_create_by!(registration_number: reg_num) do |l|
         l.name = name || "Unknown"
         l.lobbyist_type = lobbyist_type
       end
     else
-      Lobbyist.find_or_create_by!(name: name || "Unknown") do |l|
+      Warehouse::Lobbyist.find_or_create_by!(name: name || "Unknown") do |l|
         l.lobbyist_type = lobbyist_type
       end
     end

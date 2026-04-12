@@ -1,9 +1,9 @@
 require "test_helper"
 
-class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
+class Warehouse::RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
   setup do
-    @source = Source.create!(name: "estimates_test", url: "https://example.com/test.csv", format: "csv")
-    @ingestion = RawIngestion.create!(
+    @source = Warehouse::Source.create!(name: "estimates_test", url: "https://example.com/test.csv", format: "csv")
+    @ingestion = Warehouse::RawIngestion.create!(
       source: @source,
       fetched_at: Time.current,
       raw_file_path: "raw/test/estimates.csv",
@@ -12,7 +12,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
     )
 
     # Pre-create orgs that would come from InfoBase loader
-    @org = Organization.create!(canonical_name: "Atlantic Canada Opportunities Agency", org_id_infobase: 10)
+    @org = Warehouse::Organization.create!(canonical_name: "Atlantic Canada Opportunities Agency", org_id_infobase: 10)
     @org.organization_aliases.create!(alias_name: "Atlantic Canada Opportunities Agency")
   end
 
@@ -25,10 +25,10 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
     @ingestion.estimates_normalizer.normalize(csv_content: csv)
 
     # Should create fiscal_authorities for the Main Estimates columns
-    assert FiscalAuthority.exists?(fiscal_year: "2025-26", document_type: "main")
-    assert FiscalAuthority.exists?(fiscal_year: "2024-25", document_type: "main")
+    assert Warehouse::FiscalAuthority.exists?(fiscal_year: "2025-26", document_type: "main")
+    assert Warehouse::FiscalAuthority.exists?(fiscal_year: "2024-25", document_type: "main")
 
-    fa = FiscalAuthority.find_by(fiscal_year: "2025-26")
+    fa = Warehouse::FiscalAuthority.find_by(fiscal_year: "2025-26")
     assert_equal @org.id, fa.organization_id
     assert_equal "operating", fa.vote_type
     assert_equal 70_274_559, fa.amount.to_i
@@ -42,7 +42,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
 
     @ingestion.estimates_normalizer.normalize(csv_content: csv)
 
-    fa = FiscalAuthority.first
+    fa = Warehouse::FiscalAuthority.first
     assert_equal "statutory", fa.vote_type
     assert_equal "S", fa.vote_number
   end
@@ -67,7 +67,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
 
     @ingestion.estimates_normalizer.normalize(csv_content: csv)
 
-    fa = FiscalAuthority.first
+    fa = Warehouse::FiscalAuthority.first
     assert_equal 1_234_567, fa.amount.to_i
   end
 
@@ -90,7 +90,7 @@ class RawIngestion::EstimatesNormalizerTest < ActiveSupport::TestCase
 
     @ingestion.estimates_normalizer.normalize(csv_content: csv)
 
-    fa = FiscalAuthority.first
+    fa = Warehouse::FiscalAuthority.first
     assert_equal "2025-26", fa.fiscal_year
     assert_equal "main", fa.document_type
   end

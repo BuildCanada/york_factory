@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/rgeo/rgeo-proj4.git
+  revision: f33049cbc79a626a2541cf888c99e753b0486d35
+  branch: master
+  specs:
+    rgeo-proj4 (4.0.0)
+      rgeo (~> 3.1.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -60,6 +68,9 @@ GEM
       activemodel (= 8.1.3)
       activesupport (= 8.1.3)
       timeout (>= 0.4.0)
+    activerecord-postgis-adapter (11.1.1)
+      activerecord (~> 8.1.0)
+      rgeo-activerecord (~> 8.1.0)
     activestorage (8.1.3)
       actionpack (= 8.1.3)
       activejob (= 8.1.3)
@@ -120,6 +131,8 @@ GEM
     crass (1.0.6)
     csv (3.3.5)
     date (3.5.1)
+    dbf (4.3.2)
+      csv
     debug (1.11.1)
       irb (~> 1.10)
       reline (>= 0.3.8)
@@ -404,6 +417,13 @@ GEM
       actionpack (>= 7.0)
       railties (>= 7.0)
     rexml (3.4.4)
+    rgeo (3.1.0)
+    rgeo-activerecord (8.1.0)
+      activerecord (>= 8.1, < 8.2)
+      rgeo (>= 3.0)
+    rgeo-shapefile (3.1.0)
+      dbf (~> 4.0)
+      rgeo (>= 1.0)
     rss (0.3.2)
       rexml
     rubocop (1.85.1)
@@ -450,6 +470,7 @@ GEM
       ruby_llm-schema (~> 0)
       zeitwerk (~> 2)
     ruby_llm-schema (0.3.0)
+    rubyzip (3.2.2)
     securerandom (0.4.1)
     snaky_hash (2.0.3)
       hashie (>= 0.1.0, < 6)
@@ -526,6 +547,7 @@ PLATFORMS
 DEPENDENCIES
   active_job-performs
   active_record-associated_object
+  activerecord-postgis-adapter
   aws-sdk-s3
   bootsnap
   brakeman
@@ -554,9 +576,13 @@ DEPENDENCIES
   rack-cors
   rails (~> 8.1.2)
   rails-html-sanitizer
+  rgeo (~> 3.1)
+  rgeo-proj4!
+  rgeo-shapefile
   rss
   rubocop-rails-omakase
   ruby_llm
+  rubyzip
   solid_cable
   solid_cache
   solid_queue
@@ -578,6 +604,7 @@ CHECKSUMS
   activejob (8.1.3) sha256=a149b1766aa8204c3c3da7309e4becd40fcd5529c348cffbf6c9b16b565fe8d3
   activemodel (8.1.3) sha256=90c05cbe4cef3649b8f79f13016191ea94c4525ce4a5c0fb7ef909c4b91c8219
   activerecord (8.1.3) sha256=8003be7b2466ba0a2a670e603eeb0a61dd66058fccecfc49901e775260ac70ab
+  activerecord-postgis-adapter (11.1.1) sha256=ae2b9bd88c9ed7bfd21583bf233345cd0f1cd58d3ef96d78d001470f944fbac2
   activestorage (8.1.3) sha256=0564ce9309143951a67615e1bb4e090ee54b8befed417133cae614479b46384d
   activesupport (8.1.3) sha256=21a5e0dfbd4c3ddd9e1317ec6a4d782fa226e7867dc70b0743acda81a1dca20e
   addressable (2.8.9) sha256=cc154fcbe689711808a43601dee7b980238ce54368d23e127421753e46895485
@@ -602,6 +629,7 @@ CHECKSUMS
   crass (1.0.6) sha256=dc516022a56e7b3b156099abc81b6d2b08ea1ed12676ac7a5657617f012bd45d
   csv (3.3.5) sha256=6e5134ac3383ef728b7f02725d9872934f523cb40b961479f69cf3afa6c8e73f
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
+  dbf (4.3.2) sha256=e54f90d6164b9cbcd7a04309065ce9339666f1edd9faf0421f91d6e7901d6f7f
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   devise (5.0.3) sha256=c4c065051cdc4ace11547b2b7f5c3c4c97d0f1269250f5fe90f614ff78f29546
   devise-jwt (0.13.0) sha256=19720e64815cd4ba8cdaf338a482f0237e7f1542cc6439212be7db211e731d64
@@ -719,6 +747,10 @@ CHECKSUMS
   request_store (1.7.0) sha256=e1b75d5346a315f452242a68c937ef8e48b215b9453a77a6c0acdca2934c88cb
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
+  rgeo (3.1.0) sha256=89c1804894b35acf65891e1f24e15bbf2fbd972d4183e63c444bb97c1ccaf5d5
+  rgeo-activerecord (8.1.0) sha256=2a7aeab7eae2f2c41e8a8af7d008e8a23d8e6b2e5854e9ed701cf37b993f59a1
+  rgeo-proj4 (4.0.0)
+  rgeo-shapefile (3.1.0) sha256=73477414e4105346ca0b0734b79eb2a8b7aab625a79988a83cc4d2eaea6130df
   rss (0.3.2) sha256=3bd0446d32d832cda00ba07f4b179401f903b52ea1fdaac0f1f08de61a501efa
   rubocop (1.85.1) sha256=3dbcf9e961baa4c376eeeb2a03913dca5e3987033b04d38fa538aa1e7406cc77
   rubocop-ast (1.49.1) sha256=4412f3ee70f6fe4546cc489548e0f6fcf76cafcfa80fa03af67098ffed755035
@@ -729,6 +761,7 @@ CHECKSUMS
   ruby-vips (2.3.0) sha256=e685ec02c13969912debbd98019e50492e12989282da5f37d05f5471442f5374
   ruby_llm (1.14.1) sha256=7487d0f0bb9e86836d9233d656e10637370a6b22eb2555343c0a4c179ce7c500
   ruby_llm-schema (0.3.0) sha256=a591edc5ca1b7f0304f0e2261de61ba4b3bea17be09f5cf7558153adfda3dec6
+  rubyzip (3.2.2) sha256=c0ed99385f0625415c8f05bcae33fe649ed2952894a95ff8b08f26ca57ea5b3c
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
   snaky_hash (2.0.3) sha256=25a3d299566e8153fb02fa23fd9a9358845950f7a523ddbbe1fa1e0d79a6d456
   solid_cable (3.0.12) sha256=a168a54731a455d5627af48d8441ea3b554b8c1f6e6cd6074109de493e6b0460

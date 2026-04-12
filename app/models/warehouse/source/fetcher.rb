@@ -14,7 +14,7 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     end
 
     r2_key = "raw/#{source.name}/#{Date.current.iso8601}/#{File.basename(URI.parse(source.url).path)}"
-    R2Storage.new.upload(key: r2_key, body: body)
+    store_raw_file(r2_key, body)
 
     ingestion = source.raw_ingestions.create!(
       fetched_at: Time.current,
@@ -35,7 +35,7 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
   def download_with_retries
     retries = 0
     begin
-      response = HTTPX.get(source.url)
+      response = HTTPX.plugin(:follow_redirects).get(source.url)
       raise "HTTP #{response.status}: #{source.url}" unless response.status == 200
       response.body.to_s
     rescue => e
@@ -48,6 +48,23 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     end
   end
 
+  def store_raw_file(key, body)
+    if r2_configured?
+      R2Storage.new.upload(key: key, body: body)
+    else
+      local_path = Rails.root.join("storage", "raw", key)
+      FileUtils.mkdir_p(File.dirname(local_path))
+      File.binwrite(local_path, body)
+      Rails.logger.info "[Fetcher] Stored locally: #{local_path}"
+    end
+  end
+
+  def r2_configured?
+    Rails.application.credentials.r2.present?
+  rescue NoMethodError
+    false
+  end
+
   def dispatch_loader(ingestion, body)
     case source.name
     when /^infobase/
@@ -56,6 +73,14 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.estimates_normalizer.normalize(csv_content: body)
     when /^lobbying/
       ingestion.lobbying_normalizer.normalize(csv_content: body)
+    when /^statcan_boundary/, /^elections_canada/, /^ped_/, /^ward_/, /^sbw_/
+      ingestion.boundary_loader.load(file_content: body)
+    when /^statcan_geo_relationship/
+      ingestion.relationship_loader.load(csv_content: body)
+    when /^statcan_da_population/
+      ingestion.population_loader.load(csv_content: body)
+    when /^oda_/
+      ingestion.address_loader.load(file_content: body)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

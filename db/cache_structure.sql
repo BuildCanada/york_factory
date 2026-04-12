@@ -24,6 +24,9 @@ CREATE SCHEMA IF NOT EXISTS public;
 COMMENT ON SCHEMA public IS 'standard public schema';
 
 
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -138,7 +141,7 @@ CREATE INDEX index_solid_cache_entries_on_key_hash_and_byte_size ON public.solid
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO public, warehouse;
+SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('1');

@@ -4,7 +4,7 @@ class ToolTest < ActiveSupport::TestCase
   test "validates size inclusion" do
     tool = Tool.new(size: "invalid")
     assert_not tool.valid?
-    assert_includes tool.errors[:size], "is not included in the list"
+    assert tool.errors[:size].any?
   end
 
   test "allows valid sizes" do

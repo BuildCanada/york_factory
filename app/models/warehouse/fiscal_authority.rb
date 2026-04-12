@@ -1,4 +1,4 @@
-class FiscalAuthority < WarehouseRecord
+class Warehouse::FiscalAuthority < Warehouse::Record
   belongs_to :organization
   belongs_to :raw_ingestion, optional: true
   belongs_to :lineage_entry, optional: true

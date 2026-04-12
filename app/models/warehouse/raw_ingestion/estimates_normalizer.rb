@@ -1,4 +1,4 @@
-class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
   performs :normalize
 
   # Estimates CSV columns (organization-summary.csv):
@@ -7,10 +7,10 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
   #   2024-25 Estimates To Date, 2025-26 Main Estimates
   #
   # Vote type mapping:
-  #   1  → operating
-  #   5  → capital
-  #   10 → grants_contributions
-  #   "S" → statutory
+  #   1  -> operating
+  #   5  -> capital
+  #   10 -> grants_contributions
+  #   "S" -> statutory
 
   VOTE_TYPE_MAP = {
     "1" => "operating",
@@ -21,7 +21,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
   def normalize(csv_content:)
     rows_processed = 0
     rows_skipped = 0
-    resolver = Organization.new.entity_resolver
+    resolver = Warehouse::Organization.new.entity_resolver
 
     # Force UTF-8 and strip BOM from government CSVs
     clean_content = csv_content.dup.force_encoding("UTF-8").scrub("")
@@ -54,7 +54,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
           amount = parse_amount(row[col_name])
           next if amount.nil?
 
-          FiscalAuthority.find_or_initialize_by(
+          Warehouse::FiscalAuthority.find_or_initialize_by(
             organization: result.organization,
             fiscal_year: fiscal_year,
             document_type: doc_type,
@@ -74,7 +74,7 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
         rows_skipped += 1
         Rails.logger.error "[EstimatesNormalizer] Error on row #{org_name}: #{e.message}"
 
-        LineageEntry.create!(
+        Warehouse::LineageEntry.create!(
           raw_ingestion: raw_ingestion,
           source_field: "row",
           source_value: org_name,
@@ -97,9 +97,9 @@ class RawIngestion::EstimatesNormalizer < ActiveRecord::AssociatedObject
 
   def detect_fiscal_year_columns(headers)
     # Extract fiscal year and document type from column headers
-    # e.g., "2025-26 Main Estimates" → ["2025-26", "main"]
-    # e.g., "2024-25 Estimates To Date" → ["2024-25", "main"] (consolidated)
-    # e.g., "2023-24 Expenditures" → skip (these are actuals, not estimates)
+    # e.g., "2025-26 Main Estimates" -> ["2025-26", "main"]
+    # e.g., "2024-25 Estimates To Date" -> ["2024-25", "main"] (consolidated)
+    # e.g., "2023-24 Expenditures" -> skip (these are actuals, not estimates)
     results = []
 
     headers.each do |header|

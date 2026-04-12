@@ -2,7 +2,7 @@ class SourceHealthCheckJob < ApplicationJob
   queue_as :default
 
   def perform
-    Source.find_each do |source|
+    Warehouse::Source.find_each do |source|
       check_source(source)
     end
   end

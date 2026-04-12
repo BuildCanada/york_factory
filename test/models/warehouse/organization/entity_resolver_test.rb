@@ -1,10 +1,10 @@
 require "test_helper"
 
-class Organization::EntityResolverTest < ActiveSupport::TestCase
+class Warehouse::Organization::EntityResolverTest < ActiveSupport::TestCase
   setup do
-    @org = Organization.create!(canonical_name: "Department of Finance", org_id_infobase: 47)
+    @org = Warehouse::Organization.create!(canonical_name: "Department of Finance", org_id_infobase: 47)
     @org.organization_aliases.create!(alias_name: "Department of Finance")
-    @resolver = Organization.new.entity_resolver
+    @resolver = Warehouse::Organization.new.entity_resolver
   end
 
   test "exact match returns organization with confidence 1.0" do
@@ -25,7 +25,7 @@ class Organization::EntityResolverTest < ActiveSupport::TestCase
 
   test "encoding normalization handles curly apostrophes" do
     # Create an org with a straight apostrophe
-    org = Organization.create!(canonical_name: "Queen's Privy Council")
+    org = Warehouse::Organization.create!(canonical_name: "Queen's Privy Council")
     org.organization_aliases.create!(alias_name: "Queen's Privy Council")
 
     # Resolve with curly apostrophe (Unicode right single quote U+2019)
@@ -37,13 +37,13 @@ class Organization::EntityResolverTest < ActiveSupport::TestCase
   end
 
   test "encoding normalization creates alias for future exact matches" do
-    org = Organization.create!(canonical_name: "King's Privy Council")
+    org = Warehouse::Organization.create!(canonical_name: "King's Privy Council")
     org.organization_aliases.create!(alias_name: "King's Privy Council")
 
     @resolver.resolve(name: "King\u2019s Privy Council")
 
     # Now the curly version should be an alias
-    assert OrganizationAlias.exists?(alias_name: "King\u2019s Privy Council")
+    assert Warehouse::OrganizationAlias.exists?(alias_name: "King\u2019s Privy Council")
   end
 
   test "resolve_by_infobase_id creates organization if not exists" do

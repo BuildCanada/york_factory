@@ -1,4 +1,4 @@
-class LineageEntry < WarehouseRecord
+class Warehouse::LineageEntry < Warehouse::Record
   belongs_to :raw_ingestion, optional: true
 
   enum :transformation_type, {

@@ -2,7 +2,7 @@ module Api
   module V1
     class DeviationsController < ApplicationController
       def index
-        deviations = SpendingDeviation.includes(:organization)
+        deviations = Warehouse::SpendingDeviation.includes(:organization)
 
         deviations = deviations.for_year(params[:fiscal_year]) if params[:fiscal_year].present?
         deviations = deviations.anomalous if params[:anomalous] == "true"

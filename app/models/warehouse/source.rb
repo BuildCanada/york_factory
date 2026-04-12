@@ -1,4 +1,4 @@
-class Source < WarehouseRecord
+class Warehouse::Source < Warehouse::Record
   has_many :raw_ingestions, dependent: :destroy
 
   has_object :fetcher

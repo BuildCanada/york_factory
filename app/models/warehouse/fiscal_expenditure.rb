@@ -1,4 +1,4 @@
-class FiscalExpenditure < WarehouseRecord
+class Warehouse::FiscalExpenditure < Warehouse::Record
   belongs_to :organization
   belongs_to :raw_ingestion, optional: true
   belongs_to :lineage_entry, optional: true

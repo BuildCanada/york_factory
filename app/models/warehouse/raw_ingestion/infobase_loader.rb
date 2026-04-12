@@ -1,14 +1,14 @@
-class RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
+class Warehouse::RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
   performs :load
 
   # InfoBase CSV columns:
   #   fy_ef, org_id, org_name, voted_or_statutory, description, authorities, expenditures
   #
   # Vote type mapping:
-  #   1  → operating
-  #   5  → capital
-  #   10 → grants_contributions
-  #   "S" → statutory
+  #   1  -> operating
+  #   5  -> capital
+  #   10 -> grants_contributions
+  #   "S" -> statutory
 
   VOTE_TYPE_MAP = {
     "1" => "operating",
@@ -18,7 +18,7 @@ class RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
 
   def load(csv_content:)
     rows_processed = 0
-    resolver = Organization.new.entity_resolver
+    resolver = Warehouse::Organization.new.entity_resolver
 
     # Force UTF-8, strip BOM, and normalize quoting artifacts from government CSVs
     clean_content = csv_content.dup.force_encoding("UTF-8").scrub("")
@@ -42,7 +42,7 @@ class RawIngestion::InfobaseLoader < ActiveRecord::AssociatedObject
         vote_type = parse_vote_type(vote_raw)
         vote_number = vote_raw == "S" ? "S" : vote_raw
 
-        FiscalExpenditure.find_or_initialize_by(
+        Warehouse::FiscalExpenditure.find_or_initialize_by(
           organization: result.organization,
           fiscal_year: row["fy_ef"]&.strip,
           vote_number: vote_number

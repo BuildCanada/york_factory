@@ -35,7 +35,12 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
   def download_with_retries
     retries = 0
     begin
-      response = HTTPX.plugin(:follow_redirects).get(source.url)
+      response = HTTPX.plugin(:follow_redirects).with(
+        headers: {
+          "user-agent" => "Mozilla/5.0 (compatible; BuildCanada/1.0; +https://buildcanada.com)",
+          "accept" => "*/*"
+        }
+      ).get(source.url)
       raise "HTTP #{response.status}: #{source.url}" unless response.status == 200
       response.body.to_s
     rescue => e

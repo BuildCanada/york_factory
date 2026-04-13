@@ -15,7 +15,7 @@ namespace :geo do
   task pipeline: :environment do
     boundary_sources = Warehouse::Source.where(
       "name LIKE 'statcan_boundary_%' OR name LIKE 'elections_canada_%' OR name LIKE 'ped_%' OR name LIKE 'ward_%' OR name LIKE 'sbw_%'"
-    )
+    ).where.not(name: "ped_ontario")
     boundary_sources.each do |source|
       puts "Fetching #{source.name}..."
       source.fetcher.fetch

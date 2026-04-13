@@ -76,7 +76,7 @@ gem "devise-jwt"
 gem "friendly_id", "~> 5.5"
 
 # CMS: rich text editor (replaces Trix)
-gem "lexxy", "~> 0.9.3.beta"
+gem "lexxy", "~> 0.9.8.beta"
 
 # CMS: unified LLM interface for translations
 gem "ruby_llm"

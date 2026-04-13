@@ -28,7 +28,13 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 -- Name: warehouse; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA warehouse;
+CREATE SCHEMA IF NOT EXISTS warehouse;
+
+
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 
 SET default_tablespace = '';
@@ -766,6 +772,52 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: addresses; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.addresses (
+    id bigint NOT NULL,
+    oda_uid character varying NOT NULL,
+    street_number character varying,
+    street_name character varying,
+    street_type character varying,
+    street_direction character varying,
+    unit character varying,
+    city character varying,
+    province_code character varying(2),
+    postal_code character varying(7),
+    full_address character varying,
+    csd_uid character varying,
+    csd_name character varying,
+    latitude numeric(10,7),
+    longitude numeric(11,7),
+    provider character varying,
+    raw_ingestion_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: addresses_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.addresses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: addresses_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.addresses_id_seq OWNED BY warehouse.addresses.id;
+
+
+--
 -- Name: fiscal_authorities; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -841,6 +893,119 @@ CREATE SEQUENCE warehouse.fiscal_expenditures_id_seq
 --
 
 ALTER SEQUENCE warehouse.fiscal_expenditures_id_seq OWNED BY warehouse.fiscal_expenditures.id;
+
+
+--
+-- Name: geo_boundaries; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.geo_boundaries (
+    id bigint NOT NULL,
+    boundary_type character varying NOT NULL,
+    geo_uid character varying NOT NULL,
+    name_en character varying,
+    name_fr character varying,
+    province_code character varying(2),
+    geometry public.geography(MultiPolygon,4326),
+    population integer,
+    area_sq_km numeric,
+    census_year integer DEFAULT 2021,
+    raw_ingestion_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: geo_boundaries_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.geo_boundaries_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: geo_boundaries_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.geo_boundaries_id_seq OWNED BY warehouse.geo_boundaries.id;
+
+
+--
+-- Name: geo_crosswalks; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.geo_crosswalks (
+    id bigint NOT NULL,
+    source_id bigint NOT NULL,
+    target_id bigint NOT NULL,
+    source_type character varying NOT NULL,
+    target_type character varying NOT NULL,
+    overlap_population integer,
+    weight_source_to_target numeric(10,8),
+    weight_target_to_source numeric(10,8),
+    da_count integer,
+    census_year integer DEFAULT 2021,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: geo_crosswalks_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.geo_crosswalks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: geo_crosswalks_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.geo_crosswalks_id_seq OWNED BY warehouse.geo_crosswalks.id;
+
+
+--
+-- Name: geo_relationships; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.geo_relationships (
+    id bigint NOT NULL,
+    da_id bigint NOT NULL,
+    parent_id bigint NOT NULL,
+    relationship_type character varying NOT NULL,
+    raw_ingestion_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: geo_relationships_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.geo_relationships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: geo_relationships_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.geo_relationships_id_seq OWNED BY warehouse.geo_relationships.id;
 
 
 --
@@ -1286,6 +1451,13 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: addresses id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.addresses ALTER COLUMN id SET DEFAULT nextval('warehouse.addresses_id_seq'::regclass);
+
+
+--
 -- Name: fiscal_authorities id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -1297,6 +1469,27 @@ ALTER TABLE ONLY warehouse.fiscal_authorities ALTER COLUMN id SET DEFAULT nextva
 --
 
 ALTER TABLE ONLY warehouse.fiscal_expenditures ALTER COLUMN id SET DEFAULT nextval('warehouse.fiscal_expenditures_id_seq'::regclass);
+
+
+--
+-- Name: geo_boundaries id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_boundaries ALTER COLUMN id SET DEFAULT nextval('warehouse.geo_boundaries_id_seq'::regclass);
+
+
+--
+-- Name: geo_crosswalks id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_crosswalks ALTER COLUMN id SET DEFAULT nextval('warehouse.geo_crosswalks_id_seq'::regclass);
+
+
+--
+-- Name: geo_relationships id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_relationships ALTER COLUMN id SET DEFAULT nextval('warehouse.geo_relationships_id_seq'::regclass);
 
 
 --
@@ -1524,6 +1717,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: addresses addresses_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.addresses
+    ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: fiscal_authorities fiscal_authorities_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -1537,6 +1738,30 @@ ALTER TABLE ONLY warehouse.fiscal_authorities
 
 ALTER TABLE ONLY warehouse.fiscal_expenditures
     ADD CONSTRAINT fiscal_expenditures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: geo_boundaries geo_boundaries_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_boundaries
+    ADD CONSTRAINT geo_boundaries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: geo_crosswalks geo_crosswalks_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_crosswalks
+    ADD CONSTRAINT geo_crosswalks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: geo_relationships geo_relationships_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_relationships
+    ADD CONSTRAINT geo_relationships_pkey PRIMARY KEY (id);
 
 
 --
@@ -1863,6 +2088,69 @@ CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING bt
 
 
 --
+-- Name: idx_addresses_city; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_city ON warehouse.addresses USING btree (lower((city)::text));
+
+
+--
+-- Name: idx_addresses_city_trgm; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_city_trgm ON warehouse.addresses USING gin (city public.gin_trgm_ops);
+
+
+--
+-- Name: idx_addresses_csd_uid; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_csd_uid ON warehouse.addresses USING btree (csd_uid);
+
+
+--
+-- Name: idx_addresses_lat_lng; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_lat_lng ON warehouse.addresses USING btree (latitude, longitude);
+
+
+--
+-- Name: idx_addresses_oda_uid; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_addresses_oda_uid ON warehouse.addresses USING btree (oda_uid);
+
+
+--
+-- Name: idx_addresses_postal_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_postal_code ON warehouse.addresses USING btree (postal_code);
+
+
+--
+-- Name: idx_addresses_province_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_province_code ON warehouse.addresses USING btree (province_code);
+
+
+--
+-- Name: idx_addresses_street; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_street ON warehouse.addresses USING btree (lower((street_name)::text));
+
+
+--
+-- Name: idx_addresses_street_name_trgm; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_addresses_street_name_trgm ON warehouse.addresses USING gin (street_name public.gin_trgm_ops);
+
+
+--
 -- Name: idx_fiscal_authorities_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -1874,6 +2162,48 @@ CREATE UNIQUE INDEX idx_fiscal_authorities_unique ON warehouse.fiscal_authoritie
 --
 
 CREATE UNIQUE INDEX idx_fiscal_expenditures_unique ON warehouse.fiscal_expenditures USING btree (organization_id, fiscal_year, vote_number);
+
+
+--
+-- Name: idx_geo_boundaries_geometry; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_geo_boundaries_geometry ON warehouse.geo_boundaries USING gist (geometry);
+
+
+--
+-- Name: idx_geo_boundaries_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_geo_boundaries_unique ON warehouse.geo_boundaries USING btree (boundary_type, geo_uid, census_year);
+
+
+--
+-- Name: idx_geo_crosswalks_source; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_geo_crosswalks_source ON warehouse.geo_crosswalks USING btree (source_type, source_id);
+
+
+--
+-- Name: idx_geo_crosswalks_target; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_geo_crosswalks_target ON warehouse.geo_crosswalks USING btree (target_type, target_id);
+
+
+--
+-- Name: idx_geo_crosswalks_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_geo_crosswalks_unique ON warehouse.geo_crosswalks USING btree (source_id, target_id, census_year);
+
+
+--
+-- Name: idx_geo_relationships_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_geo_relationships_unique ON warehouse.geo_relationships USING btree (da_id, parent_id, relationship_type);
 
 
 --
@@ -1923,6 +2253,41 @@ CREATE INDEX index_fiscal_expenditures_on_organization_id ON warehouse.fiscal_ex
 --
 
 CREATE INDEX index_fiscal_expenditures_on_raw_ingestion_id ON warehouse.fiscal_expenditures USING btree (raw_ingestion_id);
+
+
+--
+-- Name: index_geo_boundaries_on_boundary_type; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_geo_boundaries_on_boundary_type ON warehouse.geo_boundaries USING btree (boundary_type);
+
+
+--
+-- Name: index_geo_boundaries_on_province_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_geo_boundaries_on_province_code ON warehouse.geo_boundaries USING btree (province_code);
+
+
+--
+-- Name: index_geo_relationships_on_da_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_geo_relationships_on_da_id ON warehouse.geo_relationships USING btree (da_id);
+
+
+--
+-- Name: index_geo_relationships_on_parent_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_geo_relationships_on_parent_id ON warehouse.geo_relationships USING btree (parent_id);
+
+
+--
+-- Name: index_geo_relationships_on_raw_ingestion_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_geo_relationships_on_raw_ingestion_id ON warehouse.geo_relationships USING btree (raw_ingestion_id);
 
 
 --
@@ -2063,6 +2428,14 @@ ALTER TABLE ONLY public.active_storage_attachments
 
 
 --
+-- Name: addresses addresses_raw_ingestion_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.addresses
+    ADD CONSTRAINT addresses_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
 -- Name: lobbying_activities fk_rails_0229443ca4; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -2183,12 +2556,66 @@ ALTER TABLE ONLY warehouse.lobbying_activities
 
 
 --
+-- Name: geo_boundaries geo_boundaries_raw_ingestion_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_boundaries
+    ADD CONSTRAINT geo_boundaries_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: geo_crosswalks geo_crosswalks_source_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_crosswalks
+    ADD CONSTRAINT geo_crosswalks_source_id_fkey FOREIGN KEY (source_id) REFERENCES warehouse.geo_boundaries(id);
+
+
+--
+-- Name: geo_crosswalks geo_crosswalks_target_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_crosswalks
+    ADD CONSTRAINT geo_crosswalks_target_id_fkey FOREIGN KEY (target_id) REFERENCES warehouse.geo_boundaries(id);
+
+
+--
+-- Name: geo_relationships geo_relationships_da_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_relationships
+    ADD CONSTRAINT geo_relationships_da_id_fkey FOREIGN KEY (da_id) REFERENCES warehouse.geo_boundaries(id);
+
+
+--
+-- Name: geo_relationships geo_relationships_parent_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_relationships
+    ADD CONSTRAINT geo_relationships_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES warehouse.geo_boundaries(id);
+
+
+--
+-- Name: geo_relationships geo_relationships_raw_ingestion_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.geo_relationships
+    ADD CONSTRAINT geo_relationships_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO public, warehouse;
+SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260412050000'),
+('20260412045451'),
+('20260412035425'),
+('20260412035424'),
+('20260412035423'),
+('20260412035422'),
 ('20260412035421'),
 ('20260409200003'),
 ('20260409200002'),

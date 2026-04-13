@@ -24,6 +24,9 @@ CREATE SCHEMA IF NOT EXISTS public;
 COMMENT ON SCHEMA public IS 'standard public schema';
 
 
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -840,7 +843,7 @@ ALTER TABLE ONLY public.solid_queue_scheduled_executions
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO public, warehouse;
+SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('1');

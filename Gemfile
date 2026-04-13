@@ -40,6 +40,13 @@ gem "active_job-performs"
 # R2/S3-compatible object storage
 gem "aws-sdk-s3"
 
+# PostGIS spatial database support
+gem "activerecord-postgis-adapter"
+gem "rgeo", "~> 3.1"
+gem "rgeo-proj4", github: "rgeo/rgeo-proj4", branch: "master"
+gem "rgeo-shapefile"
+gem "rubyzip"
+
 # CSV parsing (removed from Ruby 3.4 default gems)
 gem "csv"
 

@@ -35,6 +35,12 @@ Rails.application.routes.draw do
       end
       resources :subscribers, only: [ :create ]
       resources :uploads, only: [ :create ]
+
+      namespace :geo do
+        get "crosswalk", to: "crosswalk#show"
+        get "boundaries", to: "boundaries#index"
+        get "addresses", to: "addresses#index"
+      end
     end
   end
 

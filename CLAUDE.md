@@ -5,7 +5,7 @@ Automated pipeline that normalizes Canadian federal government fiscal data (Publ
 
 ## Commands
 ```bash
-bin/rails test                    # run all tests (116 tests)
+bin/rails test                    # run all tests (318 tests)
 bin/rails db:migrate              # apply migrations
 bin/rails db:seed                 # seed data sources
 bin/rails cms:seed                # seed CMS development data
@@ -23,17 +23,28 @@ bin/rails console                 # Rails console
 
 ## Pipeline (associated objects pattern)
 ```
-Source::Fetcher          → downloads CSV, archives to R2, creates RawIngestion
-RawIngestion::InfobaseLoader    → deterministic ETL for InfoBase (Public Accounts)
+Source::Fetcher                   → downloads CSV/shapefile, archives to R2, creates RawIngestion
+RawIngestion::InfobaseLoader      → deterministic ETL for InfoBase (Public Accounts)
 RawIngestion::EstimatesNormalizer → LLM-powered entity resolution for Estimates
 RawIngestion::LobbyingNormalizer  → lobbying registry normalization
-Organization::EntityResolver     → shared entity resolution cascade
+RawIngestion::BoundaryLoader      → shapefile import for 13 geo boundary types (PostGIS)
+RawIngestion::RelationshipLoader  → DA→parent geographic relationships from StatsCan
+RawIngestion::PopulationLoader    → DA population data for crosswalk weighting
+RawIngestion::AddressLoader       → Open Database of Addresses (ZIP→CSV import)
+Organization::EntityResolver      → shared entity resolution cascade
 ```
 
 ## CMS API
 ```
 API v1: memos, posts, builders, team_members, tools, faqs, feed_items, testimonials, subscribers, uploads
 Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
+```
+
+## Geo API
+```
+GET /api/v1/geo/boundaries       → search boundaries by type, province, name
+GET /api/v1/geo/addresses        → search addresses by street, city, province, postal code
+GET /api/v1/geo/crosswalk/:type/:uid → population-weighted crosswalk lookup
 ```
 
 ## Key gems
@@ -46,6 +57,8 @@ Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
 - `friendly_id` — slug generation with history
 - `lexxy` — ActionText editor replacement
 - `pagy` — pagination
+- `rgeo` + `rgeo-proj4` + `rgeo-shapefile` — geographic data processing and coordinate reprojection
+- `activerecord-postgis-adapter` — PostGIS spatial database support
 
 ## Entity resolution cascade
 1. Exact match on organization_aliases

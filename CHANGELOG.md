@@ -2,6 +2,30 @@
 
 All notable changes to York Factory will be documented in this file.
 
+## [0.1.3.0] - 2026-04-12
+
+### Added
+
+- Geographic boundary system: 13 boundary types (DA, CT, CSD, FSA, FED, PED, ward, school board ward, PR, CD, ER, CMA, PopCtr)
+- Population-weighted crosswalk engine: maps between any two boundary types using DA populations as weights
+- Elections Canada 2023 Representation Order FED boundaries (343 ridings) with EPSG:3347→WGS84 reprojection
+- Open Database of Addresses loader for Canadian address geocoding
+- Spatial crosswalks via PostGIS centroid-in-polygon for FED and PED boundaries
+- Geo API endpoints: boundaries search, address search with trigram indexes, crosswalk lookups
+- Toronto ward and school board ward boundaries (TDSB, TCDSB, Viamonde, MonAvenir)
+- Provincial electoral district boundaries for Ontario, Alberta, and BC
+- Full geo pipeline rake task (`geo:pipeline`) for end-to-end data loading
+- 35 new tests for all loaders (boundary, population, relationship, address) and crosswalk computation
+
+### Changed
+
+- Replaced StatsCan 2021 Census FED source (338 ridings) with Elections Canada 2023 Representation Order (343 ridings)
+- Crosswalk SQL queries use parameterized queries via `sanitize_sql_array` instead of string interpolation
+- Population loader uses bulk `UPDATE FROM VALUES` instead of N+1 individual UPDATEs
+- Crosswalk build wrapped in database transaction for atomic updates
+- Extracted shared `crosswalk_query` method eliminating 3x SQL duplication in geo.rake
+- Boundary loader uses EPSG SRID constants instead of hardcoded proj4 strings
+
 ## [0.1.2.0] - 2026-03-30
 
 ### Added

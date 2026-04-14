@@ -33,7 +33,7 @@ class TeamMemberTest < ActiveSupport::TestCase
   end
 
   test "valid roles are accepted" do
-    %w[board team volunteer advisor].each do |valid_role|
+    %w[board advisor volunteer memo_author employee].each do |valid_role|
       member = TeamMember.new(name: "Test #{valid_role}", slug: "test-#{valid_role}-#{SecureRandom.hex(4)}", role: valid_role)
       assert member.valid?, "Expected role '#{valid_role}' to be valid: #{member.errors.full_messages}"
     end
@@ -46,16 +46,16 @@ class TeamMemberTest < ActiveSupport::TestCase
   end
 
   test "by_role scope filters by role" do
-    team = TeamMember.by_role("team")
-    assert_includes team, team_members(:alice)
-    assert_not_includes team, team_members(:bob)
+    authors = TeamMember.by_role("memo_author")
+    assert_includes authors, team_members(:alice)
+    assert_not_includes authors, team_members(:bob)
   end
 
   test "fixture alice has correct attributes" do
     alice = team_members(:alice)
     assert_equal "Alice Builder", alice.name
     assert_equal "alice-builder", alice.slug
-    assert_equal "team", alice.role
+    assert_equal "memo_author", alice.role
     assert_equal 1, alice.position
     assert_equal "Director of Engineering", alice.title_en
   end

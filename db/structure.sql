@@ -268,12 +268,12 @@ ALTER SEQUENCE public.faqs_id_seq OWNED BY public.faqs.id;
 
 CREATE TABLE public.feed_entries (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    featured boolean DEFAULT false,
-    feedable_id bigint NOT NULL,
     feedable_type character varying NOT NULL,
+    feedable_id bigint NOT NULL,
     published_at timestamp(6) without time zone NOT NULL,
+    featured boolean DEFAULT false,
     tags character varying[] DEFAULT '{}'::character varying[],
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -411,22 +411,22 @@ ALTER SEQUENCE public.memos_id_seq OWNED BY public.memos.id;
 CREATE TABLE public.metrics_twitter_stats (
     id bigint NOT NULL,
     account character varying NOT NULL,
-    bookmarks integer DEFAULT 0 NOT NULL,
-    create_post integer DEFAULT 0 NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     date date NOT NULL,
-    engagements integer DEFAULT 0 NOT NULL,
     impressions integer DEFAULT 0 NOT NULL,
     likes integer DEFAULT 0 NOT NULL,
-    media_views integer DEFAULT 0 NOT NULL,
+    engagements integer DEFAULT 0 NOT NULL,
+    bookmarks integer DEFAULT 0 NOT NULL,
+    shares integer DEFAULT 0 NOT NULL,
     new_follows integer DEFAULT 0 NOT NULL,
-    profile_visits integer DEFAULT 0 NOT NULL,
+    unfollows integer DEFAULT 0 NOT NULL,
     replies integer DEFAULT 0 NOT NULL,
     reposts integer DEFAULT 0 NOT NULL,
-    shares integer DEFAULT 0 NOT NULL,
-    unfollows integer DEFAULT 0 NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    video_views integer DEFAULT 0 NOT NULL
+    profile_visits integer DEFAULT 0 NOT NULL,
+    create_post integer DEFAULT 0 NOT NULL,
+    video_views integer DEFAULT 0 NOT NULL,
+    media_views integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -501,20 +501,20 @@ CREATE TABLE public.schema_migrations (
 
 CREATE TABLE public.social_posts (
     id bigint NOT NULL,
+    type character varying NOT NULL,
     account_handle character varying NOT NULL,
-    author_avatar_url character varying,
-    author_name character varying,
-    body text,
-    created_at timestamp(6) without time zone NOT NULL,
-    embed_code text,
     external_id character varying NOT NULL,
+    title character varying,
+    body text,
+    url character varying NOT NULL,
     image_url character varying,
+    author_name character varying,
+    author_avatar_url character varying,
+    embed_code text,
     metadata jsonb DEFAULT '{}'::jsonb,
     posted_at timestamp(6) without time zone NOT NULL,
-    title character varying,
-    type character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    url character varying NOT NULL
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -577,14 +577,14 @@ ALTER SEQUENCE public.subscribers_id_seq OWNED BY public.subscribers.id;
 
 CREATE TABLE public.substack_posts (
     id bigint NOT NULL,
-    author_name character varying,
-    body text,
-    created_at timestamp(6) without time zone NOT NULL,
     external_url character varying NOT NULL,
+    title character varying NOT NULL,
+    subtitle character varying,
+    body text,
+    author_name character varying,
     image_url character varying,
     posted_at timestamp(6) without time zone NOT NULL,
-    subtitle character varying,
-    title character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -727,10 +727,7 @@ ALTER SEQUENCE public.tools_id_seq OWNED BY public.tools.id;
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    address_line1 character varying,
-    address_line2 character varying,
     avatar_url character varying,
-    city character varying,
     created_at timestamp(6) without time zone NOT NULL,
     current_sign_in_at timestamp(6) without time zone,
     current_sign_in_ip character varying,
@@ -739,16 +736,19 @@ CREATE TABLE public.users (
     last_sign_in_at timestamp(6) without time zone,
     last_sign_in_ip character varying,
     name character varying,
-    postal_code character varying,
     provider character varying,
-    province character varying,
     remember_created_at timestamp(6) without time zone,
     reset_password_sent_at timestamp(6) without time zone,
     reset_password_token character varying,
-    role character varying DEFAULT 'member'::character varying NOT NULL,
     sign_in_count integer DEFAULT 0 NOT NULL,
     uid character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    role character varying DEFAULT 'member'::character varying NOT NULL,
+    postal_code character varying,
+    address_line1 character varying,
+    address_line2 character varying,
+    city character varying,
+    province character varying
 );
 
 
@@ -2610,6 +2610,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260413000000'),
 ('20260412050000'),
 ('20260412045451'),
 ('20260412035425'),
@@ -2623,6 +2624,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260409200000'),
 ('20260406043854'),
 ('20260403210357'),
+('20260326200001'),
 ('20260326184648'),
 ('20260326184647'),
 ('20260324230847'),

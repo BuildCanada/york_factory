@@ -8,6 +8,7 @@ module Api
         scope = preview_mode? ? TeamMember.all : TeamMember.published
         scope = scope.ordered
         scope = scope.by_role(params[:role]) if params[:role].present?
+        scope = scope.where.not(role: params[:exclude_role]) if params[:exclude_role].present?
 
         render json: {
           data: scope.map { |tm| serialize_team_member(tm) }

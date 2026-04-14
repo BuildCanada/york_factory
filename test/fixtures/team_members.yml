@@ -3,7 +3,7 @@ alice:
   slug: alice-builder
   title_en: Director of Engineering
   title_fr: Directrice de l'ingénierie
-  role: team
+  role: memo_author
   position: 1
   published_at: <%= 1.day.ago.to_fs(:db) %>
 

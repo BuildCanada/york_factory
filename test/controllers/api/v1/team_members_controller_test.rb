@@ -23,18 +23,18 @@ class Api::V1::TeamMembersControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil member
     assert_equal "Alice Builder", member["name"]
     assert_equal "alice-builder", member["slug"]
-    assert_equal "team", member["role"]
+    assert_equal "memo_author", member["role"]
     assert_equal "Director of Engineering", member["title"]
   end
 
   test "index filters by role" do
-    get api_v1_team_members_url, params: { role: "team" }
+    get api_v1_team_members_url, params: { role: "memo_author" }
     assert_response :success
 
     data = JSON.parse(response.body)
     roles = data["data"].map { |m| m["role"] }
 
-    assert roles.all? { |r| r == "team" }
+    assert roles.all? { |r| r == "memo_author" }
     assert roles.any?
   end
 
@@ -62,7 +62,7 @@ class Api::V1::TeamMembersControllerTest < ActionDispatch::IntegrationTest
 
   test "create without auth returns 401" do
     post api_v1_team_members_url, params: {
-      team_member: { name: "New Member", role: "team" }
+      team_member: { name: "New Member", role: "memo_author" }
     }, as: :json
 
     assert_response :unauthorized

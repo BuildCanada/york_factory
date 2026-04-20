@@ -1,5 +1,5 @@
 <div class="page-header">
-  <h1><%= @team_member.name %></h1>
+  <h1><%= @team_member.name %> <% if @team_member.role.present? %><small>&mdash; <%= @team_member.role.humanize.titleize %></small><% end %></h1>
   <div class="btn-group">
     <a href="<%= edit_admin_team_member_path(@team_member) %>" class="btn btn-sm">Edit</a>
     <%= link_to "Delete", admin_team_member_path(@team_member), data: { turbo_method: :delete, turbo_confirm: "Delete this team member?" }, class: "btn btn-sm btn-danger" %>
@@ -9,7 +9,7 @@
 <div class="card mb-2">
   <p><strong>Slug:</strong> <span class="mono"><%= @team_member.slug %></span></p>
   <p><strong>Title:</strong> <%= @team_member.title_en %></p>
-  <p><strong>Role:</strong> <%= @team_member.role&.capitalize %></p>
+  <p><strong>Role:</strong> <%= @team_member.role&.humanize&.titleize %></p>
   <p><strong>Position:</strong> <%= @team_member.position %></p>
   <p><strong>Status:</strong>
     <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@team_member.publish_status] %>">
@@ -21,5 +21,37 @@
   <% if @team_member.profile_photo.attached? %>
     <p><strong>Photo:</strong></p>
     <%= image_tag url_for(@team_member.profile_photo), class: "file-preview" %>
+  <% end %>
+</div>
+
+<div class="card mb-2">
+  <h2>Authored Memos (<%= @authored_memos.size %>)</h2>
+  <% if @authored_memos.any? %>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Published</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @authored_memos.each do |memo| %>
+          <tr>
+            <td><a href="<%= admin_memo_path(memo) %>"><%= memo.title_en %></a></td>
+            <td><%= memo.author_id == @team_member.id ? "Author" : "Co-author" %></td>
+            <td>
+              <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[memo.publish_status] %>">
+                <%= memo.publish_status.capitalize %>
+              </span>
+            </td>
+            <td><%= memo.published_at&.to_date %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p>No memos authored.</p>
   <% end %>
 </div>

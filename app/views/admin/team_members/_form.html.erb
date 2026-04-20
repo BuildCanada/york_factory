@@ -14,7 +14,7 @@
 
   <div class="form-group">
     <label>Role</label>
-    <%= f.select :role, %w[board team volunteer advisor].map { |r| [r.capitalize, r] }, { include_blank: "— None —" }, class: "form-control" %>
+    <%= f.select :role, %w[board advisor volunteer memo_author employee].map { |r| [r.humanize.titleize, r] }, { include_blank: "— None —" }, class: "form-control" %>
   </div>
 
   <div class="form-group">

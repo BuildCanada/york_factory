@@ -81,7 +81,7 @@ gem "commonmarker"
 gem "reverse_markdown"
 
 # CMS: rich text editor (replaces Trix) — being phased out in favour of markdown
-gem "lexxy", "~> 0.9.3.beta"
+gem "lexxy", "~> 0.9.9.beta"
 
 # CMS: unified LLM interface for translations
 gem "ruby_llm"

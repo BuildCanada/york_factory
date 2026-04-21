@@ -58,6 +58,9 @@ Rails.application.configure do
   mailer_config = Rails.application.credentials.mailer || {}
   config.action_mailer.default_url_options = { host: mailer_config.fetch(:host, "mail.example.com"), protocol: "https" }
 
+  # Host used for absolute URL generation (ActiveStorage blobs embedded in markdown, etc.).
+  Rails.application.routes.default_url_options = { host: mailer_config.fetch(:host, "api.buildcanada.com"), protocol: "https" }
+
   # Amazon SES via SMTP
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {

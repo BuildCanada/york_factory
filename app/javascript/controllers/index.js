@@ -8,3 +8,7 @@ application.register("sortable", SortableController)
 
 import SidebarController from "controllers/sidebar_controller"
 application.register("sidebar", SidebarController)
+
+import { MarksmithController, ListContinuationController } from "@avo-hq/marksmith"
+application.register("marksmith", MarksmithController)
+application.register("list-continuation", ListContinuationController)

@@ -83,7 +83,7 @@ module Admin
     end
 
     def inline_role_update?
-      submitted = (params[:team_member] || {}).keys - ["role"]
+      submitted = (params[:team_member] || {}).keys - [ "role" ]
       submitted.empty?
     end
 

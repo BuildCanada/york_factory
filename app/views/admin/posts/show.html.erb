@@ -31,5 +31,5 @@
 
 <div class="card">
   <h2>Body (EN)</h2>
-  <div><%= @post.body_en %></div>
+  <div class="rendered-markdown"><%= render_markdown @post.body_en %></div>
 </div>

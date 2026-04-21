@@ -124,6 +124,12 @@ GEM
     bundler-audit (0.9.3)
       bundler (>= 1.2.0)
       thor (~> 1.0)
+    commonmarker (2.8.1-aarch64-linux)
+    commonmarker (2.8.1-aarch64-linux-musl)
+    commonmarker (2.8.1-arm-linux)
+    commonmarker (2.8.1-arm64-darwin)
+    commonmarker (2.8.1-x86_64-linux)
+    commonmarker (2.8.1-x86_64-linux-musl)
     concise_errors (0.2.0)
       actionpack (>= 6.1, < 9.0)
     concurrent-ruby (1.3.6)
@@ -243,6 +249,8 @@ GEM
       net-pop
       net-smtp
     marcel (1.1.0)
+    marksmith (0.4.8)
+      activesupport
     mcp (0.10.0)
       json-schema (>= 4.1)
     mini_magick (5.3.1)
@@ -416,6 +424,8 @@ GEM
     responders (3.2.0)
       actionpack (>= 7.0)
       railties (>= 7.0)
+    reverse_markdown (3.0.2)
+      nokogiri
     rexml (3.4.4)
     rgeo (3.1.0)
     rgeo-activerecord (8.1.0)
@@ -552,6 +562,7 @@ DEPENDENCIES
   bootsnap
   brakeman
   bundler-audit
+  commonmarker
   concise_errors
   csv
   debug
@@ -564,6 +575,7 @@ DEPENDENCIES
   importmap-rails
   kamal
   lexxy (~> 0.9.3.beta)
+  marksmith
   mission_control-jobs
   mobility (~> 1.3)
   omniauth-google-oauth2
@@ -576,6 +588,7 @@ DEPENDENCIES
   rack-cors
   rails (~> 8.1.2)
   rails-html-sanitizer
+  reverse_markdown
   rgeo (~> 3.1)
   rgeo-proj4!
   rgeo-shapefile
@@ -623,6 +636,12 @@ CHECKSUMS
   brakeman (8.0.4) sha256=7bf921fa9638544835df9aa7b3e720a9a72c0267f34f92135955edd80d4dcf6f
   builder (3.3.0) sha256=497918d2f9dca528fdca4b88d84e4ef4387256d984b8154e9d5d3fe5a9c8835f
   bundler-audit (0.9.3) sha256=81c8766c71e47d0d28a0f98c7eed028539f21a6ea3cd8f685eb6f42333c9b4e9
+  commonmarker (2.8.1-aarch64-linux) sha256=f855599cc6855f4137d72dcacae9571451075afe6e6c8522eba353df9b81d0bf
+  commonmarker (2.8.1-aarch64-linux-musl) sha256=bbc2b3d361403431a5aac737dc86997d3b2843276ef395e7499cf17ad48e1b2c
+  commonmarker (2.8.1-arm-linux) sha256=ede48564a9c2e29e003361fd7b0b158b3b85bcbd5a15b963fa2b3c78eef3993f
+  commonmarker (2.8.1-arm64-darwin) sha256=cf75760122d6e1c3f8626b5a6911636d2e0aaa26fa8dd377fea440a49c854b3e
+  commonmarker (2.8.1-x86_64-linux) sha256=c8f2e903c6ee4e2c7e280aa8b49ef37c53202d388e3a2ee06dfdccc8c6fb634f
+  commonmarker (2.8.1-x86_64-linux-musl) sha256=9b6305ce47e0d444b77dabf1762bf76085c2f7963b63c25c02ec36edcf06c785
   concise_errors (0.2.0) sha256=9605eacee1c52d1c0190d4f787fe42a1908588af7ee26171c3fe9c6b3a34e04a
   concurrent-ruby (1.3.6) sha256=6b56837e1e7e5292f9864f34b69c5a2cbc75c0cf5338f1ce9903d10fa762d5ab
   connection_pool (3.0.2) sha256=33fff5ba71a12d2aa26cb72b1db8bba2a1a01823559fb01d29eb74c286e62e0a
@@ -678,6 +697,7 @@ CHECKSUMS
   loofah (2.25.1) sha256=d436c73dbd0c1147b16c4a41db097942d217303e1f7728704b37e4df9f6d2e04
   mail (2.9.0) sha256=6fa6673ecd71c60c2d996260f9ee3dd387d4673b8169b502134659ece6d34941
   marcel (1.1.0) sha256=fdcfcfa33cc52e93c4308d40e4090a5d4ea279e160a7f6af988260fa970e0bee
+  marksmith (0.4.8) sha256=b91b861d80373fe7db53b4ed208fc7174320775b398f78c6d7f6f35d0cf10dc1
   mcp (0.10.0) sha256=09b9231eb16dff75cc7b8a95817c8acfcf4d1cab8d34f350671e43e765242b57
   mini_magick (5.3.1) sha256=29395dfd76badcabb6403ee5aff6f681e867074f8f28ce08d78661e9e4a351c4
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
@@ -746,6 +766,7 @@ CHECKSUMS
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   request_store (1.7.0) sha256=e1b75d5346a315f452242a68c937ef8e48b215b9453a77a6c0acdca2934c88cb
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a
+  reverse_markdown (3.0.2) sha256=818ebb92ce39dbb1a291690dd1ec9a6d62530d4725296b17e9c8f668f9a5b8af
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   rgeo (3.1.0) sha256=89c1804894b35acf65891e1f24e15bbf2fbd972d4183e63c444bb97c1ccaf5d5
   rgeo-activerecord (8.1.0) sha256=2a7aeab7eae2f2c41e8a8af7d008e8a23d8e6b2e5854e9ed701cf37b993f59a1

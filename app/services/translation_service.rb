@@ -3,7 +3,7 @@ class TranslationService
 
   def translate_record(record)
     translate_plain_fields(record)
-    translate_rich_text_fields(record)
+    translate_markdown_fields(record)
     translate_hash_fields(record)
   end
 
@@ -22,17 +22,16 @@ class TranslationService
     end
   end
 
-  def translate_rich_text_fields(record)
-    record.class.rich_text_fields.each do |field|
-      en_rt = record.public_send(:"#{field}_en")
-      next if en_rt.blank?
+  def translate_markdown_fields(record)
+    record.class.markdown_fields.each do |field|
+      en_md = record.public_send(:"#{field}_en")
+      next if en_md.blank?
       next if record.public_send(:"#{field}_fr").present?
 
-      fr_html = translate_text(en_rt.to_s)
-      next unless fr_html
+      fr_md = translate_text(en_md)
+      next unless fr_md
 
-      record.public_send(:"#{field}_fr=", fr_html)
-      record.save!
+      record.update_column(:"#{field}_md_fr", fr_md)
     end
   end
 
@@ -65,7 +64,7 @@ class TranslationService
 
   def translation_prompt(text)
     <<~PROMPT
-      Translate the following text from English to French. Preserve all HTML tags, markdown formatting, URLs, and special characters exactly as they are. Return only the translated text, nothing else.
+      Translate the following text from English to French. Preserve all markdown formatting (headings, lists, links, images, code blocks, inline emphasis), URLs, and special characters exactly as they are. Return only the translated text, nothing else.
 
       #{text}
     PROMPT

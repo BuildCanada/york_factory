@@ -65,8 +65,10 @@ module Api
           image_url: image_url(builder.image)
         }
         if full
-          data[:body] = builder.body.to_s
-          data[:author] = builder.author.to_s
+          data[:body] = builder.body_html
+          data[:body_markdown] = builder.body
+          data[:author] = builder.author_html
+          data[:author_markdown] = builder.author
         end
         data
       end

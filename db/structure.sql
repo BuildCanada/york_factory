@@ -33,7 +33,6 @@ CREATE SCHEMA IF NOT EXISTS warehouse;
 
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
-
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 
@@ -201,7 +200,11 @@ CREATE TABLE public.builders (
     slug character varying NOT NULL,
     title_en character varying,
     title_fr character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    body_md_en text,
+    body_md_fr text,
+    author_md_en text,
+    author_md_fr text
 );
 
 
@@ -239,7 +242,9 @@ CREATE TABLE public.faqs (
     published_at timestamp(6) without time zone,
     question_en text,
     question_fr text,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    answer_md_en text,
+    answer_md_fr text
 );
 
 
@@ -381,7 +386,13 @@ CREATE TABLE public.memos (
     title_en character varying,
     title_fr character varying,
     twitter_embed text,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    body_md_en text,
+    body_md_fr text,
+    appendix_md_en text,
+    appendix_md_fr text,
+    supporters_md_en text,
+    supporters_md_fr text
 );
 
 
@@ -463,7 +474,9 @@ CREATE TABLE public.posts (
     summary_fr text,
     title_en character varying,
     title_fr character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    body_md_en text,
+    body_md_fr text
 );
 
 
@@ -698,7 +711,9 @@ CREATE TABLE public.tools (
     title_en character varying,
     title_fr character varying,
     updated_at timestamp(6) without time zone NOT NULL,
-    url character varying
+    url character varying,
+    description_md_en text,
+    description_md_fr text
 );
 
 
@@ -2610,6 +2625,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420195921'),
 ('20260413000000'),
 ('20260412050000'),
 ('20260412045451'),

@@ -33,11 +33,11 @@
 <% if @builder.author_en.present? %>
   <div class="card mb-2">
     <h2>Author (EN)</h2>
-    <div><%= @builder.author_en %></div>
+    <div class="rendered-markdown"><%= render_markdown @builder.author_en %></div>
   </div>
 <% end %>
 
 <div class="card">
   <h2>Body (EN)</h2>
-  <div><%= @builder.body_en %></div>
+  <div class="rendered-markdown"><%= render_markdown @builder.body_en %></div>
 </div>

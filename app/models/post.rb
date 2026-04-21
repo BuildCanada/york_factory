@@ -1,5 +1,5 @@
 class Post < ApplicationRecord
-  include Feedable, Translatable, Publishable, HasLocalizedRichText
+  include Feedable, Translatable, Publishable, HasLocalizedMarkdown
 
   extend Mobility
   translates :title, :summary, backend: :column
@@ -7,11 +7,11 @@ class Post < ApplicationRecord
   extend FriendlyId
   friendly_id :title_en, use: :history
 
-  has_localized_rich_text :body
+  has_localized_markdown :body
   has_one_attached :seo_image
 
   translatable_fields :title, :summary
-  rich_text_fields :body
+  markdown_fields :body
 
   scope :visible, -> { where(hidden: false) }
 

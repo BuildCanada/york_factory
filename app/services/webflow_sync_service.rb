@@ -132,6 +132,8 @@ class WebflowSyncService
         author_title: fd["builder-title"].to_s.presence,
         author_avatar: fd["builder-avatar"].to_s.presence
       )
+      # HasLocalizedMarkdown setter auto-detects HTML and converts to markdown,
+      # downloading any inline images into ActiveStorage.
       memo.body_en = fd["body"].to_s if fd["body"].present?
       memo.appendix_en = fd["appendix"].to_s if fd["appendix"].present?
       memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?

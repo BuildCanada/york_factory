@@ -66,7 +66,10 @@ module Api
           published_at: post.published_at,
           seo_image_url: image_url(post.seo_image)
         }
-        data[:body] = post.body.to_s if full
+        if full
+          data[:body] = post.body_html
+          data[:body_markdown] = post.body
+        end
         data
       end
     end

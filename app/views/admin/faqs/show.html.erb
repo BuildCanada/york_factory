@@ -8,7 +8,8 @@
 
 <div class="card mb-2">
   <p><strong>Question (EN):</strong> <%= @faq.question_en %></p>
-  <p><strong>Answer (EN):</strong> <%= @faq.answer_en %></p>
+  <div><strong>Answer (EN):</strong></div>
+  <div class="rendered-markdown"><%= render_markdown @faq.answer_en %></div>
   <p><strong>Position:</strong> <%= @faq.position %></p>
   <p><strong>Status:</strong>
     <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@faq.publish_status] %>">

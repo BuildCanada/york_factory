@@ -1,5 +1,5 @@
 class Tool < ApplicationRecord
-  include Translatable, Publishable, HasLocalizedRichText
+  include Translatable, Publishable, HasLocalizedMarkdown
 
   extend Mobility
   translates :title, backend: :column
@@ -7,7 +7,7 @@ class Tool < ApplicationRecord
   extend FriendlyId
   friendly_id :title_en, use: :history
 
-  has_localized_rich_text :description
+  has_localized_markdown :description
   has_one_attached :image
 
   validates :size, inclusion: { in: %w[small big], allow_nil: true }
@@ -16,5 +16,5 @@ class Tool < ApplicationRecord
   scope :ordered, -> { order(:position) }
 
   translatable_fields :title
-  rich_text_fields :description
+  markdown_fields :description
 end

@@ -14,9 +14,9 @@ class TranslatableTest < ActiveSupport::TestCase
     assert_not_includes Memo.translatable_fields, :key_messages
   end
 
-  test "rich_text_fields DSL registers fields" do
-    assert_includes Memo.rich_text_fields, :body
-    assert_includes Memo.rich_text_fields, :appendix
-    assert_includes Memo.rich_text_fields, :supporters
+  test "markdown_fields DSL registers fields" do
+    assert_includes Memo.markdown_fields, :body
+    assert_includes Memo.markdown_fields, :appendix
+    assert_includes Memo.markdown_fields, :supporters
   end
 end

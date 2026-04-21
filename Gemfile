@@ -75,7 +75,12 @@ gem "devise-jwt"
 # CMS: slug generation with history
 gem "friendly_id", "~> 5.5"
 
-# CMS: rich text editor (replaces Trix)
+# CMS: markdown editor + renderer
+gem "marksmith"
+gem "commonmarker"
+gem "reverse_markdown"
+
+# CMS: rich text editor (replaces Trix) — being phased out in favour of markdown
 gem "lexxy", "~> 0.9.3.beta"
 
 # CMS: unified LLM interface for translations

@@ -1,5 +1,5 @@
 class Memo < ApplicationRecord
-  include Feedable, Translatable, Publishable, HasLocalizedRichText
+  include Feedable, Translatable, Publishable, HasLocalizedMarkdown
 
   extend Mobility
   translates :title, backend: :column
@@ -7,9 +7,9 @@ class Memo < ApplicationRecord
   extend FriendlyId
   friendly_id :title_en, use: :history
 
-  has_localized_rich_text :body
-  has_localized_rich_text :appendix
-  has_localized_rich_text :supporters
+  has_localized_markdown :body
+  has_localized_markdown :appendix
+  has_localized_markdown :supporters
   has_one_attached :seo_image
   belongs_to :author, class_name: "TeamMember", optional: true
   belongs_to :co_author, class_name: "TeamMember", optional: true
@@ -27,7 +27,7 @@ class Memo < ApplicationRecord
   }
 
   translatable_fields :title
-  rich_text_fields :body, :appendix, :supporters
+  markdown_fields :body, :appendix, :supporters
   hash_fields :key_messages
 
   def self.feed_type_label = "memo"

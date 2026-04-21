@@ -76,9 +76,12 @@ module Api
 
         if full
           data.merge!(
-            body: memo.body.to_s,
-            appendix: memo.appendix.to_s,
-            supporters: memo.supporters.to_s,
+            body: memo.body_html,
+            body_markdown: memo.body,
+            appendix: memo.appendix_html,
+            appendix_markdown: memo.appendix,
+            supporters: memo.supporters_html,
+            supporters_markdown: memo.supporters,
             key_messages: I18n.locale == :fr ? (memo.key_messages_fr.presence || memo.key_messages_en) : memo.key_messages_en,
             twitter_embed: memo.twitter_embed,
             author_name: memo.author_name,

@@ -30,7 +30,7 @@
     <h2>Key Messages</h2>
     <ul>
       <% @memo.key_messages_en.each do |msg| %>
-        <li><%= msg %></li>
+        <li><%= msg.is_a?(Hash) ? msg["message"] : msg %></li>
       <% end %>
     </ul>
   </div>
@@ -39,18 +39,18 @@
 <% if @memo.supporters_en.present? %>
   <div class="card mb-2">
     <h2>Supporters (EN)</h2>
-    <div><%= @memo.supporters_en %></div>
+    <div class="rendered-markdown"><%= render_markdown @memo.supporters_en %></div>
   </div>
 <% end %>
 
 <div class="card mb-2">
   <h2>Body (EN)</h2>
-  <div><%= @memo.body_en %></div>
+  <div class="rendered-markdown"><%= render_markdown @memo.body_en %></div>
 </div>
 
 <% if @memo.appendix_en.present? %>
   <div class="card">
     <h2>Appendix (EN)</h2>
-    <div><%= @memo.appendix_en %></div>
+    <div class="rendered-markdown"><%= render_markdown @memo.appendix_en %></div>
   </div>
 <% end %>

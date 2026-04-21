@@ -62,7 +62,8 @@ module Api
         {
           id: faq.id,
           question: faq.question,
-          answer: faq.answer.to_s,
+          answer: faq.answer_html,
+          answer_markdown: faq.answer,
           answer_text: faq.answer_text,
           link_text: faq.link_text,
           link_href: faq.link_href,

@@ -28,5 +28,5 @@
 
 <div class="card">
   <h2>Description (EN)</h2>
-  <div><%= @tool.description_en %></div>
+  <div class="rendered-markdown"><%= render_markdown @tool.description_en %></div>
 </div>

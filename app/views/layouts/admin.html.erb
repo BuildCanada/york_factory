@@ -6,7 +6,7 @@
   <meta name="csrf-token" content="<%= form_authenticity_token %>">
   <title>York Factory Admin</title>
   <%= javascript_importmap_tags %>
-  <%= stylesheet_link_tag "lexxy" %>
+  <%= stylesheet_link_tag "marksmith" %>
   <style>
     :root {
       --bg: #0f1117;
@@ -108,6 +108,29 @@
 
     /* Drag handle */
     .drag-handle { cursor: grab; color: var(--muted); padding: 0 0.5rem; }
+
+    /* Rendered markdown (admin show pages) */
+    .rendered-markdown { font-size: 0.9rem; line-height: 1.6; }
+    .rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3,
+    .rendered-markdown h4, .rendered-markdown h5, .rendered-markdown h6 {
+      margin: 1.25rem 0 0.5rem; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: normal;
+    }
+    .rendered-markdown h1 { font-size: 1.3rem; }
+    .rendered-markdown h2 { font-size: 1.15rem; }
+    .rendered-markdown h3 { font-size: 1rem; }
+    .rendered-markdown h2 .anchor, .rendered-markdown h3 .anchor,
+    .rendered-markdown h1 .anchor, .rendered-markdown h4 .anchor,
+    .rendered-markdown h5 .anchor, .rendered-markdown h6 .anchor { display: none; }
+    .rendered-markdown p { margin: 0 0 0.75rem; }
+    .rendered-markdown ul, .rendered-markdown ol { margin: 0 0 0.75rem 1.25rem; }
+    .rendered-markdown li { margin-bottom: 0.2rem; }
+    .rendered-markdown img { max-width: 100%; height: auto; border-radius: 4px; margin: 0.5rem 0; }
+    .rendered-markdown blockquote { margin: 0 0 0.75rem; padding: 0.25rem 0.75rem; border-left: 3px solid var(--border); color: var(--muted); }
+    .rendered-markdown code { background: var(--bg); padding: 0.1rem 0.35rem; border-radius: 3px; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.85em; }
+    .rendered-markdown pre { background: var(--bg); padding: 0.75rem; border-radius: 6px; overflow-x: auto; margin: 0 0 0.75rem; }
+    .rendered-markdown pre code { background: transparent; padding: 0; }
+    .rendered-markdown hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+    .rendered-markdown table { width: auto; margin: 0 0 0.75rem; }
 
     /* Utility */
     .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem; }

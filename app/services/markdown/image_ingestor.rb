@@ -2,13 +2,10 @@ require "net/http"
 require "uri"
 
 module Markdown
-  # Walks an HTML fragment, pulls any <img> whose src points somewhere other than
-  # our own ActiveStorage, downloads it, attaches it to `record.content_images`,
-  # and rewrites the src to the ActiveStorage blob path.
-  #
-  # Also unwraps ActionText attachments (<action-text-attachment sgid=...>) so
-  # the resulting HTML is plain <img src="/rails/active_storage/...">, which
-  # reverse_markdown can handle.
+  # Walks an HTML fragment, pulls any <img> whose src points somewhere other
+  # than our own ActiveStorage, downloads it, attaches it to
+  # `record.content_images`, and rewrites the src to an absolute
+  # ActiveStorage blob URL.
   class ImageIngestor
     include Rails.application.routes.url_helpers
 
@@ -25,34 +22,11 @@ module Markdown
       return @html if @html.blank?
 
       doc = Nokogiri::HTML.fragment(@html)
-
-      unwrap_action_text_attachments(doc)
       doc.css("img").each { |img| rewrite_img(img) }
-
       doc.to_html
     end
 
     private
-
-    # ActionText stores images as:
-    #   <action-text-attachment sgid="..." content-type="image/png" url="https://..." filename="..." />
-    # Replace each with a plain <img src="...as blob path..." alt="filename">.
-    def unwrap_action_text_attachments(doc)
-      doc.css("action-text-attachment").each do |node|
-        sgid = node["sgid"]
-        next if sgid.blank?
-
-        blob = ActiveStorage::Blob.find_signed(sgid)
-        next unless blob
-
-        img = Nokogiri::XML::Node.new("img", doc)
-        img["src"] = blob_url(blob)
-        img["alt"] = node["filename"].to_s
-        node.replace(img)
-      rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveRecord::RecordNotFound
-        node.remove
-      end
-    end
 
     def rewrite_img(img)
       src = img["src"].to_s.strip

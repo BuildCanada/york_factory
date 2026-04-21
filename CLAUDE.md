@@ -18,7 +18,7 @@ bin/rails console                 # Rails console
 - **Cloudflare R2** with separate buckets for archival (R2_BUCKET) and ActiveStorage (R2_ACTIVE_STORAGE_BUCKET)
 - **Kamal** for deployment to OVH VPS
 - **Mobility** column backend for i18n (EN/FR)
-- **ActionText** with Lexxy editor for rich text content
+- **Markdown** (Commonmarker + reverse_markdown) with the Marksmith editor in admin; inline images stored in ActiveStorage
 - **Devise + JWT** for API authentication, Google OAuth for admin
 
 ## Pipeline (associated objects pattern)
@@ -55,7 +55,7 @@ GET /api/v1/geo/crosswalk/:type/:uid → population-weighted crosswalk lookup
 - `mobility` — i18n with column backend (title_en, title_fr)
 - `devise` + `devise-jwt` — authentication
 - `friendly_id` — slug generation with history
-- `lexxy` — ActionText editor replacement
+- `marksmith` + `commonmarker` + `reverse_markdown` — markdown editor, renderer, and HTML-to-markdown conversion
 - `pagy` — pagination
 - `rgeo` + `rgeo-proj4` + `rgeo-shapefile` — geographic data processing and coordinate reprojection
 - `activerecord-postgis-adapter` — PostGIS spatial database support

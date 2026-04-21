@@ -103,7 +103,7 @@ namespace :cms do
         published_at:    item["lastPublished"].presence&.then { |d| Time.parse(d) rescue nil }
       )
 
-      # Rich text fields via ActionText
+      # Markdown fields — setter converts HTML → markdown and ingests images.
       memo.supporters_en = fd["supporters"].presence if fd["supporters"].present?
       memo.body_en = fd["body"].presence if fd["body"].present?
       memo.appendix_en = fd["appendix"].presence if fd["appendix"].present?

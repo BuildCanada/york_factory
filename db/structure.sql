@@ -41,40 +41,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: action_text_rich_texts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.action_text_rich_texts (
-    id bigint NOT NULL,
-    body text,
-    created_at timestamp(6) without time zone NOT NULL,
-    name character varying NOT NULL,
-    record_id bigint NOT NULL,
-    record_type character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: action_text_rich_texts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.action_text_rich_texts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: action_text_rich_texts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.action_text_rich_texts_id_seq OWNED BY public.action_text_rich_texts.id;
-
-
---
 -- Name: active_storage_attachments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1333,13 +1299,6 @@ ALTER SEQUENCE warehouse.standard_object_expenditures_id_seq OWNED BY warehouse.
 
 
 --
--- Name: action_text_rich_texts id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.action_text_rich_texts ALTER COLUMN id SET DEFAULT nextval('public.action_text_rich_texts_id_seq'::regclass);
-
-
---
 -- Name: active_storage_attachments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1561,14 +1520,6 @@ ALTER TABLE ONLY warehouse.sources ALTER COLUMN id SET DEFAULT nextval('warehous
 --
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures ALTER COLUMN id SET DEFAULT nextval('warehouse.standard_object_expenditures_id_seq'::regclass);
-
-
---
--- Name: action_text_rich_texts action_text_rich_texts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.action_text_rich_texts
-    ADD CONSTRAINT action_text_rich_texts_pkey PRIMARY KEY (id);
 
 
 --
@@ -1841,13 +1792,6 @@ ALTER TABLE ONLY warehouse.sources
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT standard_object_expenditures_pkey PRIMARY KEY (id);
-
-
---
--- Name: index_action_text_rich_texts_uniqueness; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_action_text_rich_texts_uniqueness ON public.action_text_rich_texts USING btree (record_type, record_id, name);
 
 
 --
@@ -2625,6 +2569,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260421224245'),
 ('20260420195921'),
 ('20260413000000'),
 ('20260412050000'),

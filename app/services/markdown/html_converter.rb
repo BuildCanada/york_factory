@@ -1,6 +1,7 @@
 module Markdown
-  # Converts HTML (Trix/Webflow/ActionText/paste) into markdown while ensuring
-  # every referenced image is stored in ActiveStorage on the given record.
+  # Converts inbound HTML (Webflow sync, admin paste, etc.) into markdown while
+  # ensuring every referenced image is stored in ActiveStorage on the given
+  # record.
   class HtmlConverter
     def self.call(html, record:)
       return "" if html.blank?

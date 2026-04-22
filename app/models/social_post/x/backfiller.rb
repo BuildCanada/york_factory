@@ -111,7 +111,7 @@ class SocialPost::X::Backfiller
   end
 
   def bearer_token
-    ENV["X_BEARER_TOKEN"]
+    Rails.application.credentials.dig(:twitter, :bearer_token)
   end
 
   def client

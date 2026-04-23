@@ -35,6 +35,21 @@ class BuildTorontoSyncService
 
   private
 
+  # Webflow draft/publish state lives at the item root, not in fieldData.
+  # An item is "published on Webflow" iff lastPublished is present and
+  # neither isDraft nor isArchived is true. Map that onto our Publishable
+  # concern: published_at = nil means draft in our system.
+  def webflow_published_at(item)
+    return nil if item["isDraft"] || item["isArchived"]
+    raw = item["lastPublished"]
+    return nil if raw.blank?
+    Time.zone.parse(raw) rescue nil
+  end
+
+  def webflow_archived?(item)
+    item["isArchived"] == true
+  end
+
   def discover_site_id
     sites = @client.get("/sites").fetch("sites", [])
     raise SyncError, "Token has access to no sites" if sites.empty?
@@ -61,6 +76,7 @@ class BuildTorontoSyncService
     id_map = {}
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       name = fd["name"].to_s
       next if name.blank?
@@ -73,7 +89,7 @@ class BuildTorontoSyncService
         linkedin_url: fd["linkedin"].to_s.presence,
         twitter_url: fd["twitter"].to_s.presence
       )
-      member.published_at ||= Time.current
+      member.published_at = webflow_published_at(item)
 
       attach_image(member, :profile_photo, fd.dig("profile-photo", "url"), name)
 
@@ -95,6 +111,7 @@ class BuildTorontoSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -119,7 +136,7 @@ class BuildTorontoSyncService
       memo.body_en = fd["body"].to_s if fd["body"].present?
       memo.appendix_en = fd["appendix"].to_s if fd["appendix"].present?
       memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?
-      memo.published_at ||= (Time.zone.parse(item["createdOn"].to_s) rescue Time.current)
+      memo.published_at = webflow_published_at(item)
 
       attach_image(memo, :seo_image, fd.dig("open-graph-image", "url") || fd.dig("seo-image", "url"))
 

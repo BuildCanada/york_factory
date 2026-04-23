@@ -61,6 +61,21 @@ class WebflowSyncService
 
   private
 
+  # Webflow draft/publish state lives at the item root, not in fieldData.
+  # An item is "published on Webflow" iff lastPublished is present and
+  # neither isDraft nor isArchived is true. Map that onto our Publishable
+  # concern: published_at = nil means draft in our system.
+  def webflow_published_at(item)
+    return nil if item["isDraft"] || item["isArchived"]
+    raw = item["lastPublished"]
+    return nil if raw.blank?
+    Time.zone.parse(raw) rescue nil
+  end
+
+  def webflow_archived?(item)
+    item["isArchived"] == true
+  end
+
   # Mirrors the ReclassifyTeamMemberRoles migration: any team member who
   # authored a memo (and doesn't hold a preserved role) is classified as
   # memo_author. Run after every sync so new memo-only contributors don't
@@ -81,6 +96,7 @@ class WebflowSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -102,7 +118,7 @@ class WebflowSyncService
         twitter_url: fd["twitter"].to_s.presence,
         position: fd["team-order"].to_i
       )
-      member.published_at ||= Time.current
+      member.published_at = webflow_published_at(item)
 
       attach_image(member, :profile_photo, fd.dig("profile-photo", "url"), fd["name"])
 
@@ -125,6 +141,7 @@ class WebflowSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -159,7 +176,7 @@ class WebflowSyncService
       memo.body_en = fd["body"].to_s if fd["body"].present?
       memo.appendix_en = fd["appendix"].to_s if fd["appendix"].present?
       memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?
-      memo.published_at ||= Time.zone.parse(item["createdOn"]) rescue Time.current
+      memo.published_at = webflow_published_at(item)
 
       attach_image(memo, :seo_image, fd.dig("open-graph-image", "url"))
 
@@ -189,6 +206,7 @@ class WebflowSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -200,7 +218,7 @@ class WebflowSyncService
         hidden: fd["hidden"] == true
       )
       post.body_en = fd["post-body"].to_s if fd["post-body"].present?
-      post.published_at ||= Time.current
+      post.published_at = webflow_published_at(item)
 
       if post.save
         synced += 1
@@ -220,6 +238,7 @@ class WebflowSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -230,7 +249,7 @@ class WebflowSyncService
         url: fd["url"].to_s.presence
       )
       tool.description_en = fd["description"].to_s if fd["description"].present?
-      tool.published_at ||= Time.current
+      tool.published_at = webflow_published_at(item)
 
       attach_image(tool, :image, fd.dig("image", "url"), fd["name"])
 
@@ -252,6 +271,7 @@ class WebflowSyncService
     synced = 0
 
     items.each do |item|
+      next if webflow_archived?(item)
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
@@ -264,7 +284,7 @@ class WebflowSyncService
       )
       builder.body_en = fd["body"].to_s if fd["body"].present?
       builder.author_en = fd["supporters"].to_s if fd["supporters"].present?
-      builder.published_at ||= Time.current
+      builder.published_at = webflow_published_at(item)
 
       attach_image(builder, :image, fd.dig("image", "url"), fd["name"])
 

@@ -1,9 +1,9 @@
 module Admin
   module Metrics
-    class TwitterStatsController < Admin::BaseController
+    class SubstackStatsController < Admin::BaseController
       def index
         @account = params[:account].presence
-        scope = ::Metrics::TwitterStat.recent_first
+        scope = ::Metrics::SubstackStat.recent_first
         scope = scope.for_account(@account) if @account.present?
         @stats = scope.limit(100)
       end
@@ -12,9 +12,9 @@ module Admin
         account = params[:account]
         file = params[:file]
 
-        fallback = admin_metrics_twitter_stats_path
+        fallback = admin_metrics_substack_stats_path
 
-        if account.blank? || !::Metrics::TwitterStat::ACCOUNTS.include?(account)
+        if account.blank? || !::Metrics::SubstackStat::ACCOUNTS.include?(account)
           redirect_back fallback_location: fallback, alert: "Please select a valid account."
           return
         end
@@ -24,7 +24,7 @@ module Admin
           return
         end
 
-        result = ::Metrics::TwitterStat.upsert_from_csv(account, file.read)
+        result = ::Metrics::SubstackStat.upsert_from_csv(account, file.read)
 
         summary = "#{result[:inserted]} new, #{result[:updated]} updated"
 

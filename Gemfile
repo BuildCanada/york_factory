@@ -98,6 +98,10 @@ gem "rack-attack"
 # CMS: sanitize HTML input
 gem "rails-html-sanitizer"
 
+# Metrics: Excel file parsing for LinkedIn exports
+gem "roo"
+gem "roo-xls"
+
 # CMS: ActiveStorage variants
 gem "image_processing"
 

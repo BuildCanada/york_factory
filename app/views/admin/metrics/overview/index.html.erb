@@ -1,0 +1,39 @@
+<div class="page-header">
+  <h1>Metrics Overview</h1>
+</div>
+
+<div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+  <% @sources.each do |source| %>
+    <div class="card">
+      <div class="label">
+        <% if source[:analytics_url] %>
+          <a href="<%= source[:analytics_url] %>" target="_blank" style="color: var(--muted); text-decoration: none;"><%= source[:name] %> &#8599;</a>
+        <% else %>
+          <%= source[:name] %>
+        <% end %>
+      </div>
+      <div style="margin: 0.75rem 0;">
+        <% if source[:last_date] %>
+          <% days_ago = (Date.current - source[:last_date]).to_i %>
+          <span class="badge <%= days_ago <= 7 ? 'badge-green' : days_ago <= 30 ? 'badge-yellow' : 'badge-red' %>">
+            <%= source[:last_date].strftime("%Y-%m-%d") %>
+          </span>
+          <span class="text-muted" style="font-size: 0.75rem; margin-left: 0.25rem;"><%= days_ago %>d ago</span>
+        <% else %>
+          <span class="badge badge-red">No data</span>
+        <% end %>
+      </div>
+
+      <%= form_tag source[:import_path], multipart: true, style: "display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;" do %>
+        <% if source[:account_field] %>
+          <input type="hidden" name="account" value="<%= source[:account_field] %>">
+        <% end %>
+        <div class="form-group" style="margin-bottom: 0; flex: 1;">
+          <label for="file_<%= source[:name].parameterize %>"><%= source[:file_label] %></label>
+          <input type="file" name="file" id="file_<%= source[:name].parameterize %>" accept="<%= source[:accept] %>" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -93,7 +93,14 @@ Rails.application.routes.draw do
     resources :users, only: %i[index new create edit update destroy]
 
     namespace :metrics do
+      get "/", to: "overview#index", as: :root
       resources :twitter_stats, only: [ :index ] do
+        post :import, on: :collection
+      end
+      resources :linkedin_stats, only: [ :index ] do
+        post :import, on: :collection
+      end
+      resources :substack_stats, only: [ :index ] do
         post :import, on: :collection
       end
     end

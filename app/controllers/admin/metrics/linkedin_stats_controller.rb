@@ -1,9 +1,9 @@
 module Admin
   module Metrics
-    class TwitterStatsController < Admin::BaseController
+    class LinkedinStatsController < Admin::BaseController
       def index
         @account = params[:account].presence
-        scope = ::Metrics::TwitterStat.recent_first
+        scope = ::Metrics::LinkedinStat.recent_first
         scope = scope.for_account(@account) if @account.present?
         @stats = scope.limit(100)
       end
@@ -12,19 +12,19 @@ module Admin
         account = params[:account]
         file = params[:file]
 
-        fallback = admin_metrics_twitter_stats_path
+        fallback = admin_metrics_linkedin_stats_path
 
-        if account.blank? || !::Metrics::TwitterStat::ACCOUNTS.include?(account)
+        if account.blank? || !::Metrics::LinkedinStat::ACCOUNTS.include?(account)
           redirect_back fallback_location: fallback, alert: "Please select a valid account."
           return
         end
 
         if file.blank?
-          redirect_back fallback_location: fallback, alert: "Please select a CSV file."
+          redirect_back fallback_location: fallback, alert: "Please select an XLS file."
           return
         end
 
-        result = ::Metrics::TwitterStat.upsert_from_csv(account, file.read)
+        result = ::Metrics::LinkedinStat.upsert_from_xls(account, file.path)
 
         summary = "#{result[:inserted]} new, #{result[:updated]} updated"
 

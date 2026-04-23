@@ -1,0 +1,67 @@
+<div class="page-header">
+  <h1>LinkedIn Stats</h1>
+</div>
+
+<div class="card" style="margin-bottom: 2rem; padding: 1.25rem;">
+  <h2>Import XLS</h2>
+  <%= form_tag import_admin_metrics_linkedin_stats_path, multipart: true, style: "display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;" do %>
+    <div class="form-group" style="margin-bottom: 0;">
+      <label for="account">Account</label>
+      <select name="account" id="account" class="form-control" style="width: 200px;">
+        <option value="">Select account...</option>
+        <% Metrics::LinkedinStat::ACCOUNTS.each do |acct| %>
+          <option value="<%= acct %>" <%= "selected" if acct == @account %>><%= acct.titleize %></option>
+        <% end %>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom: 0;">
+      <label for="file">XLS File</label>
+      <input type="file" name="file" id="file" accept=".xls,.xlsx" class="form-control" style="width: 300px;">
+    </div>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  <% end %>
+</div>
+
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+  <a href="<%= admin_metrics_linkedin_stats_path %>" class="btn btn-sm <%= 'btn-primary' if @account.blank? %>">All</a>
+  <% Metrics::LinkedinStat::ACCOUNTS.each do |acct| %>
+    <a href="<%= admin_metrics_linkedin_stats_path(account: acct) %>" class="btn btn-sm <%= 'btn-primary' if @account == acct %>"><%= acct.titleize %></a>
+  <% end %>
+</div>
+
+<% if @stats.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th>Date</th>
+        <th class="text-right">Impressions</th>
+        <th class="text-right">Unique</th>
+        <th class="text-right">Clicks</th>
+        <th class="text-right">Reactions</th>
+        <th class="text-right">Comments</th>
+        <th class="text-right">Reposts</th>
+        <th class="text-right">Engagement</th>
+        <th class="text-muted">Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @stats.each do |stat| %>
+        <tr>
+          <td><span class="badge badge-blue"><%= stat.account.titleize %></span></td>
+          <td class="mono"><%= stat.date.strftime("%Y-%m-%d") %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.impressions_total) %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.unique_impressions_organic) %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.clicks_total) %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.reactions_total) %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.comments_total) %></td>
+          <td class="text-right mono"><%= number_with_delimiter(stat.reposts_total) %></td>
+          <td class="text-right mono"><%= number_to_percentage(stat.engagement_rate_total.to_f * 100, precision: 1) %></td>
+          <td class="text-muted" style="font-size: 0.75rem;"><%= stat.updated_at.strftime("%b %d %H:%M") %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No LinkedIn stats yet. Upload an XLS file to get started.</div>
+<% end %>

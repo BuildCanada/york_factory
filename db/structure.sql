@@ -31,9 +31,10 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 CREATE SCHEMA IF NOT EXISTS warehouse;
 
 
-CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
-
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 
 SET default_tablespace = '';
@@ -379,6 +380,90 @@ CREATE SEQUENCE public.memos_id_seq
 --
 
 ALTER SEQUENCE public.memos_id_seq OWNED BY public.memos.id;
+
+
+--
+-- Name: metrics_linkedin_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_linkedin_stats (
+    id bigint NOT NULL,
+    date date NOT NULL,
+    impressions_organic integer DEFAULT 0 NOT NULL,
+    impressions_sponsored integer DEFAULT 0 NOT NULL,
+    impressions_total integer DEFAULT 0 NOT NULL,
+    unique_impressions_organic integer DEFAULT 0 NOT NULL,
+    clicks_organic integer DEFAULT 0 NOT NULL,
+    clicks_sponsored integer DEFAULT 0 NOT NULL,
+    clicks_total integer DEFAULT 0 NOT NULL,
+    reactions_organic integer DEFAULT 0 NOT NULL,
+    reactions_sponsored integer DEFAULT 0 NOT NULL,
+    reactions_total integer DEFAULT 0 NOT NULL,
+    comments_organic integer DEFAULT 0 NOT NULL,
+    comments_sponsored integer DEFAULT 0 NOT NULL,
+    comments_total integer DEFAULT 0 NOT NULL,
+    reposts_organic integer DEFAULT 0 NOT NULL,
+    reposts_sponsored integer DEFAULT 0 NOT NULL,
+    reposts_total integer DEFAULT 0 NOT NULL,
+    engagement_rate_organic numeric(8,6),
+    engagement_rate_sponsored numeric(8,6),
+    engagement_rate_total numeric(8,6),
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    account character varying DEFAULT 'build_canada'::character varying NOT NULL
+);
+
+
+--
+-- Name: metrics_linkedin_stats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_linkedin_stats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_linkedin_stats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_linkedin_stats_id_seq OWNED BY public.metrics_linkedin_stats.id;
+
+
+--
+-- Name: metrics_substack_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_substack_stats (
+    id bigint NOT NULL,
+    date date NOT NULL,
+    views integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    account character varying DEFAULT 'build_canada'::character varying NOT NULL
+);
+
+
+--
+-- Name: metrics_substack_stats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_substack_stats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_substack_stats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_substack_stats_id_seq OWNED BY public.metrics_substack_stats.id;
 
 
 --
@@ -1362,6 +1447,20 @@ ALTER TABLE ONLY public.memos ALTER COLUMN id SET DEFAULT nextval('public.memos_
 
 
 --
+-- Name: metrics_linkedin_stats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_linkedin_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_linkedin_stats_id_seq'::regclass);
+
+
+--
+-- Name: metrics_substack_stats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_substack_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_substack_stats_id_seq'::regclass);
+
+
+--
 -- Name: metrics_twitter_stats id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1600,6 +1699,22 @@ ALTER TABLE ONLY public.jwt_denylists
 
 ALTER TABLE ONLY public.memos
     ADD CONSTRAINT memos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_linkedin_stats metrics_linkedin_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_linkedin_stats
+    ADD CONSTRAINT metrics_linkedin_stats_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_substack_stats metrics_substack_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_substack_stats
+    ADD CONSTRAINT metrics_substack_stats_pkey PRIMARY KEY (id);
 
 
 --
@@ -1932,6 +2047,20 @@ CREATE INDEX index_memos_on_published_at ON public.memos USING btree (published_
 --
 
 CREATE UNIQUE INDEX index_memos_on_slug ON public.memos USING btree (slug);
+
+
+--
+-- Name: index_metrics_linkedin_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_metrics_linkedin_stats_on_account_and_date ON public.metrics_linkedin_stats USING btree (account, date);
+
+
+--
+-- Name: index_metrics_substack_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_metrics_substack_stats_on_account_and_date ON public.metrics_substack_stats USING btree (account, date);
 
 
 --
@@ -2569,6 +2698,9 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260422000003'),
+('20260422000002'),
+('20260422000001'),
 ('20260421224245'),
 ('20260420195921'),
 ('20260413000000'),

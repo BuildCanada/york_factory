@@ -3,7 +3,14 @@ module Admin
     before_action :set_memo, only: [ :show, :edit, :update, :destroy, :retranslate ]
 
     def index
-      @pagy, @memos = pagy(Memo.order(created_at: :desc))
+      scope = Memo.order(created_at: :desc)
+      scope = case params[:publication]
+      when "none" then scope.without_publication
+      when nil, "" then scope
+      else scope.by_publication(params[:publication])
+      end
+      @publication_filter = params[:publication]
+      @pagy, @memos = pagy(scope)
     end
 
     def show; end
@@ -52,7 +59,7 @@ module Admin
     def memo_params
       params.require(:memo).permit(
         :slug, :author_id, :co_author_id, :author_name, :author_title,
-        :author_avatar, :category, :twitter_embed, :published_at, :featured, :seo_image,
+        :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image,
         :title_en, :title_fr,
         :body_en, :body_fr, :appendix_en, :appendix_fr,
         :supporters_en, :supporters_fr,

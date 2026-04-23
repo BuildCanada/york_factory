@@ -16,6 +16,11 @@
   </div>
 
   <div class="form-group">
+    <label>Publication</label>
+    <%= f.select :publication, Memo::PUBLICATIONS.map { |p| [p.titleize, p] }, { include_blank: "— Build Canada —" }, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
     <label>Author</label>
     <%= f.collection_select :author_id, TeamMember.ordered, :id, :name, { include_blank: "— None —" }, class: "form-control" %>
   </div>

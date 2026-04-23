@@ -91,6 +91,55 @@ class MemoTest < ActiveSupport::TestCase
     assert_nil memo.author
   end
 
+  test "publication must be in allowed list" do
+    memo = Memo.new(title_en: "X", publication: "nope")
+    assert_not memo.valid?
+    assert_includes memo.errors[:publication], "is not included in the list"
+  end
+
+  test "nil publication is valid" do
+    memo = Memo.new(title_en: "Y", publication: nil)
+    memo.valid?
+    assert_empty memo.errors[:publication]
+  end
+
+  test "without_publication scope excludes tagged memos" do
+    results = Memo.without_publication
+    assert_includes results, memos(:published_memo)
+    assert_not_includes results, memos(:build_toronto_memo)
+  end
+
+  test "by_publication scope includes only matching publication" do
+    results = Memo.by_publication("build_toronto")
+    assert_includes results, memos(:build_toronto_memo)
+    assert_not_includes results, memos(:published_memo)
+  end
+
+  test "slug uniqueness is scoped by publication" do
+    memo = Memo.new(
+      slug: memos(:published_memo).slug,
+      title_en: "Same slug, different publication",
+      publication: "build_toronto"
+    )
+    assert memo.valid?, memo.errors.full_messages.to_sentence
+  end
+
+  test "slug uniqueness still enforced within same publication" do
+    memo = Memo.new(
+      slug: memos(:build_toronto_memo).slug,
+      title_en: "Dup",
+      publication: "build_toronto"
+    )
+    assert_not memo.valid?
+    assert_includes memo.errors[:slug], "has already been taken"
+  end
+
+  test "build_toronto memo does not create a feed entry" do
+    memo = memos(:build_toronto_memo)
+    memo.touch
+    assert_nil memo.reload.feed_entry
+  end
+
   test "Mobility reads correct locale with fallback" do
     memo = memos(:published_memo)
     I18n.locale = :en

@@ -31,10 +31,10 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 CREATE SCHEMA IF NOT EXISTS warehouse;
 
 
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
-
-
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 
 SET default_tablespace = '';
@@ -359,7 +359,8 @@ CREATE TABLE public.memos (
     appendix_md_en text,
     appendix_md_fr text,
     supporters_md_en text,
-    supporters_md_fr text
+    supporters_md_fr text,
+    publication character varying
 );
 
 
@@ -2036,6 +2037,13 @@ CREATE INDEX index_memos_on_featured ON public.memos USING btree (featured);
 
 
 --
+-- Name: index_memos_on_publication; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memos_on_publication ON public.memos USING btree (publication);
+
+
+--
 -- Name: index_memos_on_published_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2698,6 +2706,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260423202720'),
 ('20260422000003'),
 ('20260422000002'),
 ('20260422000001'),

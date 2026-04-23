@@ -5,7 +5,8 @@ module Api
       before_action :set_memo, only: [ :show, :update, :destroy ]
 
       def index
-        scope = preview_mode? ? Memo.all : Memo.published
+        scope = publication_scope
+        scope = preview_mode? ? scope : scope.published
         scope = scope.includes(:author, :co_author).with_attached_seo_image.order(published_at: :desc)
         scope = scope.featured if params[:featured].present?
         scope = scope.by_category(params[:category]) if params[:category].present?
@@ -47,14 +48,19 @@ module Api
       private
 
       def set_memo
-        scope = preview_mode? ? Memo.all : Memo.published
+        scope = publication_scope
+        scope = scope.published unless preview_mode?
         @memo = scope.friendly.find(params[:slug])
+      end
+
+      def publication_scope
+        Memo.where(publication: params[:publication].presence)
       end
 
       def memo_params
         params.require(:memo).permit(
           :slug, :author_id, :co_author_id, :author_name, :author_title,
-          :author_avatar, :category, :twitter_embed, :published_at, :featured, :seo_image,
+          :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image,
           :title_en, :title_fr,
           :supporters_en, :supporters_fr,
           :body_en, :body_fr, :appendix_en, :appendix_fr,
@@ -68,6 +74,7 @@ module Api
           slug: memo.slug,
           title: memo.title,
           category: memo.category,
+          publication: memo.publication,
           featured: memo.featured,
           published_at: memo.published_at,
           seo_image_url: image_url(memo.seo_image),

@@ -15,12 +15,16 @@ class Memo < ApplicationRecord
   belongs_to :co_author, class_name: "TeamMember", optional: true
 
   CATEGORIES = %w[housing industry government-transformation digital-innovation nation-building immigration energy finance defence].freeze
+  PUBLICATIONS = %w[build_toronto].freeze
 
-  validates :slug, presence: true, uniqueness: true
+  validates :slug, presence: true, uniqueness: { scope: :publication }
   validates :category, inclusion: { in: CATEGORIES, allow_nil: true }
+  validates :publication, inclusion: { in: PUBLICATIONS, allow_nil: true }
 
   scope :featured, -> { where(featured: true) }
   scope :by_category, ->(cat) { where(category: cat) }
+  scope :without_publication, -> { where(publication: nil) }
+  scope :by_publication, ->(name) { where(publication: name) }
   scope :search, ->(q) {
     sanitized = ActiveRecord::Base.sanitize_sql_like(q)
     where("title_en ILIKE :q", q: "%#{sanitized}%")
@@ -31,4 +35,10 @@ class Memo < ApplicationRecord
   hash_fields :key_messages
 
   def self.feed_type_label = "memo"
+
+  private
+
+  def should_appear_in_feed?
+    publication.blank? && super
+  end
 end

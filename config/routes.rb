@@ -60,6 +60,7 @@ Rails.application.routes.draw do
     get "ingestions", to: "dashboard#ingestions"
     get "lineage_review", to: "dashboard#lineage_review"
     post "webflow_sync", to: "dashboard#webflow_sync"
+    post "build_toronto_sync", to: "dashboard#build_toronto_sync"
 
     resources :posts, only: full do
       post :retranslate, on: :member

@@ -113,4 +113,42 @@ class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
     delete api_v1_memo_url("housing-crisis-memo")
     assert_response :unauthorized
   end
+
+  test "index excludes memos tagged with a publication by default" do
+    get api_v1_memos_url
+    assert_response :success
+
+    slugs = JSON.parse(response.body)["data"].map { |m| m["slug"] }
+    assert_not_includes slugs, "toronto-transit-memo"
+  end
+
+  test "index returns only the requested publication when filtered" do
+    get api_v1_memos_url, params: { publication: "build_toronto" }
+    assert_response :success
+
+    data = JSON.parse(response.body)["data"]
+    slugs = data.map { |m| m["slug"] }
+    assert_includes slugs, "toronto-transit-memo"
+    assert_not_includes slugs, "housing-crisis-memo"
+  end
+
+  test "show 404s when slug belongs to a different publication" do
+    get api_v1_memo_url("toronto-transit-memo")
+    assert_response :not_found
+  end
+
+  test "show returns memo when publication matches" do
+    get api_v1_memo_url("toronto-transit-memo"), params: { publication: "build_toronto" }
+    assert_response :success
+    data = JSON.parse(response.body)
+    assert_equal "build_toronto", data["publication"]
+  end
+
+  test "serialized payload includes publication field" do
+    get api_v1_memo_url("housing-crisis-memo")
+    assert_response :success
+    data = JSON.parse(response.body)
+    assert data.key?("publication")
+    assert_nil data["publication"]
+  end
 end

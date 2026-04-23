@@ -13,3 +13,10 @@ draft_memo:
   category: finance
   featured: false
   published_at: null
+
+build_toronto_memo:
+  slug: toronto-transit-memo
+  title_en: Toronto Transit Memo
+  publication: build_toronto
+  featured: false
+  published_at: <%= 1.day.ago.to_fs(:db) %>

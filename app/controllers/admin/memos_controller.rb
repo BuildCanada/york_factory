@@ -63,8 +63,18 @@ module Admin
         :title_en, :title_fr,
         :body_en, :body_fr, :appendix_en, :appendix_fr,
         :supporters_en, :supporters_fr,
-        key_messages: []
-      )
+        key_messages_en: [], key_messages_fr: []
+      ).tap do |p|
+        p[:key_messages_en] = normalize_key_messages(p[:key_messages_en]) if p.key?(:key_messages_en)
+        p[:key_messages_fr] = normalize_key_messages(p[:key_messages_fr]) if p.key?(:key_messages_fr)
+      end
+    end
+
+    def normalize_key_messages(values)
+      Array(values).filter_map do |v|
+        str = v.is_a?(Hash) ? (v["message"] || v[:message]) : v
+        { "message" => str.to_s.strip } if str.to_s.strip.present?
+      end
     end
 
     def purge_attachment(name)

@@ -19,7 +19,9 @@ class Memo < ApplicationRecord
 
   validates :slug, presence: true, uniqueness: { scope: :publication }
   validates :category, inclusion: { in: CATEGORIES, allow_nil: true }
-  validates :publication, inclusion: { in: PUBLICATIONS, allow_nil: true }
+  validates :publication, inclusion: { in: PUBLICATIONS, allow_blank: true }
+
+  before_validation { self.publication = nil if publication.blank? }
 
   scope :featured, -> { where(featured: true) }
   scope :by_category, ->(cat) { where(category: cat) }

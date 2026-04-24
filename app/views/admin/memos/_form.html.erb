@@ -9,6 +9,7 @@
   <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :appendix, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :supporters, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
+  <%= render "admin/shared/translated_string_list", form: f, field: :key_messages %>
 
   <div class="form-group">
     <label>Category</label>

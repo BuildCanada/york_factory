@@ -53,9 +53,18 @@ module HasLocalizedMarkdown
 
   private
 
+  # Webflow rich text arrives wrapped in block-level HTML (<p>, <h1>, <figure>,
+  # etc.), so the payload starts with one of those tags. Markdown submitted
+  # from the admin editor may *contain* inline HTML (iframes, script embeds,
+  # <br>), but it never starts with a block tag — it starts with a heading,
+  # paragraph text, or list marker. Matching on the opening tag avoids
+  # double-converting legitimate markdown through ReverseMarkdown on every
+  # save, which silently collapses paragraphs, lists, and headings.
+  HTML_BLOCK_START = /\A\s*<(p|div|h[1-6]|article|section|figure|ul|ol|blockquote|pre|table)[\s>]/i
+
   def looks_like_html?(value)
     return false if value.blank?
-    value.to_s.match?(/<[a-z][\s\S]*>/i)
+    value.to_s.match?(HTML_BLOCK_START)
   end
 
   # After save, ensure any ActiveStorage blob referenced in our markdown is

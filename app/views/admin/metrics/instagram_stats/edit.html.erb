@@ -1,0 +1,7 @@
+<div class="page-header">
+  <h1>Edit Instagram Week — <%= @stat.date.strftime("%Y-%m-%d") %></h1>
+</div>
+
+<div class="card" style="padding: 1.5rem; max-width: 480px;">
+  <%= render "form", url: admin_metrics_instagram_stat_path(@stat), method: :patch %>
+</div>

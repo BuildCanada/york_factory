@@ -104,6 +104,12 @@ Rails.application.routes.draw do
       resources :substack_stats, only: [ :index ] do
         post :import, on: :collection
       end
+      resources :tiktok_stats, only: [ :index ] do
+        post :import, on: :collection
+      end
+      resources :instagram_stats, only: %i[index new create edit update destroy] do
+        post :generate_weeks, on: :collection
+      end
     end
   end
 

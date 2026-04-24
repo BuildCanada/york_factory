@@ -24,15 +24,27 @@
         <% end %>
       </div>
 
-      <%= form_tag source[:import_path], multipart: true, style: "display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;" do %>
-        <% if source[:account_field] %>
-          <input type="hidden" name="account" value="<%= source[:account_field] %>">
-        <% end %>
-        <div class="form-group" style="margin-bottom: 0; flex: 1;">
-          <label for="file_<%= source[:name].parameterize %>"><%= source[:file_label] %></label>
-          <input type="file" name="file" id="file_<%= source[:name].parameterize %>" accept="<%= source[:accept] %>" class="form-control">
+      <% if source[:manual_path] %>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <%= link_to "+ New Week", source[:manual_path], class: "btn btn-primary btn-sm" %>
+          <% if source[:manage_path] %>
+            <%= link_to "Manage", source[:manage_path], class: "btn btn-sm" %>
+          <% end %>
+          <% if source[:manual_note] %>
+            <span class="text-muted" style="font-size: 0.75rem;"><%= source[:manual_note] %></span>
+          <% end %>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+      <% else %>
+        <%= form_tag source[:import_path], multipart: true, style: "display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;" do %>
+          <% if source[:account_field] %>
+            <input type="hidden" name="account" value="<%= source[:account_field] %>">
+          <% end %>
+          <div class="form-group" style="margin-bottom: 0; flex: 1;">
+            <label for="file_<%= source[:name].parameterize %>"><%= source[:file_label] %></label>
+            <input type="file" name="file" id="file_<%= source[:name].parameterize %>" accept="<%= source[:accept] %>" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+        <% end %>
       <% end %>
     </div>
   <% end %>

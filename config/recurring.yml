@@ -16,3 +16,6 @@ production:
   backfill_feed:
     class: BackfillFeedJob
     schedule: every hour at minute 0
+  create_instagram_weeks:
+    class: CreateInstagramWeeksJob
+    schedule: at 6am every Monday

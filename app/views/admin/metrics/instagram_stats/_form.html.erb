@@ -1,0 +1,46 @@
+<%= form_with model: @stat, url: url, method: method, local: true do |f| %>
+  <% if @stat.errors.any? %>
+    <div class="alert alert-danger" style="margin-bottom: 1rem;">
+      <ul style="margin: 0; padding-left: 1.25rem;">
+        <% @stat.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :account %>
+    <%= f.select :account,
+          Metrics::InstagramStat::ACCOUNTS.map { |a| [ a.titleize, a ] },
+          {},
+          class: "form-control",
+          style: "width: 260px;" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :date, "Week Start (Monday)" %>
+    <%= f.date_field :date, class: "form-control", style: "width: 260px;" %>
+    <small class="text-muted" style="display: block; margin-top: 0.25rem;">Must be a Monday. Represents the Mon–Sun week.</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :views %>
+    <%= f.number_field :views, min: 0, class: "form-control", style: "width: 260px;" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :interactions %>
+    <%= f.number_field :interactions, min: 0, class: "form-control", style: "width: 260px;" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :new_followers, "New Followers" %>
+    <%= f.number_field :new_followers, min: 0, class: "form-control", style: "width: 260px;" %>
+  </div>
+
+  <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_metrics_instagram_stats_path, class: "btn btn-sm" %>
+  </div>
+<% end %>

@@ -14,7 +14,7 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA IF NOT EXISTS public;
+CREATE SCHEMA public;
 
 
 --
@@ -28,13 +28,7 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 -- Name: warehouse; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA IF NOT EXISTS warehouse;
-
-
-CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
-
-
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+CREATE SCHEMA warehouse;
 
 
 SET default_tablespace = '';
@@ -384,6 +378,41 @@ ALTER SEQUENCE public.memos_id_seq OWNED BY public.memos.id;
 
 
 --
+-- Name: metrics_instagram_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_instagram_stats (
+    id bigint NOT NULL,
+    account character varying DEFAULT 'build_canada'::character varying NOT NULL,
+    date date NOT NULL,
+    views integer,
+    interactions integer,
+    new_followers integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_instagram_stats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_instagram_stats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_instagram_stats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_instagram_stats_id_seq OWNED BY public.metrics_instagram_stats.id;
+
+
+--
 -- Name: metrics_linkedin_stats; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -465,6 +494,43 @@ CREATE SEQUENCE public.metrics_substack_stats_id_seq
 --
 
 ALTER SEQUENCE public.metrics_substack_stats_id_seq OWNED BY public.metrics_substack_stats.id;
+
+
+--
+-- Name: metrics_tiktok_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_tiktok_stats (
+    id bigint NOT NULL,
+    account character varying DEFAULT 'build_canada'::character varying NOT NULL,
+    date date NOT NULL,
+    video_views integer DEFAULT 0 NOT NULL,
+    profile_views integer DEFAULT 0 NOT NULL,
+    likes integer DEFAULT 0 NOT NULL,
+    comments integer DEFAULT 0 NOT NULL,
+    shares integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_tiktok_stats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_tiktok_stats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_tiktok_stats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_tiktok_stats_id_seq OWNED BY public.metrics_tiktok_stats.id;
 
 
 --
@@ -1448,6 +1514,13 @@ ALTER TABLE ONLY public.memos ALTER COLUMN id SET DEFAULT nextval('public.memos_
 
 
 --
+-- Name: metrics_instagram_stats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_instagram_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_instagram_stats_id_seq'::regclass);
+
+
+--
 -- Name: metrics_linkedin_stats id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1459,6 +1532,13 @@ ALTER TABLE ONLY public.metrics_linkedin_stats ALTER COLUMN id SET DEFAULT nextv
 --
 
 ALTER TABLE ONLY public.metrics_substack_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_substack_stats_id_seq'::regclass);
+
+
+--
+-- Name: metrics_tiktok_stats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_tiktok_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_tiktok_stats_id_seq'::regclass);
 
 
 --
@@ -1703,6 +1783,14 @@ ALTER TABLE ONLY public.memos
 
 
 --
+-- Name: metrics_instagram_stats metrics_instagram_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_instagram_stats
+    ADD CONSTRAINT metrics_instagram_stats_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: metrics_linkedin_stats metrics_linkedin_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1716,6 +1804,14 @@ ALTER TABLE ONLY public.metrics_linkedin_stats
 
 ALTER TABLE ONLY public.metrics_substack_stats
     ADD CONSTRAINT metrics_substack_stats_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_tiktok_stats metrics_tiktok_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_tiktok_stats
+    ADD CONSTRAINT metrics_tiktok_stats_pkey PRIMARY KEY (id);
 
 
 --
@@ -2058,6 +2154,13 @@ CREATE UNIQUE INDEX index_memos_on_slug ON public.memos USING btree (slug);
 
 
 --
+-- Name: index_metrics_instagram_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_metrics_instagram_stats_on_account_and_date ON public.metrics_instagram_stats USING btree (account, date);
+
+
+--
 -- Name: index_metrics_linkedin_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2069,6 +2172,13 @@ CREATE UNIQUE INDEX index_metrics_linkedin_stats_on_account_and_date ON public.m
 --
 
 CREATE UNIQUE INDEX index_metrics_substack_stats_on_account_and_date ON public.metrics_substack_stats USING btree (account, date);
+
+
+--
+-- Name: index_metrics_tiktok_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_metrics_tiktok_stats_on_account_and_date ON public.metrics_tiktok_stats USING btree (account, date);
 
 
 --
@@ -2706,6 +2816,8 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260424000002'),
+('20260424000001'),
 ('20260423202720'),
 ('20260422000003'),
 ('20260422000002'),

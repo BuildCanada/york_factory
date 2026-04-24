@@ -1,0 +1,99 @@
+<div class="page-header">
+  <h1>Instagram Stats</h1>
+  <div style="display: flex; gap: 0.5rem;">
+    <%= button_to "Generate Missing Weeks",
+          generate_weeks_admin_metrics_instagram_stats_path(account: @account),
+          method: :post,
+          form: { style: "display: inline;" },
+          class: "btn" %>
+    <%= link_to "+ New Week", new_admin_metrics_instagram_stat_path(account: @account), class: "btn btn-primary" %>
+  </div>
+</div>
+
+<p class="text-muted" style="margin-bottom: 1.5rem;">Manually entered weekly (Monday–Sunday). Blank fields are treated as "not yet filled" — a week only counts as filled once all three values are entered.</p>
+
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+  <a href="<%= admin_metrics_instagram_stats_path %>" class="btn btn-sm <%= 'btn-primary' if @account.blank? %>">All</a>
+  <% Metrics::InstagramStat::ACCOUNTS.each do |acct| %>
+    <a href="<%= admin_metrics_instagram_stats_path(account: acct) %>" class="btn btn-sm <%= 'btn-primary' if @account == acct %>"><%= acct.titleize %></a>
+  <% end %>
+</div>
+
+<% if @stats.any? %>
+  <% @stats.each do |stat| %>
+    <%= form_with model: stat,
+          url: admin_metrics_instagram_stat_path(stat),
+          method: :patch,
+          local: true,
+          html: { id: "ig-form-#{stat.id}" } do %>
+    <% end %>
+  <% end %>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th>Week (Mon–Sun)</th>
+        <th>Status</th>
+        <th class="text-right">Views</th>
+        <th class="text-right">Interactions</th>
+        <th class="text-right">New Followers</th>
+        <th></th>
+        <th class="text-muted">Updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @stats.each do |stat| %>
+        <% form_id = "ig-form-#{stat.id}" %>
+        <tr>
+          <td><span class="badge badge-blue"><%= stat.account.titleize %></span></td>
+          <td class="mono"><%= stat.date.strftime("%Y-%m-%d") %> – <%= stat.week_end.strftime("%Y-%m-%d") %></td>
+          <td>
+            <% if stat.filled? %>
+              <span class="badge badge-green">filled</span>
+            <% else %>
+              <span class="badge badge-yellow">pending</span>
+            <% end %>
+          </td>
+          <td class="text-right">
+            <input type="number" min="0" form="<%= form_id %>"
+                   name="metrics_instagram_stat[views]"
+                   value="<%= stat.views %>"
+                   placeholder="—"
+                   class="form-control mono text-right"
+                   style="width: 110px; display: inline-block;">
+          </td>
+          <td class="text-right">
+            <input type="number" min="0" form="<%= form_id %>"
+                   name="metrics_instagram_stat[interactions]"
+                   value="<%= stat.interactions %>"
+                   placeholder="—"
+                   class="form-control mono text-right"
+                   style="width: 110px; display: inline-block;">
+          </td>
+          <td class="text-right">
+            <input type="number" min="0" form="<%= form_id %>"
+                   name="metrics_instagram_stat[new_followers]"
+                   value="<%= stat.new_followers %>"
+                   placeholder="—"
+                   class="form-control mono text-right"
+                   style="width: 110px; display: inline-block;">
+          </td>
+          <td>
+            <button type="submit" form="<%= form_id %>" class="btn btn-sm btn-primary">Save</button>
+          </td>
+          <td class="text-muted" style="font-size: 0.75rem;"><%= stat.updated_at.strftime("%b %d %H:%M") %></td>
+          <td style="text-align: right;">
+            <%= button_to "Delete", admin_metrics_instagram_stat_path(stat),
+                  method: :delete,
+                  form: { data: { turbo_confirm: "Delete this week's Instagram stats?" }, style: "display: inline;" },
+                  class: "btn btn-sm" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No Instagram stats yet. Click "Generate Missing Weeks" to backfill from 2026-01-26, or "+ New Week" to add one manually.</div>
+<% end %>

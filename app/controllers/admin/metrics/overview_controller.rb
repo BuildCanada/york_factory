@@ -38,6 +38,23 @@ module Admin
             analytics_url: "https://www.linkedin.com/company/105630886/admin/analytics/updates/",
             accept: ".xls,.xlsx",
             file_label: "XLS File"
+          },
+          {
+            name: "Build Canada TikTok",
+            last_date: ::Metrics::TiktokStat.for_account("build_canada").maximum(:date),
+            import_path: import_admin_metrics_tiktok_stats_path,
+            account_field: "build_canada",
+            analytics_url: "https://www.tiktok.com/tiktokstudio/analytics/overview",
+            accept: ".csv,.zip",
+            file_label: "CSV or ZIP"
+          },
+          {
+            name: "Build Canada Instagram",
+            last_date: ::Metrics::InstagramStat.for_account("build_canada").filled.maximum(:date),
+            manual_path: new_admin_metrics_instagram_stat_path(account: "build_canada"),
+            manage_path: admin_metrics_instagram_stats_path(account: "build_canada"),
+            analytics_url: "https://business.instagram.com/",
+            manual_note: "Weekly entry (Mon–Sun)"
           }
         ]
       end

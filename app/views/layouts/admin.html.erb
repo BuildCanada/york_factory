@@ -178,6 +178,18 @@
           <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
         </ul>
 
+        <% if current_user.can_edit_trade_barriers? %>
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="trade_barriers">
+            Trade Barriers <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="trade_barriers">
+            <li><a href="/admin/trade_barriers/agreements" class="<%= 'active' if controller_name == 'agreements' && controller_path.start_with?('admin/trade_barriers') %>">Agreements</a></li>
+            <li><a href="/admin/trade_barriers/themes" class="<%= 'active' if controller_name == 'themes' && controller_path.start_with?('admin/trade_barriers') %>">Themes</a></li>
+          </ul>
+        <% end %>
+
         <div class="sidebar-divider"></div>
 
         <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="metrics">

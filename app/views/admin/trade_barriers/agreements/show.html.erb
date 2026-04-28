@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h1><%= @agreement.title %></h1>
+  <div class="btn-group">
+    <a href="<%= edit_admin_trade_barriers_agreement_path(@agreement) %>" class="btn btn-primary">Edit</a>
+    <%= button_to "Delete", admin_trade_barriers_agreement_path(@agreement), method: :delete, class: "btn btn-danger", form: { data: { turbo_confirm: "Delete this agreement?" } } %>
+  </div>
+</div>
+
+<div class="card">
+  <p><strong>Slug:</strong> <%= @agreement.slug %></p>
+  <p><strong>Theme:</strong> <%= @agreement.theme&.name %></p>
+  <p><strong>Status:</strong> <%= @agreement.status.humanize %></p>
+  <p><strong>Deadline:</strong> <%= @agreement.deadline&.to_fs(:long) || "—" %></p>
+  <p><strong>Launch date:</strong> <%= @agreement.launch_date&.to_fs(:long) || "—" %></p>
+  <p><strong>Source:</strong> <%= link_to(@agreement.source_url, @agreement.source_url, target: "_blank") if @agreement.source_url.present? %></p>
+
+  <h3>Summary</h3>
+  <p><%= simple_format @agreement.summary %></p>
+
+  <h3>Description</h3>
+  <p><%= simple_format @agreement.description %></p>
+</div>
+
+<h2>Jurisdictions</h2>
+<table>
+  <thead>
+    <tr><th>Jurisdiction</th><th>Status</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <% @agreement.agreement_jurisdictions.includes(:jurisdiction).each do |aj| %>
+      <tr>
+        <td><%= aj.jurisdiction.name %></td>
+        <td><%= aj.status.humanize %></td>
+        <td><%= aj.notes %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Status history</h2>
+<table>
+  <thead>
+    <tr><th>Status</th><th>Date entered</th></tr>
+  </thead>
+  <tbody>
+    <% @agreement.histories.each do |h| %>
+      <tr>
+        <td><%= h.status.humanize %></td>
+        <td><%= h.date_entered&.to_fs(:long) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

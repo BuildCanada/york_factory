@@ -861,6 +861,176 @@ ALTER SEQUENCE public.tools_id_seq OWNED BY public.tools.id;
 
 
 --
+-- Name: trade_barriers_agreement_histories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trade_barriers_agreement_histories (
+    id bigint NOT NULL,
+    agreement_id bigint NOT NULL,
+    status character varying NOT NULL,
+    date_entered date NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trade_barriers_agreement_histories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trade_barriers_agreement_histories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trade_barriers_agreement_histories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trade_barriers_agreement_histories_id_seq OWNED BY public.trade_barriers_agreement_histories.id;
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trade_barriers_agreement_jurisdictions (
+    id bigint NOT NULL,
+    agreement_id bigint NOT NULL,
+    jurisdiction_id bigint NOT NULL,
+    status character varying DEFAULT 'unknown'::character varying NOT NULL,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trade_barriers_agreement_jurisdictions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trade_barriers_agreement_jurisdictions_id_seq OWNED BY public.trade_barriers_agreement_jurisdictions.id;
+
+
+--
+-- Name: trade_barriers_agreements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trade_barriers_agreements (
+    id bigint NOT NULL,
+    title character varying NOT NULL,
+    slug character varying NOT NULL,
+    summary text,
+    description text,
+    deadline date,
+    launch_date date,
+    source_url character varying,
+    status character varying DEFAULT 'awaiting_sponsorship'::character varying NOT NULL,
+    theme_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trade_barriers_agreements_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trade_barriers_agreements_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trade_barriers_agreements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trade_barriers_agreements_id_seq OWNED BY public.trade_barriers_agreements.id;
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trade_barriers_jurisdiction_histories (
+    id bigint NOT NULL,
+    agreement_jurisdiction_id bigint NOT NULL,
+    status character varying NOT NULL,
+    date_entered date NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trade_barriers_jurisdiction_histories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trade_barriers_jurisdiction_histories_id_seq OWNED BY public.trade_barriers_jurisdiction_histories.id;
+
+
+--
+-- Name: trade_barriers_themes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trade_barriers_themes (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trade_barriers_themes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trade_barriers_themes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trade_barriers_themes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trade_barriers_themes_id_seq OWNED BY public.trade_barriers_themes.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1145,6 +1315,39 @@ CREATE SEQUENCE warehouse.geo_relationships_id_seq
 --
 
 ALTER SEQUENCE warehouse.geo_relationships_id_seq OWNED BY warehouse.geo_relationships.id;
+
+
+--
+-- Name: jurisdictions; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.jurisdictions (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    level character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: jurisdictions_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.jurisdictions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: jurisdictions_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.jurisdictions_id_seq OWNED BY warehouse.jurisdictions.id;
 
 
 --
@@ -1604,6 +1807,41 @@ ALTER TABLE ONLY public.tools ALTER COLUMN id SET DEFAULT nextval('public.tools_
 
 
 --
+-- Name: trade_barriers_agreement_histories id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_histories ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_agreement_histories_id_seq'::regclass);
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_agreement_jurisdictions_id_seq'::regclass);
+
+
+--
+-- Name: trade_barriers_agreements id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreements ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_agreements_id_seq'::regclass);
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_jurisdiction_histories_id_seq'::regclass);
+
+
+--
+-- Name: trade_barriers_themes id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_themes ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_themes_id_seq'::regclass);
+
+
+--
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1650,6 +1888,13 @@ ALTER TABLE ONLY warehouse.geo_crosswalks ALTER COLUMN id SET DEFAULT nextval('w
 --
 
 ALTER TABLE ONLY warehouse.geo_relationships ALTER COLUMN id SET DEFAULT nextval('warehouse.geo_relationships_id_seq'::regclass);
+
+
+--
+-- Name: jurisdictions id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.jurisdictions ALTER COLUMN id SET DEFAULT nextval('warehouse.jurisdictions_id_seq'::regclass);
 
 
 --
@@ -1893,6 +2138,46 @@ ALTER TABLE ONLY public.tools
 
 
 --
+-- Name: trade_barriers_agreement_histories trade_barriers_agreement_histories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_histories
+    ADD CONSTRAINT trade_barriers_agreement_histories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions trade_barriers_agreement_jurisdictions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
+    ADD CONSTRAINT trade_barriers_agreement_jurisdictions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade_barriers_agreements trade_barriers_agreements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreements
+    ADD CONSTRAINT trade_barriers_agreements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories trade_barriers_jurisdiction_histories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories
+    ADD CONSTRAINT trade_barriers_jurisdiction_histories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trade_barriers_themes trade_barriers_themes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_themes
+    ADD CONSTRAINT trade_barriers_themes_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1946,6 +2231,14 @@ ALTER TABLE ONLY warehouse.geo_crosswalks
 
 ALTER TABLE ONLY warehouse.geo_relationships
     ADD CONSTRAINT geo_relationships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jurisdictions jurisdictions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.jurisdictions
+    ADD CONSTRAINT jurisdictions_pkey PRIMARY KEY (id);
 
 
 --
@@ -2010,6 +2303,27 @@ ALTER TABLE ONLY warehouse.sources
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT standard_object_expenditures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_on_jurisdiction_id_cb07659517; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_jurisdiction_id_cb07659517 ON public.trade_barriers_agreement_jurisdictions USING btree (jurisdiction_id);
+
+
+--
+-- Name: idx_tb_agreement_jurisdictions_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_tb_agreement_jurisdictions_unique ON public.trade_barriers_agreement_jurisdictions USING btree (agreement_id, jurisdiction_id);
+
+
+--
+-- Name: idx_tb_jurisdiction_histories_aj_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tb_jurisdiction_histories_aj_id ON public.trade_barriers_jurisdiction_histories USING btree (agreement_jurisdiction_id);
 
 
 --
@@ -2279,6 +2593,48 @@ CREATE UNIQUE INDEX index_tools_on_slug ON public.tools USING btree (slug);
 
 
 --
+-- Name: index_trade_barriers_agreement_histories_on_agreement_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trade_barriers_agreement_histories_on_agreement_id ON public.trade_barriers_agreement_histories USING btree (agreement_id);
+
+
+--
+-- Name: index_trade_barriers_agreement_jurisdictions_on_agreement_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trade_barriers_agreement_jurisdictions_on_agreement_id ON public.trade_barriers_agreement_jurisdictions USING btree (agreement_id);
+
+
+--
+-- Name: index_trade_barriers_agreements_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_trade_barriers_agreements_on_slug ON public.trade_barriers_agreements USING btree (slug);
+
+
+--
+-- Name: index_trade_barriers_agreements_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trade_barriers_agreements_on_status ON public.trade_barriers_agreements USING btree (status);
+
+
+--
+-- Name: index_trade_barriers_agreements_on_theme_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trade_barriers_agreements_on_theme_id ON public.trade_barriers_agreements USING btree (theme_id);
+
+
+--
+-- Name: index_trade_barriers_themes_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_trade_barriers_themes_on_name ON public.trade_barriers_themes USING btree (name);
+
+
+--
 -- Name: index_users_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2503,6 +2859,13 @@ CREATE INDEX index_geo_relationships_on_raw_ingestion_id ON warehouse.geo_relati
 
 
 --
+-- Name: index_jurisdictions_on_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_jurisdictions_on_code ON warehouse.jurisdictions USING btree (code);
+
+
+--
 -- Name: index_lineage_entries_on_raw_ingestion_id; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -2616,6 +2979,30 @@ ALTER TABLE ONLY public.memos
 
 
 --
+-- Name: trade_barriers_agreement_histories fk_rails_2a21dba64b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_histories
+    ADD CONSTRAINT fk_rails_2a21dba64b FOREIGN KEY (agreement_id) REFERENCES public.trade_barriers_agreements(id);
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions fk_rails_59687ac24a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
+    ADD CONSTRAINT fk_rails_59687ac24a FOREIGN KEY (agreement_id) REFERENCES public.trade_barriers_agreements(id);
+
+
+--
+-- Name: trade_barriers_agreements fk_rails_81f3d13d08; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreements
+    ADD CONSTRAINT fk_rails_81f3d13d08 FOREIGN KEY (theme_id) REFERENCES public.trade_barriers_themes(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2637,6 +3024,22 @@ ALTER TABLE ONLY public.memos
 
 ALTER TABLE ONLY public.active_storage_attachments
     ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: trade_barriers_agreement_jurisdictions fk_tb_aj_jurisdiction; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
+    ADD CONSTRAINT fk_tb_aj_jurisdiction FOREIGN KEY (jurisdiction_id) REFERENCES warehouse.jurisdictions(id);
+
+
+--
+-- Name: trade_barriers_jurisdiction_histories fk_tb_jh_aj; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories
+    ADD CONSTRAINT fk_tb_jh_aj FOREIGN KEY (agreement_jurisdiction_id) REFERENCES public.trade_barriers_agreement_jurisdictions(id) ON DELETE CASCADE;
 
 
 --
@@ -2822,6 +3225,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260428000001'),
 ('20260424000002'),
 ('20260424000001'),
 ('20260423202720'),

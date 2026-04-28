@@ -41,6 +41,15 @@ Rails.application.routes.draw do
         get "boundaries", to: "boundaries#index"
         get "addresses", to: "addresses#index"
       end
+
+      namespace :trade_barriers do
+        resources :agreements, only: [ :index, :show ], param: :slug
+        resources :themes, only: [ :index ]
+      end
+
+      namespace :warehouse do
+        resources :jurisdictions, only: [ :index ]
+      end
     end
   end
 
@@ -110,6 +119,11 @@ Rails.application.routes.draw do
       resources :instagram_stats, only: %i[index new create edit update destroy] do
         post :generate_weeks, on: :collection
       end
+    end
+
+    namespace :trade_barriers do
+      resources :agreements, only: full
+      resources :themes, only: full
     end
   end
 

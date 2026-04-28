@@ -1,0 +1,29 @@
+<div class="page-header">
+  <h1>Trade Barriers — Agreements</h1>
+  <a href="<%= new_admin_trade_barriers_agreement_path %>" class="btn btn-primary">New Agreement</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Theme</th>
+      <th>Status</th>
+      <th>Deadline</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @agreements.each do |agreement| %>
+      <tr>
+        <td><a href="<%= admin_trade_barriers_agreement_path(agreement) %>"><%= truncate(agreement.title, length: 80) %></a></td>
+        <td><%= agreement.theme&.name %></td>
+        <td><%= agreement.status.humanize %></td>
+        <td><%= agreement.deadline&.to_fs(:long) %></td>
+        <td class="text-right">
+          <a href="<%= edit_admin_trade_barriers_agreement_path(agreement) %>" class="btn btn-sm">Edit</a>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

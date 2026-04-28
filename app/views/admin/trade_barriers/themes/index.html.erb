@@ -1,0 +1,26 @@
+<div class="page-header">
+  <h1>Trade Barriers — Themes</h1>
+  <a href="<%= new_admin_trade_barriers_theme_path %>" class="btn btn-primary">New Theme</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Agreements</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @themes.each do |theme| %>
+      <tr>
+        <td><%= theme.name %></td>
+        <td><%= theme.agreements.count %></td>
+        <td class="text-right">
+          <a href="<%= edit_admin_trade_barriers_theme_path(theme) %>" class="btn btn-sm">Edit</a>
+          <%= button_to "Delete", admin_trade_barriers_theme_path(theme), method: :delete, class: "btn btn-sm btn-danger", form: { data: { turbo_confirm: "Delete '#{theme.name}'? This is blocked if agreements still use it." } } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

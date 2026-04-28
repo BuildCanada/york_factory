@@ -1,0 +1,17 @@
+<%= form_with(model: [:admin, :trade_barriers, theme], class: "card") do |f| %>
+  <% if theme.errors.any? %>
+    <div class="flash flash-alert">
+      <% theme.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <label>Name</label>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= admin_trade_barriers_themes_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

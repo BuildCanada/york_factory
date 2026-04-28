@@ -40,20 +40,24 @@ namespace :trade_barriers do
     # Load agreements via temp table so we don't need a fragile parser.
     conn = ActiveRecord::Base.connection
     conn.execute("DROP TABLE IF EXISTS pg_temp.legacy_agreements")
+    # NOTE: jurisdictions/agreement_history are TEXT (not jsonb) because the
+    # Supabase dump escapes embedded quotes as \" rather than the doubled
+    # quotes Postgres' JSON parser expects. We parse them with Ruby's JSON
+    # library below, which handles standard JSON escapes correctly.
     conn.execute(<<~SQL)
       CREATE TEMP TABLE legacy_agreements (
         id integer,
         title text,
         summary text,
         description text,
-        jurisdictions jsonb,
+        jurisdictions text,
         deadline date,
         status text,
         source_url text,
         created_at timestamptz,
         updated_at timestamptz,
         launch_date date,
-        agreement_history jsonb,
+        agreement_history text,
         theme text
       )
     SQL
@@ -62,13 +66,16 @@ namespace :trade_barriers do
     raw = raw.gsub('"public"."agreements"', "legacy_agreements")
     conn.execute(raw)
 
+    # The dump double-escapes backslashes, so embedded JSON quotes appear as
+    # \\" instead of \". Undo one level so JSON.parse sees valid input.
+    unescape = ->(s) { s.nil? ? nil : s.gsub('\\\\') { '\\' } }
+
     rows = conn.execute("SELECT * FROM legacy_agreements ORDER BY id")
     imported = 0
     rows.each do |row|
-      theme = TradeBarriers::Theme.find_by(name: row["theme"])
-      unless theme
-        warn "Skipping agreement #{row['id']}: unknown theme #{row['theme'].inspect}"
-        next
+      theme = row["theme"].present? ? TradeBarriers::Theme.find_by(name: row["theme"]) : nil
+      if row["theme"].present? && !theme
+        warn "Agreement #{row['id']}: unknown theme #{row['theme'].inspect}; importing without theme"
       end
 
       status = AGREEMENT_STATUS_MAP[row["status"]]
@@ -92,14 +99,14 @@ namespace :trade_barriers do
 
       # Replace agreement-level history.
       agreement.histories.delete_all
-      JSON.parse(row["agreement_history"] || "[]").each do |h|
+      JSON.parse(unescape.call(row["agreement_history"]) || "[]").each do |h|
         mapped = AGREEMENT_STATUS_MAP[h["status"]] || h["status"]
         agreement.histories.create!(status: mapped, date_entered: h["date_entered"])
       end
 
       # Replace jurisdictions and per-jurisdiction history.
       agreement.agreement_jurisdictions.destroy_all
-      JSON.parse(row["jurisdictions"] || "[]").each do |j|
+      JSON.parse(unescape.call(row["jurisdictions"]) || "[]").each do |j|
         jurisdiction = Warehouse::Jurisdiction.find_by(name: j["name"])
         unless jurisdiction
           warn "Agreement #{row['id']}: unknown jurisdiction #{j['name'].inspect}"

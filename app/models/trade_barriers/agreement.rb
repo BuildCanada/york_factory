@@ -13,7 +13,7 @@ class TradeBarriers::Agreement < ApplicationRecord
 
   enum :status, STATUSES, prefix: :status
 
-  belongs_to :theme, class_name: "TradeBarriers::Theme"
+  belongs_to :theme, class_name: "TradeBarriers::Theme", optional: true
 
   has_many :agreement_jurisdictions,
     class_name: "TradeBarriers::AgreementJurisdiction",

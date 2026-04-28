@@ -34,9 +34,6 @@ CREATE SCHEMA IF NOT EXISTS warehouse;
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
-
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -941,7 +938,7 @@ CREATE TABLE public.trade_barriers_agreements (
     launch_date date,
     source_url character varying,
     status character varying DEFAULT 'awaiting_sponsorship'::character varying NOT NULL,
-    theme_id bigint NOT NULL,
+    theme_id bigint,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -3225,6 +3222,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260428000002'),
 ('20260428000001'),
 ('20260424000002'),
 ('20260424000001'),

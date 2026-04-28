@@ -60,6 +60,62 @@ class Api::V1::TeamMembersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Directrice de l'ingénierie", alice["title"]
   end
 
+  test "index excludes memo_authors with no associated memos" do
+    get api_v1_team_members_url
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    slugs = data["data"].map { |m| m["slug"] }
+
+    assert_includes slugs, "alice-builder"
+    assert_not_includes slugs, "orphan-author"
+  end
+
+  test "index excludes memo_authors whose only memo is a draft" do
+    team_members(:orphan_author).authored_memos.create!(
+      slug: "orphan-draft",
+      title_en: "Orphan Draft",
+      published_at: nil
+    )
+
+    get api_v1_team_members_url
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    slugs = data["data"].map { |m| m["slug"] }
+    assert_not_includes slugs, "orphan-author"
+  end
+
+  test "index includes memo_authors with at least one published memo" do
+    team_members(:orphan_author).authored_memos.create!(
+      slug: "orphan-published",
+      title_en: "Orphan Published",
+      published_at: 1.day.ago
+    )
+
+    get api_v1_team_members_url
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    slugs = data["data"].map { |m| m["slug"] }
+    assert_includes slugs, "orphan-author"
+  end
+
+  test "index includes memo_authors via co-authored memos" do
+    team_members(:orphan_author).co_authored_memos.create!(
+      slug: "orphan-coauthored",
+      title_en: "Co-authored",
+      published_at: 1.day.ago
+    )
+
+    get api_v1_team_members_url
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    slugs = data["data"].map { |m| m["slug"] }
+    assert_includes slugs, "orphan-author"
+  end
+
   test "create without auth returns 401" do
     post api_v1_team_members_url, params: {
       team_member: { name: "New Member", role: "memo_author" }

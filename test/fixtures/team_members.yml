@@ -15,3 +15,11 @@ bob:
   role: advisor
   position: 2
   published_at: <%= 1.day.ago.to_fs(:db) %>
+
+orphan_author:
+  name: Orphan Author
+  slug: orphan-author
+  title_en: Memo Author
+  role: memo_author
+  position: 3
+  published_at: <%= 1.day.ago.to_fs(:db) %>

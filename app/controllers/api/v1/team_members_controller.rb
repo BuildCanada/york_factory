@@ -9,6 +9,7 @@ module Api
         scope = scope.ordered
         scope = scope.by_role(params[:role]) if params[:role].present?
         scope = scope.where.not(role: params[:exclude_role]) if params[:exclude_role].present?
+        scope = scope.with_associated_memos(preview_mode? ? Memo.all : Memo.published)
 
         render json: {
           data: scope.map { |tm| serialize_team_member(tm) }

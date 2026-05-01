@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       namespace :auth do
         post "google", to: "sessions#create"
         delete "session", to: "sessions#destroy"
+        get "me", to: "sessions#me"
       end
 
       resources :memos, param: :slug

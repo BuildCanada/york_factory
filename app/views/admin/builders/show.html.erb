@@ -2,7 +2,7 @@
   <h1><%= @builder.title_en || "Untitled" %></h1>
   <div class="btn-group">
     <% if !@builder.published? %>
-      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/builders/<%= @builder.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+      <a href="<%= preview_url("/builders/#{@builder.slug}") %>" target="_blank" class="btn btn-sm">Preview</a>
     <% end %>
     <a href="<%= edit_admin_builder_path(@builder) %>" class="btn btn-sm">Edit</a>
     <%= link_to "Delete", admin_builder_path(@builder), data: { turbo_method: :delete, turbo_confirm: "Delete this builder?" }, class: "btn btn-sm btn-danger" %>

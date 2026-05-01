@@ -53,4 +53,60 @@ class Api::V1::PostsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unauthorized
   end
+
+  test "index excludes drafts without preview token" do
+    get api_v1_posts_url
+    assert_response :success
+
+    slugs = JSON.parse(response.body)["data"].map { |p| p["slug"] }
+    assert_not_includes slugs, "draft-post"
+  end
+
+  test "index includes drafts when admin preview token is provided" do
+    token = Warden::JWTAuth::UserEncoder.new.call(users(:admin), :user, nil).first
+
+    get api_v1_posts_url, params: { preview_token: token }
+    assert_response :success
+
+    slugs = JSON.parse(response.body)["data"].map { |p| p["slug"] }
+    assert_includes slugs, "draft-post"
+  end
+
+  test "index ignores preview token from non-admin user" do
+    token = Warden::JWTAuth::UserEncoder.new.call(users(:member), :user, nil).first
+
+    get api_v1_posts_url, params: { preview_token: token }
+    assert_response :success
+
+    slugs = JSON.parse(response.body)["data"].map { |p| p["slug"] }
+    assert_not_includes slugs, "draft-post"
+  end
+
+  test "index ignores invalid preview token" do
+    get api_v1_posts_url, params: { preview_token: "garbage" }
+    assert_response :success
+
+    slugs = JSON.parse(response.body)["data"].map { |p| p["slug"] }
+    assert_not_includes slugs, "draft-post"
+  end
+
+  test "show returns draft post when admin preview token is provided" do
+    token = Warden::JWTAuth::UserEncoder.new.call(users(:admin), :user, nil).first
+
+    get api_v1_post_url("draft-post"), params: { preview_token: token }
+    assert_response :success
+    assert_equal "draft-post", JSON.parse(response.body)["slug"]
+  end
+
+  test "show returns 404 for draft post without preview token" do
+    get api_v1_post_url("draft-post")
+    assert_response :not_found
+  end
+
+  test "show returns 404 for draft post with non-admin preview token" do
+    token = Warden::JWTAuth::UserEncoder.new.call(users(:member), :user, nil).first
+
+    get api_v1_post_url("draft-post"), params: { preview_token: token }
+    assert_response :not_found
+  end
 end

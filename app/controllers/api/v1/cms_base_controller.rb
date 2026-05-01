@@ -14,9 +14,22 @@ module Api
       end
 
       def preview_mode?
-        params[:preview_token].present? &&
-          ENV["DRAFT_MODE_SECRET"].present? &&
-          ActiveSupport::SecurityUtils.secure_compare(params[:preview_token], ENV["DRAFT_MODE_SECRET"])
+        preview_user&.admin? == true
+      end
+
+      def preview_user
+        return @preview_user if defined?(@preview_user)
+
+        token = params[:preview_token].presence || request.headers["Authorization"]&.split(" ")&.last
+        return @preview_user = nil if token.blank?
+
+        begin
+          payload = JWT.decode(token, devise_jwt_secret, true, algorithm: "HS256").first
+          return @preview_user = nil if JwtDenylist.exists?(jti: payload["jti"])
+          @preview_user = User.find(payload["sub"])
+        rescue JWT::DecodeError, ActiveRecord::RecordNotFound
+          @preview_user = nil
+        end
       end
 
       def pagy_metadata(pagy)

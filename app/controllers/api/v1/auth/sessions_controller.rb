@@ -2,6 +2,20 @@ module Api
   module V1
     module Auth
       class SessionsController < ApplicationController
+        include Authenticatable
+
+        before_action :authenticate_admin!, only: [ :me ]
+
+        def me
+          render json: {
+            id: current_user.id,
+            email: current_user.email,
+            name: current_user.name,
+            role: current_user.role,
+            admin: current_user.admin?
+          }
+        end
+
         def create
           google_token = params[:token]
           return render json: { error: "Token required" }, status: :bad_request unless google_token

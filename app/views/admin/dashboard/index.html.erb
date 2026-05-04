@@ -1,9 +1,5 @@
 <div class="page-header">
   <h1>Dashboard</h1>
-  <div class="btn-group">
-    <%= button_to "Sync from Webflow", admin_webflow_sync_path, method: :post, class: "btn btn-primary", data: { turbo_confirm: "Queue a Webflow sync? This will upsert CMS content from Webflow." } %>
-    <%= button_to "Sync from BuildToronto Webflow", admin_build_toronto_sync_path, method: :post, class: "btn", data: { turbo_confirm: "Queue a BuildToronto Webflow sync? This will upsert memos tagged build_toronto." } %>
-  </div>
 </div>
 
 <h2>Record Counts</h2>

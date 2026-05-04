@@ -28,6 +28,7 @@ module Admin
 
     def update
       purge_attachment(:seo_image)
+      purge_attachment(:banner_image)
       if @memo.update(memo_params)
         redirect_to admin_memo_path(@memo), notice: "Memo updated."
       else
@@ -59,7 +60,7 @@ module Admin
     def memo_params
       params.require(:memo).permit(
         :slug, :author_id, :co_author_id, :author_name, :author_title,
-        :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image,
+        :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image, :banner_image,
         :title_en, :title_fr,
         :body_en, :body_fr, :appendix_en, :appendix_fr,
         :supporters_en, :supporters_fr,

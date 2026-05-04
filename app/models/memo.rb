@@ -11,6 +11,7 @@ class Memo < ApplicationRecord
   has_localized_markdown :appendix
   has_localized_markdown :supporters
   has_one_attached :seo_image
+  has_one_attached :banner_image
   belongs_to :author, class_name: "TeamMember", optional: true
   belongs_to :co_author, class_name: "TeamMember", optional: true
 

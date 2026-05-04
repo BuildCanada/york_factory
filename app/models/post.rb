@@ -9,6 +9,7 @@ class Post < ApplicationRecord
 
   has_localized_markdown :body
   has_one_attached :seo_image
+  has_one_attached :banner_image
 
   translatable_fields :title, :summary
   markdown_fields :body

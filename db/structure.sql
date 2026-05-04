@@ -2822,6 +2822,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260504204633'),
 ('20260424000002'),
 ('20260424000001'),
 ('20260423202720'),

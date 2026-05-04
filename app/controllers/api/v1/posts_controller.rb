@@ -7,7 +7,7 @@ module Api
       def index
         scope = (params[:hidden].present? && current_user&.admin?) ? Post.all : Post.visible
         scope = preview_mode? ? scope : scope.published
-        scope = scope.with_attached_seo_image.order(published_at: :desc)
+        scope = scope.with_attached_seo_image.with_attached_banner_image.order(published_at: :desc)
 
         pagy, posts = pagy(scope)
         render json: {
@@ -51,7 +51,7 @@ module Api
 
       def post_params
         params.require(:post).permit(
-          :hidden, :published_at, :seo_image,
+          :hidden, :published_at, :seo_image, :banner_image,
           :title_en, :title_fr, :summary_en, :summary_fr,
           :body_en, :body_fr
         )
@@ -64,7 +64,8 @@ module Api
           title: post.title,
           summary: post.summary,
           published_at: post.published_at,
-          seo_image_url: image_url(post.seo_image)
+          seo_image_url: image_url(post.seo_image),
+          banner_image_url: image_url(post.banner_image)
         }
         if full
           data[:body] = post.body_html

@@ -138,7 +138,9 @@ class BuildTorontoSyncService
       memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?
       memo.published_at = webflow_published_at(item)
 
-      attach_image(memo, :seo_image, fd.dig("open-graph-image", "url") || fd.dig("seo-image", "url"))
+      image_url = fd.dig("open-graph-image", "url") || fd.dig("seo-image", "url")
+      attach_image(memo, :seo_image, image_url)
+      attach_image(memo, :banner_image, image_url) unless memo.banner_image.attached?
 
       if memo.save
         synced += 1

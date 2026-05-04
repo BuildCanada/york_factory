@@ -143,7 +143,7 @@ module Api
           subtitle: memo.category,
           author: memo.author&.name,
           url: nil,
-          image_url: image_url(memo.seo_image),
+          image_url: image_url(memo.banner_image.attached? ? memo.banner_image : memo.seo_image),
           slug: memo.slug
         }
         if full
@@ -159,7 +159,7 @@ module Api
           subtitle: post.summary,
           author: nil,
           url: nil,
-          image_url: image_url(post.seo_image),
+          image_url: image_url(post.banner_image.attached? ? post.banner_image : post.seo_image),
           slug: post.slug
         }
         if full

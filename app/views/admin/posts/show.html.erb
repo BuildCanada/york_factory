@@ -18,6 +18,10 @@
     <% if @post.hidden? %><span class="badge badge-red">Hidden</span><% end %>
   </p>
   <p><strong>Published at:</strong> <%= @post.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @post.banner_image.attached? %>
+    <p><strong>Banner Image:</strong></p>
+    <%= image_tag url_for(@post.banner_image), class: "file-preview" %>
+  <% end %>
   <% if @post.seo_image.attached? %>
     <p><strong>SEO Image:</strong></p>
     <%= image_tag url_for(@post.seo_image), class: "file-preview" %>

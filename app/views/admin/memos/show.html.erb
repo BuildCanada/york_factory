@@ -19,6 +19,10 @@
     </span>
   </p>
   <p><strong>Published at:</strong> <%= @memo.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @memo.banner_image.attached? %>
+    <p><strong>Banner Image:</strong></p>
+    <%= image_tag url_for(@memo.banner_image), class: "file-preview" %>
+  <% end %>
   <% if @memo.seo_image.attached? %>
     <p><strong>SEO Image:</strong></p>
     <%= image_tag url_for(@memo.seo_image), class: "file-preview" %>

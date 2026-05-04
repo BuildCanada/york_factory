@@ -47,6 +47,5 @@ module Admin
         .order(confidence: :asc)
         .limit(50)
     end
-
   end
 end

@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/rgeo/rgeo-proj4.git
-  revision: f33049cbc79a626a2541cf888c99e753b0486d35
+  revision: 026526d0aa0486d76b9499d486589258eed9890e
   branch: master
   specs:
-    rgeo-proj4 (4.0.0)
+    rgeo-proj4 (5.0.0)
       rgeo (~> 3.1.0)
 
 GEM
@@ -784,7 +784,7 @@ CHECKSUMS
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   rgeo (3.1.0) sha256=89c1804894b35acf65891e1f24e15bbf2fbd972d4183e63c444bb97c1ccaf5d5
   rgeo-activerecord (8.1.0) sha256=2a7aeab7eae2f2c41e8a8af7d008e8a23d8e6b2e5854e9ed701cf37b993f59a1
-  rgeo-proj4 (4.0.0)
+  rgeo-proj4 (5.0.0)
   rgeo-shapefile (3.1.0) sha256=73477414e4105346ca0b0734b79eb2a8b7aab625a79988a83cc4d2eaea6130df
   roo (3.0.0) sha256=6fdd7a9158d657c69768b4168754ff2110cc21fdc01a1bec1010820cb05c91b1
   roo-xls (2.0.0) sha256=72a6ac126e3fd140f3fb105097e5b212deb9419eb7e100abd72e0f7a94048f01

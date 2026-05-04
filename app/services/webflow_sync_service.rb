@@ -1,305 +1,59 @@
 class WebflowSyncService
   include Webflow::ImageAttachment
 
-  SITE_ID = "679d23fc682f2bf860558c9a"
-
   COLLECTIONS = {
-    team: "679d23fc682f2bf860558cdc",
-    memos: "679d23fc682f2bf860558cbe",
-    posts: "684867541456a61e3e1bee47",
-    tools: "6852f12a87c79118b6e0fafb",
-    builders: "6887ed9d9b83c3d68c8119d2"
+    memos: "679d23fc682f2bf860558cbe"
   }.freeze
-
-  ROLE_MAP = {
-    "c5ce55e9374acb9562bb43aaaf69770d" => "board",
-    "944812afca5b56a3cd9c34898e384517" => "employee",
-    "20ca1242b5afbfc6d502e24b42052210" => "volunteer"
-  }.freeze
-  DEFAULT_ROLE = "employee"
-
-  CATEGORY_MAP = {
-    "0fe9e9965e36fb950b3aba560b333550" => "housing",
-    "eaa280191195bdaf636392c584783eb2" => "industry",
-    "455e48223a385017de9dfc47886a6bc8" => "government-transformation",
-    "0e69a7ae596c2271c5d587fef1c9b476" => "digital-innovation",
-    "97cd702c4cb08d4e69ec7c47c112cca5" => "nation-building",
-    "00d3874c9fe83b07882574ee96600deb" => "immigration",
-    "b0d18b2b2f3955ca24414b0ff7745c95" => "energy",
-    "fb551c04c199ab7dd0d7aef0a211764c" => "finance",
-    "f927f68ffa12d7053acac7f765ebc039" => "defence"
-  }.freeze
-
-  SyncError = Webflow::Client::Error
-
-  Result = Struct.new(:team_members, :memos, :posts, :tools, :builders, :errors, keyword_init: true)
 
   def initialize(api_token: nil)
     token = api_token || Rails.application.credentials.dig(:webflow, :api_token)
     @client = Webflow::Client.new(token)
     @errors = []
-    @team_id_map = {} # webflow_id => TeamMember record
   end
 
-  def sync!
-    counts = { team_members: 0, memos: 0, posts: 0, tools: 0, builders: 0 }
-
-    Rails.logger.info "[WebflowSync] Starting sync..."
-
-    counts[:team_members] = sync_team_members
-    counts[:memos] = sync_memos
-    counts[:posts] = sync_posts
-    counts[:tools] = sync_tools
-    counts[:builders] = sync_builders
-
-    reclassified = reclassify_memo_authors
-    Rails.logger.info "[WebflowSync] Reclassified #{reclassified} team members as memo_author"
-    Rails.logger.info "[WebflowSync] Complete: #{counts.inspect}"
-
-    Result.new(**counts, errors: @errors)
-  end
-
-  private
-
-  # Webflow draft/publish state lives at the item root, not in fieldData.
-  # An item is "published on Webflow" iff lastPublished is present and
-  # neither isDraft nor isArchived is true. Map that onto our Publishable
-  # concern: published_at = nil means draft in our system.
-  def webflow_published_at(item)
-    return nil if item["isDraft"] || item["isArchived"]
-    raw = item["lastPublished"]
-    return nil if raw.blank?
-    Time.zone.parse(raw) rescue nil
-  end
-
-  def webflow_archived?(item)
-    item["isArchived"] == true
-  end
-
-  # Mirrors the ReclassifyTeamMemberRoles migration: any team member who
-  # authored a memo (and doesn't hold a preserved role) is classified as
-  # memo_author. Run after every sync so new memo-only contributors don't
-  # linger as "employee".
-  def reclassify_memo_authors
-    author_ids = Memo.where.not(author_id: nil).pluck(:author_id) |
-                 Memo.where.not(co_author_id: nil).pluck(:co_author_id)
-    return 0 if author_ids.empty?
-
-    TeamMember
-      .where(id: author_ids)
-      .where.not(role: %w[board advisor volunteer memo_author])
-      .update_all(role: "memo_author")
-  end
-
-  def sync_team_members
-    items = @client.fetch_all_items(COLLECTIONS[:team])
-    synced = 0
-
-    items.each do |item|
-      next if webflow_archived?(item)
-      fd = item["fieldData"]
-      slug = fd["slug"]
-      next if slug.blank?
-
-      member = TeamMember.find_or_initialize_by(slug: slug)
-      role_hash = fd["role"].to_s
-      mapped_role = ROLE_MAP[role_hash] || DEFAULT_ROLE
-
-      # Don't demote an existing memo_author back to employee — the
-      # reclassification migration promoted authors, and Webflow has no
-      # equivalent distinction.
-      resolved_role = member.role == "memo_author" ? "memo_author" : mapped_role
-
-      member.assign_attributes(
-        name: fd["name"],
-        role: resolved_role,
-        title_en: fd["title"].to_s,
-        linkedin_url: fd["linkedin"].to_s.presence,
-        twitter_url: fd["twitter"].to_s.presence,
-        position: fd["team-order"].to_i
-      )
-      member.published_at = webflow_published_at(item)
-
-      attach_image(member, :profile_photo, fd.dig("profile-photo", "url"), fd["name"])
-
-      if member.save
-        @team_id_map[item["id"]] = member
-        synced += 1
-      else
-        @errors << "TeamMember '#{fd["name"]}': #{member.errors.full_messages.join(", ")}"
-      end
-    rescue => e
-      @errors << "TeamMember '#{fd&.dig("name")}': #{e.message}"
-    end
-
-    Rails.logger.info "[WebflowSync] Synced #{synced}/#{items.size} team members"
-    synced
-  end
-
-  def sync_memos
+  # One-off remediation: attach seo_image for Build Canada memos
+  # (publication: nil) that already exist in the CMS but never got one.
+  # Skips memos not found locally and memos that already have an seo_image.
+  def resync_memo_seo_images!
+    Rails.logger.info "[WebflowSync] Resyncing SEO images for existing Build Canada memos..."
     items = @client.fetch_all_items(COLLECTIONS[:memos])
-    synced = 0
+    updated = 0
+    already_attached = 0
+    missing = 0
+    skipped = 0
 
     items.each do |item|
-      next if webflow_archived?(item)
+      next if item["isArchived"] == true
       fd = item["fieldData"]
       slug = fd["slug"]
       next if slug.blank?
 
-      memo = Memo.find_or_initialize_by(slug: slug, publication: nil)
-      category_hash = fd["category"].to_s
-      category = CATEGORY_MAP[category_hash]
-
-      # Key messages
-      key_messages = (1..4).filter_map { |i|
-        msg = fd["key-message-#{i}"]
-        { "message" => msg } if msg.present?
-      }
-
-      memo.assign_attributes(
-        title_en: fd["name"].to_s,
-        category: category,
-        key_messages_en: key_messages.presence || [],
-        twitter_embed: fd["twitter-embed"].to_s.presence,
-        author_name: fd["builder-name"].to_s.presence,
-        author_title: fd["builder-title"].to_s.presence,
-        author_avatar: fd["builder-avatar"].to_s.presence
-      )
-
-      # Resolve author relationships defensively: if the Webflow reference is
-      # missing OR we can't resolve it (e.g. a team_member failed to save),
-      # leave the existing author_id alone rather than nulling it out.
-      assign_author_if_resolvable(memo, :author, fd["builder"])
-      assign_author_if_resolvable(memo, :co_author, fd["builder-2"])
-      # HasLocalizedMarkdown setter auto-detects HTML and converts to markdown,
-      # downloading any inline images into ActiveStorage.
-      memo.body_en = fd["body"].to_s if fd["body"].present?
-      memo.appendix_en = fd["appendix"].to_s if fd["appendix"].present?
-      memo.supporters_en = fd["supporters"].to_s if fd["supporters"].present?
-      memo.published_at = webflow_published_at(item)
-
-      open_graph_image_url = fd.dig("open-graph-image", "url")
-      attach_image(memo, :seo_image, open_graph_image_url)
-      attach_image(memo, :banner_image, open_graph_image_url) unless memo.banner_image.attached?
-
-      if memo.save
-        synced += 1
-      else
-        @errors << "Memo '#{fd["name"]}': #{memo.errors.full_messages.join(", ")}"
+      memo = Memo.find_by(slug: slug, publication: nil)
+      if memo.nil?
+        missing += 1
+        next
       end
+
+      if memo.seo_image.attached?
+        already_attached += 1
+        next
+      end
+
+      image_url = fd.dig("seo-image", "url") || fd.dig("open-graph-image", "url")
+      if image_url.blank?
+        skipped += 1
+        next
+      end
+
+      attach_image(memo, :seo_image, image_url)
+      updated += 1
     rescue => e
-      @errors << "Memo '#{fd&.dig("name")}': #{e.message}"
+      @errors << "Memo SEO image '#{fd&.dig("name")}': #{e.message}"
     end
 
-    Rails.logger.info "[WebflowSync] Synced #{synced}/#{items.size} memos"
-    synced
-  end
-
-  def assign_author_if_resolvable(memo, attr, raw_ref)
-    ref_id = Array(raw_ref).first
-    return if ref_id.blank?
-
-    team_member = @team_id_map[ref_id]
-    memo.public_send("#{attr}=", team_member) if team_member
-  end
-
-  def sync_posts
-    items = @client.fetch_all_items(COLLECTIONS[:posts])
-    synced = 0
-
-    items.each do |item|
-      next if webflow_archived?(item)
-      fd = item["fieldData"]
-      slug = fd["slug"]
-      next if slug.blank?
-
-      post = Post.find_or_initialize_by(slug: slug)
-      post.assign_attributes(
-        title_en: fd["name"].to_s,
-        summary_en: fd["post-summary"].to_s,
-        hidden: fd["hidden"] == true
-      )
-      post.body_en = fd["post-body"].to_s if fd["post-body"].present?
-      post.published_at = webflow_published_at(item)
-
-      if post.save
-        synced += 1
-      else
-        @errors << "Post '#{fd["name"]}': #{post.errors.full_messages.join(", ")}"
-      end
-    rescue => e
-      @errors << "Post '#{fd&.dig("name")}': #{e.message}"
-    end
-
-    Rails.logger.info "[WebflowSync] Synced #{synced}/#{items.size} posts"
-    synced
-  end
-
-  def sync_tools
-    items = @client.fetch_all_items(COLLECTIONS[:tools])
-    synced = 0
-
-    items.each do |item|
-      next if webflow_archived?(item)
-      fd = item["fieldData"]
-      slug = fd["slug"]
-      next if slug.blank?
-
-      tool = Tool.find_or_initialize_by(slug: slug)
-      tool.assign_attributes(
-        title_en: fd["name"].to_s,
-        url: fd["url"].to_s.presence
-      )
-      tool.description_en = fd["description"].to_s if fd["description"].present?
-      tool.published_at = webflow_published_at(item)
-
-      attach_image(tool, :image, fd.dig("image", "url"), fd["name"])
-
-      if tool.save
-        synced += 1
-      else
-        @errors << "Tool '#{fd["name"]}': #{tool.errors.full_messages.join(", ")}"
-      end
-    rescue => e
-      @errors << "Tool '#{fd&.dig("name")}': #{e.message}"
-    end
-
-    Rails.logger.info "[WebflowSync] Synced #{synced}/#{items.size} tools"
-    synced
-  end
-
-  def sync_builders
-    items = @client.fetch_all_items(COLLECTIONS[:builders])
-    synced = 0
-
-    items.each do |item|
-      next if webflow_archived?(item)
-      fd = item["fieldData"]
-      slug = fd["slug"]
-      next if slug.blank?
-
-      builder = Builder.find_or_initialize_by(slug: slug)
-      builder.assign_attributes(
-        title_en: fd["name"].to_s,
-        byline_en: fd["key-message-1"].to_s,
-        quote_en: fd["quote"].to_s
-      )
-      builder.body_en = fd["body"].to_s if fd["body"].present?
-      builder.author_en = fd["supporters"].to_s if fd["supporters"].present?
-      builder.published_at = webflow_published_at(item)
-
-      attach_image(builder, :image, fd.dig("image", "url"), fd["name"])
-
-      if builder.save
-        synced += 1
-      else
-        @errors << "Builder '#{fd["name"]}': #{builder.errors.full_messages.join(", ")}"
-      end
-    rescue => e
-      @errors << "Builder '#{fd&.dig("name")}': #{e.message}"
-    end
-
-    Rails.logger.info "[WebflowSync] Synced #{synced}/#{items.size} builders"
-    synced
+    Rails.logger.info "[WebflowSync] Attached #{updated} seo_images " \
+                      "(#{already_attached} already had one, #{missing} not in CMS, " \
+                      "#{skipped} no Webflow image, #{@errors.size} errors)"
+    { updated: updated, already_attached: already_attached, missing: missing, skipped: skipped, errors: @errors }
   end
 end

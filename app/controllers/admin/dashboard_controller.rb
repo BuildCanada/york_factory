@@ -48,14 +48,5 @@ module Admin
         .limit(50)
     end
 
-    def webflow_sync
-      WebflowSyncJob.perform_later
-      redirect_to admin_root_path, notice: "Webflow sync queued. Check Jobs for progress."
-    end
-
-    def build_toronto_sync
-      BuildTorontoSyncJob.perform_later
-      redirect_to admin_root_path, notice: "BuildToronto sync queued. Check Jobs for progress."
-    end
   end
 end

@@ -49,6 +49,9 @@ Rails.application.configure do
   # Host used for absolute URL generation (ActiveStorage blobs embedded in markdown, etc.).
   Rails.application.routes.default_url_options = { host: "localhost", port: 3000, protocol: "http" }
 
+  # Allow extra hosts (e.g. docker-compose service name) via env var.
+  config.hosts.concat(ENV["RAILS_DEVELOPMENT_HOSTS"].to_s.split(",").map(&:strip).reject(&:empty?))
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 

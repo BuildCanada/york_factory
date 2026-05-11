@@ -15,6 +15,10 @@ class Memo < ApplicationRecord
   belongs_to :author, class_name: "TeamMember", optional: true
   belongs_to :co_author, class_name: "TeamMember", optional: true
 
+  has_many :endorsements, dependent: :destroy
+  has_many :critiques, dependent: :destroy
+  has_many :approved_critiques, -> { where(status: Critique.statuses[:approved]) }, class_name: "Critique"
+
   CATEGORIES = %w[housing industry government-transformation digital-innovation nation-building immigration energy finance defence].freeze
   PUBLICATIONS = %w[build_canada build_toronto].freeze
   DEFAULT_PUBLICATION = "build_canada".freeze

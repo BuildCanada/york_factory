@@ -1,0 +1,44 @@
+<div class="page-header">
+  <h1>Critique #<%= @critique.id %></h1>
+  <a href="<%= admin_critiques_path %>" class="btn btn-sm">Back</a>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Memo</div>
+    <div class="value" style="font-size: 1rem;"><%= @critique.memo&.title_en || "—" %></div>
+    <% if @critique.memo %>
+      <a href="<%= admin_memo_path(@critique.memo) %>">Open memo</a>
+    <% end %>
+  </div>
+  <div class="card">
+    <div class="label">Author</div>
+    <div class="value" style="font-size: 1rem;"><%= @critique.name %></div>
+    <div class="text-muted mono"><%= @critique.email %><%= " (verified)" if @critique.email_verified %></div>
+    <div class="text-muted mono">postal: <%= @critique.postal_code %></div>
+    <div class="text-muted mono">linkedin sub: <%= @critique.linkedin_sub %></div>
+  </div>
+  <div class="card">
+    <div class="label">Status</div>
+    <% color = { "pending" => "yellow", "approved" => "green", "rejected" => "red" }[@critique.status] %>
+    <div class="value" style="font-size: 1.2rem;">
+      <span class="badge badge-<%= color %>"><%= @critique.status.capitalize %></span>
+    </div>
+    <% if @critique.moderated_at %>
+      <div class="text-muted">by <%= @critique.moderated_by&.email %> on <%= @critique.moderated_at.strftime("%b %d, %Y %H:%M") %></div>
+    <% end %>
+  </div>
+</div>
+
+<h2>Body</h2>
+<div class="card" style="white-space: pre-wrap;"><%= @critique.body %></div>
+
+<div class="btn-group" style="margin-top: 1rem;">
+  <% unless @critique.approved? %>
+    <%= button_to "Approve", approve_admin_critique_path(@critique), method: :post, class: "btn btn-primary" %>
+  <% end %>
+  <% unless @critique.rejected? %>
+    <%= button_to "Reject", reject_admin_critique_path(@critique), method: :post, class: "btn" %>
+  <% end %>
+  <%= button_to "Delete", admin_critique_path(@critique), method: :delete, class: "btn btn-danger", data: { turbo_confirm: "Delete this critique?" } %>
+</div>

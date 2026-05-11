@@ -25,9 +25,13 @@ Rails.application.routes.draw do
       end
 
       # OAuth userinfo — current user for the presented Doorkeeper token.
-      get "me", to: "me#show"
+      get   "me", to: "me#show"
+      patch "me", to: "me#update"
 
-      resources :memos, param: :slug
+      resources :memos, param: :slug do
+        resources :endorsements, only: [ :index, :create ]
+        resources :critiques,    only: [ :index, :create ]
+      end
       resources :posts, param: :slug
       resources :builders, param: :slug
       resources :team_members, path: "team" do
@@ -168,6 +172,12 @@ Rails.application.routes.draw do
     resources :testimonials, only: full do
       put :reorder, on: :collection
       post :retranslate, on: :member
+    end
+    resources :critiques, only: [ :index, :show, :destroy ] do
+      member do
+        post :approve
+        post :reject
+      end
     end
     resources :subscribers, only: [ :index ]
     resources :users, only: %i[index new create edit update destroy]

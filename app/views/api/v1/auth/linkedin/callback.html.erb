@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LinkedIn verification</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; padding: 2rem; color: #1a1a1a; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <% if @error.present? %>
+    <p class="err">LinkedIn verification failed: <%= @error %></p>
+    <p>You can close this window and try again.</p>
+  <% else %>
+    <p>Verified. You can close this window.</p>
+  <% end %>
+  <script>
+    (function () {
+      var origin = <%= raw @origin.to_json %>;
+      var message = <% if @error.present? %>
+        { type: "linkedin-verified", error: <%= raw @error.to_json %> }
+      <% else %>
+        { type: "linkedin-verified", verifiedTicket: <%= raw @verified_ticket.to_json %>, payload: <%= raw @payload_json %> }
+      <% end %>;
+      try {
+        if (window.opener) {
+          window.opener.postMessage(message, origin);
+        }
+      } catch (e) {}
+      setTimeout(function () { try { window.close(); } catch (e) {} }, 200);
+    })();
+  </script>
+</body>
+</html>

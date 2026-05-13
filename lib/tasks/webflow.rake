@@ -1,5 +1,5 @@
 namespace :webflow do
-  desc "Resync seo_image for existing Build Canada memos (publication: nil) only"
+  desc "Resync seo_image for existing Build Canada memos only"
   task resync_memo_seo_images: :environment do
     result = WebflowSyncService.new.resync_memo_seo_images!
     puts "Resync complete: #{result.except(:errors).inspect}"

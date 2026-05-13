@@ -5,7 +5,7 @@ class Memo < ApplicationRecord
   translates :title, backend: :column
 
   extend FriendlyId
-  friendly_id :title_en, use: :history
+  friendly_id :title_en, use: [ :history, :scoped ], scope: :publication
 
   has_localized_markdown :body
   has_localized_markdown :appendix
@@ -16,17 +16,17 @@ class Memo < ApplicationRecord
   belongs_to :co_author, class_name: "TeamMember", optional: true
 
   CATEGORIES = %w[housing industry government-transformation digital-innovation nation-building immigration energy finance defence].freeze
-  PUBLICATIONS = %w[build_toronto].freeze
+  PUBLICATIONS = %w[build_canada build_toronto].freeze
+  DEFAULT_PUBLICATION = "build_canada".freeze
 
   validates :slug, presence: true, uniqueness: { scope: :publication }
   validates :category, inclusion: { in: CATEGORIES, allow_nil: true }
-  validates :publication, inclusion: { in: PUBLICATIONS, allow_blank: true }
+  validates :publication, inclusion: { in: PUBLICATIONS }
 
-  before_validation { self.publication = nil if publication.blank? }
+  before_validation { self.publication = DEFAULT_PUBLICATION if publication.blank? }
 
   scope :featured, -> { where(featured: true) }
   scope :by_category, ->(cat) { where(category: cat) }
-  scope :without_publication, -> { where(publication: nil) }
   scope :by_publication, ->(name) { where(publication: name) }
   scope :search, ->(q) {
     sanitized = ActiveRecord::Base.sanitize_sql_like(q)
@@ -46,6 +46,6 @@ class Memo < ApplicationRecord
   private
 
   def should_appear_in_feed?
-    publication.blank? && super
+    publication == DEFAULT_PUBLICATION && super
   end
 end

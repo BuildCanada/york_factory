@@ -19,7 +19,7 @@
 
   <div class="form-group">
     <label>Publication</label>
-    <%= f.select :publication, Memo::PUBLICATIONS.map { |p| [p.titleize, p] }, { include_blank: "— Build Canada —" }, class: "form-control" %>
+    <%= f.select :publication, Memo::PUBLICATIONS.map { |p| [p.titleize, p] }, {}, class: "form-control" %>
   </div>
 
   <div class="form-group">

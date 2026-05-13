@@ -104,16 +104,17 @@ class MemoTest < ActiveSupport::TestCase
     assert_includes memo.errors[:publication], "is not included in the list"
   end
 
-  test "nil publication is valid" do
-    memo = Memo.new(title_en: "Y", publication: nil)
+  test "blank publication defaults to build_canada" do
+    memo = Memo.new(title_en: "Y", slug: "y-memo", publication: "")
     memo.valid?
+    assert_equal "build_canada", memo.publication
     assert_empty memo.errors[:publication]
   end
 
-  test "without_publication scope excludes tagged memos" do
-    results = Memo.without_publication
-    assert_includes results, memos(:published_memo)
-    assert_not_includes results, memos(:build_toronto_memo)
+  test "build_canada is in the publication list" do
+    memo = Memo.new(title_en: "Z", slug: "z-memo", publication: "build_canada")
+    memo.valid?
+    assert_empty memo.errors[:publication]
   end
 
   test "by_publication scope includes only matching publication" do
@@ -140,6 +141,7 @@ class MemoTest < ActiveSupport::TestCase
     assert_not memo.valid?
     assert_includes memo.errors[:slug], "has already been taken"
   end
+
 
   test "build_toronto memo does not create a feed entry" do
     memo = memos(:build_toronto_memo)

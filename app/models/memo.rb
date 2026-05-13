@@ -39,6 +39,10 @@ class Memo < ApplicationRecord
 
   def self.feed_type_label = "memo"
 
+  def should_generate_new_friendly_id?
+    false
+  end
+
   private
 
   def should_appear_in_feed?

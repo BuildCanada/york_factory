@@ -50,7 +50,7 @@ module Admin
 
     def post_params
       params.require(:post).permit(
-        :hidden, :published_at, :seo_image, :banner_image,
+        :slug, :hidden, :published_at, :seo_image, :banner_image,
         :title_en, :title_fr, :summary_en, :summary_fr,
         :body_en, :body_fr
       )

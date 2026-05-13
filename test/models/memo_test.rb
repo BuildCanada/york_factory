@@ -15,10 +15,17 @@ class MemoTest < ActiveSupport::TestCase
     assert memo.errors.where(:slug, :blank).any?, "expected a blank error on slug"
   end
 
-  test "slug is generated from title_en via FriendlyId" do
+  test "slug is not auto-generated from title_en" do
     memo = Memo.new(title_en: "My Policy Memo")
     memo.valid?
-    assert_equal "my-policy-memo", memo.slug
+    assert_nil memo.slug
+    assert memo.errors.where(:slug, :blank).any?
+  end
+
+  test "submitted slug is preserved verbatim" do
+    memo = Memo.new(title_en: "Has Title", slug: "custom-slug", category: "housing")
+    assert memo.save
+    assert_equal "custom-slug", memo.reload.slug
   end
 
   test "slug uniqueness is enforced" do

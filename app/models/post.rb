@@ -6,6 +6,7 @@ class Post < ApplicationRecord
 
   extend FriendlyId
   friendly_id :title_en, use: :history
+  validates :slug, presence: true, uniqueness: true
 
   has_localized_markdown :body
   has_one_attached :seo_image
@@ -17,4 +18,8 @@ class Post < ApplicationRecord
   scope :visible, -> { where(hidden: false) }
 
   def self.feed_type_label = "blog"
+
+  def should_generate_new_friendly_id?
+    false
+  end
 end

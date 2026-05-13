@@ -12,6 +12,9 @@ application.register("sidebar", SidebarController)
 import ListController from "controllers/list_controller"
 application.register("list", ListController)
 
+import SlugPreviewController from "controllers/slug_preview_controller"
+application.register("slug-preview", SlugPreviewController)
+
 import { MarksmithController, ListContinuationController } from "@avo-hq/marksmith"
 application.register("marksmith", MarksmithController)
 application.register("list-continuation", ListContinuationController)

@@ -10,6 +10,8 @@
     <%= f.text_field :name, class: "form-control" %>
   </div>
 
+  <%= render "admin/shared/slug_field", form: f, source_field: :name, source_label: "name" %>
+
   <%= render "admin/shared/translated_text_field", form: f, field: :title, label: "Title" %>
 
   <div class="form-group">

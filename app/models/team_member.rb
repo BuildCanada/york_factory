@@ -32,4 +32,8 @@ class TeamMember < ApplicationRecord
   }
 
   translatable_fields :title
+
+  def should_generate_new_friendly_id?
+    false
+  end
 end

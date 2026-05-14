@@ -17,11 +17,11 @@ class MakeBuildCanadaAnExplicitMemoPublication < ActiveRecord::Migration[8.1]
     change_column_null    :memos, :publication, false
 
     remove_index :memos, :slug
-    add_index    :memos, [:slug, :publication], unique: true
+    add_index    :memos, [ :slug, :publication ], unique: true
   end
 
   def down
-    remove_index :memos, [:slug, :publication]
+    remove_index :memos, [ :slug, :publication ]
     add_index    :memos, :slug, unique: true
 
     change_column_null    :memos, :publication, true

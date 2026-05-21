@@ -1,0 +1,29 @@
+<%# Renders a slug with a hovercard showing prior slugs from friendly_id history.
+   Uses only inline elements because callers wrap this in <p>. %>
+<% history = record.slugs.order(created_at: :desc).to_a %>
+<span class="slug-history" tabindex="0">
+  <span class="mono"><%= record.slug %></span>
+  <% if history.size > 1 %>
+    <span class="slug-history-trigger" aria-label="Show slug history"><%= history.size - 1 %> prior</span>
+    <span class="slug-history-card" role="tooltip">
+      <span class="slug-history-card-title">Slug history</span>
+      <% history.each_with_index do |slug, i| %>
+        <span class="slug-history-row <%= 'is-current' if i == 0 %>">
+          <span class="slug-history-marker"><%= history.size - i %></span>
+          <span class="slug-history-body">
+            <span class="slug-value"><%= slug.slug %></span>
+            <span class="slug-meta">
+              <% if i == 0 %>
+                <span class="badge badge-green">current</span>
+                <span class="slug-date">since <%= slug.created_at.strftime("%b %-d, %Y") %></span>
+              <% else %>
+                <% next_slug = history[i - 1] %>
+                <span class="slug-date"><%= slug.created_at.strftime("%b %-d, %Y") %> – <%= next_slug.created_at.strftime("%b %-d, %Y") %></span>
+              <% end %>
+            </span>
+          </span>
+        </span>
+      <% end %>
+    </span>
+  <% end %>
+</span>

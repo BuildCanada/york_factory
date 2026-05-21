@@ -10,7 +10,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @post.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @post %></p>
   <p><strong>Status:</strong>
     <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@post.publish_status] %>">
       <%= @post.publish_status.capitalize %>

@@ -10,7 +10,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @memo.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @memo %></p>
   <p><strong>Category:</strong> <%= @memo.category || "—" %></p>
   <p><strong>Author:</strong> <%= @memo.author&.name || @memo.author_name || "—" %></p>
   <p><strong>Status:</strong>

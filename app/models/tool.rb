@@ -1,5 +1,5 @@
 class Tool < ApplicationRecord
-  include Translatable, Publishable, HasLocalizedMarkdown
+  include Translatable, Publishable, HasLocalizedMarkdown, ValidatesSlugAvailability
 
   extend Mobility
   translates :title, backend: :column

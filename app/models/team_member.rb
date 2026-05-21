@@ -1,5 +1,5 @@
 class TeamMember < ApplicationRecord
-  include Translatable, Publishable
+  include Translatable, Publishable, ValidatesSlugAvailability
 
   extend Mobility
   translates :title, backend: :column

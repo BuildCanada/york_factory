@@ -10,7 +10,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @builder.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @builder %></p>
   <p><strong>Byline:</strong> <%= @builder.byline_en %></p>
   <p><strong>Status:</strong>
     <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@builder.publish_status] %>">

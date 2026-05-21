@@ -12,7 +12,7 @@ class WebflowSyncService
   end
 
   # One-off remediation: attach seo_image for Build Canada memos
-  # (publication: nil) that already exist in the CMS but never got one.
+  # that already exist in the CMS but never got one.
   # Skips memos not found locally and memos that already have an seo_image.
   def resync_memo_seo_images!
     Rails.logger.info "[WebflowSync] Resyncing SEO images for existing Build Canada memos..."
@@ -28,7 +28,7 @@ class WebflowSyncService
       slug = fd["slug"]
       next if slug.blank?
 
-      memo = Memo.find_by(slug: slug, publication: nil)
+      memo = Memo.find_by(slug: slug, publication: Memo::DEFAULT_PUBLICATION)
       if memo.nil?
         missing += 1
         next

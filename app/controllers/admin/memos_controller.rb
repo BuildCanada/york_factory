@@ -4,11 +4,7 @@ module Admin
 
     def index
       scope = Memo.order(created_at: :desc)
-      scope = case params[:publication]
-      when "none" then scope.without_publication
-      when nil, "" then scope
-      else scope.by_publication(params[:publication])
-      end
+      scope = scope.by_publication(params[:publication]) if params[:publication].present?
       @publication_filter = params[:publication]
       @pagy, @memos = pagy(scope)
     end

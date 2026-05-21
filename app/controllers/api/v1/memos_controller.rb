@@ -54,7 +54,7 @@ module Api
       end
 
       def publication_scope
-        Memo.where(publication: params[:publication].presence)
+        Memo.where(publication: params[:publication].presence || Memo::DEFAULT_PUBLICATION)
       end
 
       def memo_params

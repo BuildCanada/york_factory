@@ -15,10 +15,10 @@ class TeamMemberTest < ActiveSupport::TestCase
     assert member.errors.where(:name, :blank).any?, "expected a blank error on name"
   end
 
-  test "slug is generated from name via FriendlyId" do
+  test "slug is not auto-generated from name" do
     member = TeamMember.new(name: "Jane Doe")
     member.valid?
-    assert_equal "jane-doe", member.slug
+    assert_nil member.slug
   end
 
   test "role must be in allowed list" do

@@ -9,13 +9,13 @@ class ToolTest < ActiveSupport::TestCase
 
   test "allows valid sizes" do
     %w[small big].each do |size|
-      tool = Tool.new(title_en: "Tool #{size}", size: size)
+      tool = Tool.new(title_en: "Tool #{size}", slug: "tool-#{size}", size: size)
       assert tool.valid?, "Expected size '#{size}' to be valid"
     end
   end
 
   test "allows nil size" do
-    tool = Tool.new(title_en: "No size tool")
+    tool = Tool.new(title_en: "No size tool", slug: "no-size-tool")
     assert tool.valid?
   end
 

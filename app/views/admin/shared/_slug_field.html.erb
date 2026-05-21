@@ -1,0 +1,9 @@
+<%# locals: (form:, source_field: :title_en, source_label: "title") %>
+<div class="form-group"
+     data-controller="slug-preview"
+     data-slug-preview-source-id-value="<%= "#{form.object_name}_#{source_field}" %>">
+  <label>Slug</label>
+  <%= form.text_field :slug, class: "form-control",
+        placeholder: "Leave blank to auto-generate from #{source_label}",
+        data: { slug_preview_target: "input" } %>
+</div>

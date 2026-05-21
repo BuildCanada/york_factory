@@ -360,7 +360,7 @@ CREATE TABLE public.memos (
     appendix_md_fr text,
     supporters_md_en text,
     supporters_md_fr text,
-    publication character varying
+    publication character varying DEFAULT 'build_canada'::character varying NOT NULL
 );
 
 
@@ -2153,10 +2153,10 @@ CREATE INDEX index_memos_on_published_at ON public.memos USING btree (published_
 
 
 --
--- Name: index_memos_on_slug; Type: INDEX; Schema: public; Owner: -
+-- Name: index_memos_on_slug_and_publication; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_memos_on_slug ON public.memos USING btree (slug);
+CREATE UNIQUE INDEX index_memos_on_slug_and_publication ON public.memos USING btree (slug, publication);
 
 
 --
@@ -2822,6 +2822,7 @@ ALTER TABLE ONLY warehouse.geo_relationships
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260513180113'),
 ('20260504204633'),
 ('20260424000002'),
 ('20260424000001'),

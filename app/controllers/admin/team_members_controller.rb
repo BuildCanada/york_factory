@@ -73,7 +73,7 @@ module Admin
 
     def team_member_params
       params.require(:team_member).permit(
-        :name, :role, :twitter_url, :linkedin_url, :position, :published_at, :profile_photo,
+        :slug, :name, :role, :twitter_url, :linkedin_url, :position, :published_at, :profile_photo,
         :title_en, :title_fr
       )
     end

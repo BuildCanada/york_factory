@@ -50,7 +50,7 @@ module Admin
 
     def builder_params
       params.require(:builder).permit(
-        :published_at, :image,
+        :slug, :published_at, :image,
         :title_en, :title_fr, :byline_en, :byline_fr,
         :quote_en, :quote_fr,
         :body_en, :body_fr, :author_en, :author_fr

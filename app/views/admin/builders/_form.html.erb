@@ -6,6 +6,7 @@
   <% end %>
 
   <%= render "admin/shared/translated_text_field", form: f, field: :title %>
+  <%= render "admin/shared/slug_field", form: f %>
   <%= render "admin/shared/translated_text_field", form: f, field: :byline %>
   <%= render "admin/shared/translated_text_field", form: f, field: :quote, input_type: :text_area %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: builder.persisted? ? retranslate_admin_builder_path(builder) : nil %>

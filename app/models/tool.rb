@@ -6,6 +6,7 @@ class Tool < ApplicationRecord
 
   extend FriendlyId
   friendly_id :title_en, use: :history
+  validates :slug, presence: true, uniqueness: true
 
   has_localized_markdown :description
   has_one_attached :image
@@ -17,4 +18,8 @@ class Tool < ApplicationRecord
 
   translatable_fields :title
   markdown_fields :description
+
+  def should_generate_new_friendly_id?
+    false
+  end
 end

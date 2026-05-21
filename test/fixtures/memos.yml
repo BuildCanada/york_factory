@@ -3,6 +3,7 @@ published_memo:
   title_en: Housing Crisis Analysis
   title_fr: Analyse de la crise du logement
   category: housing
+  publication: build_canada
   featured: true
   published_at: <%= 1.day.ago.to_fs(:db) %>
   author: alice
@@ -11,6 +12,7 @@ draft_memo:
   slug: draft-memo
   title_en: Draft Memo
   category: finance
+  publication: build_canada
   featured: false
   published_at: null
 

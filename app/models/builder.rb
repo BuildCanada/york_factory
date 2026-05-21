@@ -1,5 +1,5 @@
 class Builder < ApplicationRecord
-  include Feedable, Translatable, Publishable, HasLocalizedMarkdown
+  include Feedable, Translatable, Publishable, HasLocalizedMarkdown, ValidatesSlugAvailability
 
   extend Mobility
   translates :title, :byline, :quote, backend: :column

@@ -10,7 +10,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @tool.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @tool %></p>
   <p><strong>URL:</strong> <%= @tool.url %></p>
   <p><strong>Size:</strong> <%= @tool.size %></p>
   <p><strong>Accent Color:</strong> <%= @tool.accent_color %></p>

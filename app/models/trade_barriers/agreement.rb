@@ -29,6 +29,7 @@ class TradeBarriers::Agreement < ApplicationRecord
 
   validates :title, presence: true
   validates :slug, presence: true, uniqueness: true
+  validates :source_url, format: { with: %r{\Ahttps?://\S+\z}i, message: "must start with http:// or https://" }, allow_blank: true
 
   accepts_nested_attributes_for :agreement_jurisdictions, allow_destroy: true
   accepts_nested_attributes_for :histories, allow_destroy: true

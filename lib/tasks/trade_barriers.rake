@@ -68,7 +68,7 @@ namespace :trade_barriers do
 
     # The dump double-escapes backslashes, so embedded JSON quotes appear as
     # \\" instead of \". Undo one level so JSON.parse sees valid input.
-    unescape = ->(s) { s.nil? ? nil : s.gsub('\\\\') { '\\' } }
+    unescape = ->(s) { s.nil? ? nil : s.gsub("\\\\") { "\\" } }
 
     rows = conn.execute("SELECT * FROM legacy_agreements ORDER BY id")
     imported = 0

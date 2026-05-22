@@ -34,6 +34,9 @@ CREATE SCHEMA IF NOT EXISTS warehouse;
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;

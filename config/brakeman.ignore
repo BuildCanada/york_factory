@@ -35,8 +35,17 @@
       "file": "app/controllers/admin/users_controller.rb",
       "line": 66,
       "note": "User#role assignment is guarded: only superadmins can set superadmin role, enforced in user_params"
+    },
+    {
+      "warning_type": "Cross-Site Scripting",
+      "fingerprint": "def12a14b24389284b4906d57517d8f41da063f9b4d2f307316d0fe1d3a95de0",
+      "check_name": "LinkToHref",
+      "message": "Potentially unsafe model attribute in `link_to` href",
+      "file": "app/views/admin/trade_barriers/agreements/show.html.erb",
+      "line": 15,
+      "note": "Admin-only view gated by trade_barriers_editor role; Agreement#source_url is validated to require http(s):// scheme"
     }
   ],
-  "updated": "2026-03-26",
+  "updated": "2026-05-21",
   "brakeman_version": "8.0.4"
 }

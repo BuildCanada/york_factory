@@ -1,29 +1,48 @@
-<div class="page-header">
-  <h1>Trade Barriers — Agreements</h1>
-  <a href="<%= new_admin_trade_barriers_agreement_path %>" class="btn btn-primary">New Agreement</a>
-</div>
+<div data-controller="filter">
+  <div class="page-header">
+    <h1>Trade Barriers — Agreements</h1>
+    <a href="<%= new_admin_trade_barriers_agreement_path %>" class="btn btn-primary">New Agreement</a>
+  </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Theme</th>
-      <th>Status</th>
-      <th>Deadline</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @agreements.each do |agreement| %>
+  <div class="filter-bar">
+    <input type="search"
+           data-filter-target="input"
+           data-action="input->filter#apply"
+           class="form-control filter-input"
+           placeholder="Search by title, theme, or status…"
+           autocomplete="off">
+    <span class="text-muted filter-count">
+      <span data-filter-target="count"><%= @agreements.size %></span> of <%= @agreements.size %>
+    </span>
+  </div>
+
+  <table>
+    <thead>
       <tr>
-        <td><a href="<%= admin_trade_barriers_agreement_path(agreement) %>"><%= truncate(agreement.title, length: 80) %></a></td>
-        <td><%= agreement.theme&.name %></td>
-        <td><%= agreement.status.humanize %></td>
-        <td><%= agreement.deadline&.to_fs(:long) %></td>
-        <td class="text-right">
-          <a href="<%= edit_admin_trade_barriers_agreement_path(agreement) %>" class="btn btn-sm">Edit</a>
-        </td>
+        <th>Title</th>
+        <th>Theme</th>
+        <th>Status</th>
+        <th>Deadline</th>
+        <th></th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @agreements.each do |agreement| %>
+        <% theme_name = agreement.theme&.name.to_s %>
+        <% status_label = agreement.status.to_s.humanize %>
+        <tr data-filter-target="row"
+            data-filter-text="<%= [agreement.title, theme_name, status_label].compact.join(' ') %>">
+          <td><a href="<%= admin_trade_barriers_agreement_path(agreement) %>"><%= truncate(agreement.title, length: 80) %></a></td>
+          <td><%= theme_name %></td>
+          <td><%= status_label %></td>
+          <td><%= agreement.deadline&.to_fs(:long) %></td>
+          <td class="text-right">
+            <a href="<%= edit_admin_trade_barriers_agreement_path(agreement) %>" class="btn btn-sm">Edit</a>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div data-filter-target="empty" class="empty" hidden>No agreements match your search.</div>
+</div>

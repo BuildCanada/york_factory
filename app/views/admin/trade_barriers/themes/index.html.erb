@@ -1,26 +1,42 @@
-<div class="page-header">
-  <h1>Trade Barriers — Themes</h1>
-  <a href="<%= new_admin_trade_barriers_theme_path %>" class="btn btn-primary">New Theme</a>
-</div>
+<div data-controller="filter">
+  <div class="page-header">
+    <h1>Trade Barriers — Themes</h1>
+    <a href="<%= new_admin_trade_barriers_theme_path %>" class="btn btn-primary">New Theme</a>
+  </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Agreements</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @themes.each do |theme| %>
+  <div class="filter-bar">
+    <input type="search"
+           data-filter-target="input"
+           data-action="input->filter#apply"
+           class="form-control filter-input"
+           placeholder="Search themes…"
+           autocomplete="off">
+    <span class="text-muted filter-count">
+      <span data-filter-target="count"><%= @themes.size %></span> of <%= @themes.size %>
+    </span>
+  </div>
+
+  <table>
+    <thead>
       <tr>
-        <td><%= theme.name %></td>
-        <td><%= theme.agreements.count %></td>
-        <td class="text-right">
-          <a href="<%= edit_admin_trade_barriers_theme_path(theme) %>" class="btn btn-sm">Edit</a>
-          <%= button_to "Delete", admin_trade_barriers_theme_path(theme), method: :delete, class: "btn btn-sm btn-danger", form: { data: { turbo_confirm: "Delete '#{theme.name}'? This is blocked if agreements still use it." } } %>
-        </td>
+        <th>Name</th>
+        <th>Agreements</th>
+        <th></th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @themes.each do |theme| %>
+        <tr data-filter-target="row" data-filter-text="<%= theme.name %>">
+          <td><%= theme.name %></td>
+          <td><%= theme.agreements.count %></td>
+          <td class="text-right">
+            <a href="<%= edit_admin_trade_barriers_theme_path(theme) %>" class="btn btn-sm">Edit</a>
+            <%= button_to "Delete", admin_trade_barriers_theme_path(theme), method: :delete, class: "btn btn-sm btn-danger", form: { data: { turbo_confirm: "Delete '#{theme.name}'? This is blocked if agreements still use it." } } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div data-filter-target="empty" class="empty" hidden>No themes match your search.</div>
+</div>

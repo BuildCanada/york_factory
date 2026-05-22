@@ -63,8 +63,8 @@ namespace :trade_barriers do
     SQL
 
     raw = File.read(sql_dir.join("agreements_rows.sql"))
-    raw = raw.gsub('"public"."agreements"', "legacy_agreements")
-    conn.execute(raw)
+    raw = raw.gsub(/"public"\."agreements"|public\.agreements(?!\w)/, "legacy_agreements")
+    raw.each_line.select { |l| l.start_with?("INSERT INTO") }.each { |stmt| conn.execute(stmt) }
 
     # The dump double-escapes backslashes, so embedded JSON quotes appear as
     # \\" instead of \". Undo one level so JSON.parse sees valid input.

@@ -103,6 +103,12 @@
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
     .page-header h1 { margin-bottom: 0; }
 
+    /* Filter bar */
+    .filter-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .filter-input { flex: 1; max-width: 360px; }
+    .filter-input[type="search"]::-webkit-search-cancel-button { filter: invert(0.6); cursor: pointer; }
+    .filter-count { font-size: 0.8rem; }
+
     /* File preview */
     .file-preview { max-width: 120px; max-height: 80px; border-radius: 4px; margin-top: 0.3rem; }
 
@@ -194,6 +200,18 @@
           <li><a href="/admin/testimonials" class="<%= 'active' if controller_name == 'testimonials' %>">Testimonials</a></li>
           <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
         </ul>
+
+        <% if current_user.can_edit_trade_barriers? %>
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="trade_barriers">
+            Trade Barriers <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="trade_barriers">
+            <li><a href="/admin/trade_barriers/agreements" class="<%= 'active' if controller_name == 'agreements' && controller_path.start_with?('admin/trade_barriers') %>">Agreements</a></li>
+            <li><a href="/admin/trade_barriers/themes" class="<%= 'active' if controller_name == 'themes' && controller_path.start_with?('admin/trade_barriers') %>">Themes</a></li>
+          </ul>
+        <% end %>
 
         <div class="sidebar-divider"></div>
 

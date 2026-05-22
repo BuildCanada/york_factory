@@ -1,0 +1,106 @@
+<%= form_with(model: agreement,
+              url: agreement.persisted? ? admin_trade_barriers_agreement_path(agreement) : admin_trade_barriers_agreements_path,
+              class: "card") do |f| %>
+  <% if agreement.errors.any? %>
+    <div class="flash flash-alert">
+      <% agreement.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <label>Title</label>
+    <%= f.text_field :title, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Theme</label>
+    <%= f.collection_select :theme_id, TradeBarriers::Theme.ordered, :id, :name, { include_blank: true }, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Status</label>
+    <%= f.select :status, TradeBarriers::Agreement.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Summary</label>
+    <%= f.text_area :summary, class: "form-control", rows: 3 %>
+  </div>
+
+  <div class="form-group">
+    <label>Description</label>
+    <%= f.text_area :description, class: "form-control", rows: 6 %>
+  </div>
+
+  <div class="form-group">
+    <label>Deadline</label>
+    <%= f.date_field :deadline, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Launch date</label>
+    <%= f.date_field :launch_date, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Source URL</label>
+    <%= f.url_field :source_url, class: "form-control" %>
+  </div>
+
+  <h3>Jurisdictions</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Jurisdiction</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= f.fields_for :agreement_jurisdictions do |aj| %>
+        <tr>
+          <td>
+            <%= aj.hidden_field :jurisdiction_id %>
+            <%= aj.object.jurisdiction&.name || Warehouse::Jurisdiction.find_by(id: aj.object.jurisdiction_id)&.name %>
+          </td>
+          <td>
+            <%= aj.select :status, TradeBarriers::AgreementJurisdiction.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "form-control" %>
+          </td>
+          <td>
+            <%= aj.text_field :notes, class: "form-control" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <h3>Status history</h3>
+  <p class="hint">Add rows to record when this agreement transitioned between statuses.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Date entered</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= f.fields_for :histories do |h| %>
+        <tr>
+          <td><%= h.select :status, TradeBarriers::Agreement.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "form-control" %></td>
+          <td><%= h.date_field :date_entered, class: "form-control" %></td>
+          <td>
+            <% if h.object.persisted? %>
+              <label><%= h.check_box :_destroy %> Remove</label>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= agreement.persisted? ? admin_trade_barriers_agreement_path(agreement) : admin_trade_barriers_agreements_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

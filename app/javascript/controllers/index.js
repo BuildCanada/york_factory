@@ -12,6 +12,9 @@ application.register("sidebar", SidebarController)
 import ListController from "controllers/list_controller"
 application.register("list", ListController)
 
+import FilterController from "controllers/filter_controller"
+application.register("filter", FilterController)
+
 import SlugPreviewController from "controllers/slug_preview_controller"
 application.register("slug-preview", SlugPreviewController)
 

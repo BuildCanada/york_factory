@@ -2,12 +2,12 @@ module Api
   module V1
     class OrganizationsController < ApplicationController
       def index
-        orgs = Warehouse::Organization.order(:canonical_name)
+        orgs = ::Warehouse::Organization.order(:canonical_name)
         render json: orgs.select(:id, :canonical_name, :org_id_infobase)
       end
 
       def show
-        org = Warehouse::Organization.find(params[:id])
+        org = ::Warehouse::Organization.find(params[:id])
 
         render json: {
           organization: org.as_json(only: [ :id, :canonical_name, :org_id_infobase ]),

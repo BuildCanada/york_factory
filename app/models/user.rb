@@ -4,10 +4,19 @@ class User < ApplicationRecord
          jwt_revocation_strategy: JwtDenylist,
          omniauth_providers: [ :google_oauth2 ]
 
-  enum :role, { member: "member", admin: "admin", superadmin: "superadmin" }
+  enum :role, {
+    member: "member",
+    trade_barriers_editor: "trade_barriers_editor",
+    admin: "admin",
+    superadmin: "superadmin"
+  }
 
   def admin?
     role.in?(%w[admin superadmin])
+  end
+
+  def can_edit_trade_barriers?
+    role.in?(%w[trade_barriers_editor admin superadmin])
   end
 
   validates :email, presence: true, uniqueness: true

@@ -21,6 +21,7 @@ module Admin
 
     def update
       purge_attachment(:seo_image)
+      purge_attachment(:banner_image)
       if @post.update(post_params)
         redirect_to admin_post_path(@post), notice: "Post updated."
       else
@@ -49,7 +50,7 @@ module Admin
 
     def post_params
       params.require(:post).permit(
-        :hidden, :published_at, :seo_image,
+        :slug, :hidden, :published_at, :seo_image, :banner_image,
         :title_en, :title_fr, :summary_en, :summary_fr,
         :body_en, :body_fr
       )

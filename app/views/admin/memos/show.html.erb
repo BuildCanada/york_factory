@@ -10,7 +10,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @memo.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @memo %></p>
   <p><strong>Category:</strong> <%= @memo.category || "—" %></p>
   <p><strong>Author:</strong> <%= @memo.author&.name || @memo.author_name || "—" %></p>
   <p><strong>Status:</strong>
@@ -19,6 +19,10 @@
     </span>
   </p>
   <p><strong>Published at:</strong> <%= @memo.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @memo.banner_image.attached? %>
+    <p><strong>Banner Image:</strong></p>
+    <%= image_tag url_for(@memo.banner_image), class: "file-preview" %>
+  <% end %>
   <% if @memo.seo_image.attached? %>
     <p><strong>SEO Image:</strong></p>
     <%= image_tag url_for(@memo.seo_image), class: "file-preview" %>

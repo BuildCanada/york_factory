@@ -148,7 +148,6 @@ class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
     get api_v1_memo_url("housing-crisis-memo")
     assert_response :success
     data = JSON.parse(response.body)
-    assert data.key?("publication")
-    assert_nil data["publication"]
+    assert_equal "build_canada", data["publication"]
   end
 end

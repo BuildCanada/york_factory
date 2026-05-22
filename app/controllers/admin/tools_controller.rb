@@ -56,7 +56,7 @@ module Admin
 
     def tool_params
       params.require(:tool).permit(
-        :url, :featured, :position, :accent_color, :size, :published_at, :image,
+        :slug, :url, :featured, :position, :accent_color, :size, :published_at, :image,
         :title_en, :title_fr, :description_en, :description_fr
       )
     end

@@ -7,7 +7,7 @@ module Api
       def index
         scope = publication_scope
         scope = preview_mode? ? scope : scope.published
-        scope = scope.includes(:author, :co_author).with_attached_seo_image.order(published_at: :desc)
+        scope = scope.includes(:author, :co_author).with_attached_seo_image.with_attached_banner_image.order(published_at: :desc)
         scope = scope.featured if params[:featured].present?
         scope = scope.by_category(params[:category]) if params[:category].present?
         scope = scope.search(params[:q]) if params[:q].present?
@@ -54,13 +54,13 @@ module Api
       end
 
       def publication_scope
-        Memo.where(publication: params[:publication].presence)
+        Memo.where(publication: params[:publication].presence || Memo::DEFAULT_PUBLICATION)
       end
 
       def memo_params
         params.require(:memo).permit(
           :slug, :author_id, :co_author_id, :author_name, :author_title,
-          :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image,
+          :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image, :banner_image,
           :title_en, :title_fr,
           :supporters_en, :supporters_fr,
           :body_en, :body_fr, :appendix_en, :appendix_fr,
@@ -78,6 +78,7 @@ module Api
           featured: memo.featured,
           published_at: memo.published_at,
           seo_image_url: image_url(memo.seo_image),
+          banner_image_url: image_url(memo.banner_image),
           author: memo.author ? { id: memo.author.id, name: memo.author.name, slug: memo.author.slug, profile_photo_url: image_url(memo.author.profile_photo) } : nil
         }
 

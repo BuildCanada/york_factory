@@ -11,11 +11,11 @@
     },
     {
       "warning_type": "Mass Assignment",
-      "fingerprint": "6de29ec1e94e23aa62d82083e25b5744bdf4dd60514ecc761309fd15cceecba1",
+      "fingerprint": "8959d31382abf3fdc8f52babcd68fe10621cd0adba611d69d7f27451177f704a",
       "check_name": "PermitAttributes",
       "message": "Potentially dangerous key allowed for mass assignment",
       "file": "app/controllers/admin/team_members_controller.rb",
-      "line": 57,
+      "line": 76,
       "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
     },
     {

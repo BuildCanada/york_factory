@@ -8,9 +8,11 @@
   <% end %>
 
   <%= render "admin/shared/translated_text_field", form: f, field: :title %>
+  <%= render "admin/shared/slug_field", form: f %>
   <%= render "admin/shared/translated_text_field", form: f, field: :summary, input_type: :text_area %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: post.persisted? ? retranslate_admin_post_path(post) : nil %>
 
+  <%= render "admin/shared/file_upload", form: f, field: :banner_image, label: "Banner Image" %>
   <%= render "admin/shared/file_upload", form: f, field: :seo_image, label: "SEO Image" %>
 
   <div class="form-group">

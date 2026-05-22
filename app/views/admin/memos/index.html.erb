@@ -6,8 +6,8 @@
 <%= form_with url: admin_memos_path, method: :get, local: true, class: "filter-bar" do |f| %>
   <%= f.label :publication, "Publication" %>
   <%= f.select :publication,
-        [["All", ""], ["Build Canada only", "none"]] + Memo::PUBLICATIONS.map { |p| [p.titleize, p] },
-        { selected: @publication_filter },
+        Memo::PUBLICATIONS.map { |p| [p.titleize, p] },
+        { include_blank: "All", selected: @publication_filter },
         class: "form-control", onchange: "this.form.submit()" %>
 <% end %>
 
@@ -26,7 +26,7 @@
     <% @memos.each do |memo| %>
       <tr>
         <td><a href="<%= admin_memo_path(memo) %>"><%= memo.title_en || "Untitled" %></a></td>
-        <td><%= memo.publication.present? ? memo.publication.titleize : "Build Canada" %></td>
+        <td><%= memo.publication.titleize %></td>
         <td><%= memo.category %></td>
         <td>
           <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[memo.publish_status] %>">

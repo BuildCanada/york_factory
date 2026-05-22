@@ -15,10 +15,17 @@ class MemoTest < ActiveSupport::TestCase
     assert memo.errors.where(:slug, :blank).any?, "expected a blank error on slug"
   end
 
-  test "slug is generated from title_en via FriendlyId" do
+  test "slug is not auto-generated from title_en" do
     memo = Memo.new(title_en: "My Policy Memo")
     memo.valid?
-    assert_equal "my-policy-memo", memo.slug
+    assert_nil memo.slug
+    assert memo.errors.where(:slug, :blank).any?
+  end
+
+  test "submitted slug is preserved verbatim" do
+    memo = Memo.new(title_en: "Has Title", slug: "custom-slug", category: "housing")
+    assert memo.save
+    assert_equal "custom-slug", memo.reload.slug
   end
 
   test "slug uniqueness is enforced" do
@@ -97,16 +104,17 @@ class MemoTest < ActiveSupport::TestCase
     assert_includes memo.errors[:publication], "is not included in the list"
   end
 
-  test "nil publication is valid" do
-    memo = Memo.new(title_en: "Y", publication: nil)
+  test "blank publication defaults to build_canada" do
+    memo = Memo.new(title_en: "Y", slug: "y-memo", publication: "")
     memo.valid?
+    assert_equal "build_canada", memo.publication
     assert_empty memo.errors[:publication]
   end
 
-  test "without_publication scope excludes tagged memos" do
-    results = Memo.without_publication
-    assert_includes results, memos(:published_memo)
-    assert_not_includes results, memos(:build_toronto_memo)
+  test "build_canada is in the publication list" do
+    memo = Memo.new(title_en: "Z", slug: "z-memo", publication: "build_canada")
+    memo.valid?
+    assert_empty memo.errors[:publication]
   end
 
   test "by_publication scope includes only matching publication" do
@@ -133,6 +141,7 @@ class MemoTest < ActiveSupport::TestCase
     assert_not memo.valid?
     assert_includes memo.errors[:slug], "has already been taken"
   end
+
 
   test "build_toronto memo does not create a feed entry" do
     memo = memos(:build_toronto_memo)

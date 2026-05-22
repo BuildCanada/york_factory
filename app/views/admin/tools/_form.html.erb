@@ -6,6 +6,7 @@
   <% end %>
 
   <%= render "admin/shared/translated_text_field", form: f, field: :title %>
+  <%= render "admin/shared/slug_field", form: f %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :description, retranslate_url: tool.persisted? ? retranslate_admin_tool_path(tool) : nil %>
 
   <div class="form-group">

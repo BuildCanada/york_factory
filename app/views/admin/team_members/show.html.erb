@@ -7,7 +7,7 @@
 </div>
 
 <div class="card mb-2">
-  <p><strong>Slug:</strong> <span class="mono"><%= @team_member.slug %></span></p>
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @team_member %></p>
   <p><strong>Title:</strong> <%= @team_member.title_en %></p>
   <p><strong>Role:</strong> <%= @team_member.role&.humanize&.titleize %></p>
   <p><strong>Position:</strong> <%= @team_member.position %></p>

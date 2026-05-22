@@ -22,12 +22,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "committed", notes: "Signed the MOU." },
       { name: "Quebec", status: "committed", notes: "Signed the MOU." },
       { name: "Saskatchewan", status: "committed", notes: "Signed the MOU." },
-      { name: "Yukon", status: "committed", notes: "Signed the MOU." },
+      { name: "Yukon", status: "committed", notes: "Signed the MOU." }
     ],
     history: [
       { status: "agreement_reached", date_entered: "2025-07-25" },
-      { status: "under_negotiation", date_entered: "2025-06-30" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-06-30" }
+    ]
   },
   {
     title: "Mutual Recognition Agreement for Goods (Excluding Food)",
@@ -52,13 +52,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "implementing", notes: "" },
+      { name: "Yukon", status: "implementing", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-11-20" },
       { status: "agreement_reached", date_entered: "2025-11-19" },
-      { status: "under_negotiation", date_entered: "2025-06-02" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-06-02" }
+    ]
   },
   {
     title: "30-Day Processing Time for Labour Credential Recognition",
@@ -83,13 +83,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "See PEI's Interprovincial Trade and Mobility Act, 2025. Companion regulations pending." },
       { name: "Quebec", status: "committed", notes: "See QC's Loi favorisant le commerce des produits et la mobilité de la main-d’œuvre en provenance des autres provinces et des territoires du Canada. Must still enshrine the 30-day standard  via legislation or regulation." },
       { name: "Saskatchewan", status: "engaged", notes: "Agreed to 30-day service standard, must still undertake implementation work (via legislation or regulation)." },
-      { name: "Yukon", status: "engaged", notes: "Agreed to 30-day service standard, must still undertake implementation work (via legislation or regulation)." },
+      { name: "Yukon", status: "engaged", notes: "Agreed to 30-day service standard, must still undertake implementation work (via legislation or regulation)." }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-09-02" },
       { status: "agreement_reached", date_entered: "2025-03-04" },
-      { status: "under_negotiation", date_entered: "2025-01-31" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-01-31" }
+    ]
   },
   {
     title: "Occupational Exposure Limits for Hazardous Substances",
@@ -114,12 +114,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "unknown", notes: "" },
       { name: "Quebec", status: "unknown", notes: "" },
       { name: "Saskatchewan", status: "unknown", notes: "" },
-      { name: "Yukon", status: "unknown", notes: "" },
+      { name: "Yukon", status: "unknown", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2026-03-23" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Food Inspection",
@@ -144,11 +144,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Meat Inspection",
@@ -173,11 +173,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Gas Fitter / Technician Standards",
@@ -202,13 +202,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2026-03-23" },
       { status: "agreement_reached", date_entered: "2025-11-01" },
-      { status: "under_negotiation", date_entered: "2019-05-29" },
-    ],
+      { status: "under_negotiation", date_entered: "2019-05-29" }
+    ]
   },
   {
     title: "Canadian Electrical Codes",
@@ -233,11 +233,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2020-09-11" },
-    ],
+      { status: "under_negotiation", date_entered: "2020-09-11" }
+    ]
   },
   {
     title: "High Visibility Safety Apparel",
@@ -262,11 +262,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2025-03-04" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-03-04" }
+    ]
   },
   {
     title: "Building Anchors for Fall Protection Systems",
@@ -291,11 +291,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2025-03-04" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-03-04" }
+    ]
   },
   {
     title: "Fall protection training",
@@ -320,11 +320,11 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "under_negotiation", date_entered: "2025-03-14" },
-    ],
+      { status: "under_negotiation", date_entered: "2025-03-14" }
+    ]
   },
   {
     title: "First Aid Kits",
@@ -349,13 +349,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-05-29" },
       { status: "implemented", date_entered: "2025-03-04" },
-      { status: "agreement_reached", date_entered: "2018-07-20" },
-    ],
+      { status: "agreement_reached", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Workplace first aid training",
@@ -380,13 +380,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "implementing", notes: "Has not yet implemented as of RCT 2026 Work Plan." },
       { name: "Saskatchewan", status: "implementing", notes: "Has not yet implemented as of RCT 2026 Work Plan." },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-09-13" },
       { status: "agreement_reached", date_entered: "2022-06-20" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Hearing Protection",
@@ -411,12 +411,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2025-03-04" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Personal Floatation Devices",
@@ -441,13 +441,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2025-03-04" },
       { status: "agreement_reached", date_entered: "2019-10-31" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Head, Foot and Eye Protection",
@@ -472,14 +472,14 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2025-03-14" },
       { status: "partially_implemented", date_entered: "2024-04-10" },
       { status: "agreement_reached", date_entered: "2019-10-31" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Wide Base Single Tires",
@@ -504,13 +504,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2020-09-11" },
       { status: "agreement_reached", date_entered: "2019-05-29" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Adoption of 2020 National Model Construction Codes",
@@ -535,13 +535,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "See here: https://cbhcc-cchcc.ca/en/provincial-territorial-adoption/" },
       { name: "Quebec", status: "complete", notes: "See here: https://cbhcc-cchcc.ca/en/provincial-territorial-adoption/" },
       { name: "Saskatchewan", status: "complete", notes: "See here: https://www.saskatchewan.ca/government/news-and-media/2023/december/13/saskatchewan-adopts-2020-national-construction-codes" },
-      { name: "Yukon", status: "complete", notes: "See here: https://cbhcc-cchcc.ca/en/provincial-territorial-adoption/" },
+      { name: "Yukon", status: "complete", notes: "See here: https://cbhcc-cchcc.ca/en/provincial-territorial-adoption/" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-09-12" },
       { status: "agreement_reached", date_entered: "2020-06-01" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Canada Registration Number (CRN) for Pressure Equipment",
@@ -566,13 +566,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "agreement_reached", date_entered: "2020-01-02" },
       { status: "implemented", date_entered: "2020-01-02" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Energy Efficiency Standards for Household Appliances",
@@ -597,13 +597,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "not_applicable", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "not_applicable", notes: "" },
-      { name: "Yukon", status: "not_applicable", notes: "" },
+      { name: "Yukon", status: "not_applicable", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2025-03-04" },
       { status: "agreement_reached", date_entered: "2020-07-23" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Aquaculture Site Marking",
@@ -628,13 +628,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "not_applicable", notes: "" },
       { name: "Quebec", status: "not_applicable", notes: "" },
       { name: "Saskatchewan", status: "not_applicable", notes: "" },
-      { name: "Yukon", status: "not_applicable", notes: "" },
+      { name: "Yukon", status: "not_applicable", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2024-04-10" },
       { status: "agreement_reached", date_entered: "2022-02-24" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Aquaculture Organic Labeling",
@@ -659,13 +659,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2020-01-15" },
       { status: "agreement_reached", date_entered: "2019-01-15" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Grade Inspection for Produce",
@@ -690,13 +690,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2019-01-15" },
       { status: "under_negotiation", date_entered: "2018-07-20" },
-      { status: "agreement_reached", date_entered: "2018-06-15" },
-    ],
+      { status: "agreement_reached", date_entered: "2018-06-15" }
+    ]
   },
   {
     title: "Corporate Registry",
@@ -721,13 +721,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "declined", notes: "Not a signatory to the agreement." },
       { name: "Quebec", status: "complete", notes: "Both search function and registration/notification function implemented." },
       { name: "Saskatchewan", status: "complete", notes: "Both search function and registration/notification function implemented." },
-      { name: "Yukon", status: "engaged", notes: "2026 RCT Work Plan does not describe implementation status." },
+      { name: "Yukon", status: "engaged", notes: "2026 RCT Work Plan does not describe implementation status." }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2021-11-21" },
       { status: "agreement_reached", date_entered: "2021-01-01" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Upholstered and Stuffed Goods",
@@ -752,13 +752,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "not_applicable", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "not_applicable", notes: "" },
-      { name: "Yukon", status: "not_applicable", notes: "" },
+      { name: "Yukon", status: "not_applicable", notes: "" }
     ],
     history: [
       { status: "implemented", date_entered: "2023-01-18" },
       { status: "agreement_reached", date_entered: "2020-11-10" },
-      { status: "under_negotiation", date_entered: "2019-05-29" },
-    ],
+      { status: "under_negotiation", date_entered: "2019-05-29" }
+    ]
   },
   {
     title: "Filtering Respirators (Personal Protective Equipment) ",
@@ -783,13 +783,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "complete", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "complete", notes: "" },
+      { name: "Yukon", status: "complete", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-09-14" },
       { status: "agreement_reached", date_entered: "2024-04-11" },
-      { status: "under_negotiation", date_entered: "2024-04-10" },
-    ],
+      { status: "under_negotiation", date_entered: "2024-04-10" }
+    ]
   },
   {
     title: "Truck Driver Entry-Level Training Certification",
@@ -814,13 +814,13 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "complete", notes: "" },
       { name: "Saskatchewan", status: "complete", notes: "" },
-      { name: "Yukon", status: "implementing", notes: "" },
+      { name: "Yukon", status: "implementing", notes: "" }
     ],
     history: [
       { status: "partially_implemented", date_entered: "2025-09-14" },
       { status: "agreement_reached", date_entered: "2022-09-01" },
-      { status: "under_negotiation", date_entered: "2019-05-29" },
-    ],
+      { status: "under_negotiation", date_entered: "2019-05-29" }
+    ]
   },
   {
     title: "Occupational Health and Safety Management System",
@@ -845,12 +845,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2020-09-11" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Spring-time truck weight reistrictions.",
@@ -875,12 +875,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2021-11-30" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Truck Size and Weight Restrictions (ex-springtime)",
@@ -905,12 +905,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2020-09-11" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Local hiring requirements for construction labour",
@@ -935,12 +935,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2020-09-11" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Non-Prescription Drug Scheduling",
@@ -965,12 +965,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2020-09-11" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Workers' Compensation",
@@ -995,12 +995,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
       { status: "deferred", date_entered: "2023-01-18" },
-      { status: "under_negotiation", date_entered: "2018-07-20" },
-    ],
+      { status: "under_negotiation", date_entered: "2018-07-20" }
+    ]
   },
   {
     title: "Interprovincial Trucking Agreement",
@@ -1025,12 +1025,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "engaged", notes: "" },
       { name: "Quebec", status: "engaged", notes: "" },
       { name: "Saskatchewan", status: "engaged", notes: "" },
-      { name: "Yukon", status: "engaged", notes: "" },
+      { name: "Yukon", status: "engaged", notes: "" }
     ],
     history: [
       { status: "agreement_reached", date_entered: "2025-11-19" },
-      { status: "under_negotiation", date_entered: "2024-09-26" },
-    ],
+      { status: "under_negotiation", date_entered: "2024-09-26" }
+    ]
   },
   {
     title: "Adoption of 2025 National Model Construction Codes",
@@ -1055,12 +1055,12 @@ AGREEMENTS = [
       { name: "Prince Edward Island", status: "aware", notes: "" },
       { name: "Quebec", status: "aware", notes: "" },
       { name: "Saskatchewan", status: "aware", notes: "" },
-      { name: "Yukon", status: "aware", notes: "" },
+      { name: "Yukon", status: "aware", notes: "" }
     ],
     history: [
-      { status: "agreement_reached", date_entered: "2024-04-10" },
-    ],
-  },
+      { status: "agreement_reached", date_entered: "2024-04-10" }
+    ]
+  }
 ].freeze
 
 AGREEMENTS.each do |attrs|

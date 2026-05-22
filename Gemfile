@@ -104,6 +104,7 @@ gem "roo-xls"
 
 # CMS: ActiveStorage variants
 gem "image_processing"
+gem "ruby-vips"
 
 group :development, :test do
   # Compact error pages optimized for AI agents

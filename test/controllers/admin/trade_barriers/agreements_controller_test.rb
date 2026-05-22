@@ -41,4 +41,35 @@ class Admin::TradeBarriers::AgreementsControllerTest < ActionDispatch::Integrati
       }
     end
   end
+
+  test "admin can render the new agreement form" do
+    sign_in_admin
+    get new_admin_trade_barriers_agreement_url
+    assert_response :success
+  end
+
+  test "admin can render the edit agreement form" do
+    sign_in_admin
+    agreement = TradeBarriers::Agreement.create!(
+      title: "Existing Agreement",
+      status: "awaiting_sponsorship",
+      theme: @theme
+    )
+    get edit_admin_trade_barriers_agreement_url(agreement)
+    assert_response :success
+  end
+
+  test "admin can update an agreement" do
+    sign_in_admin
+    agreement = TradeBarriers::Agreement.create!(
+      title: "Existing Agreement",
+      status: "awaiting_sponsorship",
+      theme: @theme
+    )
+    patch admin_trade_barriers_agreement_url(agreement), params: {
+      trade_barriers_agreement: { title: "Updated Agreement" }
+    }
+    assert_redirected_to admin_trade_barriers_agreement_url(agreement)
+    assert_equal "Updated Agreement", agreement.reload.title
+  end
 end

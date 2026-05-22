@@ -1,4 +1,6 @@
-<%= form_with(model: [:admin, :trade_barriers, theme], class: "card") do |f| %>
+<%= form_with(model: theme,
+              url: theme.persisted? ? admin_trade_barriers_theme_path(theme) : admin_trade_barriers_themes_path,
+              class: "card") do |f| %>
   <% if theme.errors.any? %>
     <div class="flash flash-alert">
       <% theme.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>

@@ -6,6 +6,7 @@ class Warehouse::KpiDocument < Warehouse::Record
   belongs_to :jurisdiction
   belongs_to :organization, optional: true
   belongs_to :raw_ingestion, optional: true
+  belongs_to :agent_run, optional: true
   has_many :citations,
     class_name: "Warehouse::MeasureCitation",
     foreign_key: :document_id,

@@ -1163,6 +1163,47 @@ ALTER SEQUENCE warehouse.addresses_id_seq OWNED BY warehouse.addresses.id;
 
 
 --
+-- Name: agent_runs; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.agent_runs (
+    id bigint NOT NULL,
+    agent_name character varying NOT NULL,
+    agent_version character varying,
+    input_params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status character varying DEFAULT 'running'::character varying NOT NULL,
+    started_at timestamp(6) without time zone NOT NULL,
+    finished_at timestamp(6) without time zone,
+    triggered_by character varying,
+    report text,
+    summary jsonb,
+    error_message text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT agent_runs_status_check CHECK (((status)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: agent_runs_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.agent_runs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: agent_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.agent_runs_id_seq OWNED BY warehouse.agent_runs.id;
+
+
+--
 -- Name: api_tokens; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -1447,6 +1488,7 @@ CREATE TABLE warehouse.kpi_documents (
     content_hash character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    agent_run_id bigint,
     CONSTRAINT kpi_documents_published_at_source_check CHECK (((published_at_source IS NULL) OR ((published_at_source)::text = ANY ((ARRAY['pdf_metadata'::character varying, 'http_last_modified'::character varying, 'council_schedule'::character varying, 'discovered_at_fallback'::character varying, 'manual'::character varying])::text[]))))
 );
 
@@ -1603,6 +1645,7 @@ CREATE TABLE warehouse.measure_citations (
     notes text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    agent_run_id bigint,
     CONSTRAINT measure_citations_period_basis_check CHECK (((period_basis)::text = ANY ((ARRAY['full_year'::character varying, 'ytd_q1'::character varying, 'ytd_q2'::character varying, 'ytd_q3'::character varying, 'as_of_date'::character varying])::text[]))),
     CONSTRAINT measure_citations_value_type_check CHECK (((value_type)::text = ANY ((ARRAY['actual'::character varying, 'target'::character varying, 'projected'::character varying, 'plan'::character varying, 'budget'::character varying])::text[])))
 );
@@ -1707,7 +1750,8 @@ CREATE TABLE warehouse.measures (
     first_seen_year integer,
     last_seen_year integer,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    agent_run_id bigint
 );
 
 
@@ -2208,6 +2252,13 @@ ALTER TABLE ONLY warehouse.addresses ALTER COLUMN id SET DEFAULT nextval('wareho
 
 
 --
+-- Name: agent_runs id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.agent_runs ALTER COLUMN id SET DEFAULT nextval('warehouse.agent_runs_id_seq'::regclass);
+
+
+--
 -- Name: api_tokens id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -2592,6 +2643,14 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY warehouse.addresses
     ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: agent_runs agent_runs_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.agent_runs
+    ADD CONSTRAINT agent_runs_pkey PRIMARY KEY (id);
 
 
 --
@@ -3184,6 +3243,13 @@ CREATE INDEX idx_addresses_street_name_trgm ON warehouse.addresses USING gin (st
 
 
 --
+-- Name: idx_agent_runs_agent_started; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_agent_runs_agent_started ON warehouse.agent_runs USING btree (agent_name, started_at DESC);
+
+
+--
 -- Name: idx_fiscal_authorities_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -3240,6 +3306,13 @@ CREATE UNIQUE INDEX idx_geo_relationships_unique ON warehouse.geo_relationships 
 
 
 --
+-- Name: idx_kpi_documents_agent_run; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_kpi_documents_agent_run ON warehouse.kpi_documents USING btree (agent_run_id) WHERE (agent_run_id IS NOT NULL);
+
+
+--
 -- Name: idx_kpi_documents_jurisdiction_year; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -3251,6 +3324,13 @@ CREATE INDEX idx_kpi_documents_jurisdiction_year ON warehouse.kpi_documents USIN
 --
 
 CREATE INDEX idx_kpi_documents_organization ON warehouse.kpi_documents USING btree (organization_id);
+
+
+--
+-- Name: idx_measure_citations_agent_run; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_citations_agent_run ON warehouse.measure_citations USING btree (agent_run_id) WHERE (agent_run_id IS NOT NULL);
 
 
 --
@@ -3296,6 +3376,13 @@ CREATE UNIQUE INDEX idx_measure_lineages_unique ON warehouse.measure_lineages US
 
 
 --
+-- Name: idx_measures_agent_run; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measures_agent_run ON warehouse.measures USING btree (agent_run_id) WHERE (agent_run_id IS NOT NULL);
+
+
+--
 -- Name: idx_measures_cross_agency_slug_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -3328,6 +3415,13 @@ CREATE UNIQUE INDEX idx_organizations_jurisdiction_slug ON warehouse.organizatio
 --
 
 CREATE UNIQUE INDEX idx_std_obj_expenditures_unique ON warehouse.standard_object_expenditures USING btree (organization_id, fiscal_year, standard_object);
+
+
+--
+-- Name: index_agent_runs_on_status; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_agent_runs_on_status ON warehouse.agent_runs USING btree (status);
 
 
 --
@@ -3869,6 +3963,14 @@ ALTER TABLE ONLY warehouse.geo_relationships
 
 
 --
+-- Name: kpi_documents kpi_documents_agent_run_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents
+    ADD CONSTRAINT kpi_documents_agent_run_id_fkey FOREIGN KEY (agent_run_id) REFERENCES warehouse.agent_runs(id);
+
+
+--
 -- Name: kpi_documents kpi_documents_jurisdiction_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -3890,6 +3992,14 @@ ALTER TABLE ONLY warehouse.kpi_documents
 
 ALTER TABLE ONLY warehouse.kpi_documents
     ADD CONSTRAINT kpi_documents_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: measure_citations measure_citations_agent_run_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_citations
+    ADD CONSTRAINT measure_citations_agent_run_id_fkey FOREIGN KEY (agent_run_id) REFERENCES warehouse.agent_runs(id);
 
 
 --
@@ -3933,6 +4043,14 @@ ALTER TABLE ONLY warehouse.measure_lineages
 
 
 --
+-- Name: measures measures_agent_run_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measures
+    ADD CONSTRAINT measures_agent_run_id_fkey FOREIGN KEY (agent_run_id) REFERENCES warehouse.agent_runs(id);
+
+
+--
 -- Name: measures measures_organization_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -3971,6 +4089,7 @@ ALTER TABLE ONLY warehouse.organization_lineages
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260526000001'),
 ('20260525000007'),
 ('20260525000006'),
 ('20260525000005'),

@@ -23,7 +23,8 @@ module Api
               service_category: attrs[:service_category],
               description: attrs[:description],
               first_seen_year: attrs[:first_seen_year],
-              last_seen_year: attrs[:last_seen_year]
+              last_seen_year: attrs[:last_seen_year],
+              agent_run_id: attrs[:agent_run_id]
             )
             measure.save!
 
@@ -35,7 +36,8 @@ module Api
           def measure_params
             params.require(:measure).permit(
               :organization_slug, :slug, :canonical_name, :unit_symbol,
-              :service_category, :description, :first_seen_year, :last_seen_year
+              :service_category, :description, :first_seen_year, :last_seen_year,
+              :agent_run_id
             ).to_h.symbolize_keys
           end
 

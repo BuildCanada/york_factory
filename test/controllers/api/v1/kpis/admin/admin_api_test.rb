@@ -69,6 +69,33 @@ class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
     assert_equal 1, body["skipped_duplicate"]
   end
 
+  test "agent_run_id stamps documents, measures, and citations when provided" do
+    run = Warehouse::AgentRun.create!(agent_name: "stamp-test", status: "running", started_at: Time.current)
+
+    url = "https://example.com/stamp-#{SecureRandom.hex(4)}.pdf"
+    post "/api/v1/kpis/admin/documents",
+      params: { document: { jurisdiction_slug: "toronto", organization_slug: @org.slug,
+                            fiscal_year: 2099, doc_url: url, agent_run_id: run.id } },
+      headers: auth_headers
+    doc_id = JSON.parse(response.body)["id"]
+    assert_equal run.id, Warehouse::KpiDocument.find(doc_id).agent_run_id
+
+    post "/api/v1/kpis/admin/measures",
+      params: { measure: { organization_slug: @org.slug, slug: "stamp-m-#{SecureRandom.hex(2)}",
+                           canonical_name: "Stamp M", unit_symbol: "count", agent_run_id: run.id } },
+      headers: auth_headers
+    measure_id = JSON.parse(response.body)["id"]
+    assert_equal run.id, Warehouse::Measure.find(measure_id).agent_run_id
+
+    post "/api/v1/kpis/admin/citations",
+      params: { agent_run_id: run.id, citations: [
+        { measure_id: measure_id, measurement_year: 2024, value_type: "actual", value_numeric: 1, document_id: doc_id }
+      ] },
+      headers: auth_headers
+    citation_id = JSON.parse(response.body)["ids"].first
+    assert_equal run.id, Warehouse::MeasureCitation.find(citation_id).agent_run_id
+  end
+
   test "measure create rejects unknown unit symbol" do
     post "/api/v1/kpis/admin/measures",
       params: { measure: { organization_slug: @org.slug, slug: "nope-#{SecureRandom.hex(2)}", canonical_name: "Nope", unit_symbol: "fake-unit" } },

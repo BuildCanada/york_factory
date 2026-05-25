@@ -4,12 +4,14 @@ module Api
       module Admin
         class CitationsController < BaseController
           # POST /api/v1/kpis/admin/citations
-          # Body: { citations: [ {...}, {...} ] }
+          # Body: { agent_run_id?: <int>, citations: [ {...}, {...} ] }
           # Each citation must include measure_id, measurement_year, value_type,
           # document_id, period_basis (optional, defaults to 'full_year'),
           # value_numeric / value_text, value_raw_text (optional), page_number (optional),
-          # notes (optional).
+          # notes (optional). agent_run_id stamps every citation in the batch.
           def create
+            agent_run_id = params[:agent_run_id].presence
+
             rows = Array(params.permit(citations: %i[
               measure_id measurement_year value_type period_basis
               value_numeric value_text value_raw_text
@@ -31,6 +33,7 @@ module Api
                 document_id: r.fetch(:document_id),
                 page_number: r[:page_number],
                 notes: r[:notes],
+                agent_run_id: agent_run_id,
                 created_at: now,
                 updated_at: now
               }

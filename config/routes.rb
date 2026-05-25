@@ -60,6 +60,7 @@ Rails.application.routes.draw do
           resources :facts, only: [ :index ]
           resources :citations, only: [ :index ]
         end
+        resources :agent_runs, only: [ :index, :show ]
 
         namespace :admin do
           resources :documents, only: [ :create ]
@@ -67,6 +68,7 @@ Rails.application.routes.draw do
           resources :citations, only: [ :create ]
           resources :organization_lineages, only: [ :create ]
           resources :measure_lineages, only: [ :create ]
+          resources :agent_runs, only: [ :create, :update, :show ]
         end
       end
     end

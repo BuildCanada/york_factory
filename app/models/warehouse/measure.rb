@@ -1,6 +1,7 @@
 class Warehouse::Measure < Warehouse::Record
   belongs_to :organization, optional: true
   belongs_to :unit
+  belongs_to :agent_run, optional: true
   has_many :citations,
     class_name: "Warehouse::MeasureCitation",
     foreign_key: :measure_id,

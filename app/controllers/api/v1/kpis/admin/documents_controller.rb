@@ -22,7 +22,8 @@ module Api
               doc_title: attrs[:doc_title],
               doc_type: attrs[:doc_type],
               filepath: attrs[:filepath],
-              content_hash: attrs[:content_hash]
+              content_hash: attrs[:content_hash],
+              agent_run_id: attrs[:agent_run_id]
             )
             doc.save!
 
@@ -35,7 +36,7 @@ module Api
             params.require(:document).permit(
               :jurisdiction_slug, :organization_slug, :fiscal_year, :published_at,
               :published_at_source, :source_page_url, :doc_url, :doc_title,
-              :doc_type, :filepath, :content_hash
+              :doc_type, :filepath, :content_hash, :agent_run_id
             ).to_h.symbolize_keys
           end
 

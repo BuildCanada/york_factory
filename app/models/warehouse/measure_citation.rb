@@ -4,6 +4,7 @@ class Warehouse::MeasureCitation < Warehouse::Record
 
   belongs_to :measure
   belongs_to :document, class_name: "Warehouse::KpiDocument"
+  belongs_to :agent_run, optional: true
 
   has_object :period_basis_classifier
 

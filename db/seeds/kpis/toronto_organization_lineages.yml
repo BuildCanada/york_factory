@@ -1,0 +1,11 @@
+# Documented Toronto agency transitions. Each row links a historical predecessor org
+# to its successor(s). Both slugs must resolve to rows in toronto_organizations.yml.
+
+lineages:
+  - { predecessor: "civic-theatres-toronto",                     successor: "to-live",                              year: 2020, kind: rename }
+  - { predecessor: "facilities-and-real-estate",                 successor: "corporate-real-estate-management",     year: 2019, kind: rename }
+  - { predecessor: "office-of-emergency-management",             successor: "toronto-emergency-management",         year: 2023, kind: rename }
+  - { predecessor: "information-and-technology",                 successor: "technology-services-division",         year: 2022, kind: rename }
+  - { predecessor: "shelter-support-and-housing-administration", successor: "toronto-shelter-and-support-services", year: 2024, kind: split }
+  - { predecessor: "shelter-support-and-housing-administration", successor: "housing-secretariat",                  year: 2024, kind: split }
+  - { predecessor: "affordable-housing-office",                  successor: "housing-secretariat",                  year: 2020, kind: absorb }

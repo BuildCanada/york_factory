@@ -1,0 +1,84 @@
+# Unit catalog for KPI measures.
+#
+# Each entry maps a `symbol` (as observed in source PDFs) to:
+#   kind:              absolute | ratio | rate | qualitative
+#   base_unit:         the unit that value_numeric will be normalized to (NULL for qualitative)
+#   scale:             value_numeric * scale = value in base_unit
+#   currency_code:     present only for monetary units
+#   denominator_unit:  rate units only (e.g., square_meters for $/sqft)
+#   denominator_scale: rate units only
+#   review:            true if this row was auto-classified and needs human eyes
+#
+# Source: distinct unit strings in toronto-budgets/scrape.db kpis.unit (53 rows).
+
+units:
+  # --- Absolute counts ---
+  - { symbol: "count",            kind: absolute,    base_unit: count }
+  - { symbol: "count_thousands",  kind: absolute,    base_unit: count, scale: 1000.0 }
+  - { symbol: "count_millions",   kind: absolute,    base_unit: count, scale: 1000000.0 }
+  - { symbol: "millions",         kind: absolute,    base_unit: count, scale: 1000000.0, review: true } # ambiguous: could be $M
+  - { symbol: "#",                kind: absolute,    base_unit: count }
+  - { symbol: "units",            kind: absolute,    base_unit: count }
+  - { symbol: "sites",            kind: absolute,    base_unit: count }
+  - { symbol: "beds",             kind: absolute,    base_unit: count }
+  - { symbol: "nights",           kind: absolute,    base_unit: count }
+  - { symbol: "FTE",              kind: absolute,    base_unit: count }
+
+  # --- Monetary ---
+  - { symbol: "$",                kind: absolute,    base_unit: dollars, currency_code: CAD }
+  - { symbol: "$_thousands",      kind: absolute,    base_unit: dollars, scale: 1000.0, currency_code: CAD }
+  - { symbol: "$M",               kind: absolute,    base_unit: dollars, scale: 1000000.0, currency_code: CAD }
+  - { symbol: "$B",               kind: absolute,    base_unit: dollars, scale: 1000000000.0, currency_code: CAD }
+
+  # --- Ratios / percentages / scores ---
+  - { symbol: "%",                kind: ratio,       base_unit: ratio, scale: 0.01 }
+  - { symbol: "ratio",            kind: ratio,       base_unit: ratio }
+  - { symbol: "$_ratio",          kind: ratio,       base_unit: ratio, review: true } # check whether stored as 0-1 or other
+  - { symbol: "index",            kind: ratio,       base_unit: ratio, review: true }
+  - { symbol: "score",            kind: ratio,       base_unit: ratio, review: true }
+  - { symbol: "rating",           kind: ratio,       base_unit: ratio, review: true }
+  - { symbol: "rate",             kind: ratio,       base_unit: ratio, review: true } # may be a true rate; inspect rows
+
+  # --- Time ---
+  - { symbol: "seconds",          kind: absolute,    base_unit: seconds }
+  - { symbol: "minutes",          kind: absolute,    base_unit: minutes }
+  - { symbol: "hours",            kind: absolute,    base_unit: hours }
+  - { symbol: "hours_thousands",  kind: absolute,    base_unit: hours, scale: 1000.0 }
+  - { symbol: "days",             kind: absolute,    base_unit: days }
+  - { symbol: "business_days",    kind: absolute,    base_unit: days, notes: "business days, not calendar days" }
+  - { symbol: "weeks",            kind: absolute,    base_unit: days, scale: 7.0 }
+  - { symbol: "months",           kind: absolute,    base_unit: days, scale: 30.4375, review: true }
+  - { symbol: "years",            kind: absolute,    base_unit: days, scale: 365.25, review: true }
+
+  # --- Distance / area ---
+  - { symbol: "linear_meters",    kind: absolute,    base_unit: meters }
+  - { symbol: "sq_ft",            kind: absolute,    base_unit: square_meters, scale: 0.092903 }
+  - { symbol: "acres",            kind: absolute,    base_unit: hectares, scale: 0.404686 }
+  - { symbol: "hectares",         kind: absolute,    base_unit: hectares }
+
+  # --- Volume / mass ---
+  - { symbol: "ML",               kind: absolute,    base_unit: other, notes: "megalitres", review: true }
+  - { symbol: "litres_M",         kind: absolute,    base_unit: other, scale: 1000000.0, notes: "millions of litres", review: true }
+  - { symbol: "tonnes",           kind: absolute,    base_unit: tonnes }
+  - { symbol: "MtCO2e",           kind: absolute,    base_unit: tco2e, scale: 1000000.0 }
+
+  # --- Energy ---
+  - { symbol: "MWH",              kind: absolute,    base_unit: mwh }
+  - { symbol: "MWh",              kind: absolute,    base_unit: mwh }
+
+  # --- Rates ---
+  - { symbol: "$/sqft",           kind: rate,        base_unit: dollars, currency_code: CAD, denominator_unit: square_meters, denominator_scale: 0.092903 }
+  - { symbol: "$M/year",          kind: rate,        base_unit: dollars, scale: 1000000.0, currency_code: CAD, denominator_unit: other, denominator_scale: 1.0, notes: "denominator is year" }
+  - { symbol: "rate_per_100k",    kind: rate,        base_unit: count, denominator_unit: count, denominator_scale: 100000.0 }
+  - { symbol: "count per 100km",  kind: rate,        base_unit: count, denominator_unit: kilometers, denominator_scale: 100.0 }
+  - { symbol: "tonnes_CO2/year",  kind: rate,        base_unit: tco2e, denominator_unit: other, denominator_scale: 1.0, notes: "denominator is year" }
+  - { symbol: "kWH per ML",       kind: rate,        base_unit: kwh, denominator_unit: other, denominator_scale: 1.0, notes: "denominator is megalitre", review: true }
+  - { symbol: "eKWH/sqft",        kind: rate,        base_unit: kwh, denominator_unit: square_meters, denominator_scale: 0.092903 }
+
+  # --- Qualitative ---
+  - { symbol: "qualitative",      kind: qualitative }
+  - { symbol: "pass/fail",        kind: qualitative }
+  - { symbol: "status",           kind: qualitative }
+  - { symbol: "text",             kind: qualitative }
+  - { symbol: "count_text",       kind: qualitative, notes: "freeform count-like string" }
+  - { symbol: "date",             kind: qualitative, notes: "ISO date string" }

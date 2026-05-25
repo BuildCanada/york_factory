@@ -5,7 +5,9 @@ class TradeBarriers::AgreementTest < ActiveSupport::TestCase
     @theme = TradeBarriers::Theme.find_or_create_by!(name: "Goods")
     @jurisdiction = Warehouse::Jurisdiction.find_or_create_by!(code: "AB") do |j|
       j.name = "Alberta"
+      j.slug = "ab"
       j.level = "provincial"
+      j.fiscal_year_start_month = 4
     end
   end
 

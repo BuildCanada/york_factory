@@ -102,6 +102,9 @@ gem "rails-html-sanitizer"
 gem "roo"
 gem "roo-xls"
 
+# One-shot SQLite reader for KPI v1 snapshot import
+gem "sqlite3", require: false
+
 # CMS: ActiveStorage variants
 gem "image_processing"
 gem "ruby-vips"

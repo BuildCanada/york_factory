@@ -50,6 +50,25 @@ Rails.application.routes.draw do
       namespace :warehouse do
         resources :jurisdictions, only: [ :index ]
       end
+
+      namespace :kpis do
+        resources :jurisdictions, only: [ :index, :show ], param: :slug do
+          resources :organizations, only: [ :index, :show ], param: :slug
+        end
+        resources :organizations, only: [], param: :slug
+        resources :measures, only: [ :index, :show ] do
+          resources :facts, only: [ :index ]
+          resources :citations, only: [ :index ]
+        end
+
+        namespace :admin do
+          resources :documents, only: [ :create ]
+          resources :measures, only: [ :create ]
+          resources :citations, only: [ :create ]
+          resources :organization_lineages, only: [ :create ]
+          resources :measure_lineages, only: [ :create ]
+        end
+      end
     end
   end
 

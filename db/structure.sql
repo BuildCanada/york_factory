@@ -31,10 +31,46 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 CREATE SCHEMA IF NOT EXISTS warehouse;
 
 
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
+-- Name: postgis; Type: EXTENSION; Schema: -; Owner: -
+--
+
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+--
+-- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types and functions';
+
+
+--
+-- Name: unaccent; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION unaccent; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
 
 
 SET default_tablespace = '';
@@ -1127,6 +1163,41 @@ ALTER SEQUENCE warehouse.addresses_id_seq OWNED BY warehouse.addresses.id;
 
 
 --
+-- Name: api_tokens; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.api_tokens (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    token_hash character varying NOT NULL,
+    scopes character varying[] DEFAULT ARRAY[]::character varying[] NOT NULL,
+    last_used_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: api_tokens_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.api_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: api_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.api_tokens_id_seq OWNED BY warehouse.api_tokens.id;
+
+
+--
 -- Name: fiscal_authorities; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -1327,7 +1398,13 @@ CREATE TABLE warehouse.jurisdictions (
     code character varying NOT NULL,
     level character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    slug character varying NOT NULL,
+    fiscal_year_start_month integer NOT NULL,
+    default_currency character varying DEFAULT 'CAD'::character varying NOT NULL,
+    region_code character varying,
+    CONSTRAINT jurisdictions_fiscal_year_start_month_check CHECK (((fiscal_year_start_month >= 1) AND (fiscal_year_start_month <= 12))),
+    CONSTRAINT jurisdictions_level_check CHECK (((level)::text = ANY ((ARRAY['municipal'::character varying, 'regional'::character varying, 'provincial'::character varying, 'territorial'::character varying, 'federal'::character varying, 'crown_corp'::character varying, 'authority'::character varying])::text[])))
 );
 
 
@@ -1348,6 +1425,49 @@ CREATE SEQUENCE warehouse.jurisdictions_id_seq
 --
 
 ALTER SEQUENCE warehouse.jurisdictions_id_seq OWNED BY warehouse.jurisdictions.id;
+
+
+--
+-- Name: kpi_documents; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.kpi_documents (
+    id bigint NOT NULL,
+    jurisdiction_id bigint NOT NULL,
+    organization_id bigint,
+    raw_ingestion_id bigint,
+    fiscal_year integer NOT NULL,
+    published_at date,
+    published_at_source character varying,
+    source_page_url character varying,
+    doc_url character varying NOT NULL,
+    doc_title character varying,
+    doc_type character varying,
+    filepath character varying,
+    content_hash character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT kpi_documents_published_at_source_check CHECK (((published_at_source IS NULL) OR ((published_at_source)::text = ANY ((ARRAY['pdf_metadata'::character varying, 'http_last_modified'::character varying, 'council_schedule'::character varying, 'discovered_at_fallback'::character varying, 'manual'::character varying])::text[]))))
+);
+
+
+--
+-- Name: kpi_documents_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.kpi_documents_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: kpi_documents_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.kpi_documents_id_seq OWNED BY warehouse.kpi_documents.id;
 
 
 --
@@ -1466,6 +1586,151 @@ ALTER SEQUENCE warehouse.lobbyists_id_seq OWNED BY warehouse.lobbyists.id;
 
 
 --
+-- Name: measure_citations; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.measure_citations (
+    id bigint NOT NULL,
+    measure_id bigint NOT NULL,
+    measurement_year integer NOT NULL,
+    value_type character varying NOT NULL,
+    value_numeric double precision,
+    value_text text,
+    value_raw_text text,
+    period_basis character varying DEFAULT 'full_year'::character varying NOT NULL,
+    document_id bigint NOT NULL,
+    page_number integer,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT measure_citations_period_basis_check CHECK (((period_basis)::text = ANY ((ARRAY['full_year'::character varying, 'ytd_q1'::character varying, 'ytd_q2'::character varying, 'ytd_q3'::character varying, 'as_of_date'::character varying])::text[]))),
+    CONSTRAINT measure_citations_value_type_check CHECK (((value_type)::text = ANY ((ARRAY['actual'::character varying, 'target'::character varying, 'projected'::character varying, 'plan'::character varying, 'budget'::character varying])::text[])))
+);
+
+
+--
+-- Name: measure_citations_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.measure_citations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: measure_citations_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.measure_citations_id_seq OWNED BY warehouse.measure_citations.id;
+
+
+--
+-- Name: measure_facts; Type: VIEW; Schema: warehouse; Owner: -
+--
+
+CREATE VIEW warehouse.measure_facts AS
+ SELECT measure_id,
+    measurement_year,
+    value_type,
+    period_basis,
+    value_numeric,
+    value_text,
+    citation_id,
+    document_id
+   FROM ( SELECT c.measure_id,
+            c.measurement_year,
+            c.value_type,
+            c.period_basis,
+            c.value_numeric,
+            c.value_text,
+            c.id AS citation_id,
+            c.document_id,
+            row_number() OVER (PARTITION BY c.measure_id, c.measurement_year, c.value_type, c.period_basis ORDER BY d.published_at DESC NULLS LAST, d.fiscal_year DESC, c.id DESC) AS rn
+           FROM (warehouse.measure_citations c
+             JOIN warehouse.kpi_documents d ON ((d.id = c.document_id)))) ranked
+  WHERE (rn = 1);
+
+
+--
+-- Name: measure_lineages; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.measure_lineages (
+    id bigint NOT NULL,
+    predecessor_id bigint NOT NULL,
+    successor_id bigint NOT NULL,
+    transition_year integer NOT NULL,
+    transition_kind character varying NOT NULL,
+    acknowledged_in_document_id bigint,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT measure_lineages_distinct CHECK ((predecessor_id <> successor_id)),
+    CONSTRAINT measure_lineages_kind_check CHECK (((transition_kind)::text = ANY ((ARRAY['rename'::character varying, 'methodology_revision'::character varying, 'split'::character varying, 'merge'::character varying, 'unit_change'::character varying, 'scope_change'::character varying, 'revived'::character varying])::text[])))
+);
+
+
+--
+-- Name: measure_lineages_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.measure_lineages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: measure_lineages_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.measure_lineages_id_seq OWNED BY warehouse.measure_lineages.id;
+
+
+--
+-- Name: measures; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.measures (
+    id bigint NOT NULL,
+    organization_id bigint,
+    slug character varying NOT NULL,
+    canonical_name character varying NOT NULL,
+    unit_id bigint NOT NULL,
+    service_category character varying,
+    description text,
+    first_seen_year integer,
+    last_seen_year integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: measures_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.measures_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: measures_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.measures_id_seq OWNED BY warehouse.measures.id;
+
+
+--
 -- Name: organization_aliases; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -1500,6 +1765,44 @@ ALTER SEQUENCE warehouse.organization_aliases_id_seq OWNED BY warehouse.organiza
 
 
 --
+-- Name: organization_lineages; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.organization_lineages (
+    id bigint NOT NULL,
+    predecessor_id bigint NOT NULL,
+    successor_id bigint NOT NULL,
+    transition_year integer NOT NULL,
+    transition_kind character varying NOT NULL,
+    acknowledged_in_document_id bigint,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT organization_lineages_distinct CHECK ((predecessor_id <> successor_id)),
+    CONSTRAINT organization_lineages_kind_check CHECK (((transition_kind)::text = ANY ((ARRAY['rename'::character varying, 'merge'::character varying, 'split'::character varying, 'absorb'::character varying, 'spin_off'::character varying, 'revived'::character varying])::text[])))
+);
+
+
+--
+-- Name: organization_lineages_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.organization_lineages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: organization_lineages_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.organization_lineages_id_seq OWNED BY warehouse.organization_lineages.id;
+
+
+--
 -- Name: organizations; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -1509,7 +1812,14 @@ CREATE TABLE warehouse.organizations (
     created_at timestamp(6) without time zone NOT NULL,
     needs_review boolean DEFAULT false NOT NULL,
     org_id_infobase integer,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    jurisdiction_id bigint NOT NULL,
+    slug character varying NOT NULL,
+    kind character varying,
+    parent_organization_id bigint,
+    active_from_year integer,
+    active_to_year integer,
+    description text
 );
 
 
@@ -1657,6 +1967,48 @@ CREATE SEQUENCE warehouse.standard_object_expenditures_id_seq
 --
 
 ALTER SEQUENCE warehouse.standard_object_expenditures_id_seq OWNED BY warehouse.standard_object_expenditures.id;
+
+
+--
+-- Name: units; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.units (
+    id bigint NOT NULL,
+    symbol character varying NOT NULL,
+    kind character varying NOT NULL,
+    base_unit character varying,
+    scale double precision DEFAULT 1.0 NOT NULL,
+    currency_code character varying,
+    denominator_unit character varying,
+    denominator_scale double precision,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT units_base_unit_check CHECK (((base_unit IS NULL) OR ((base_unit)::text = ANY ((ARRAY['ratio'::character varying, 'count'::character varying, 'dollars'::character varying, 'seconds'::character varying, 'minutes'::character varying, 'hours'::character varying, 'days'::character varying, 'meters'::character varying, 'kilometers'::character varying, 'square_meters'::character varying, 'hectares'::character varying, 'tonnes'::character varying, 'kwh'::character varying, 'mwh'::character varying, 'tco2e'::character varying, 'other'::character varying])::text[])))),
+    CONSTRAINT units_kind_check CHECK (((kind)::text = ANY ((ARRAY['absolute'::character varying, 'ratio'::character varying, 'rate'::character varying, 'qualitative'::character varying])::text[]))),
+    CONSTRAINT units_qualitative_has_no_base CHECK ((((kind)::text = 'qualitative'::text) = (base_unit IS NULL))),
+    CONSTRAINT units_rate_has_denominator CHECK ((((kind)::text = 'rate'::text) = (denominator_unit IS NOT NULL)))
+);
+
+
+--
+-- Name: units_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.units_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: units_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.units_id_seq OWNED BY warehouse.units.id;
 
 
 --
@@ -1856,6 +2208,13 @@ ALTER TABLE ONLY warehouse.addresses ALTER COLUMN id SET DEFAULT nextval('wareho
 
 
 --
+-- Name: api_tokens id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.api_tokens ALTER COLUMN id SET DEFAULT nextval('warehouse.api_tokens_id_seq'::regclass);
+
+
+--
 -- Name: fiscal_authorities id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -1898,6 +2257,13 @@ ALTER TABLE ONLY warehouse.jurisdictions ALTER COLUMN id SET DEFAULT nextval('wa
 
 
 --
+-- Name: kpi_documents id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents ALTER COLUMN id SET DEFAULT nextval('warehouse.kpi_documents_id_seq'::regclass);
+
+
+--
 -- Name: lineage_entries id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -1919,10 +2285,38 @@ ALTER TABLE ONLY warehouse.lobbyists ALTER COLUMN id SET DEFAULT nextval('wareho
 
 
 --
+-- Name: measure_citations id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_citations ALTER COLUMN id SET DEFAULT nextval('warehouse.measure_citations_id_seq'::regclass);
+
+
+--
+-- Name: measure_lineages id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_lineages ALTER COLUMN id SET DEFAULT nextval('warehouse.measure_lineages_id_seq'::regclass);
+
+
+--
+-- Name: measures id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measures ALTER COLUMN id SET DEFAULT nextval('warehouse.measures_id_seq'::regclass);
+
+
+--
 -- Name: organization_aliases id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.organization_aliases ALTER COLUMN id SET DEFAULT nextval('warehouse.organization_aliases_id_seq'::regclass);
+
+
+--
+-- Name: organization_lineages id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organization_lineages ALTER COLUMN id SET DEFAULT nextval('warehouse.organization_lineages_id_seq'::regclass);
 
 
 --
@@ -1951,6 +2345,13 @@ ALTER TABLE ONLY warehouse.sources ALTER COLUMN id SET DEFAULT nextval('warehous
 --
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures ALTER COLUMN id SET DEFAULT nextval('warehouse.standard_object_expenditures_id_seq'::regclass);
+
+
+--
+-- Name: units id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.units ALTER COLUMN id SET DEFAULT nextval('warehouse.units_id_seq'::regclass);
 
 
 --
@@ -2194,6 +2595,14 @@ ALTER TABLE ONLY warehouse.addresses
 
 
 --
+-- Name: api_tokens api_tokens_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.api_tokens
+    ADD CONSTRAINT api_tokens_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: fiscal_authorities fiscal_authorities_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -2242,6 +2651,14 @@ ALTER TABLE ONLY warehouse.jurisdictions
 
 
 --
+-- Name: kpi_documents kpi_documents_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents
+    ADD CONSTRAINT kpi_documents_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: lineage_entries lineage_entries_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -2266,11 +2683,43 @@ ALTER TABLE ONLY warehouse.lobbyists
 
 
 --
+-- Name: measure_citations measure_citations_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_citations
+    ADD CONSTRAINT measure_citations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: measure_lineages measure_lineages_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_lineages
+    ADD CONSTRAINT measure_lineages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: measures measures_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measures
+    ADD CONSTRAINT measures_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: organization_aliases organization_aliases_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.organization_aliases
     ADD CONSTRAINT organization_aliases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: organization_lineages organization_lineages_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organization_lineages
+    ADD CONSTRAINT organization_lineages_pkey PRIMARY KEY (id);
 
 
 --
@@ -2303,6 +2752,22 @@ ALTER TABLE ONLY warehouse.sources
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT standard_object_expenditures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: units units_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.units
+    ADD CONSTRAINT units_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: units units_symbol_key; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.units
+    ADD CONSTRAINT units_symbol_key UNIQUE (symbol);
 
 
 --
@@ -2775,10 +3240,108 @@ CREATE UNIQUE INDEX idx_geo_relationships_unique ON warehouse.geo_relationships 
 
 
 --
+-- Name: idx_kpi_documents_jurisdiction_year; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_kpi_documents_jurisdiction_year ON warehouse.kpi_documents USING btree (jurisdiction_id, fiscal_year);
+
+
+--
+-- Name: idx_kpi_documents_organization; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_kpi_documents_organization ON warehouse.kpi_documents USING btree (organization_id);
+
+
+--
+-- Name: idx_measure_citations_document; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_citations_document ON warehouse.measure_citations USING btree (document_id);
+
+
+--
+-- Name: idx_measure_citations_measure_year; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_citations_measure_year ON warehouse.measure_citations USING btree (measure_id, measurement_year);
+
+
+--
+-- Name: idx_measure_citations_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_measure_citations_unique ON warehouse.measure_citations USING btree (measure_id, measurement_year, value_type, period_basis, document_id);
+
+
+--
+-- Name: idx_measure_lineages_predecessor; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_lineages_predecessor ON warehouse.measure_lineages USING btree (predecessor_id);
+
+
+--
+-- Name: idx_measure_lineages_successor; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_lineages_successor ON warehouse.measure_lineages USING btree (successor_id);
+
+
+--
+-- Name: idx_measure_lineages_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_measure_lineages_unique ON warehouse.measure_lineages USING btree (predecessor_id, successor_id, transition_year, transition_kind);
+
+
+--
+-- Name: idx_measures_cross_agency_slug_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_measures_cross_agency_slug_unique ON warehouse.measures USING btree (slug) WHERE (organization_id IS NULL);
+
+
+--
+-- Name: idx_measures_org_slug_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_measures_org_slug_unique ON warehouse.measures USING btree (organization_id, slug) WHERE (organization_id IS NOT NULL);
+
+
+--
+-- Name: idx_organization_lineages_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_organization_lineages_unique ON warehouse.organization_lineages USING btree (predecessor_id, successor_id, transition_year, transition_kind);
+
+
+--
+-- Name: idx_organizations_jurisdiction_slug; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_organizations_jurisdiction_slug ON warehouse.organizations USING btree (jurisdiction_id, slug);
+
+
+--
 -- Name: idx_std_obj_expenditures_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
 CREATE UNIQUE INDEX idx_std_obj_expenditures_unique ON warehouse.standard_object_expenditures USING btree (organization_id, fiscal_year, standard_object);
+
+
+--
+-- Name: index_api_tokens_on_name; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_tokens_on_name ON warehouse.api_tokens USING btree (name);
+
+
+--
+-- Name: index_api_tokens_on_token_hash; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_tokens_on_token_hash ON warehouse.api_tokens USING btree (token_hash);
 
 
 --
@@ -2866,6 +3429,27 @@ CREATE UNIQUE INDEX index_jurisdictions_on_code ON warehouse.jurisdictions USING
 
 
 --
+-- Name: index_jurisdictions_on_slug; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_jurisdictions_on_slug ON warehouse.jurisdictions USING btree (slug);
+
+
+--
+-- Name: index_kpi_documents_on_content_hash; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_kpi_documents_on_content_hash ON warehouse.kpi_documents USING btree (content_hash);
+
+
+--
+-- Name: index_kpi_documents_on_doc_url; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_kpi_documents_on_doc_url ON warehouse.kpi_documents USING btree (doc_url);
+
+
+--
 -- Name: index_lineage_entries_on_raw_ingestion_id; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -2908,6 +3492,20 @@ CREATE UNIQUE INDEX index_lobbyists_on_registration_number ON warehouse.lobbyist
 
 
 --
+-- Name: index_measures_on_organization_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_measures_on_organization_id ON warehouse.measures USING btree (organization_id);
+
+
+--
+-- Name: index_measures_on_unit_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_measures_on_unit_id ON warehouse.measures USING btree (unit_id);
+
+
+--
 -- Name: index_organization_aliases_on_alias_name_and_valid_from; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -2922,6 +3520,20 @@ CREATE INDEX index_organization_aliases_on_organization_id ON warehouse.organiza
 
 
 --
+-- Name: index_organization_lineages_on_predecessor_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_organization_lineages_on_predecessor_id ON warehouse.organization_lineages USING btree (predecessor_id);
+
+
+--
+-- Name: index_organization_lineages_on_successor_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_organization_lineages_on_successor_id ON warehouse.organization_lineages USING btree (successor_id);
+
+
+--
 -- Name: index_organizations_on_canonical_name; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -2929,10 +3541,24 @@ CREATE UNIQUE INDEX index_organizations_on_canonical_name ON warehouse.organizat
 
 
 --
+-- Name: index_organizations_on_jurisdiction_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_organizations_on_jurisdiction_id ON warehouse.organizations USING btree (jurisdiction_id);
+
+
+--
 -- Name: index_organizations_on_org_id_infobase; Type: INDEX; Schema: warehouse; Owner: -
 --
 
 CREATE UNIQUE INDEX index_organizations_on_org_id_infobase ON warehouse.organizations USING btree (org_id_infobase) WHERE (org_id_infobase IS NOT NULL);
+
+
+--
+-- Name: index_organizations_on_parent_organization_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_organizations_on_parent_organization_id ON warehouse.organizations USING btree (parent_organization_id);
 
 
 --
@@ -3048,6 +3674,30 @@ ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories
 
 ALTER TABLE ONLY warehouse.addresses
     ADD CONSTRAINT addresses_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: organization_lineages fk_organization_lineages_acknowledged_doc; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organization_lineages
+    ADD CONSTRAINT fk_organization_lineages_acknowledged_doc FOREIGN KEY (acknowledged_in_document_id) REFERENCES warehouse.kpi_documents(id);
+
+
+--
+-- Name: organizations fk_organizations_jurisdiction; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organizations
+    ADD CONSTRAINT fk_organizations_jurisdiction FOREIGN KEY (jurisdiction_id) REFERENCES warehouse.jurisdictions(id);
+
+
+--
+-- Name: organizations fk_organizations_parent; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organizations
+    ADD CONSTRAINT fk_organizations_parent FOREIGN KEY (parent_organization_id) REFERENCES warehouse.organizations(id);
 
 
 --
@@ -3219,12 +3869,115 @@ ALTER TABLE ONLY warehouse.geo_relationships
 
 
 --
+-- Name: kpi_documents kpi_documents_jurisdiction_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents
+    ADD CONSTRAINT kpi_documents_jurisdiction_id_fkey FOREIGN KEY (jurisdiction_id) REFERENCES warehouse.jurisdictions(id);
+
+
+--
+-- Name: kpi_documents kpi_documents_organization_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents
+    ADD CONSTRAINT kpi_documents_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: kpi_documents kpi_documents_raw_ingestion_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.kpi_documents
+    ADD CONSTRAINT kpi_documents_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: measure_citations measure_citations_document_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_citations
+    ADD CONSTRAINT measure_citations_document_id_fkey FOREIGN KEY (document_id) REFERENCES warehouse.kpi_documents(id);
+
+
+--
+-- Name: measure_citations measure_citations_measure_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_citations
+    ADD CONSTRAINT measure_citations_measure_id_fkey FOREIGN KEY (measure_id) REFERENCES warehouse.measures(id) ON DELETE CASCADE;
+
+
+--
+-- Name: measure_lineages measure_lineages_acknowledged_in_document_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_lineages
+    ADD CONSTRAINT measure_lineages_acknowledged_in_document_id_fkey FOREIGN KEY (acknowledged_in_document_id) REFERENCES warehouse.kpi_documents(id);
+
+
+--
+-- Name: measure_lineages measure_lineages_predecessor_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_lineages
+    ADD CONSTRAINT measure_lineages_predecessor_id_fkey FOREIGN KEY (predecessor_id) REFERENCES warehouse.measures(id);
+
+
+--
+-- Name: measure_lineages measure_lineages_successor_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_lineages
+    ADD CONSTRAINT measure_lineages_successor_id_fkey FOREIGN KEY (successor_id) REFERENCES warehouse.measures(id);
+
+
+--
+-- Name: measures measures_organization_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measures
+    ADD CONSTRAINT measures_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: measures measures_unit_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measures
+    ADD CONSTRAINT measures_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES warehouse.units(id);
+
+
+--
+-- Name: organization_lineages organization_lineages_predecessor_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organization_lineages
+    ADD CONSTRAINT organization_lineages_predecessor_id_fkey FOREIGN KEY (predecessor_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: organization_lineages organization_lineages_successor_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.organization_lineages
+    ADD CONSTRAINT organization_lineages_successor_id_fkey FOREIGN KEY (successor_id) REFERENCES warehouse.organizations(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260525000007'),
+('20260525000006'),
+('20260525000005'),
+('20260525000004'),
+('20260525000003'),
+('20260525000002'),
+('20260525000001'),
 ('20260513180113'),
 ('20260504204633'),
 ('20260428000002'),

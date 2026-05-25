@@ -79,9 +79,31 @@ curl -s "$API/api/v1/kpis/jurisdictions/$JURISDICTION_SLUG/organizations" \
                  | {slug, canonical_name, active_from_year, active_to_year}'
 ```
 
-If exactly one row matches, use its `slug`. If multiple, show all and ask the user which. If none, list every org for that jurisdiction so the user can pick from the full set (the term may be an alias of a different canonical name). If the org genuinely doesn't exist yet, pause: the skill should NOT create new organizations — that's a deliberate human decision because of lineage implications. Ask the user to add it to the appropriate seed file (e.g. `db/seeds/kpis/<jurisdiction>_organizations.yml` or — for federal — through the Estimates pipeline's entity resolver) and rerun `kpis:seed_reference`.
+- **Exactly one match** → use its `slug`.
+- **Multiple matches** → show all and ask the user which.
+- **No match** → list every org for that jurisdiction (the user's term might be an alias of a different canonical name) and confirm before lazy-creating in the next step.
+
+If the user confirms the org doesn't exist yet, **lazy-create it** via the admin API:
+
+```bash
+NEW_ORG=$(curl -s -X POST "$API/api/v1/kpis/admin/organizations" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "$(jq -n \
+        --arg jur "$JURISDICTION_SLUG" --arg slug "$ORG_SLUG" \
+        --arg name "$CANONICAL_NAME" --arg kind "$KIND" \
+        --argjson aliases "$ALIASES_JSON" \
+        '{organization: {jurisdiction_slug:$jur, slug:$slug, canonical_name:$name,
+                         kind:$kind, aliases:$aliases}}')")
+ORG_SLUG=$(echo "$NEW_ORG" | jq -r .slug)
+```
+
+`$KIND` is typically `"department"`, `"agency"`, or `"crown_corp"` (free text — see existing rows for the conventions used in each jurisdiction). `$ALIASES_JSON` is a JSON array of any acronyms or alternate names you've seen in source documents (e.g., `["PCH", "Department of Canadian Heritage"]`).
+
+Lazy-create is idempotent on `(jurisdiction_slug, slug)` — if the slug already exists, the response returns the existing row with `created: false` and no new aliases beyond what you sent are added.
 
 Store as `ORG_SLUG`.
+
+**Important:** Lazy-create handles new orgs that have no lineage relationship with existing rows. If the new org is the *successor* of a renamed or absorbed predecessor that already exists, also POST a `/admin/organization_lineages` row after the create so the relationship is tracked. The skill should flag this to the user when it spots phrasing like "formerly known as" or "merged with" in the source doc.
 
 ### Step 3 — Open an agent run
 
@@ -120,16 +142,35 @@ DOC=$(curl -s -X POST "$API/api/v1/kpis/admin/documents" \
 DOC_ID=$(echo "$DOC" | jq .id)
 ```
 
-### Step 5 — Read the PDF
+### Step 5 — Read the source document
+
+Federal departments publish Departmental Plans / Results Reports as **HTML** (no PDF). Provincial and municipal sources are mostly **PDF**. Pick the right branch.
+
+#### 5a. PDF branch (provincial, municipal, older federal)
 
 Use the `Read` tool with the `pages:` argument. **Don't load the whole PDF.**
 
 1. Read pages 1–3 to get the TOC / overview.
 2. Look for headings indicating performance content. Common across jurisdictions:
-   - **Federal:** "Departmental Plan — Results", "Departmental Results Report", "Performance Indicators", "Results to Date"
    - **Provincial/territorial:** "Performance Measures", "Outcomes and Performance Measures", "Strategic Outcomes", "Annual Business Plan — Results"
    - **Municipal:** "Service Performance", "Key Service Levels", "Performance Measures", "Service Outcomes"
+   - **Older federal PDFs:** "Departmental Plan — Results", "Performance Indicators", "Results to Date"
 3. Jump to those pages with `Read(pages: "N-M")`.
+4. Populate `page_number` on each citation with the **physical PDF page index** (1-based, as the Read tool numbers).
+
+#### 5b. HTML branch (current federal, some provincial)
+
+Federal Departmental Results Reports follow a standard TBS structure: each Core Responsibility is an `<h3 id="a3X">` heading containing one or more performance-indicator tables. Table structure: `Departmental result indicator | Target | Date to achieve target | Actual results`, with actuals as concatenated `FYstart–end: value` text.
+
+```bash
+curl -sL "$DOC_URL" > /tmp/extract-kpis-source.html
+```
+
+Then parse with a small Python helper (the skill includes one as a reference). The fiscal-year convention: federal `YYYY-YY` notation refers to April-to-March; use the *end* year as `measurement_year` (so `2024-25` → `measurement_year: 2025`).
+
+`page_number` is left null for HTML sources. Use `service_category` to record the Core Responsibility (federal) or section heading (provincial), and `notes` to capture the exact result-statement under which the indicator lives.
+
+A reusable Python parser for federal DRRs lives at the end of this skill (see "Reference: federal DRR HTML parser"). Adapt the table-extraction regex for other HTML formats as needed.
 
 For each measure row in each performance table, capture:
 - `canonical_name` — wording exactly as it appears in the PDF heading.
@@ -144,10 +185,11 @@ For each measure row in each performance table, capture:
 - The same `(measure, measurement_year, value_type)` reported in multiple documents is a *feature* — each citation has its own `document_id`, and `warehouse.measure_facts` resolves to the latest published doc. This is how restatements get tracked. Insert all of them.
 
 **Critical conventions (apply everywhere):**
-- **`page_number` = physical PDF page index (1-based)** as the `Read` tool numbers them. NOT printed page numbers.
+- **`page_number`** = physical PDF page index (1-based) as the `Read` tool numbers them. Not printed page numbers. Leave null for HTML sources.
 - **Don't fabricate.** If a cell is unreadable, skip it; record the gap in the report.
 - **Methodology shift = separate measure**, not the same. If a 2026 doc replaces "Jobs Created and Retained" with "Businesses Provided with Material Support", create two distinct measures. Capture the predecessor → successor relationship later via `POST /api/v1/kpis/admin/measure_lineages` if known.
 - **Minor name variant = same measure.** "Film Production Spending" → "Film and Television Production Spending" is one measure; keep one canonical_name.
+- **Federal fiscal year notation:** `2024-25` (April 2024–March 2025) → `measurement_year: 2025` (use the end year).
 
 ### Step 6 — Upsert measures
 
@@ -271,6 +313,86 @@ These are *examples* — neither exhaustive nor strict rules. Trust what the PDF
 
 **Universal:**
 - Measures don't carry over cleanly across all years. Expect coverage gaps. Don't try to "fill in" missing values.
-- Methodology footnotes in the PDF often signal a methodology shift — read them and create separate measures when warranted.
+- Methodology footnotes in the source often signal a methodology shift — read them and create separate measures when warranted.
 - Capital-only documents almost never carry KPIs — skip them.
 - COVID years (2020–2022) disrupt comparability for many programs — flag in `notes` when relevant.
+
+## Reference: federal DRR HTML parser
+
+Used in real extractions for departments whose DRR is HTML-only (PCH, ESDC, ECCC, etc.). Save as a one-shot script, adjust selectors for variants:
+
+```python
+import re, json, urllib.request
+from html import unescape
+
+def strip_tags(s):
+    s = re.sub(r'<[^>]+>', ' ', s)
+    return re.sub(r'\s+', ' ', unescape(s)).strip()
+
+def parse_value(text):
+    text = text.strip()
+    if not text or text.lower() in ('n/a', 'not available', '-', ''):
+        return None, None, None
+    for pat, unit in [
+        (r'^\$?\s*([\d,\.]+)\s*billion\b', "$B"),
+        (r'^\$?\s*([\d,\.]+)\s*million\b', "$M"),
+        (r'^([\d\.,]+)\s*%',               "%"),
+        (r'^\$\s*([\d,\.]+)\b',            "$"),
+        (r'^([\d,]+(?:\.\d+)?)',           "count"),
+    ]:
+        m = re.match(pat, text, re.I)
+        if m: return float(m.group(1).replace(',','')), unit, None
+    return None, "text", text
+
+YEAR_RE = re.compile(r'(\d{4})[–\-](\d{2,4})\s*:\s*')
+
+def parse_actuals(cell):
+    cell = re.sub(r'Footnote\s*\d+', '', cell)
+    markers = list(YEAR_RE.finditer(cell))
+    out = []
+    for i, m in enumerate(markers):
+        end = int(m.group(1)) + 1   # FY end-year
+        val_start = m.end()
+        val_end = markers[i+1].start() if i+1 < len(markers) else len(cell)
+        out.append((end, cell[val_start:val_end].strip()))
+    return out
+
+def extract_drr(html):
+    sections = re.split(r'<h3 id="(a3[a-z])"[^>]*>([^<]+)</h3>', html)
+    out = []
+    for i in range(1, len(sections), 3):
+        cr_title = sections[i+1]
+        body = sections[i+2] if i+2 < len(sections) else ""
+        if "Internal services" in cr_title:
+            continue
+        for tbl in re.findall(r'<table[^>]*>.*?</table>', body, re.DOTALL):
+            plain = strip_tags(tbl)
+            result_stmt = (re.match(
+                r'^Table \d+ shows.*?under (.+?) in the last three fiscal years\.',
+                plain) or [None, None])[1]
+            for row in re.findall(r'<tr[^>]*>(.*?)</tr>', tbl, re.DOTALL):
+                cells = [strip_tags(c) for c in
+                         re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', row, re.DOTALL)]
+                if len(cells) != 4 or cells[0].lower().startswith('departmental result indicator'):
+                    continue
+                indicator = re.sub(r'\s*Footnote\s*\d+\s*$', '', cells[0]).strip()
+                target_v, target_u, _ = parse_value(cells[1])
+                actuals = parse_actuals(cells[3])
+                unit = target_u
+                if unit in (None, "text"):
+                    for _, raw in actuals:
+                        _, u, _ = parse_value(raw)
+                        if u and u != "text": unit = u; break
+                out.append({
+                    "canonical_name": indicator,
+                    "service_category": result_stmt or cr_title,
+                    "unit_symbol": unit or "count",
+                    "target_value": target_v, "target_raw": cells[1],
+                    "target_date": cells[2], "actuals": actuals,
+                })
+    return out
+
+# Usage:
+# html = urllib.request.urlopen(DOC_URL).read().decode()
+# measures = extract_drr(html)
+```

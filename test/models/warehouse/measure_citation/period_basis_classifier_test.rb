@@ -53,16 +53,24 @@ class Warehouse::MeasureCitation::PeriodBasisClassifierTest < ActiveSupport::Tes
     fake_chat = Object.new
     fake_chat.define_singleton_method(:ask) { |_p| fake_msg }
 
+    # Ensure RubyLLM.chat is loaded before stubbing.
+    RubyLLM.method(:chat) rescue nil
+
     yielded = []
-    RubyLLM.singleton_class.alias_method :original_chat, :chat
+    had_original = RubyLLM.singleton_class.method_defined?(:chat) || RubyLLM.singleton_class.private_method_defined?(:chat)
+    RubyLLM.singleton_class.alias_method(:original_chat, :chat) if had_original
     RubyLLM.singleton_class.define_method(:chat) { |**_kw| fake_chat }
     begin
       Warehouse::MeasureCitation::PeriodBasisClassifier.classify_batch([ c1, c2 ]) do |citation, result|
         yielded << [ citation.id, result.period_basis, result.confidence ]
       end
     ensure
-      RubyLLM.singleton_class.alias_method :chat, :original_chat
-      RubyLLM.singleton_class.remove_method :original_chat
+      if had_original
+        RubyLLM.singleton_class.alias_method(:chat, :original_chat)
+        RubyLLM.singleton_class.remove_method(:original_chat)
+      else
+        RubyLLM.singleton_class.remove_method(:chat)
+      end
     end
 
     assert_equal [

@@ -1,0 +1,89 @@
+# Federal Government of Canada organizations (departments, agencies, crown corps).
+#
+# This is a starter list of the most commonly-cited departments and acronyms,
+# not the full TBS roster of ~200 entities. The `extract-kpis` skill lazily
+# creates orgs via POST /api/v1/kpis/admin/organizations on miss, so anything
+# not pre-seeded here is auto-created on first encounter.
+#
+# When adding a row by hand: pick a slug that's stable (matches the URL slug
+# on canada.ca where possible), use the public business name from TBS InfoBase
+# as canonical_name, and put all known acronyms / "Department of …" variants
+# in aliases.
+
+organizations:
+  # --- Treasury & central agencies ---
+  - { slug: "treasury-board-of-canada-secretariat", canonical_name: "Treasury Board of Canada Secretariat", kind: "department", aliases: [ "TBS", "Treasury Board Secretariat" ] }
+  - { slug: "department-of-finance",                canonical_name: "Department of Finance Canada", kind: "department", aliases: [ "Finance Canada", "Department of Finance" ] }
+  - { slug: "privy-council-office",                 canonical_name: "Privy Council Office", kind: "department", aliases: [ "PCO" ] }
+  - { slug: "public-service-commission",            canonical_name: "Public Service Commission of Canada", kind: "department", aliases: [ "PSC" ] }
+  - { slug: "canada-school-of-public-service",      canonical_name: "Canada School of Public Service", kind: "agency", aliases: [ "CSPS" ] }
+  - { slug: "office-of-the-auditor-general-canada", canonical_name: "Office of the Auditor General of Canada", kind: "agency", aliases: [ "OAG", "Auditor General of Canada" ] }
+
+  # --- Economic / fiscal ---
+  - { slug: "canada-revenue-agency",                                  canonical_name: "Canada Revenue Agency", kind: "agency", aliases: [ "CRA" ] }
+  - { slug: "innovation-science-and-economic-development-canada",     canonical_name: "Innovation, Science and Economic Development Canada", kind: "department", aliases: [ "ISED", "Industry Canada" ] }
+  - { slug: "employment-and-social-development-canada",               canonical_name: "Employment and Social Development Canada", kind: "department", aliases: [ "ESDC", "HRSDC", "Human Resources and Skills Development Canada", "Service Canada" ] }
+  - { slug: "public-services-and-procurement-canada",                 canonical_name: "Public Services and Procurement Canada", kind: "department", aliases: [ "PSPC", "Public Works and Government Services Canada", "PWGSC" ] }
+  - { slug: "statistics-canada",                                      canonical_name: "Statistics Canada", kind: "agency", aliases: [ "StatCan" ] }
+  - { slug: "office-of-the-superintendent-of-financial-institutions", canonical_name: "Office of the Superintendent of Financial Institutions", kind: "agency", aliases: [ "OSFI" ] }
+  - { slug: "fintrac",                                                canonical_name: "Financial Transactions and Reports Analysis Centre of Canada", kind: "agency", aliases: [ "FINTRAC" ] }
+
+  # --- Health / social ---
+  - { slug: "health-canada",                                  canonical_name: "Health Canada", kind: "department", aliases: [ "HC" ] }
+  - { slug: "public-health-agency-of-canada",                 canonical_name: "Public Health Agency of Canada", kind: "agency", aliases: [ "PHAC" ] }
+  - { slug: "canadian-food-inspection-agency",                canonical_name: "Canadian Food Inspection Agency", kind: "agency", aliases: [ "CFIA" ] }
+  - { slug: "veterans-affairs-canada",                        canonical_name: "Veterans Affairs Canada", kind: "department", aliases: [ "VAC" ] }
+  - { slug: "indigenous-services-canada",                     canonical_name: "Indigenous Services Canada", kind: "department", aliases: [ "ISC" ] }
+  - { slug: "crown-indigenous-relations-and-northern-affairs", canonical_name: "Crown-Indigenous Relations and Northern Affairs Canada", kind: "department", aliases: [ "CIRNAC" ] }
+
+  # --- Justice / security / defence ---
+  - { slug: "department-of-justice",            canonical_name: "Department of Justice Canada", kind: "department", aliases: [ "Justice Canada", "DOJ" ] }
+  - { slug: "public-safety-canada",             canonical_name: "Public Safety Canada", kind: "department", aliases: [ "PS Canada" ] }
+  - { slug: "royal-canadian-mounted-police",    canonical_name: "Royal Canadian Mounted Police", kind: "agency", aliases: [ "RCMP" ] }
+  - { slug: "canada-border-services-agency",    canonical_name: "Canada Border Services Agency", kind: "agency", aliases: [ "CBSA" ] }
+  - { slug: "correctional-service-canada",      canonical_name: "Correctional Service Canada", kind: "agency", aliases: [ "CSC" ] }
+  - { slug: "parole-board-of-canada",           canonical_name: "Parole Board of Canada", kind: "agency", aliases: [ "PBC" ] }
+  - { slug: "department-of-national-defence",   canonical_name: "Department of National Defence", kind: "department", aliases: [ "DND", "National Defence", "Canadian Armed Forces", "CAF" ] }
+  - { slug: "canadian-security-intelligence-service", canonical_name: "Canadian Security Intelligence Service", kind: "agency", aliases: [ "CSIS" ] }
+  - { slug: "communications-security-establishment",  canonical_name: "Communications Security Establishment", kind: "agency", aliases: [ "CSE" ] }
+
+  # --- Environment / resources ---
+  - { slug: "environment-and-climate-change-canada", canonical_name: "Environment and Climate Change Canada", kind: "department", aliases: [ "ECCC", "Environment Canada" ] }
+  - { slug: "natural-resources-canada",              canonical_name: "Natural Resources Canada", kind: "department", aliases: [ "NRCan" ] }
+  - { slug: "fisheries-and-oceans-canada",           canonical_name: "Fisheries and Oceans Canada", kind: "department", aliases: [ "DFO" ] }
+  - { slug: "parks-canada",                          canonical_name: "Parks Canada", kind: "agency" }
+  - { slug: "agriculture-and-agri-food-canada",      canonical_name: "Agriculture and Agri-Food Canada", kind: "department", aliases: [ "AAFC" ] }
+  - { slug: "canadian-nuclear-safety-commission",    canonical_name: "Canadian Nuclear Safety Commission", kind: "agency", aliases: [ "CNSC" ] }
+
+  # --- Transport / infrastructure ---
+  - { slug: "transport-canada",                            canonical_name: "Transport Canada", kind: "department", aliases: [ "TC" ] }
+  - { slug: "infrastructure-canada",                       canonical_name: "Infrastructure Canada", kind: "department", aliases: [ "INFC" ] }
+  - { slug: "canadian-air-transport-security-authority",   canonical_name: "Canadian Air Transport Security Authority", kind: "agency", aliases: [ "CATSA" ] }
+
+  # --- Foreign / immigration ---
+  - { slug: "global-affairs-canada",                     canonical_name: "Global Affairs Canada", kind: "department", aliases: [ "GAC", "Foreign Affairs and International Trade Canada", "DFAIT" ] }
+  - { slug: "immigration-refugees-and-citizenship-canada", canonical_name: "Immigration, Refugees and Citizenship Canada", kind: "department", aliases: [ "IRCC", "CIC", "Citizenship and Immigration Canada" ] }
+
+  # --- Heritage / culture / research ---
+  - { slug: "canadian-heritage",            canonical_name: "Canadian Heritage", kind: "department", aliases: [ "PCH", "Department of Canadian Heritage" ] }
+  - { slug: "library-and-archives-canada",  canonical_name: "Library and Archives Canada", kind: "agency", aliases: [ "LAC" ] }
+  - { slug: "national-research-council",    canonical_name: "National Research Council Canada", kind: "agency", aliases: [ "NRC" ] }
+  - { slug: "canadian-space-agency",        canonical_name: "Canadian Space Agency", kind: "agency", aliases: [ "CSA" ] }
+  - { slug: "canada-council-for-the-arts",  canonical_name: "Canada Council for the Arts", kind: "crown_corp" }
+  - { slug: "telefilm-canada",              canonical_name: "Telefilm Canada", kind: "crown_corp" }
+  - { slug: "national-film-board",          canonical_name: "National Film Board of Canada", kind: "crown_corp", aliases: [ "NFB" ] }
+  - { slug: "cbc-radio-canada",             canonical_name: "Canadian Broadcasting Corporation", kind: "crown_corp", aliases: [ "CBC", "CBC/Radio-Canada", "Radio-Canada" ] }
+
+  # --- Crown corporations (commercial) ---
+  - { slug: "canada-mortgage-and-housing-corporation", canonical_name: "Canada Mortgage and Housing Corporation", kind: "crown_corp", aliases: [ "CMHC" ] }
+  - { slug: "export-development-canada",                canonical_name: "Export Development Canada", kind: "crown_corp", aliases: [ "EDC (federal)" ] } # disambiguate from Toronto's Economic Development & Culture
+  - { slug: "business-development-bank-of-canada",      canonical_name: "Business Development Bank of Canada", kind: "crown_corp", aliases: [ "BDC" ] }
+  - { slug: "canada-post-corporation",                  canonical_name: "Canada Post Corporation", kind: "crown_corp", aliases: [ "Canada Post" ] }
+  - { slug: "via-rail-canada",                          canonical_name: "VIA Rail Canada", kind: "crown_corp", aliases: [ "Via Rail" ] }
+  - { slug: "canada-infrastructure-bank",               canonical_name: "Canada Infrastructure Bank", kind: "crown_corp", aliases: [ "CIB" ] }
+
+  # --- Officers of Parliament / Independent ---
+  - { slug: "elections-canada",                         canonical_name: "Office of the Chief Electoral Officer", kind: "agency", aliases: [ "Elections Canada" ] }
+  - { slug: "office-of-the-privacy-commissioner",       canonical_name: "Office of the Privacy Commissioner of Canada", kind: "agency", aliases: [ "OPC", "Privacy Commissioner" ] }
+  - { slug: "office-of-the-information-commissioner",   canonical_name: "Office of the Information Commissioner of Canada", kind: "agency", aliases: [ "OIC" ] }
+  - { slug: "commissioner-of-official-languages",       canonical_name: "Office of the Commissioner of Official Languages", kind: "agency", aliases: [ "OCOL" ] }

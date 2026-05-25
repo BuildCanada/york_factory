@@ -8,13 +8,20 @@ namespace :kpis do
     ActiveRecord::Base.transaction do
       seed_toronto_jurisdiction
       units_seeded = seed_units(seed_dir.join("units.yml"))
-      orgs_seeded, aliases_seeded = seed_toronto_organizations(seed_dir.join("toronto_organizations.yml"))
+      tor_orgs, tor_aliases = seed_organizations_for(
+        jurisdiction_code: "TOR-ON",
+        path: seed_dir.join("toronto_organizations.yml")
+      )
+      fed_orgs, fed_aliases = seed_organizations_for(
+        jurisdiction_code: "CA",
+        path: seed_dir.join("federal_organizations.yml")
+      )
       lineages_seeded = seed_toronto_organization_lineages(seed_dir.join("toronto_organization_lineages.yml"))
 
       puts "Seeded:"
       puts "  units:                  #{units_seeded}"
-      puts "  organizations:          #{orgs_seeded}"
-      puts "  organization_aliases:   #{aliases_seeded}"
+      puts "  toronto organizations:  #{tor_orgs}  (aliases: #{tor_aliases})"
+      puts "  federal organizations:  #{fed_orgs}  (aliases: #{fed_aliases})"
       puts "  organization_lineages:  #{lineages_seeded}"
     end
   end
@@ -227,15 +234,16 @@ namespace :kpis do
     count
   end
 
-  def seed_toronto_organizations(yaml_path)
-    data = YAML.safe_load_file(yaml_path, permitted_classes: [ Symbol ], aliases: true)
-    toronto = Warehouse::Jurisdiction.find_by!(slug: "toronto")
+  def seed_organizations_for(jurisdiction_code:, path:)
+    return [ 0, 0 ] unless File.exist?(path)
+    data = YAML.safe_load_file(path, permitted_classes: [ Symbol ], aliases: true)
+    jurisdiction = Warehouse::Jurisdiction.find_by!(code: jurisdiction_code)
     org_count = 0
     alias_count = 0
 
     data.fetch("organizations").each do |row|
       org = Warehouse::Organization.find_or_initialize_by(
-        jurisdiction_id: toronto.id,
+        jurisdiction_id: jurisdiction.id,
         slug: row.fetch("slug")
       )
       org.canonical_name = row.fetch("canonical_name")
@@ -252,7 +260,6 @@ namespace :kpis do
         alias_count += 1
       end
 
-      # Also register the canonical name as an alias for lookup.
       unless org.organization_aliases.exists?(alias_name: org.canonical_name)
         org.organization_aliases.create!(alias_name: org.canonical_name)
         alias_count += 1

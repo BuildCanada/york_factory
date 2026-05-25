@@ -91,6 +91,12 @@ Rails.application.routes.draw do
     get "ingestions", to: "dashboard#ingestions"
     get "lineage_review", to: "dashboard#lineage_review"
 
+    namespace :kpis do
+      resources :agent_runs, only: [ :index, :show ]
+      resources :measures, only: [ :index, :show ]
+      resources :citations, only: [ :index, :show ]
+    end
+
     resources :posts, only: full do
       post :retranslate, on: :member
     end

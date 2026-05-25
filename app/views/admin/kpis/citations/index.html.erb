@@ -1,0 +1,45 @@
+<div class="page-header">
+  <h1>Citations</h1>
+  <% if params[:measure_id].present? %>
+    <span class="text-muted">Measure #<%= params[:measure_id] %> · <%= link_to "back to measure", admin_kpis_measure_path(params[:measure_id]) %></span>
+  <% elsif params[:agent_run_id].present? %>
+    <span class="text-muted">Agent run #<%= params[:agent_run_id] %> · <%= link_to "back to run", admin_kpis_agent_run_path(params[:agent_run_id]) %></span>
+  <% end %>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Measure</th>
+      <th>Year</th>
+      <th>Type</th>
+      <th>Period</th>
+      <th>Value</th>
+      <th>Document</th>
+      <th>Run</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @citations.each do |c| %>
+      <tr>
+        <td><%= link_to c.id, admin_kpis_citation_path(c) %></td>
+        <td><%= link_to c.measure&.canonical_name, admin_kpis_measure_path(c.measure_id) %></td>
+        <td><%= c.measurement_year %></td>
+        <td><span class="badge badge-<%= c.value_type == 'actual' ? 'green' : c.value_type == 'target' ? 'blue' : 'yellow' %>"><%= c.value_type %></span></td>
+        <td class="mono"><%= c.period_basis %></td>
+        <td class="mono"><%= c.value_numeric&.then { |n| number_with_delimiter(n) } || c.value_text || "—" %></td>
+        <td><%= c.document_id %></td>
+        <td><%= c.agent_run_id ? link_to(c.agent_run_id, admin_kpis_agent_run_path(c.agent_run_id)) : "—" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @citations.empty? %>
+  <div class="empty">No citations match.</div>
+<% end %>
+
+<% if @pagy.pages > 1 %>
+  <div class="text-muted">Page <%= @pagy.page %> of <%= @pagy.pages %> · <%= @pagy.count %> total</div>
+<% end %>

@@ -1,0 +1,82 @@
+<div class="page-header">
+  <h1>Agent Runs</h1>
+</div>
+
+<h2>By Agent</h2>
+<div class="grid">
+  <% @counts_by_agent.each do |name, count| %>
+    <div class="card">
+      <div class="label"><%= name %></div>
+      <div class="value"><%= number_with_delimiter(count) %></div>
+    </div>
+  <% end %>
+</div>
+
+<h2>By Status</h2>
+<div class="grid">
+  <% @counts_by_status.each do |status, count| %>
+    <div class="card">
+      <div class="label"><%= status.to_s.titleize %></div>
+      <div class="value"><%= number_with_delimiter(count) %></div>
+    </div>
+  <% end %>
+</div>
+
+<%= form_with url: admin_kpis_agent_runs_path, method: :get, local: true, class: "filters" do |f| %>
+  <%= f.select :agent, [["All agents", ""]] + @counts_by_agent.map { |n, _| [n, n] }, { selected: params[:agent] } %>
+  <%= f.select :status, [["All statuses", ""]] + Warehouse::AgentRun::STATUSES.map { |s| [s.titleize, s] }, { selected: params[:status] } %>
+  <%= f.submit "Filter", class: "btn btn-sm" %>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Agent</th>
+      <th>Status</th>
+      <th>Started</th>
+      <th>Duration</th>
+      <th>Triggered By</th>
+      <th>Summary</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @runs.each do |run| %>
+      <tr>
+        <td><%= link_to run.id, admin_kpis_agent_run_path(run) %></td>
+        <td class="mono"><%= run.agent_name %></td>
+        <td>
+          <% status_class = case run.status
+             when "completed" then "green"
+             when "running"   then "yellow"
+             when "failed"    then "red"
+             else "blue"
+             end %>
+          <span class="badge badge-<%= status_class %>"><%= run.status %></span>
+        </td>
+        <td><%= time_ago_in_words(run.started_at) %> ago</td>
+        <td>
+          <% if run.finished_at %>
+            <%= distance_of_time_in_words(run.started_at, run.finished_at) %>
+          <% else %>
+            <span class="text-muted">—</span>
+          <% end %>
+        </td>
+        <td class="mono"><%= run.triggered_by || "—" %></td>
+        <td>
+          <% if run.summary.is_a?(Hash) %>
+            <%= run.summary.slice("citations_inserted", "measures_created", "documents", "inserted").compact.map { |k, v| "#{k}: #{v}" }.join(" · ") %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @runs.empty? %>
+  <div class="empty">No agent runs match.</div>
+<% end %>
+
+<% if @pagy.pages > 1 %>
+  <div class="text-muted">Page <%= @pagy.page %> of <%= @pagy.pages %> · <%= @pagy.count %> total</div>
+<% end %>

@@ -5,6 +5,8 @@ class Warehouse::MeasureCitation < Warehouse::Record
   belongs_to :measure
   belongs_to :document, class_name: "Warehouse::KpiDocument"
 
+  has_object :period_basis_classifier
+
   validates :measurement_year, presence: true
   validates :value_type, presence: true, inclusion: { in: VALUE_TYPES }
   validates :period_basis, presence: true, inclusion: { in: PERIOD_BASES }

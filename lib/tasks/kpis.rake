@@ -72,6 +72,92 @@ namespace :kpis do
     puts "Then run: bin/rails kpis:apply_period_basis[#{csv_path}]"
   end
 
+  desc "Classify period_basis on candidate citations using an LLM. Writes a CSV audit trail."
+  task :classify_period_basis, [ :audit_csv_path ] => :environment do |_, args|
+    require "csv"
+    audit_path = args[:audit_csv_path] || Rails.root.join("tmp/period_basis_classifications_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv").to_s
+
+    # Same candidate set as the export task. Excludes rows already labeled (non-default).
+    candidates = Warehouse::MeasureCitation
+      .where("notes ~* ?", '\m(ytd|year-to-date|as of|cumulative|partial|q[1-3])\M')
+      .where(period_basis: "full_year")
+      .includes(:measure)
+      .order(:id)
+
+    total = candidates.count
+    if total.zero?
+      puts "No candidate citations to classify."
+      next
+    end
+
+    puts "Classifying #{total} citations with #{Warehouse::MeasureCitation::PeriodBasisClassifier::LLM_MODEL}..."
+
+    audited = []
+    updated = 0
+    skipped_low_confidence = 0
+
+    Warehouse::MeasureCitation::PeriodBasisClassifier.classify_batch(candidates.to_a) do |citation, result|
+      audited << {
+        id: citation.id,
+        measurement_year: citation.measurement_year,
+        value_type: citation.value_type,
+        notes: citation.notes,
+        proposed_label: result.period_basis,
+        confidence: result.confidence,
+        reasoning: result.reasoning,
+        applied: false
+      }
+
+      if result.period_basis.nil? || result.confidence < Warehouse::MeasureCitation::PeriodBasisClassifier::AUTO_ACCEPT_CONFIDENCE
+        skipped_low_confidence += 1
+        next
+      end
+
+      next if result.period_basis == citation.period_basis
+
+      citation.update_columns(period_basis: result.period_basis)
+      audited.last[:applied] = true
+      updated += 1
+    end
+
+    CSV.open(audit_path, "w") do |csv|
+      csv << %w[id measurement_year value_type notes proposed_label confidence reasoning applied]
+      audited.each { |r| csv << r.values_at(:id, :measurement_year, :value_type, :notes, :proposed_label, :confidence, :reasoning, :applied) }
+    end
+
+    puts "Updated:                #{updated}"
+    puts "Skipped (low confidence or no label): #{skipped_low_confidence}"
+    puts "Audit CSV:              #{audit_path}"
+    puts "Review skipped rows in the CSV; re-apply by editing applied=true and running kpis:apply_period_basis_from_audit"
+  end
+
+  desc "Apply period_basis labels from an audit CSV (rows with applied=true and a proposed_label)"
+  task :apply_period_basis_from_audit, [ :csv_path ] => :environment do |_, args|
+    require "csv"
+    csv_path = args[:csv_path] || abort("Usage: bin/rails kpis:apply_period_basis_from_audit[/path/to/audit.csv]")
+    abort "File not found: #{csv_path}" unless File.exist?(csv_path)
+
+    valid = Warehouse::MeasureCitation::PERIOD_BASES
+    updated = 0
+    invalid = []
+
+    ActiveRecord::Base.transaction do
+      CSV.foreach(csv_path, headers: true) do |row|
+        next unless ActiveModel::Type::Boolean.new.cast(row["applied"])
+        label = row["proposed_label"]
+        unless valid.include?(label)
+          invalid << [ row["id"], label ]
+          next
+        end
+        Warehouse::MeasureCitation.where(id: row["id"].to_i).update_all(period_basis: label)
+        updated += 1
+      end
+      raise ActiveRecord::Rollback, "Invalid labels: #{invalid.inspect}" if invalid.any?
+    end
+
+    puts "Updated #{updated} citations from audit CSV"
+  end
+
   desc "Apply period_basis labels from a labeled CSV"
   task :apply_period_basis, [ :csv_path ] => :environment do |_, args|
     require "csv"

@@ -84,8 +84,8 @@ Steps inside the loader, in order:
 
 Run from a Rake task: `bin/rails kpis:import_toronto_v1[/path/to/scrape.db]`. Mark the resulting `RawIngestion` row with `source.name='toronto-budgets-v1-snapshot'` so it's clearly a one-shot, not a recurring ingestion.
 
-### Phase 3.5 — Hand-label `period_basis`
-Same as v2 plan, but the candidate query runs against Postgres:
+### Phase 3.5 — LLM-classify `period_basis` (no human in the loop)
+The candidate set (same query the v2 plan proposed, now in Postgres):
 
 ```sql
 SELECT id, measurement_year, value_type, document_id, value_numeric, notes
@@ -93,7 +93,20 @@ FROM warehouse.measure_citations
 WHERE notes ~* '\m(ytd|year-to-date|as of|cumulative|partial|q[1-3])\M';
 ```
 
-Export to CSV, hand-label (~250 rows, ~2h), re-import via a small Rake task that updates by id. Anything not in the candidate set keeps `period_basis='full_year'`. Spot-check 20 random rows.
+Classifier is `Warehouse::MeasureCitation::PeriodBasisClassifier` (Claude Haiku 4.5 via `ruby_llm`, the same model `EntityResolver` uses). It batches 10 rows per LLM call, classifies into one of five labels, returns `{period_basis, confidence, reasoning}` per row.
+
+```bash
+bin/rails kpis:classify_period_basis
+# → auto-applies labels at confidence >= 0.8; writes an audit CSV with every
+#   row's proposal + reasoning + whether it was applied
+```
+
+For 183 candidates this is ~19 API calls (~$0.01 of Haiku). Real run yielded:
+- 132 auto-applied (103 ytd_q3, 25 as_of_date, 3 ytd_q1, 1 ytd_q2)
+- 35 confirmed as full_year (no change needed)
+- 16 below 0.8 confidence — surface in the audit CSV for spot-check via `kpis:apply_period_basis_from_audit[/path/to/audit.csv]` after editing `applied=true`.
+
+The human-labeling CSV pair (`kpis:export_period_basis_candidates` / `kpis:apply_period_basis`) stays as a fallback for when the LLM is unavailable or for deliberate human override.
 
 ### Phase 4 — Verify
 - `Warehouse::Measure.count == sqlite3('SELECT COUNT(*) FROM kpis')` — 1,206.
@@ -127,7 +140,7 @@ Serializers in the existing `app/serializers/api/v1` style. Public (no auth), CO
 | Organization lineage rows | `db/seeds/kpis/toronto_organization_lineages.yml` | ~20m |
 | Measure lineage rows | `db/seeds/kpis/toronto_measure_lineages.yml` | ~2h |
 | PDF `published_at` extraction + audit | Rake task `kpis:backfill_published_at` | ~1h |
-| `period_basis` hand-labels | CSV → Rake task `kpis:apply_period_basis[/path/to/csv]` | ~2h |
+| `period_basis` classification | LLM-driven via `kpis:classify_period_basis` (Haiku 4.5) | ~5min compute, ~5min review of below-threshold rows |
 
 Total ~7-8h human + 1-2h scripts (same as v2). The work moves into checked-in YAML fixtures so it's reviewable and replayable, rather than living in a one-off migration.
 

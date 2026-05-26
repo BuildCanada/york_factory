@@ -60,6 +60,11 @@ Rails.application.routes.draw do
           resources :facts, only: [ :index ]
           resources :citations, only: [ :index ]
         end
+        resources :facts, only: [ :index ]
+        resources :citations, only: [ :index ]
+        resources :documents, only: [ :index, :show ]
+        resources :organization_lineages, only: [ :index ]
+        resources :measure_lineages, only: [ :index ]
         resources :agent_runs, only: [ :index, :show ]
 
         namespace :admin do

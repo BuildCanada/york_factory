@@ -2,13 +2,33 @@ module Api
   module V1
     module Kpis
       class FactsController < BaseController
+        # Nested:    GET /api/v1/kpis/measures/:measure_id/facts
+        # Top-level: GET /api/v1/kpis/facts (filterable, cross-measure)
         def index
-          measure = ::Warehouse::Measure.find(params[:measure_id])
-          scope = measure.facts.order(measurement_year: :desc, value_type: :asc)
+          scope = ::Warehouse::MeasureFact.all
+
+          if params[:measure_id].present?
+            scope = scope.where(measure_id: params[:measure_id])
+          end
+
+          if params[:jurisdiction_slug].present? || params[:organization_slug].present?
+            org_ids = if params[:organization_slug].present?
+              [ ::Warehouse::Organization.find_by!(slug: params[:organization_slug]).id ]
+            else
+              jur = ::Warehouse::Jurisdiction.find_by!(slug: params[:jurisdiction_slug])
+              ::Warehouse::Organization.where(jurisdiction_id: jur.id).pluck(:id)
+            end
+            measure_ids = ::Warehouse::Measure.where(organization_id: org_ids).pluck(:id)
+            scope = scope.where(measure_id: measure_ids)
+          end
+
           scope = scope.where(measurement_year: params[:year]) if params[:year].present?
           scope = scope.where(value_type: params[:value_type]) if params[:value_type].present?
+          scope = scope.where(period_basis: params[:period_basis]) if params[:period_basis].present?
 
+          scope = scope.order(measurement_year: :desc, measure_id: :asc, value_type: :asc)
           pagy, facts = pagy(scope, limit: (params[:per_page] || 100).to_i)
+
           render json: {
             data: facts.map { |f| serialize(f) },
             meta: pagy_metadata(pagy)

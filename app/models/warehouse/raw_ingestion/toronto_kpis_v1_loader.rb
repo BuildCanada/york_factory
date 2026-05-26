@@ -90,8 +90,8 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
     doc_id_lookup = build_v1_to_v2_doc_lookup(db)
     measure_unit = Warehouse::Measure
       .joins(:unit)
-      .pluck(:id, "warehouse.units.symbol", "warehouse.units.scale")
-      .each_with_object({}) { |(id, sym, scale), h| h[id] = [ sym, scale.to_f ] }
+      .pluck(:id, "warehouse.units.symbol")
+      .each_with_object({}) { |(id, sym), h| h[id] = sym }
     inserted = 0
     cleanups = 0
     batch = []
@@ -103,11 +103,15 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
       document_id = doc_id_lookup[row["document_id"]]
       next unless document_id
 
-      symbol, scale = measure_unit[measure_id]
+      symbol = measure_unit[measure_id]
       raw_value = row["value_numeric"]&.to_f
-      cleaned_raw, was_cleaned = cleanup_v1_percentage_bug(raw_value, symbol)
+      # Convention: value_numeric is stored in DISPLAY units (the unit's own
+      # natural notation). unit.scale converts display → base_unit when downstream
+      # code needs cross-unit math. Don't pre-multiply by scale here — the v1
+      # SQLite already holds display-form values.
+      cleaned_value, was_cleaned = cleanup_v1_percentage_bug(raw_value, symbol)
       cleanups += 1 if was_cleaned
-      value_numeric = cleaned_raw && cleaned_raw * (scale || 1.0)
+      value_numeric = cleaned_value
 
       notes = row["notes"]
       notes = [ notes, "[v1-cleanup: x100 for fractional percentage]" ].compact.join(" ") if was_cleaned

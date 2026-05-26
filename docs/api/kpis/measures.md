@@ -89,13 +89,24 @@ Show one measure with description, lineages, and full unit detail.
 | `slug` | string | Parameterized from canonical_name. Unique per (organization, slug). |
 | `canonical_name` | string | The measure name as published. |
 | `organization` | object \| null | NULL for cross-agency measures. |
-| `unit` | object | Unit metadata — `symbol` is what's typically displayed; `scale` and `base_unit` give the SI-style normalization for math (e.g., `$B` has `scale=1e9` `base_unit=dollars`). |
+| `unit` | object | Unit metadata. `value_numeric` on citations/facts is in **display** units (the unit's natural notation); `scale` and `base_unit` give the conversion to base for cross-unit math. See "Unit math" below. |
 | `service_category` | string \| null | Free-text grouping from the source doc — Core Responsibility (federal), service area (provincial/municipal), etc. |
 | `first_seen_year` / `last_seen_year` | integer \| null | Range hint of where this measure has citations. |
 | `description` | string \| null | (Show only.) Long-form definition from the source. |
 
 ## Unit math
 
-To convert `value_numeric` into its `base_unit` form, multiply by `unit.scale`. For example, a measure with `unit.symbol = "$B"` and a citation `value_numeric: 65.3` represents $65.3 billion — i.e., `65.3 * 1_000_000_000 = $65,300,000,000` in base dollars. Most consumers should just display the number with the unit symbol; the normalization exists for cross-unit math (e.g., comparing `$M` and `$B` values).
+**Convention: `value_numeric` is stored in DISPLAY units — the unit's own natural notation.** `unit.scale` is the multiplier you apply when downstream code needs the value in `base_unit` form for cross-unit math.
 
-For `kind: "rate"` units (e.g., `$/sqft`), also use `denominator_unit` + `denominator_scale`.
+| Unit symbol | scale | base_unit | Example `value_numeric` | What it means |
+|---|---|---|---|---|
+| `$B` | `1e9` | `dollars` | `65.3` | $65.3 billion (display) → `65.3 * 1e9` = $65,300,000,000 in dollars |
+| `$M` | `1e6` | `dollars` | `450` | $450 million |
+| `$` | `1.0` | `dollars` | `1234.56` | $1,234.56 |
+| `%` | `0.01` | `ratio` | `90` | 90 percent (display) → `90 * 0.01` = `0.9` as a ratio |
+| `count_thousands` | `1000` | `count` | `2047` | 2,047 thousand items → 2,047,000 |
+| `count` | `1.0` | `count` | `1923000` | 1,923,000 items |
+
+You can render the value directly with the unit symbol (`65.3 $B`, `90%`, `2047 count_thousands`) without normalizing. If you do need to compare across units (e.g., sum a `$M` and a `$B`), multiply each by its `unit.scale` first.
+
+For `kind: "rate"` units (e.g., `$/sqft`, `count per 100km`), also apply `denominator_unit` + `denominator_scale` to normalize the denominator.

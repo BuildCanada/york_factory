@@ -157,6 +157,8 @@ Bulk insert. Top-level `agent_run_id` stamps every row in the batch. Idempotent 
 
 Use `value_text` for qualitative units (`pass/fail`, `text`, `date`). `value_raw_text` is the pre-normalization source text — leave as the exact PDF/HTML cell content.
 
+**`value_numeric` must be in DISPLAY units, not base units.** For a measure with `unit_symbol: "$B"`, send `65.3` (not `65,300,000,000`). For `%`, send `90` (not `0.9`). The `unit.scale` exists so consumers can normalize for cross-unit math, but the canonical stored value is what a human would see on the page.
+
 ### `POST /api/v1/kpis/admin/organization_lineages`
 
 Idempotent on `(predecessor_id, successor_id, transition_year, transition_kind)`.

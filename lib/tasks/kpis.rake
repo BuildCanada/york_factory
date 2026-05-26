@@ -192,6 +192,60 @@ namespace :kpis do
     puts "Updated #{updated} citations"
   end
 
+  desc "Backfill citations stored in BASE_UNIT form back to DISPLAY form. Scoped to a raw_ingestion source name (default: toronto-budgets-v1-snapshot)."
+  task :rescale_to_display, [ :source_name ] => :environment do |_, args|
+    source_name = args[:source_name] || "toronto-budgets-v1-snapshot"
+    source = Warehouse::Source.find_by(name: source_name)
+    abort "Source not found: #{source_name}" if source.nil?
+
+    sql_audit = <<~SQL
+      SELECT u.symbol, u.scale, COUNT(*) AS rows
+      FROM warehouse.measure_citations c
+      JOIN warehouse.measures m       ON m.id = c.measure_id
+      JOIN warehouse.units u          ON u.id = m.unit_id
+      JOIN warehouse.kpi_documents d  ON d.id = c.document_id
+      JOIN warehouse.raw_ingestions ri ON ri.id = d.raw_ingestion_id
+      WHERE ri.source_id = #{source.id}
+        AND u.scale <> 1.0
+        AND c.value_numeric IS NOT NULL
+      GROUP BY u.symbol, u.scale
+      ORDER BY rows DESC
+    SQL
+    puts "About to rescale (divide value_numeric by unit.scale):"
+    total = 0
+    ActiveRecord::Base.connection.exec_query(sql_audit).each do |r|
+      total += r["rows"].to_i
+      puts "  %-22s scale=%-14s rows=%d" % [ r["symbol"], r["scale"], r["rows"] ]
+    end
+    puts "Total rows: #{total}"
+
+    if total.zero?
+      puts "Nothing to do."
+      next
+    end
+
+    sql_update = <<~SQL
+      UPDATE warehouse.measure_citations AS c
+      SET value_numeric = c.value_numeric / u.scale,
+          updated_at = NOW(),
+          notes = CASE
+            WHEN c.notes IS NULL OR c.notes = '' THEN '[rescaled to display units]'
+            ELSE c.notes || ' [rescaled to display units]'
+          END
+      FROM warehouse.measures m, warehouse.units u, warehouse.kpi_documents d, warehouse.raw_ingestions ri
+      WHERE c.measure_id = m.id
+        AND m.unit_id = u.id
+        AND c.document_id = d.id
+        AND d.raw_ingestion_id = ri.id
+        AND ri.source_id = #{source.id}
+        AND u.scale <> 1.0
+        AND c.value_numeric IS NOT NULL
+    SQL
+
+    result = ActiveRecord::Base.connection.execute(sql_update)
+    puts "Rescaled #{result.cmd_tuples} rows."
+  end
+
   desc "Issue a new KPI API token. ARGS: name=<id> [scopes=kpis:read,kpis:write]"
   task issue_token: :environment do
     name = ENV.fetch("name") { abort "Usage: bin/rails kpis:issue_token name=<id> [scopes=kpis:read,kpis:write]" }

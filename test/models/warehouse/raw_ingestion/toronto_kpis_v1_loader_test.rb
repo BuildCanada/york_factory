@@ -46,23 +46,20 @@ class Warehouse::RawIngestion::TorontoKpisV1LoaderTest < ActiveSupport::TestCase
     assert_equal 1, pct.citations.count
   end
 
-  test "v1 fractional percentage bug is cleaned up (only for the % unit)" do
-    counts = @raw.toronto_kpis_v1_loader.load
-    assert_equal 1, counts[:ratio_cleanups]
-
-    # Citation with raw v1 value 0.50 (bugged: fractional instead of percent points)
-    # → cleaned to 50, stored in display form (50, not 0.5).
-    measure = Warehouse::Measure.find_by!(slug: "permits-issued-pct")
-    bugged_citation = measure.citations.find_by!(measurement_year: 2024)
-    assert_in_delta 50.0, bugged_citation.value_numeric, 1e-6
-    assert_includes bugged_citation.notes.to_s, "v1-cleanup"
-  end
-
-  test "value_numeric is stored in DISPLAY units (not scaled to base_unit)" do
+  test "small percentage values pass through unchanged (no auto-x100 'cleanup')" do
     @raw.toronto_kpis_v1_loader.load
 
-    # Fixture has raw count=1234 (display) and raw %=0.5 (bugged → 50 after cleanup).
-    # After load: count stored as 1234 (scale=1.0 no-op), % stored as 50 (display).
+    # Fixture has raw %=0.5 — this represents a real 0.5% measurement (e.g.
+    # security-system downtime), NOT a fractional bug. The loader stores it as-is.
+    measure = Warehouse::Measure.find_by!(slug: "permits-issued-pct")
+    citation = measure.citations.find_by!(measurement_year: 2024)
+    assert_in_delta 0.5, citation.value_numeric, 1e-6
+  end
+
+  test "value_numeric is stored in DISPLAY units exactly as v1 had them" do
+    @raw.toronto_kpis_v1_loader.load
+
+    # count=1234 in v1 → 1234 stored. No transformation.
     count_cit = Warehouse::Measure.find_by!(slug: "permits-issued").citations
       .find_by!(measurement_year: 2024, value_type: "actual")
     assert_in_delta 1234.0, count_cit.value_numeric, 1e-6

@@ -50,7 +50,6 @@ namespace :kpis do
     puts "  documents:      #{counts[:documents]}"
     puts "  measures:       #{counts[:measures]}"
     puts "  citations:      #{counts[:citations]}"
-    puts "  ratio_cleanups: #{counts[:ratio_cleanups]}"
     puts "Imported. RawIngestion #{raw.id} status: #{raw.reload.status}"
   end
 
@@ -244,6 +243,37 @@ namespace :kpis do
 
     result = ActiveRecord::Base.connection.execute(sql_update)
     puts "Rescaled #{result.cmd_tuples} rows."
+  end
+
+  desc "Normalize service_category by stripping trailing parenthetical quality tags from existing measures."
+  task normalize_service_categories: :environment do
+    affected = 0
+    Warehouse::Measure.where.not(service_category: nil).find_each do |m|
+      cleaned = Warehouse::Measure.normalize_service_category(m.service_category)
+      next if cleaned == m.service_category
+      m.update_columns(service_category: cleaned)
+      affected += 1
+    end
+    puts "Normalized #{affected} measures."
+  end
+
+  desc "Strip the audit-noise '[rescaled to display units]' tag from citation notes (run once after kpis:rescale_to_display)."
+  task strip_rescaled_notes: :environment do
+    sql_count = "SELECT COUNT(*) AS n FROM warehouse.measure_citations WHERE notes LIKE '%[rescaled to display units]%'"
+    before = ActiveRecord::Base.connection.exec_query(sql_count).first["n"].to_i
+    puts "Citations with rescaled note: #{before}"
+
+    sql_update = <<~SQL
+      UPDATE warehouse.measure_citations
+      SET notes = NULLIF(
+            TRIM(REGEXP_REPLACE(notes, '\\s*\\[rescaled to display units\\]', '', 'g')),
+            ''
+          ),
+          updated_at = NOW()
+      WHERE notes LIKE '%[rescaled to display units]%'
+    SQL
+    result = ActiveRecord::Base.connection.execute(sql_update)
+    puts "Stripped tag from #{result.cmd_tuples} citations."
   end
 
   desc "Issue a new KPI API token. ARGS: name=<id> [scopes=kpis:read,kpis:write]"

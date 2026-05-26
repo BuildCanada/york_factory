@@ -16,14 +16,14 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
   def load
     db = SQLite3::Database.new(raw_ingestion.raw_file_path, readonly: true, results_as_hash: true)
     toronto = Warehouse::Jurisdiction.find_by!(slug: "toronto")
-    counts = { documents: 0, measures: 0, citations: 0, ratio_cleanups: 0 }
+    counts = { documents: 0, measures: 0, citations: 0 }
 
     ActiveRecord::Base.transaction do
       counts[:documents] = import_documents(db, toronto)
       slug_to_unit_id = Warehouse::Unit.pluck(:symbol, :id).to_h
       v1_kpi_to_measure_id = import_measures(db, toronto, slug_to_unit_id)
       counts[:measures] = v1_kpi_to_measure_id.size
-      counts[:citations], counts[:ratio_cleanups] = import_citations(db, v1_kpi_to_measure_id)
+      counts[:citations], _ = import_citations(db, v1_kpi_to_measure_id)
     end
 
     raw_ingestion.update!(status: "complete")
@@ -88,12 +88,7 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
 
   def import_citations(db, v1_kpi_to_measure_id)
     doc_id_lookup = build_v1_to_v2_doc_lookup(db)
-    measure_unit = Warehouse::Measure
-      .joins(:unit)
-      .pluck(:id, "warehouse.units.symbol")
-      .each_with_object({}) { |(id, sym), h| h[id] = sym }
     inserted = 0
-    cleanups = 0
     batch = []
     batch_size = 1_000
 
@@ -103,30 +98,24 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
       document_id = doc_id_lookup[row["document_id"]]
       next unless document_id
 
-      symbol = measure_unit[measure_id]
-      raw_value = row["value_numeric"]&.to_f
       # Convention: value_numeric is stored in DISPLAY units (the unit's own
       # natural notation). unit.scale converts display → base_unit when downstream
-      # code needs cross-unit math. Don't pre-multiply by scale here — the v1
-      # SQLite already holds display-form values.
-      cleaned_value, was_cleaned = cleanup_v1_percentage_bug(raw_value, symbol)
-      cleanups += 1 if was_cleaned
-      value_numeric = cleaned_value
-
-      notes = row["notes"]
-      notes = [ notes, "[v1-cleanup: x100 for fractional percentage]" ].compact.join(" ") if was_cleaned
-
+      # code needs cross-unit math. v1 already holds display-form values, so just
+      # pass them through. No auto-conversion: the v2 plan's
+      # "fractional means bug, multiply by 100" heuristic mis-fires on legitimate
+      # small percentages (e.g. 0.6% biogas-to-RNG, 0.9% security downtime) and
+      # was reverted after the first dataset audit.
       batch << {
         measure_id: measure_id,
         measurement_year: row["measurement_year"],
         value_type: row["value_type"],
-        value_numeric: value_numeric,
+        value_numeric: row["value_numeric"]&.to_f,
         value_text: row["value_text"],
         value_raw_text: row["value_text"],
         period_basis: "full_year",
         document_id: document_id,
         page_number: row["page_number"],
-        notes: notes,
+        notes: row["notes"],
         created_at: Time.current,
         updated_at: Time.current
       }
@@ -138,7 +127,7 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
     end
 
     inserted += insert_citation_batch(batch) if batch.any?
-    [ inserted, cleanups ]
+    [ inserted, 0 ]
   end
 
   def insert_citation_batch(batch)
@@ -146,17 +135,6 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
       batch,
       unique_by: :idx_measure_citations_unique
     ).rows.length
-  end
-
-  # The v1 percentage-bug fix: a raw value of 0.05 in the "%" unit means someone
-  # entered the fraction (0.05 = 5%) instead of the percentage (5 = 5%). After
-  # scale=0.01 normalization the bug would be 100x smaller than truth. Detect on
-  # the RAW (pre-scale) value and only for the literal "%" unit.
-  def cleanup_v1_percentage_bug(raw_value, unit_symbol)
-    return [ raw_value, false ] if raw_value.nil?
-    return [ raw_value, false ] unless unit_symbol == "%"
-    return [ raw_value, false ] unless raw_value > 0 && raw_value < 1
-    [ raw_value * 100, true ]
   end
 
   def build_alias_map(jurisdiction)

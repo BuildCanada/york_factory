@@ -3,12 +3,27 @@ module Api
     module Kpis
       module Admin
         class ExtractedObservationsController < BaseController
+          # Fields a reviewer may correct when approving an extraction. Excludes
+          # identity (id), timestamps, provenance (agent_run_id), and the
+          # workflow-managed review_status/needs_review columns.
+          EDITABLE_FIELDS = %i[
+            measure_id measurement_year value_type value_numeric value_text value_raw
+            period_basis document_id source_page notes
+            reporting_organization_id responsible_organization_id observed_organization_id
+            reporting_organization_raw responsible_organization_raw observed_organization_raw
+            geo_boundary_id jurisdiction_id
+            geography_name_raw jurisdiction_name_raw metric_name_raw period_label_raw unit_raw
+            period_start period_end period_type
+            source_section source_table source_chart evidence_quote extraction_confidence
+            metric_version_id composition_id component_id
+          ].freeze
+
           # POST /api/v1/kpis/admin/extracted_observations/:id/approve
           # Body: { reviewer: "alice", notes?, new_value?: { ... }, status?, vintage_date? }
           def approve
             observation = ::Warehouse::ExtractedObservation.find(params[:id])
             reviewer = params.fetch(:reviewer)
-            new_value = params[:new_value].present? ? params.require(:new_value).permit!.to_h : nil
+            new_value = params[:new_value].present? ? params.require(:new_value).permit(*EDITABLE_FIELDS).to_h : nil
             vintage_date = params[:vintage_date].present? ? Date.parse(params[:vintage_date]) : nil
 
             observation.approve!(

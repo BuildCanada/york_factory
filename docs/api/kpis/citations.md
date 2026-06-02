@@ -11,7 +11,7 @@ For the resolved canonical-value view, see [facts.md](./facts.md) instead.
 |---|---|
 | `measure_id` | One measure. |
 | `jurisdiction_slug` | All citations under one jurisdiction. |
-| `organization_slug` | All citations under one org. |
+| `organization_slug` | All citations under one org. Pair with `jurisdiction_slug` when organization slugs are not globally unique. |
 | `document_id` | Every citation from one source doc. |
 | `year` | One `measurement_year`. |
 | `value_type` | `actual`, `target`, `projected`, `plan`, `budget`. |
@@ -35,8 +35,8 @@ Same response shape, scoped to one measure. Use for a per-measure audit drill-do
       "period_basis": "full_year",
       "value_numeric": 62.0,
       "value_text": null,
-      "value_raw_text": "$62 billion",
-      "page_number": null,
+      "value_raw": "$62 billion",
+      "source_page": null,
       "notes": "Target date: March 2025",
       "agent_run_id": 2,
       "document": {
@@ -63,8 +63,8 @@ Same response shape, scoped to one measure. Use for a per-measure audit drill-do
 | `period_basis` | string | `full_year` (default) or one of the YTD/snapshot variants. |
 | `value_numeric` | float \| null | Numeric in the measure's unit (e.g., `65.3` for `$B`). |
 | `value_text` | string \| null | Qualitative value (for `pass/fail`, `text`, `date` units). |
-| `value_raw_text` | string \| null | Original PDF/HTML cell text before any normalization (audit trail). |
-| `page_number` | integer \| null | Physical PDF page index (1-based) where the value was found. NULL for HTML sources. |
+| `value_raw` | string \| null | Original PDF/HTML cell text before any normalization (audit trail). |
+| `source_page` | integer \| null | Physical PDF page index (1-based) where the value was found. NULL for HTML sources. |
 | `notes` | string \| null | Free-text caveats, methodology footnotes, etc. |
 | `agent_run_id` | integer \| null | The `agent_runs` row that produced this citation. NULL for bulk-imported pre-agent data. |
 | `document` | object | Source doc summary. |

@@ -6,12 +6,18 @@ module Api
           scope = ::Warehouse::OrganizationLineage.includes(:predecessor, :successor)
 
           if params[:predecessor_slug].present?
-            org = ::Warehouse::Organization.find_by!(slug: params[:predecessor_slug])
+            org = resolve_organization_by_slug!(
+              params[:predecessor_slug],
+              jurisdiction_slug: params[:jurisdiction_slug]
+            )
             scope = scope.where(predecessor_id: org.id)
           end
 
           if params[:successor_slug].present?
-            org = ::Warehouse::Organization.find_by!(slug: params[:successor_slug])
+            org = resolve_organization_by_slug!(
+              params[:successor_slug],
+              jurisdiction_slug: params[:jurisdiction_slug]
+            )
             scope = scope.where(successor_id: org.id)
           end
 

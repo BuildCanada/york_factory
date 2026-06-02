@@ -27,7 +27,7 @@ Every endpoint is idempotent on a natural key:
 |---|---|
 | `/organizations` | `(jurisdiction_slug, slug)` |
 | `/documents` | `doc_url` |
-| `/measures` | `(organization_slug, slug)` |
+| `/measures` | `(jurisdiction_slug, organization_slug, slug)` for org-scoped measures; bare `organization_slug` is accepted only when unambiguous. |
 | `/citations` | `(measure_id, measurement_year, value_type, period_basis, document_id)` |
 | `/organization_lineages` | `(predecessor_id, successor_id, transition_year, transition_kind)` |
 | `/measure_lineages` | same |
@@ -85,6 +85,7 @@ Idempotent on `doc_url`.
   "document": {
     "jurisdiction_slug": "ca",
     "organization_slug": "canadian-heritage",
+    "jurisdiction_slug": "ca",
     "fiscal_year": 2025,
     "doc_url": "https://.../report.html",
     "doc_title": "...",
@@ -104,7 +105,7 @@ Idempotent on `doc_url`.
 
 ### `POST /api/v1/kpis/admin/measures`
 
-Idempotent on `(organization_slug, slug)`.
+Idempotent on `(organization_slug, slug)`, with `jurisdiction_slug` used to resolve the organization when slugs are reused across jurisdictions.
 
 ```json
 {
@@ -141,9 +142,9 @@ Bulk insert. Top-level `agent_run_id` stamps every row in the batch. Idempotent 
       "period_basis": "full_year",
       "value_numeric": 2.2,
       "value_text": null,
-      "value_raw_text": "$2.2 billion",
+      "value_raw": "$2.2 billion",
       "document_id": 1234,
-      "page_number": 5,
+      "source_page": 5,
       "notes": "Methodology change: includes streaming."
     }
   ]
@@ -155,7 +156,7 @@ Bulk insert. Top-level `agent_run_id` stamps every row in the batch. Idempotent 
 { "inserted": 47, "skipped_duplicate": 0, "ids": [41794, 41795, …] }
 ```
 
-Use `value_text` for qualitative units (`pass/fail`, `text`, `date`). `value_raw_text` is the pre-normalization source text — leave as the exact PDF/HTML cell content.
+Use `value_text` for qualitative units (`pass/fail`, `text`, `date`). `value_raw` is the pre-normalization source text — leave as the exact PDF/HTML cell content.
 
 **`value_numeric` must be in DISPLAY units, not base units.** For a measure with `unit_symbol: "$B"`, send `65.3` (not `65,300,000,000`). For `%`, send `90` (not `0.9`). The `unit.scale` exists so consumers can normalize for cross-unit math, but the canonical stored value is what a human would see on the page.
 

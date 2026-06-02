@@ -5,12 +5,18 @@ module Api
         class OrganizationLineagesController < BaseController
           def create
             attrs = params.require(:lineage).permit(
-              :predecessor_slug, :successor_slug, :transition_year,
+              :jurisdiction_slug, :predecessor_slug, :successor_slug, :transition_year,
               :transition_kind, :acknowledged_in_document_id, :notes
             ).to_h.symbolize_keys
 
-            pred = ::Warehouse::Organization.find_by!(slug: attrs.fetch(:predecessor_slug))
-            succ = ::Warehouse::Organization.find_by!(slug: attrs.fetch(:successor_slug))
+            pred = resolve_organization_by_slug!(
+              attrs.fetch(:predecessor_slug),
+              jurisdiction_slug: attrs[:jurisdiction_slug]
+            )
+            succ = resolve_organization_by_slug!(
+              attrs.fetch(:successor_slug),
+              jurisdiction_slug: attrs[:jurisdiction_slug]
+            )
 
             lineage = ::Warehouse::OrganizationLineage.find_or_initialize_by(
               predecessor_id: pred.id,

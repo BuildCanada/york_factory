@@ -25,11 +25,14 @@ module Api
           scope = scope.where(is_total: ActiveModel::Type::Boolean.new.cast(params[:is_total])) if params.key?(:is_total)
 
           if params[:observed_organization_slug].present?
-            org = ::Warehouse::Organization.find_by!(slug: params[:observed_organization_slug])
+            org = resolve_organization_by_slug!(
+              params[:observed_organization_slug],
+              jurisdiction_slug: params[:jurisdiction_slug]
+            )
             scope = scope.where(observed_organization_id: org.id)
           end
           if params[:reporting_organization_slug].present?
-            org = ::Warehouse::Organization.find_by!(slug: params[:reporting_organization_slug])
+            org = resolve_organization_by_slug!(params[:reporting_organization_slug])
             scope = scope.where(reporting_organization_id: org.id)
           end
           if params[:jurisdiction_slug].present?

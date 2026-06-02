@@ -30,7 +30,7 @@ class Warehouse::Organization < Warehouse::Record
   before_validation :ensure_slug
   before_validation :ensure_jurisdiction
 
-  validates :canonical_name, presence: true, uniqueness: true
+  validates :canonical_name, presence: true, uniqueness: { scope: :jurisdiction_id }
   validates :slug, presence: true, uniqueness: { scope: :jurisdiction_id }
   validates :org_id_infobase, uniqueness: true, allow_nil: true
 

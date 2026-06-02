@@ -4976,6 +4976,13 @@ CREATE UNIQUE INDEX idx_organization_lineages_unique ON warehouse.organization_l
 
 
 --
+-- Name: idx_organizations_jurisdiction_canonical_name; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_organizations_jurisdiction_canonical_name ON warehouse.organizations USING btree (jurisdiction_id, canonical_name);
+
+
+--
 -- Name: idx_organizations_jurisdiction_slug; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -5232,13 +5239,6 @@ CREATE INDEX index_organization_lineages_on_predecessor_id ON warehouse.organiza
 --
 
 CREATE INDEX index_organization_lineages_on_successor_id ON warehouse.organization_lineages USING btree (successor_id);
-
-
---
--- Name: index_organizations_on_canonical_name; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE UNIQUE INDEX index_organizations_on_canonical_name ON warehouse.organizations USING btree (canonical_name);
 
 
 --
@@ -6278,6 +6278,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260602000001'),
 ('20260528000013'),
 ('20260528000012'),
 ('20260528000011'),

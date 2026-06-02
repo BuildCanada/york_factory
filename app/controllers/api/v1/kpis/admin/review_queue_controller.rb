@@ -20,7 +20,10 @@ module Api
             end
 
             if params[:organization_slug].present?
-              org = ::Warehouse::Organization.find_by!(slug: params[:organization_slug])
+              org = resolve_organization_by_slug!(
+                params[:organization_slug],
+                jurisdiction_slug: params[:jurisdiction_slug]
+              )
               measure_ids = ::Warehouse::Measure.where(organization_id: org.id).pluck(:id)
               scope = scope.where(measure_id: measure_ids)
             end

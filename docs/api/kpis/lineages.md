@@ -83,7 +83,7 @@ Same shape as organization lineages, with one extra `transition_kind`.
 |---|---|
 | `predecessor_id` | Lineage rows where this measure is the predecessor. |
 | `successor_id` | Lineage rows where this measure is the successor. |
-| `organization_slug` | Lineage rows where either side belongs to a measure under this org. |
+| `organization_slug` | Lineage rows where either side belongs to a measure under this org. Pair with `jurisdiction_slug` when organization slugs are not globally unique. |
 | `transition_year` | One year. |
 | `transition_kind` | See below. |
 | `per_page` | Default 50. |

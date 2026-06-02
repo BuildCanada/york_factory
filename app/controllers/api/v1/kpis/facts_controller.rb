@@ -13,7 +13,12 @@ module Api
 
           if params[:jurisdiction_slug].present? || params[:organization_slug].present?
             org_ids = if params[:organization_slug].present?
-              [ ::Warehouse::Organization.find_by!(slug: params[:organization_slug]).id ]
+              [
+                resolve_organization_by_slug!(
+                  params[:organization_slug],
+                  jurisdiction_slug: params[:jurisdiction_slug]
+                ).id
+              ]
             else
               jur = ::Warehouse::Jurisdiction.find_by!(slug: params[:jurisdiction_slug])
               ::Warehouse::Organization.where(jurisdiction_id: jur.id).pluck(:id)

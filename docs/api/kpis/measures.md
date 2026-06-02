@@ -10,7 +10,7 @@ List measures, paginated.
 | Param | Description |
 |---|---|
 | `jurisdiction_slug` | Restrict to one jurisdiction. |
-| `organization_slug` | Restrict to one org (overrides `jurisdiction_slug` if both given). |
+| `organization_slug` | Restrict to one org. If the slug is used in multiple jurisdictions, also pass `jurisdiction_slug`; otherwise the API returns `ambiguous_organization_slug`. |
 | `per_page` | Default 50. |
 | `page` | Default 1. |
 
@@ -96,7 +96,7 @@ before posting extracted observations.
 **Query parameters:**
 | Param | Description |
 |---|---|
-| `organization_slug` | Restrict to measures owned by one organization. |
+| `organization_slug` | Restrict to measures owned by one organization. Pair with `jurisdiction_slug` when organization slugs are not globally unique. |
 | `jurisdiction_slug` | Restrict to organizations in one jurisdiction. |
 | `measure_id` | Restrict to one measure. |
 | `composition_type` | Restrict to one composition type, e.g. `by_currency`. |

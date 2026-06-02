@@ -15,7 +15,7 @@ For the raw "every observation we've ever seen" view, use [citations.md](./citat
 |---|---|
 | `measure_id` | One measure's facts. |
 | `jurisdiction_slug` | All facts for orgs in this jurisdiction. |
-| `organization_slug` | All facts for this org. |
+| `organization_slug` | All facts for this org. Pair with `jurisdiction_slug` when organization slugs are not globally unique. |
 | `year` | One `measurement_year`. |
 | `value_type` | One of `actual`, `target`, `projected`, `plan`, `budget`. |
 | `period_basis` | One of `full_year`, `ytd_q1`, `ytd_q2`, `ytd_q3`, `as_of_date`. |

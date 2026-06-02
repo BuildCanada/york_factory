@@ -10,7 +10,7 @@ List documents, paginated.
 | Param | Description |
 |---|---|
 | `jurisdiction_slug` | Restrict to one jurisdiction. |
-| `organization_slug` | Restrict to docs filed by/about one org. |
+| `organization_slug` | Restrict to docs filed by/about one org. Pair with `jurisdiction_slug` when organization slugs are not globally unique. |
 | `fiscal_year` | One fiscal year. |
 | `published_after` | ISO date (`YYYY-MM-DD`). Inclusive. |
 | `published_before` | ISO date. Inclusive. |

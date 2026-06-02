@@ -38,7 +38,7 @@ the listing page, oldest to newest.
 - Pass only concrete report URLs to `ingest-government-kpis`.
 - Run subagents sequentially from oldest year to newest year so later agents can build on existing measures, compositions, and lineage decisions.
 - After each subagent completes, summarize its results and pass that summary to the next subagent.
-- If one year fails because of missing reference data, unknown units, or ambiguous source structure, stop the series unless the failure is explicitly scoped to that year and the next year can proceed safely.
+- If one year fails because of missing reference data or ambiguous source structure, stop the series unless the failure is explicitly scoped to that year and the next year can proceed safely. Unknown units are not a stop condition: the ingest subagent prefers existing units and creates genuinely new ones via `/admin/units`.
 - Probe each report URL before launching its subagent. Skip unreachable legacy
   URLs only when they are outside the user-requested year range or when
   `SKIP_UNREACHABLE=true`; otherwise stop and report the first unreachable URL.
@@ -191,17 +191,18 @@ Jurisdiction hint: <JURISDICTION_SLUG or unknown>.
 Organization hint: <ORG_SLUG/ORG_NAME or unknown>.
 
 Previous-year ingestion context:
-<summary of prior subagent result, reused measures, new measures, composition decisions, unresolved units, lineage candidates>
+<summary of prior subagent result, reused measures, new measures, composition decisions, created units, lineage candidates>
 
 Do not process the listing URL directly. If this URL is not a single report,
 stop and report that exact problem. Return a concise summary with agent_run_id,
 document_id, counts, created/reused measures, composition/component decisions,
-flags, unknown units, lineage candidates, and blockers.
+flags, created units, lineage candidates, and blockers.
 ```
 
 Wait for the subagent to complete before starting the next year. If the result
-shows unknown units or missing reference data, stop and ask the user whether to
-fix reference data before continuing.
+shows missing reference data, stop and ask the user whether to fix reference
+data before continuing. Created units are not a stop condition; pass them
+forward in the next subagent's context so later years reuse them.
 
 ## Carry Forward State
 
@@ -229,7 +230,7 @@ Return one series-level summary:
 - skipped reports and why
 - year-by-year subagent outcomes
 - total documents, measures, citations inserted/skipped, flags, assertions, footnotes
-- unresolved units/reference data
+- created units and unresolved reference data
 - lineage candidates across years
 - composition/component changes across years
 - exact next action if the series stopped early

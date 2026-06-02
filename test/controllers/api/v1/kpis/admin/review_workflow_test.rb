@@ -35,6 +35,10 @@ class Api::V1::Kpis::Admin::ReviewWorkflowTest < ActionDispatch::IntegrationTest
     row = queue.find { |r| r["extracted_observation_id"] == obs.id }
     assert_equal "high", row["highest_open_severity"]
     assert_equal 1, row["open_flag_count"]
+    flag = row["open_flags"].sole
+    assert_equal flag_id, flag["id"]
+    assert_equal "low_confidence_extraction", flag["flag_type"]
+    assert_equal "OCR garbled the unit", flag["message"]
 
     # Resolve the flag.
     patch "/api/v1/kpis/admin/extracted_observations/#{obs.id}/review_flags/#{flag_id}",

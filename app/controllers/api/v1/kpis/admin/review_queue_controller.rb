@@ -35,7 +35,8 @@ module Api
             scope = scope.where(has_open_flags: true) if ActiveModel::Type::Boolean.new.cast(params[:has_open_flags])
 
             pagy, rows = pagy(scope.by_severity, limit: (params[:per_page] || 50).to_i)
-            render json: { data: rows.map { |r| serialize(r) }, meta: pagy_metadata(pagy) }
+            flags = open_flags_by_observation(rows)
+            render json: { data: rows.map { |r| serialize(r, flags[r.extracted_observation_id] || []) }, meta: pagy_metadata(pagy) }
           end
 
           private
@@ -47,7 +48,13 @@ module Api
             SEVERITY_RANKS[label]
           end
 
-          def serialize(r)
+          def open_flags_by_observation(rows)
+            ::Warehouse::ObservationReviewFlag.open
+              .where(extracted_observation_id: rows.map(&:extracted_observation_id))
+              .group_by(&:extracted_observation_id)
+          end
+
+          def serialize(r, open_flags)
             {
               extracted_observation_id: r.extracted_observation_id,
               measure_id: r.measure_id,
@@ -69,6 +76,10 @@ module Api
               needs_review: r.needs_review,
               open_flag_count: r.open_flag_count,
               highest_open_severity: r.highest_open_severity,
+              open_flags: open_flags.map { |f|
+                { id: f.id, flag_type: f.flag_type, severity: f.severity,
+                  message: f.message, evidence: f.evidence }
+              },
               created_at: r.created_at,
               measure: r.measure && {
                 id: r.measure.id, canonical_name: r.measure.canonical_name, slug: r.measure.slug

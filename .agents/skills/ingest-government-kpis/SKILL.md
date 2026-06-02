@@ -18,8 +18,9 @@ One invocation should handle one source document. Use one `agent_run` per source
 - Do not use legacy field names: `page_number` or `value_raw_text`.
 - Preserve raw source text in `value_raw`, `metric_name_raw`, `geography_name_raw`, `jurisdiction_name_raw`, and organization `*_raw` fields.
 - Do not write to `canonical_observations`; approval is a separate reviewer action.
-- Do not invent units. If `unit_symbol` is unknown, stop and report the unit that must be added to `db/seeds/kpis/units.yml`.
-- If extraction is uncertain, set `needs_review: true` and add a typed review flag after the citation is created.
+- Prefer existing units. Query the unit catalog first and reuse a matching `unit_symbol`; create a new unit via `/admin/units` only when no existing unit fits.
+- If the source presents values with a multiplier (e.g., `$000s`, `in thousands`, `in millions`), apply the multiplier to `value_numeric` before saving so it lands in an existing unit's display convention. Do not mint a new unit just to encode a multiplier.
+- If extraction is uncertain, include typed `review_flags` inline in the citation row. The batch endpoint creates the flags and marks the row `needs_review` in one step.
 
 ## Preflight
 
@@ -155,7 +156,7 @@ For each measure, capture:
 
 - `canonical_name`: stable measure name.
 - `slug`: lowercase ASCII, non-alphanumeric runs replaced with `-`.
-- `unit_symbol`: existing `warehouse.units.symbol`.
+- `unit_symbol`: a `warehouse.units.symbol`, preferring existing units (see below).
 - `service_category`: source section or core responsibility.
 - `aggregation_type` if confidently known is useful context, but the current create endpoint may not accept it. Record it in notes/report if not accepted.
 
@@ -169,6 +170,30 @@ Value conventions:
 - `value_type` must be one of `actual`, `target`, `projected`, `plan`, `budget`.
 - `period_basis` defaults to `full_year`; use `ytd_q1`, `ytd_q2`, `ytd_q3`, or `as_of_date` only when the source clearly says so.
 - Prefer `period_start`, `period_end`, and `period_type` when the source period is clear.
+
+Unit resolution:
+
+```bash
+curl -s "$API/api/v1/kpis/units" \
+  | jq '.data[] | {symbol, kind, base_unit, scale, denominator_unit}'
+```
+
+- Prefer an existing unit whose `symbol` matches the source meaning.
+- If the source applies a multiplier to values (e.g., a table in `$000s` or "in millions"), pick the existing unit and apply the multiplier to `value_numeric` before saving. Do not create a new unit to encode a table's multiplier.
+- Create a unit only when the catalog genuinely lacks it (a new currency, ratio, or physical unit):
+
+```bash
+curl -s -X POST "$API/api/v1/kpis/admin/units" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "$(jq -n \
+    --arg symbol "$UNIT_SYMBOL" \
+    --arg kind "$UNIT_KIND" \
+    --arg base_unit "$BASE_UNIT" \
+    --argjson scale "${UNIT_SCALE:-1.0}" \
+    '{unit:{symbol:$symbol, kind:$kind, base_unit:$base_unit, scale:$scale}}')"
+```
+
+Mention any created units in the final report.
 
 Before creating measures, query the existing catalog for the organization:
 
@@ -225,7 +250,7 @@ M=$(curl -s -X POST "$API/api/v1/kpis/admin/measures" \
 MEASURE_ID=$(echo "$M" | jq -r '.id')
 ```
 
-If `MEASURE_ID` is null and the response says `unknown_unit`, stop and report the missing `unit_symbol`.
+If `MEASURE_ID` is null and the response says `unknown_unit`, re-check the unit catalog for an existing match; create the unit via `/admin/units` only if none fits, then retry the measure.
 
 Create a new measure instead of reusing an existing one when the source definition changes materially. Mention likely lineages in the final report.
 
@@ -267,7 +292,25 @@ Build a JSON array and POST once per document. This is the exact citation row sh
   "evidence_quote": "On-time performance: 83%",
   "extraction_confidence": 0.92,
   "needs_review": false,
+  "review_flags": [],
   "notes": null
+}
+```
+
+For uncertain rows, include typed flags inline. The batch endpoint creates the flags and sets `needs_review` automatically when flags are present:
+
+```json
+{
+  "...": "...",
+  "extraction_confidence": 0.6,
+  "review_flags": [
+    {
+      "flag_type": "unit_ambiguous",
+      "severity": "high",
+      "message": "Table header could mean millions or billions",
+      "evidence": "Header says $000s but footnote says $ millions."
+    }
+  ]
 }
 ```
 
@@ -292,13 +335,7 @@ If the API returns `unsupported_citation_fields`, replace the reported fields. T
 
 ### 8. Add Review Context When Needed
 
-Use review flags for uncertainty that a reviewer must inspect:
-
-```bash
-curl -s -X POST "$API/api/v1/kpis/admin/extracted_observations/$OBS_ID/review_flags" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"flag_type":"unit_ambiguous","severity":"high","message":"Table header could mean millions or billions","evidence":"Header says $000s but footnote says $ millions."}'
-```
+Review flags go inline in the citation rows (step 7) — do not POST them as a separate step.
 
 Common flag types:
 

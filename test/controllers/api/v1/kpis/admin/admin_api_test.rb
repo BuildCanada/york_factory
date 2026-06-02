@@ -96,6 +96,69 @@ class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
     assert_equal run.id, Warehouse::ExtractedObservation.find(citation_id).agent_run_id
   end
 
+  test "bulk citations: inline review_flags create flags and mark needs_review" do
+    doc = Warehouse::KpiDocument.create!(jurisdiction: @jurisdiction, organization: @org,
+      fiscal_year: 2027, doc_url: "https://example.com/flags-#{SecureRandom.hex(4)}.pdf")
+    measure = Warehouse::Measure.create!(organization: @org, slug: "flags-test-#{SecureRandom.hex(2)}",
+      canonical_name: "Flags Test", unit: @unit)
+
+    # First request inserts the 2024 row so it is a duplicate in the second
+    # request — flags must still land on the right observation.
+    post "/api/v1/kpis/admin/citations", params: { citations: [
+      { measure_id: measure.id, measurement_year: 2024, value_type: "actual", value_numeric: 100, document_id: doc.id }
+    ] }, headers: auth_headers
+    assert_response :success
+
+    rows = [
+      { measure_id: measure.id, measurement_year: 2024, value_type: "actual", value_numeric: 100, document_id: doc.id }, # dup
+      { measure_id: measure.id, measurement_year: 2025, value_type: "actual", value_numeric: 200, document_id: doc.id,
+        review_flags: [ { flag_type: "unit_ambiguous", severity: "high", message: "Header could mean millions or billions" } ] },
+      { measure_id: measure.id, measurement_year: 2026, value_type: "actual", value_numeric: 300, document_id: doc.id }
+    ]
+    post "/api/v1/kpis/admin/citations", params: { citations: rows }, headers: auth_headers
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal 2, body["inserted"]
+    assert_equal 1, body["skipped_duplicate"]
+
+    flagged = Warehouse::ExtractedObservation.find_by!(measure_id: measure.id, measurement_year: 2025, document_id: doc.id)
+    assert flagged.needs_review
+    flag = flagged.review_flags.sole
+    assert_equal "unit_ambiguous", flag.flag_type
+    assert_equal "high", flag.severity
+
+    unflagged = Warehouse::ExtractedObservation.find_by!(measure_id: measure.id, measurement_year: 2026, document_id: doc.id)
+    assert_not unflagged.needs_review
+    assert_empty unflagged.review_flags
+  end
+
+  test "unit create adds a new unit and returns existing ones untouched" do
+    symbol = "test-unit-#{SecureRandom.hex(2)}"
+    post "/api/v1/kpis/admin/units",
+      params: { unit: { symbol: symbol, kind: "absolute", base_unit: "count", scale: 1.0 } },
+      headers: auth_headers
+    assert_response :created
+    body = JSON.parse(response.body)
+    assert_equal symbol, body["symbol"]
+    assert_equal false, body["existing"]
+
+    # Reposting the same symbol with different attributes must not overwrite.
+    post "/api/v1/kpis/admin/units",
+      params: { unit: { symbol: symbol, kind: "absolute", base_unit: "dollars", scale: 1000.0 } },
+      headers: auth_headers
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["existing"]
+    assert_equal "count", Warehouse::Unit.find_by!(symbol: symbol).base_unit
+  end
+
+  test "units index lists the catalog" do
+    get "/api/v1/kpis/units"
+    assert_response :success
+    symbols = JSON.parse(response.body)["data"].map { |u| u["symbol"] }
+    assert_includes symbols, "count"
+  end
+
   test "measure create rejects unknown unit symbol" do
     post "/api/v1/kpis/admin/measures",
       params: { measure: { organization_slug: @org.slug, slug: "nope-#{SecureRandom.hex(2)}", canonical_name: "Nope", unit_symbol: "fake-unit" } },

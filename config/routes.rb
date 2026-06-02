@@ -70,12 +70,14 @@ Rails.application.routes.draw do
           end
         end
         resources :documents, only: [ :index, :show ]
+        resources :units, only: [ :index ]
         resources :organization_lineages, only: [ :index ]
         resources :measure_lineages, only: [ :index ]
         resources :agent_runs, only: [ :index, :show ]
 
         namespace :admin do
           resources :organizations, only: [ :create ]
+          resources :units, only: [ :create ]
           resources :measures, only: [ :create ]
           resources :citations, only: [ :create ]
           resources :organization_lineages, only: [ :create ]

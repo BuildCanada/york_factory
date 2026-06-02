@@ -90,9 +90,10 @@ Check, in order:
 4. **Period**: `measurement_year` follows the convention (federal `2024-25` → `2025`), and `period_basis`/`period_start`/`period_end` match what the source says.
 5. **Measure assignment**: the observation's measure (`measure.canonical_name`) means the same thing as the source row. A renamed or redefined metric belongs on a new measure, not this one.
 6. **Attribution**: observed/responsible organization and geography match the source.
-7. **Footnotes**: scan for footnote markers on the source cell that change interpretation (exclusions, restatements, methodology changes).
-8. **Siblings**: if the same measure/year/value_type already has an approved sibling, this one is likely a duplicate or a restatement — compare before deciding.
-9. **Open flags**: resolve each flag's question explicitly against the source. The answer goes in the decision notes.
+7. **Footnotes**: scan for footnote markers on the source cell that change interpretation (exclusions, restatements, methodology changes). If the source cell carries a marker, the observation must have that footnote linked and the marker must not be glued into `value_raw`/`value_text`; a missing link or a glued marker is a mechanical correction. A footnote that redefines the metric (population base, constant-dollar base, retirement) is grounds for rejection, not correction.
+8. **No-result cells**: a cell reading `N/A`, `not available`, `—`, or `TBD` should never have been extracted — reject it; there is no value to canonicalize.
+9. **Siblings**: if the same measure/year/value_type already has an approved sibling, this one is likely a duplicate or a restatement — compare before deciding.
+10. **Open flags**: resolve each flag's question explicitly against the source. The answer goes in the decision notes.
 
 ### 4. Decide
 

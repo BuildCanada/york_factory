@@ -16,7 +16,8 @@ One invocation should handle one source document. Use one `agent_run` per source
 - Exit without writing if the supplied URL is an index/listing page instead of a single report document URL.
 - Use current field names: `source_page` and `value_raw`.
 - Do not use legacy field names: `page_number` or `value_raw_text`.
-- Preserve raw source text in `value_raw`, `metric_name_raw`, `geography_name_raw`, `jurisdiction_name_raw`, and organization `*_raw` fields.
+- Preserve raw source text in `value_raw`, `metric_name_raw`, `geography_name_raw`, `jurisdiction_name_raw`, and organization `*_raw` fields — minus footnote reference markers. When a cell carries a footnote marker, capture the footnote's marker and full text via the footnotes endpoint and link it to the observation; never concatenate marker text into a value.
+- Do not create observations for no-result cells (`N/A`, `not available`, `—`, `TBD`). Report them, with their explaining footnote, in the final report instead.
 - Do not write to `canonical_observations`; approval is a separate reviewer action.
 - Prefer existing units. Query the unit catalog first and reuse a matching `unit_symbol`; create a new unit via `/admin/units` only when no existing unit fits.
 - If the source presents values with a multiplier (e.g., `$000s`, `in thousands`, `in millions`), apply the multiplier to `value_numeric` before saving so it lands in an existing unit's display convention. Do not mint a new unit just to encode a multiplier.
@@ -164,7 +165,8 @@ Value conventions:
 
 - `value_numeric` is in the measure's display unit. For `$B`, send `5.3`; for `%`, send `83`; for `CAD`, send full dollars.
 - `value_text` is for qualitative/date/pass-fail values.
-- `value_raw` is the exact visible source cell.
+- `value_raw` is the exact visible source cell, excluding footnote reference markers. A cell rendered as `96.8% Footnote f` has `value_raw: "96.8%"` — the marker is captured as a linked footnote (see below), never glued into the value. The same applies to `metric_name_raw` and other `*_raw` fields.
+- Do not create observations for cells that report no result: `N/A`, `n/a`, `not available`, `—`, `TBD`, or equivalent. There is no value to claim. Instead, record the cell in the final report together with the footnote that explains it; if the footnote says the indicator was retired, re-based, or redefined, report it as a lineage/metric-version candidate.
 - `source_page` is the physical PDF page index used by the reader, 1-based. For HTML, leave it null and use `source_section`.
 - `measurement_year` is the year the value is about. For federal `2024-25`, use `2025`.
 - `value_type` must be one of `actual`, `target`, `projected`, `plan`, `budget`.
@@ -359,7 +361,7 @@ curl -s -X POST "$API/api/v1/kpis/admin/extracted_observations/$OBS_ID/assertion
   -d '{"assertion_type":"unit","assertion_text":"Value is shown in percent, not ratio.","confidence":0.95,"evidence_quote":"Target: 90%","source_page":12}'
 ```
 
-Use footnotes when source footnotes materially affect interpretation:
+Footnotes are mandatory whenever a captured cell carries a footnote reference marker (the marker was stripped from `value_raw`, so the linked footnote is the only place its meaning survives). Also use them when any other source footnote materially affects interpretation. Create the footnote once per document with its marker and full text, then link it to every observation that references it:
 
 ```bash
 FN=$(curl -s -X POST "$API/api/v1/kpis/admin/documents/$DOC_ID/footnotes" \

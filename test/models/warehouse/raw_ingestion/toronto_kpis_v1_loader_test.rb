@@ -40,10 +40,10 @@ class Warehouse::RawIngestion::TorontoKpisV1LoaderTest < ActiveSupport::TestCase
 
     permits = Warehouse::Measure.find_by!(slug: "permits-issued")
     assert_equal "Permits Issued", permits.canonical_name
-    assert_equal 2, permits.citations.count
+    assert_equal 2, permits.extracted_observations.count
 
     pct = Warehouse::Measure.find_by!(slug: "permits-issued-pct")
-    assert_equal 1, pct.citations.count
+    assert_equal 1, pct.extracted_observations.count
   end
 
   test "small percentage values pass through unchanged (no auto-x100 'cleanup')" do
@@ -52,7 +52,7 @@ class Warehouse::RawIngestion::TorontoKpisV1LoaderTest < ActiveSupport::TestCase
     # Fixture has raw %=0.5 — this represents a real 0.5% measurement (e.g.
     # security-system downtime), NOT a fractional bug. The loader stores it as-is.
     measure = Warehouse::Measure.find_by!(slug: "permits-issued-pct")
-    citation = measure.citations.find_by!(measurement_year: 2024)
+    citation = measure.extracted_observations.find_by!(measurement_year: 2024)
     assert_in_delta 0.5, citation.value_numeric, 1e-6
   end
 
@@ -60,7 +60,7 @@ class Warehouse::RawIngestion::TorontoKpisV1LoaderTest < ActiveSupport::TestCase
     @raw.toronto_kpis_v1_loader.load
 
     # count=1234 in v1 → 1234 stored. No transformation.
-    count_cit = Warehouse::Measure.find_by!(slug: "permits-issued").citations
+    count_cit = Warehouse::Measure.find_by!(slug: "permits-issued").extracted_observations
       .find_by!(measurement_year: 2024, value_type: "actual")
     assert_in_delta 1234.0, count_cit.value_numeric, 1e-6
   end
@@ -128,7 +128,7 @@ class Warehouse::RawIngestion::TorontoKpisV1LoaderTest < ActiveSupport::TestCase
         value_text TEXT,
         document_id INTEGER,
         source_doc_year INTEGER,
-        page_number INTEGER,
+        source_page INTEGER,
         notes TEXT
       );
 

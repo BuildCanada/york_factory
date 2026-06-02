@@ -8,7 +8,7 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
   # Steps (one Postgres transaction):
   #   1. Documents:   v1 documents → warehouse.kpi_documents
   #   2. Measures:    v1 kpis      → warehouse.measures
-  #   3. Citations:   v1 kpi_values → warehouse.measure_citations
+  #   3. Citations:   v1 kpi_values → warehouse.extracted_observations
   #   4. Percentage cleanup for ratio-kind units (multiply 0-1 fractions by 100)
   #
   # Idempotent: rerunning is a no-op except for new rows.
@@ -111,10 +111,10 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
         value_type: row["value_type"],
         value_numeric: row["value_numeric"]&.to_f,
         value_text: row["value_text"],
-        value_raw_text: row["value_text"],
+        value_raw: row["value_text"],
         period_basis: "full_year",
         document_id: document_id,
-        page_number: row["page_number"],
+        source_page: row["source_page"],
         notes: row["notes"],
         created_at: Time.current,
         updated_at: Time.current
@@ -131,9 +131,9 @@ class Warehouse::RawIngestion::TorontoKpisV1Loader < ActiveRecord::AssociatedObj
   end
 
   def insert_citation_batch(batch)
-    Warehouse::MeasureCitation.insert_all(
+    Warehouse::ExtractedObservation.insert_all(
       batch,
-      unique_by: :idx_measure_citations_unique
+      unique_by: :idx_extracted_observations_unique
     ).rows.length
   end
 

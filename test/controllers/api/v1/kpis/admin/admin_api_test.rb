@@ -93,7 +93,7 @@ class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
       ] },
       headers: auth_headers
     citation_id = JSON.parse(response.body)["ids"].first
-    assert_equal run.id, Warehouse::MeasureCitation.find(citation_id).agent_run_id
+    assert_equal run.id, Warehouse::ExtractedObservation.find(citation_id).agent_run_id
   end
 
   test "measure create rejects unknown unit symbol" do

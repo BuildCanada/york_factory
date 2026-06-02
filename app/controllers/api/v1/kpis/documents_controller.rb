@@ -37,8 +37,8 @@ module Api
 
         def show
           doc = ::Warehouse::KpiDocument.includes(:jurisdiction, :organization).find(params[:id])
-          citation_count = ::Warehouse::MeasureCitation.where(document_id: doc.id).count
-          measure_count  = ::Warehouse::MeasureCitation.where(document_id: doc.id).distinct.count(:measure_id)
+          citation_count = ::Warehouse::ExtractedObservation.where(document_id: doc.id).count
+          measure_count  = ::Warehouse::ExtractedObservation.where(document_id: doc.id).distinct.count(:measure_id)
           render json: serialize(doc).merge(citation_count: citation_count, measure_count: measure_count)
         end
 

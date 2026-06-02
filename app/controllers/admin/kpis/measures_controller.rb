@@ -24,8 +24,8 @@ module Admin
         @facts = Warehouse::MeasureFact.where(measure_id: @measure.id)
           .order(measurement_year: :desc, value_type: :asc)
           .limit(50)
-        @citation_count = @measure.citations.count
-        @run_count = Warehouse::MeasureCitation.where(measure_id: @measure.id).distinct.count(:agent_run_id)
+        @citation_count = @measure.extracted_observations.count
+        @run_count = Warehouse::ExtractedObservation.where(measure_id: @measure.id).distinct.count(:agent_run_id)
       end
     end
   end

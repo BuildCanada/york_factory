@@ -13,7 +13,7 @@ module Admin
 
       def show
         @run = Warehouse::AgentRun.find(params[:id])
-        @citation_count = Warehouse::MeasureCitation.where(agent_run_id: @run.id).count
+        @citation_count = Warehouse::ExtractedObservation.where(agent_run_id: @run.id).count
         @measure_count  = Warehouse::Measure.where(agent_run_id: @run.id).count
         @document_count = Warehouse::KpiDocument.where(agent_run_id: @run.id).count
       end

@@ -2,9 +2,9 @@ class Warehouse::AgentRun < Warehouse::Record
   STATUSES = %w[running completed failed cancelled].freeze
   TERMINAL_STATUSES = %w[completed failed cancelled].freeze
 
-  has_many :kpi_documents,     dependent: :nullify
-  has_many :measures,          dependent: :nullify
-  has_many :measure_citations, dependent: :nullify
+  has_many :kpi_documents,         dependent: :nullify
+  has_many :measures,              dependent: :nullify
+  has_many :extracted_observations, dependent: :nullify
 
   validates :agent_name, :status, :started_at, presence: true
   validates :status, inclusion: { in: STATUSES }

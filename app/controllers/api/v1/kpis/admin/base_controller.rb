@@ -3,6 +3,8 @@ module Api
     module Kpis
       module Admin
         class BaseController < ApplicationController
+          include Pagy::Method
+
           before_action :authenticate_api_token!
 
           rescue_from ActiveRecord::RecordInvalid do |e|
@@ -32,6 +34,10 @@ module Api
 
           def api_token
             @api_token
+          end
+
+          def pagy_metadata(pagy)
+            { page: pagy.page, pages: pagy.pages, count: pagy.count, per_page: pagy.limit }
           end
         end
       end

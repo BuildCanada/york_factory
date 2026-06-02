@@ -45,8 +45,13 @@ module Api
             period_basis: fact.period_basis,
             value_numeric: fact.value_numeric,
             value_text: fact.value_text,
-            citation_id: fact.citation_id,
-            document_id: fact.document_id
+            canonical_observation_id: fact.canonical_observation_id,
+            extracted_observation_id: fact.extracted_observation_id,
+            document_id: fact.document_id,
+            observed_organization_id: fact.observed_organization_id,
+            jurisdiction_id: fact.jurisdiction_id,
+            status: fact.status,
+            vintage_date: fact.vintage_date
           }
         end
       end

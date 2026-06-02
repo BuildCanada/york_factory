@@ -1,45 +1,45 @@
-class Warehouse::MeasureCitation::PeriodBasisClassifier < ActiveRecord::AssociatedObject
+class Warehouse::ExtractedObservation::PeriodBasisClassifier < ActiveRecord::AssociatedObject
   LLM_MODEL = "claude-haiku-4-5-20251001"
   BATCH_SIZE = 10
-  VALID_LABELS = Warehouse::MeasureCitation::PERIOD_BASES
+  VALID_LABELS = Warehouse::ExtractedObservation::PERIOD_BASES
   AUTO_ACCEPT_CONFIDENCE = 0.8
 
   Result = Struct.new(:period_basis, :confidence, :reasoning, :raw_response, keyword_init: true)
 
   # Single-row classification. Returns a Result.
   def classify
-    payload = [ build_row(measure_citation) ]
+    payload = [ build_row(extracted_observation) ]
     parsed = call_llm(payload).first
     interpret(parsed)
   end
 
   # Class-level batch driver. Yields { id, result } pairs so callers can stream updates.
-  def self.classify_batch(citations)
-    return if citations.empty?
+  def self.classify_batch(observations)
+    return if observations.empty?
 
-    citations.each_slice(BATCH_SIZE) do |slice|
+    observations.each_slice(BATCH_SIZE) do |slice|
       classifier = new(slice.first)  # singleton-ish; the row arg isn't used in batch path
       payload = slice.map { |c| classifier.send(:build_row, c) }
       parsed_rows = classifier.send(:call_llm, payload)
       by_id = parsed_rows.index_by { |r| r["id"] }
 
-      slice.each do |citation|
-        result = classifier.send(:interpret, by_id[citation.id])
-        yield citation, result if block_given?
+      slice.each do |observation|
+        result = classifier.send(:interpret, by_id[observation.id])
+        yield observation, result if block_given?
       end
     end
   end
 
   private
 
-  def build_row(citation)
-    measure = citation.measure
+  def build_row(observation)
+    measure = observation.measure
     {
-      id: citation.id,
-      measurement_year: citation.measurement_year,
-      value_type: citation.value_type,
+      id: observation.id,
+      measurement_year: observation.measurement_year,
+      value_type: observation.value_type,
       measure_name: measure&.canonical_name,
-      notes: citation.notes.to_s.strip
+      notes: observation.notes.to_s.strip
     }
   end
 

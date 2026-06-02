@@ -9,7 +9,7 @@
   <tr><th>Period basis</th><td class="mono"><%= @citation.period_basis %></td></tr>
   <tr><th>value_numeric</th><td class="mono"><%= @citation.value_numeric || "—" %></td></tr>
   <tr><th>value_text</th><td class="mono"><%= @citation.value_text || "—" %></td></tr>
-  <tr><th>value_raw_text</th><td class="mono"><%= @citation.value_raw_text || "—" %></td></tr>
+  <tr><th>value_raw</th><td class="mono"><%= @citation.value_raw || "—" %></td></tr>
   <tr><th>Notes</th><td><%= @citation.notes || "—" %></td></tr>
 </table>
 
@@ -21,7 +21,7 @@
     <tr><th>Fiscal year</th><td><%= @citation.document.fiscal_year %></td></tr>
     <tr><th>URL</th><td class="mono"><%= link_to @citation.document.doc_url, @citation.document.doc_url, target: "_blank", rel: "noopener" %></td></tr>
     <tr><th>Published</th><td><%= @citation.document.published_at || "—" %> <% if @citation.document.published_at_source %><span class="text-muted">(<%= @citation.document.published_at_source %>)</span><% end %></td></tr>
-    <tr><th>Page</th><td><%= @citation.page_number || "—" %></td></tr>
+    <tr><th>Page</th><td><%= @citation.source_page || "—" %></td></tr>
   </table>
 <% end %>
 

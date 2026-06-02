@@ -30,7 +30,7 @@
         <td><%= m.organization&.jurisdiction&.name || "—" %></td>
         <td class="mono"><%= m.unit&.symbol %></td>
         <td><%= [m.first_seen_year, m.last_seen_year].compact.uniq.join("–") %></td>
-        <td><%= link_to m.citations.count, admin_kpis_citations_path(measure_id: m.id) %></td>
+        <td><%= link_to m.extracted_observations.count, admin_kpis_citations_path(measure_id: m.id) %></td>
       </tr>
     <% end %>
   </tbody>

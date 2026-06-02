@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Warehouse::MeasureCitation::PeriodBasisClassifierTest < ActiveSupport::TestCase
+class Warehouse::ExtractedObservation::PeriodBasisClassifierTest < ActiveSupport::TestCase
   setup do
     @jurisdiction = Warehouse::Jurisdiction.find_or_create_by!(code: "PB-#{SecureRandom.hex(2)}") do |j|
       j.name = "PB Test"
@@ -61,7 +61,7 @@ class Warehouse::MeasureCitation::PeriodBasisClassifierTest < ActiveSupport::Tes
     RubyLLM.singleton_class.alias_method(:original_chat, :chat) if had_original
     RubyLLM.singleton_class.define_method(:chat) { |**_kw| fake_chat }
     begin
-      Warehouse::MeasureCitation::PeriodBasisClassifier.classify_batch([ c1, c2 ]) do |citation, result|
+      Warehouse::ExtractedObservation::PeriodBasisClassifier.classify_batch([ c1, c2 ]) do |citation, result|
         yielded << [ citation.id, result.period_basis, result.confidence ]
       end
     ensure
@@ -90,7 +90,7 @@ class Warehouse::MeasureCitation::PeriodBasisClassifierTest < ActiveSupport::Tes
   private
 
   def build_citation(notes:, year: 2024, type: "actual")
-    Warehouse::MeasureCitation.create!(
+    Warehouse::ExtractedObservation.create!(
       measure: @measure, document: @doc, measurement_year: year,
       value_type: type, value_numeric: 100, notes: notes
     )

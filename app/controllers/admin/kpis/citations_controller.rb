@@ -2,7 +2,7 @@ module Admin
   module Kpis
     class CitationsController < ::Admin::BaseController
       def index
-        scope = Warehouse::MeasureCitation.includes(:measure, :document, :agent_run)
+        scope = Warehouse::ExtractedObservation.includes(:measure, :document, :agent_run)
 
         if params[:measure_id].present?
           scope = scope.where(measure_id: params[:measure_id])
@@ -18,8 +18,8 @@ module Admin
       end
 
       def show
-        @citation = Warehouse::MeasureCitation.includes(:measure, :document, :agent_run).find(params[:id])
-        @sibling_citations = Warehouse::MeasureCitation.where(
+        @citation = Warehouse::ExtractedObservation.includes(:measure, :document, :agent_run).find(params[:id])
+        @sibling_citations = Warehouse::ExtractedObservation.where(
           measure_id: @citation.measure_id,
           measurement_year: @citation.measurement_year,
           value_type: @citation.value_type,

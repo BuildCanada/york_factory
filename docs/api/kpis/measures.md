@@ -80,6 +80,74 @@ Show one measure with description, lineages, and full unit detail.
 
 - `GET /api/v1/kpis/measures/:id/facts` — resolved canonical values. See [facts.md](./facts.md).
 - `GET /api/v1/kpis/measures/:id/citations` — raw observations from each source. See [citations.md](./citations.md).
+- `GET /api/v1/kpis/measures/:id/compositions` — composition/component catalog for one measure.
+
+## Compositions
+
+Use compositions when a measure has structured parts, such as debt by currency,
+revenue by source, or service volume by channel.
+
+### `GET /api/v1/kpis/compositions`
+
+Lists compositions and their components. This endpoint is intended for ingestion
+agents that need to discover existing `composition_id` and `component_id` values
+before posting extracted observations.
+
+**Query parameters:**
+| Param | Description |
+|---|---|
+| `organization_slug` | Restrict to measures owned by one organization. |
+| `jurisdiction_slug` | Restrict to organizations in one jurisdiction. |
+| `measure_id` | Restrict to one measure. |
+| `composition_type` | Restrict to one composition type, e.g. `by_currency`. |
+| `per_page` | Default 100. |
+| `page` | Default 1. |
+
+**Example:**
+```bash
+curl 'http://localhost:3000/api/v1/kpis/compositions?organization_slug=edmonton'
+curl 'http://localhost:3000/api/v1/kpis/measures/2414/compositions'
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "measure": {
+        "id": 2414,
+        "slug": "total-debt",
+        "canonical_name": "Total debt",
+        "organization": { "id": 55, "slug": "edmonton", "canonical_name": "City of Edmonton" }
+      },
+      "composition_type": "by_currency",
+      "name": "Debt by currency",
+      "expected_total": 100,
+      "expected_total_unit": { "id": 3, "symbol": "%" },
+      "allow_other": true,
+      "allow_unknown": true,
+      "notes": null,
+      "components": [
+        {
+          "id": 44,
+          "measure_id": 2414,
+          "composition_id": 12,
+          "component_type": "currency",
+          "component_code": "CAD",
+          "component_name": "Canadian dollar",
+          "parent_component_id": null,
+          "valid_from": null,
+          "valid_to": null,
+          "sort_order": 1,
+          "notes": null
+        }
+      ]
+    }
+  ],
+  "meta": { "page": 1, "pages": 1, "count": 1, "per_page": 100 }
+}
+```
 
 ## Fields
 

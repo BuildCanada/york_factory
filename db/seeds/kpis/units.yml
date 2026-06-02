@@ -32,6 +32,7 @@ units:
 
   # --- Ratios / percentages / scores ---
   - { symbol: "%",                kind: ratio,       base_unit: ratio, scale: 0.01 }
+  - { symbol: "bps",              kind: ratio,       base_unit: ratio, scale: 0.0001, notes: "basis points (1 bp = 0.01%)" }
   - { symbol: "ratio",            kind: ratio,       base_unit: ratio }
   - { symbol: "$_ratio",          kind: ratio,       base_unit: ratio, review: true } # check whether stored as 0-1 or other
   - { symbol: "index",            kind: ratio,       base_unit: ratio, review: true }
@@ -60,6 +61,7 @@ units:
   - { symbol: "ML",               kind: absolute,    base_unit: other, notes: "megalitres", review: true }
   - { symbol: "litres_M",         kind: absolute,    base_unit: other, scale: 1000000.0, notes: "millions of litres", review: true }
   - { symbol: "tonnes",           kind: absolute,    base_unit: tonnes }
+  - { symbol: "tCO2e",            kind: absolute,    base_unit: tco2e }
   - { symbol: "MtCO2e",           kind: absolute,    base_unit: tco2e, scale: 1000000.0 }
 
   # --- Energy ---

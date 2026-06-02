@@ -59,9 +59,16 @@ Rails.application.routes.draw do
         resources :measures, only: [ :index, :show ] do
           resources :facts, only: [ :index ]
           resources :citations, only: [ :index ]
+          resources :compositions, only: [ :index ]
         end
+        resources :compositions, only: [ :index ]
         resources :facts, only: [ :index ]
         resources :citations, only: [ :index ]
+        resources :observations, only: [ :index, :show ] do
+          member do
+            get :derivations
+          end
+        end
         resources :documents, only: [ :index, :show ]
         resources :organization_lineages, only: [ :index ]
         resources :measure_lineages, only: [ :index ]
@@ -69,12 +76,24 @@ Rails.application.routes.draw do
 
         namespace :admin do
           resources :organizations, only: [ :create ]
-          resources :documents, only: [ :create ]
           resources :measures, only: [ :create ]
           resources :citations, only: [ :create ]
           resources :organization_lineages, only: [ :create ]
           resources :measure_lineages, only: [ :create ]
           resources :agent_runs, only: [ :create, :update, :show ]
+          resources :review_queue, only: [ :index ]
+          resources :extracted_observations, only: [] do
+            member do
+              post :approve
+              post :reject
+            end
+            resources :review_flags, only: [ :create, :update ], controller: "observation_review_flags"
+            resources :assertions, only: [ :create ], controller: "extraction_assertions"
+            resources :footnote_links, only: [ :create, :destroy ], controller: "observation_footnotes"
+          end
+          resources :documents, only: [ :create ] do
+            resources :footnotes, only: [ :create ], controller: "source_footnotes"
+          end
         end
       end
     end

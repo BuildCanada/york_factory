@@ -27,10 +27,11 @@ class Api::V1::Kpis::ApiTest < ActionDispatch::IntegrationTest
       canonical_name: "Test Measure",
       unit: @unit
     )
-    Warehouse::MeasureCitation.create!(
+    obs = Warehouse::ExtractedObservation.create!(
       measure: @measure, document: @doc, measurement_year: 2024,
       value_type: "actual", value_numeric: 100
     )
+    obs.promote_to_canonical!(approved_by: "test")
   end
 
   test "GET /api/v1/kpis/jurisdictions returns the seeded jurisdiction" do

@@ -23,12 +23,28 @@ class Api::V1::Kpis::PublicEndpointsTest < ActionDispatch::IntegrationTest
     @measure_b = Warehouse::Measure.create!(organization: @org_b, slug: "pe-mb-#{SecureRandom.hex(2)}",
       canonical_name: "PE Measure B", unit: @unit)
 
-    Warehouse::MeasureCitation.create!(measure: @measure_a, document: @doc_a,
-      measurement_year: 2024, value_type: "actual", value_numeric: 100)
-    Warehouse::MeasureCitation.create!(measure: @measure_a, document: @doc_a,
-      measurement_year: 2024, value_type: "target", value_numeric: 90)
-    Warehouse::MeasureCitation.create!(measure: @measure_b, document: @doc_b,
-      measurement_year: 2025, value_type: "actual", value_numeric: 200)
+    @composition_a = Warehouse::MetricComposition.create!(measure: @measure_a,
+      composition_type: "by_service_channel", name: "By service channel")
+    @online_component = Warehouse::MetricComponent.create!(measure: @measure_a,
+      composition: @composition_a, component_type: "service_channel", component_code: "online",
+      component_name: "Online", sort_order: 1)
+    @phone_component = Warehouse::MetricComponent.create!(measure: @measure_a,
+      composition: @composition_a, component_type: "service_channel", component_code: "phone",
+      component_name: "Phone", sort_order: 2)
+    @composition_b = Warehouse::MetricComposition.create!(measure: @measure_b,
+      composition_type: "by_region", name: "By region")
+    Warehouse::MetricComponent.create!(measure: @measure_b,
+      composition: @composition_b, component_type: "region", component_code: "north",
+      component_name: "North")
+
+    [
+      Warehouse::ExtractedObservation.create!(measure: @measure_a, document: @doc_a,
+        measurement_year: 2024, value_type: "actual", value_numeric: 100),
+      Warehouse::ExtractedObservation.create!(measure: @measure_a, document: @doc_a,
+        measurement_year: 2024, value_type: "target", value_numeric: 90),
+      Warehouse::ExtractedObservation.create!(measure: @measure_b, document: @doc_b,
+        measurement_year: 2025, value_type: "actual", value_numeric: 200)
+    ].each { |o| o.promote_to_canonical!(approved_by: "test") }
 
     @org_lineage = Warehouse::OrganizationLineage.create!(
       predecessor: @org_a, successor: @org_b, transition_year: 2024, transition_kind: "rename",
@@ -91,6 +107,35 @@ class Api::V1::Kpis::PublicEndpointsTest < ActionDispatch::IntegrationTest
     get "/api/v1/kpis/measures/#{@measure_a.id}/citations"
     assert_response :success
     assert_equal 2, JSON.parse(response.body)["data"].length
+  end
+
+  # --- compositions ---
+
+  test "GET /compositions filters by organization_slug" do
+    get "/api/v1/kpis/compositions", params: { organization_slug: @org_a.slug }
+    assert_response :success
+
+    rows = JSON.parse(response.body)["data"]
+    ids = rows.map { |row| row["id"] }
+    assert_includes ids, @composition_a.id
+    refute_includes ids, @composition_b.id
+
+    row = rows.find { |r| r["id"] == @composition_a.id }
+    assert_equal @measure_a.id, row["measure"]["id"]
+    assert_equal "by_service_channel", row["composition_type"]
+    assert_equal [ @online_component.id, @phone_component.id ], row["components"].map { |c| c["id"] }
+  end
+
+  test "GET /measures/:id/compositions returns components for one measure" do
+    get "/api/v1/kpis/measures/#{@measure_a.id}/compositions"
+    assert_response :success
+
+    rows = JSON.parse(response.body)["data"]
+    assert_equal [ @composition_a.id ], rows.map { |row| row["id"] }
+    component = rows.first["components"].first
+    assert_equal @online_component.id, component["id"]
+    assert_equal "service_channel", component["component_type"]
+    assert_equal "online", component["component_code"]
   end
 
   # --- top-level facts ---

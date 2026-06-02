@@ -18,7 +18,7 @@ class Admin::Kpis::AdminKpisTest < ActionDispatch::IntegrationTest
       summary: { citations_inserted: 1 }, report: "# Test report\n\nHello.")
     @measure = Warehouse::Measure.create!(organization: @org, slug: "admin-m-#{SecureRandom.hex(2)}",
       canonical_name: "Admin Test Measure", unit: @unit, agent_run: @run)
-    @citation = Warehouse::MeasureCitation.create!(measure: @measure, document: @doc,
+    @citation = Warehouse::ExtractedObservation.create!(measure: @measure, document: @doc,
       measurement_year: 2024, value_type: "actual", value_numeric: 42, agent_run: @run)
   end
 

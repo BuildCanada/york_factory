@@ -1,6 +1,30 @@
 require "test_helper"
 
 class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
+  class FakeR2
+    attr_reader :store
+
+    def initialize
+      @store = {}
+    end
+
+    def upload(key:, body:)
+      @store[key] = body
+    end
+
+    def download(key:)
+      @store.fetch(key)
+    end
+  end
+
+  def with_r2_instance(fake)
+    R2Storage.singleton_class.alias_method(:__orig_new, :new)
+    R2Storage.define_singleton_method(:new) { fake }
+    yield
+  ensure
+    R2Storage.singleton_class.alias_method(:new, :__orig_new)
+    R2Storage.singleton_class.remove_method(:__orig_new)
+  end
   setup do
     @jurisdiction = Warehouse::Jurisdiction.find_or_create_by!(code: "TOR-ON") do |j|
       j.name = "City of Toronto"
@@ -157,6 +181,60 @@ class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
     assert_response :success
     symbols = JSON.parse(response.body)["data"].map { |u| u["symbol"] }
     assert_includes symbols, "count"
+  end
+
+  test "archives a document snapshot and serves it back" do
+    doc = Warehouse::KpiDocument.create!(jurisdiction: @jurisdiction, organization: @org,
+      fiscal_year: 2027, doc_url: "https://example.com/arch-#{SecureRandom.hex(4)}.html")
+    body = "<html><title>2026-27 Report</title><body>Indicator: 42%</body></html>"
+    fake = FakeR2.new
+
+    with_r2_instance(fake) do
+      post "/api/v1/kpis/admin/documents/#{doc.id}/archive",
+        params: body,
+        headers: auth_headers.merge("Content-Type" => "text/html")
+      assert_response :success
+      json = JSON.parse(response.body)
+      assert json["archived"]
+      assert_equal Digest::SHA256.hexdigest(body), json["content_hash"]
+
+      doc.reload
+      assert_equal Digest::SHA256.hexdigest(body), doc.content_hash
+      assert doc.filepath.start_with?("kpi_documents/#{doc.id}/")
+      assert doc.filepath.end_with?(".html")
+
+      get "/api/v1/kpis/admin/documents/#{doc.id}/archive", headers: auth_headers
+      assert_response :success
+      assert_equal body, response.body
+    end
+
+    # Public document show reflects archival.
+    get "/api/v1/kpis/documents/#{doc.id}"
+    assert JSON.parse(response.body)["archived"]
+  end
+
+  test "archive records content_hash even when storage is unavailable" do
+    doc = Warehouse::KpiDocument.create!(jurisdiction: @jurisdiction, organization: @org,
+      fiscal_year: 2027, doc_url: "https://example.com/arch-fail-#{SecureRandom.hex(4)}.pdf")
+    body = "%PDF-1.4 fake"
+    broken = Object.new
+    def broken.upload(key:, body:)
+      raise "no credentials"
+    end
+
+    with_r2_instance(broken) do
+      post "/api/v1/kpis/admin/documents/#{doc.id}/archive",
+        params: body,
+        headers: auth_headers.merge("Content-Type" => "application/pdf")
+      assert_response :success
+      json = JSON.parse(response.body)
+      assert_equal false, json["archived"]
+      assert_equal Digest::SHA256.hexdigest(body), json["content_hash"]
+    end
+
+    doc.reload
+    assert_equal Digest::SHA256.hexdigest(body), doc.content_hash
+    assert_nil doc.filepath
   end
 
   test "measure create rejects unknown unit symbol" do

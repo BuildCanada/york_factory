@@ -30,7 +30,54 @@ module Api
             render json: serialize(doc), status: :ok
           end
 
+          # POST /api/v1/kpis/admin/documents/:id/archive
+          # Body: the raw fetched document bytes (HTML or PDF), sent as-is.
+          # Stores a snapshot in R2 and records its sha256 so reviewers can
+          # verify they are looking at the same bytes the extractor saw.
+          def archive
+            doc = ::Warehouse::KpiDocument.find(params[:id])
+            body = request.raw_post
+            return render json: { error: "empty_body" }, status: :unprocessable_entity if body.blank?
+
+            content_hash = Digest::SHA256.hexdigest(body)
+            key = archive_key(doc, content_hash)
+
+            begin
+              R2Storage.new.upload(key: key, body: body)
+            rescue => e
+              # Record the hash even when storage is unavailable (e.g. dev
+              # without R2 credentials) so same-document verification still works.
+              doc.update!(content_hash: content_hash)
+              return render json: {
+                id: doc.id, content_hash: content_hash, archived: false,
+                error: "archive_storage_failed", details: e.message
+              }, status: :ok
+            end
+
+            doc.update!(content_hash: content_hash, filepath: key)
+            render json: { id: doc.id, content_hash: content_hash, filepath: key, archived: true }, status: :ok
+          end
+
+          # GET /api/v1/kpis/admin/documents/:id/archive
+          # Returns the archived snapshot bytes.
+          def archive_download
+            doc = ::Warehouse::KpiDocument.find(params[:id])
+            return render json: { error: "not_archived" }, status: :not_found if doc.filepath.blank?
+
+            body = R2Storage.new.download(key: doc.filepath)
+            send_data body,
+              type: doc.filepath.end_with?(".pdf") ? "application/pdf" : "text/html",
+              disposition: "inline"
+          rescue Aws::S3::Errors::NoSuchKey
+            render json: { error: "archive_missing", filepath: doc.filepath }, status: :not_found
+          end
+
           private
+
+          def archive_key(doc, content_hash)
+            ext = doc.doc_url.to_s.split("?").first.to_s.end_with?(".pdf") ? "pdf" : "html"
+            "kpi_documents/#{doc.id}/#{content_hash}.#{ext}"
+          end
 
           def document_params
             params.require(:document).permit(

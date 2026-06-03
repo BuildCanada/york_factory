@@ -30,7 +30,8 @@ module Api
 
         def show
           measure = ::Warehouse::Measure
-            .includes(:unit, :organization, :predecessor_lineages, :successor_lineages)
+            .includes(:unit, :organization, :predecessor_lineages, :successor_lineages,
+                      source_footnotes: :document)
             .find(params[:id])
           render json: serialize(measure, detail: true)
         end
@@ -53,6 +54,10 @@ module Api
             base[:lineages] = {
               predecessors: measure.predecessor_lineages.map { |l| serialize_lineage(l) },
               successors:   measure.successor_lineages.map { |l| serialize_lineage(l) }
+            }
+            base[:footnotes] = measure.source_footnotes.map { |f|
+              { id: f.id, marker: f.marker, footnote_text: f.footnote_text,
+                document_id: f.document_id, document_fiscal_year: f.document&.fiscal_year }
             }
           end
           base

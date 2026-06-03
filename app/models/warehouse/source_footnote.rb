@@ -11,5 +11,12 @@ class Warehouse::SourceFootnote < Warehouse::Record
   has_many :extracted_observations,
     through: :observation_footnotes
 
+  has_many :measure_footnotes,
+    class_name: "Warehouse::MeasureFootnote",
+    foreign_key: :source_footnote_id,
+    dependent: :delete_all
+  has_many :measures,
+    through: :measure_footnotes
+
   validates :footnote_text, presence: true
 end

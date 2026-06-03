@@ -36,7 +36,13 @@ module Api
 
             pagy, rows = pagy(scope.by_severity, limit: (params[:per_page] || 50).to_i)
             flags = open_flags_by_observation(rows)
-            render json: { data: rows.map { |r| serialize(r, flags[r.extracted_observation_id] || []) }, meta: pagy_metadata(pagy) }
+            footnotes = footnotes_by_observation(rows)
+            render json: {
+              data: rows.map { |r|
+                serialize(r, flags[r.extracted_observation_id] || [], footnotes[r.extracted_observation_id] || [])
+              },
+              meta: pagy_metadata(pagy)
+            }
           end
 
           private
@@ -54,7 +60,14 @@ module Api
               .group_by(&:extracted_observation_id)
           end
 
-          def serialize(r, open_flags)
+          def footnotes_by_observation(rows)
+            ::Warehouse::ObservationFootnote
+              .where(extracted_observation_id: rows.map(&:extracted_observation_id))
+              .includes(:source_footnote)
+              .group_by(&:extracted_observation_id)
+          end
+
+          def serialize(r, open_flags, footnote_links)
             {
               extracted_observation_id: r.extracted_observation_id,
               measure_id: r.measure_id,
@@ -79,6 +92,10 @@ module Api
               open_flags: open_flags.map { |f|
                 { id: f.id, flag_type: f.flag_type, severity: f.severity,
                   message: f.message, evidence: f.evidence }
+              },
+              footnotes: footnote_links.map { |l|
+                f = l.source_footnote
+                { id: f.id, marker: f.marker, page: f.page, footnote_text: f.footnote_text }
               },
               created_at: r.created_at,
               measure: r.measure && {

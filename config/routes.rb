@@ -78,7 +78,9 @@ Rails.application.routes.draw do
         namespace :admin do
           resources :organizations, only: [ :create ]
           resources :units, only: [ :create ]
-          resources :measures, only: [ :create ]
+          resources :measures, only: [ :create ] do
+            resources :footnote_links, only: [ :create, :destroy ], controller: "measure_footnotes"
+          end
           resources :citations, only: [ :create ]
           resources :organization_lineages, only: [ :create ]
           resources :measure_lineages, only: [ :create ]
@@ -95,6 +97,10 @@ Rails.application.routes.draw do
           end
           resources :documents, only: [ :create ] do
             resources :footnotes, only: [ :create ], controller: "source_footnotes"
+            member do
+              post :archive
+              get :archive, action: :archive_download
+            end
           end
         end
       end

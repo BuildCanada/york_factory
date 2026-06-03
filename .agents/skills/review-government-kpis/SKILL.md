@@ -14,6 +14,7 @@ One invocation reviews one scope: one agent run, one document, or one organizati
 - This skill must run independently of extraction. Never review observations extracted earlier in the same conversation or by the same agent invocation — re-read the source yourself.
 - Verify every observation against the source document before deciding. Never approve from `evidence_quote` alone; the quote is part of the claim under review.
 - If the source document cannot be fetched or the cited page/section cannot be located, leave the observation pending and add a review flag. Never approve unverifiable claims.
+- Confirm you are looking at the same document the extractor saw: compare your fetch's sha256 against the document's `content_hash`, and on mismatch diff against the archived snapshot (step 3). Never verify against a body you have not positively identified.
 - Answer every open flag before approving. Approval auto-resolves open flags, so approving with an unanswered flag silently buries the question.
 - Approve with `new_value` corrections only for mechanical errors you verified in the source (wrong page number, transcription slip, unit multiplier misapplied). If the fix changes what the observation *means* — different measure, different period, different concept — reject instead and report it for re-extraction.
 - Reject when the value does not match the source, the measure assignment is wrong, the value is a duplicate of a sibling observation, or the claim cannot be located in the document.
@@ -78,9 +79,24 @@ For full observation detail (period fields, organization attributions, notes), u
 curl -s "$API/api/v1/kpis/citations?agent_run_id=$TARGET_RUN_ID&review_status=pending&per_page=100"
 ```
 
-### 3. Verify Each Observation Against The Source
+### 3. Confirm You Have The Same Document
 
-Group queue entries by `document_id` and fetch each source document once. Read the cited `source_page` / `source_section` / `source_table` directly.
+Group entries by `document_id`. For each document, before verifying anything:
+
+1. Get the document record: `GET $API/api/v1/kpis/documents/$DOC_ID` → `doc_url`, `content_hash`, `archived`.
+2. Fetch `doc_url` live to a local file. Assert the body is the expected document (organization and fiscal year in the title/headers) — CDNs intermittently serve wrong bodies to non-browser fetchers; re-fetch on failure.
+3. Compare `shasum -a 256` of your fetch against `content_hash`:
+   - **Match** → you are verifying the same bytes the extractor saw. Proceed on your fetch.
+   - **Mismatch** → download the extractor's snapshot: `GET $API/api/v1/kpis/admin/documents/$DOC_ID/archive` (auth header). Diff the substantive content (indicator tables, values, footnotes) between live and archived:
+     - Cosmetic drift only (page chrome, asset hashes) → proceed, verify against the live fetch.
+     - Material differences (values, tables, footnotes changed) → verify against the **archived** snapshot (that is what the claims were extracted from), and add a `source_changed_since_extraction` flag (severity high) to affected observations describing what changed live.
+   - **No `content_hash` and not archived** → legacy document; verify against the live fetch and note the missing archive in the report.
+
+Never approve observations from a body you have not positively identified.
+
+### 4. Verify Each Observation Against The Source
+
+Read the cited `source_page` / `source_section` / `source_table` directly.
 
 Check, in order:
 
@@ -95,7 +111,7 @@ Check, in order:
 9. **Siblings**: if the same measure/year/value_type already has an approved sibling, this one is likely a duplicate or a restatement — compare before deciding.
 10. **Open flags**: resolve each flag's question explicitly against the source. The answer goes in the decision notes.
 
-### 4. Decide
+### 5. Decide
 
 **Approve as-is** — everything checks out:
 
@@ -139,7 +155,7 @@ curl -s -X POST "$API/api/v1/kpis/admin/extracted_observations/$OBS_ID/review_fl
 
 Notes are mandatory on every approve and reject: cite the page/section you read and, when flags were open, the answer to each flag.
 
-### 5. Close The Run
+### 6. Close The Run
 
 ```bash
 curl -s -X PATCH "$API/api/v1/kpis/admin/agent_runs/$RUN_ID" \

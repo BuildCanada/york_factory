@@ -57,6 +57,7 @@ module Api
             published_at: d.published_at,
             published_at_source: d.published_at_source,
             content_hash: d.content_hash,
+            archived: d.filepath.present?,
             jurisdiction: d.jurisdiction && { id: d.jurisdiction.id, slug: d.jurisdiction.slug, name: d.jurisdiction.name },
             organization: d.organization && { id: d.organization.id, slug: d.organization.slug, canonical_name: d.organization.canonical_name }
           }

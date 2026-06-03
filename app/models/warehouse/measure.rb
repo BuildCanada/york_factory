@@ -45,6 +45,12 @@ class Warehouse::Measure < Warehouse::Record
     class_name: "Warehouse::MeasureFact",
     foreign_key: :measure_id,
     inverse_of: :measure
+  has_many :measure_footnotes,
+    class_name: "Warehouse::MeasureFootnote",
+    foreign_key: :measure_id,
+    dependent: :delete_all
+  has_many :source_footnotes,
+    through: :measure_footnotes
   has_many :predecessor_lineages,
     class_name: "Warehouse::MeasureLineage",
     foreign_key: :successor_id,

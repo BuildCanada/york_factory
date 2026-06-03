@@ -64,6 +64,61 @@ class Api::V1::Kpis::Admin::FootnotesAssertionsApiTest < ActionDispatch::Integra
     assert_equal 0, @obs.source_footnotes.count
   end
 
+  test "links a footnote to a measure and surfaces it on measure show" do
+    footnote = @doc.source_footnotes.create!(footnote_text: "Indicator retired; data collection ended.", marker: "c")
+    post "/api/v1/kpis/admin/measures/#{@measure.id}/footnote_links",
+      params: { source_footnote_id: footnote.id },
+      headers: auth_headers
+    assert_response :created
+    assert_equal 1, @measure.source_footnotes.count
+
+    # Idempotent.
+    post "/api/v1/kpis/admin/measures/#{@measure.id}/footnote_links",
+      params: { source_footnote_id: footnote.id },
+      headers: auth_headers
+    assert_response :created
+    assert_equal 1, @measure.source_footnotes.count
+
+    get "/api/v1/kpis/measures/#{@measure.id}"
+    assert_response :success
+    fn = JSON.parse(response.body)["footnotes"].sole
+    assert_equal "Indicator retired; data collection ended.", fn["footnote_text"]
+    assert_equal @doc.id, fn["document_id"]
+  end
+
+  test "deletes a measure footnote link" do
+    footnote = @doc.source_footnotes.create!(footnote_text: "fn")
+    Warehouse::MeasureFootnote.create!(measure: @measure, source_footnote: footnote)
+    delete "/api/v1/kpis/admin/measures/#{@measure.id}/footnote_links/#{footnote.id}",
+      headers: auth_headers
+    assert_response :no_content
+    assert_equal 0, @measure.source_footnotes.count
+  end
+
+  test "citations index serializes measure and linked footnotes" do
+    footnote = @doc.source_footnotes.create!(footnote_text: "Data source changed in 2024.", marker: "f")
+    Warehouse::ObservationFootnote.create!(extracted_observation: @obs, source_footnote: footnote)
+
+    get "/api/v1/kpis/citations", params: { document_id: @doc.id }
+    assert_response :success
+    row = JSON.parse(response.body)["data"].find { |c| c["id"] == @obs.id }
+    assert_equal @measure.slug, row["measure"]["slug"]
+    fn = row["footnotes"].sole
+    assert_equal "Data source changed in 2024.", fn["footnote_text"]
+    assert_equal "f", fn["marker"]
+  end
+
+  test "review queue serializes linked footnotes" do
+    footnote = @doc.source_footnotes.create!(footnote_text: "Comparability caveat.", marker: "b")
+    Warehouse::ObservationFootnote.create!(extracted_observation: @obs, source_footnote: footnote)
+    @obs.update!(needs_review: true)
+
+    get "/api/v1/kpis/admin/review_queue", params: { document_id: @doc.id }, headers: auth_headers
+    assert_response :success
+    row = JSON.parse(response.body)["data"].find { |r| r["extracted_observation_id"] == @obs.id }
+    assert_equal "Comparability caveat.", row["footnotes"].sole["footnote_text"]
+  end
+
   private
 
   def auth_headers

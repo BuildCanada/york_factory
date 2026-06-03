@@ -2329,6 +2329,17 @@ CREATE VIEW warehouse.measure_facts AS
 
 
 --
+-- Name: measure_footnotes; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.measure_footnotes (
+    measure_id bigint NOT NULL,
+    source_footnote_id bigint NOT NULL,
+    created_at timestamp(6) without time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: measure_lineages; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -3830,6 +3841,14 @@ ALTER TABLE ONLY warehouse.extracted_observations
 
 
 --
+-- Name: measure_footnotes measure_footnotes_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_footnotes
+    ADD CONSTRAINT measure_footnotes_pkey PRIMARY KEY (measure_id, source_footnote_id);
+
+
+--
 -- Name: measure_lineages measure_lineages_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -4777,6 +4796,13 @@ CREATE UNIQUE INDEX idx_mcr_unique ON warehouse.metric_component_relationships U
 --
 
 CREATE INDEX idx_measure_citations_agent_run ON warehouse.extracted_observations USING btree (agent_run_id) WHERE (agent_run_id IS NOT NULL);
+
+
+--
+-- Name: idx_measure_footnotes_footnote; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measure_footnotes_footnote ON warehouse.measure_footnotes USING btree (source_footnote_id);
 
 
 --
@@ -6024,6 +6050,22 @@ ALTER TABLE ONLY warehouse.extracted_observations
 
 
 --
+-- Name: measure_footnotes measure_footnotes_measure_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_footnotes
+    ADD CONSTRAINT measure_footnotes_measure_id_fkey FOREIGN KEY (measure_id) REFERENCES warehouse.measures(id) ON DELETE CASCADE;
+
+
+--
+-- Name: measure_footnotes measure_footnotes_source_footnote_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.measure_footnotes
+    ADD CONSTRAINT measure_footnotes_source_footnote_id_fkey FOREIGN KEY (source_footnote_id) REFERENCES warehouse.source_footnotes(id) ON DELETE CASCADE;
+
+
+--
 -- Name: measure_lineages measure_lineages_acknowledged_in_document_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -6278,6 +6320,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260603000001'),
 ('20260602000001'),
 ('20260528000013'),
 ('20260528000012'),

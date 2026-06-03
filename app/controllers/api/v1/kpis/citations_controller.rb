@@ -5,7 +5,7 @@ module Api
         # Nested: GET /api/v1/kpis/measures/:measure_id/citations
         # Top-level: GET /api/v1/kpis/citations (filterable)
         def index
-          scope = ::Warehouse::ExtractedObservation.includes(:document, measure: { organization: :jurisdiction })
+          scope = ::Warehouse::ExtractedObservation.includes(:document, :source_footnotes, measure: { organization: :jurisdiction })
 
           if params[:measure_id].present?
             scope = scope.where(measure_id: params[:measure_id])
@@ -78,6 +78,14 @@ module Api
             jurisdiction_id: c.jurisdiction_id,
             notes: c.notes,
             agent_run_id: c.agent_run_id,
+            measure: c.measure && {
+              id: c.measure.id,
+              slug: c.measure.slug,
+              canonical_name: c.measure.canonical_name
+            },
+            footnotes: c.source_footnotes.map { |f|
+              { id: f.id, marker: f.marker, page: f.page, footnote_text: f.footnote_text }
+            },
             document: c.document && {
               id: c.document.id,
               fiscal_year: c.document.fiscal_year,

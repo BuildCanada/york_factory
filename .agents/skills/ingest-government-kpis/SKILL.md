@@ -17,7 +17,8 @@ One invocation should handle one source document. Use one `agent_run` per source
 - Use current field names: `source_page` and `value_raw`.
 - Do not use legacy field names: `page_number` or `value_raw_text`.
 - Preserve raw source text in `value_raw`, `metric_name_raw`, `geography_name_raw`, `jurisdiction_name_raw`, and organization `*_raw` fields — minus footnote reference markers. When a cell carries a footnote marker, capture the footnote's marker and full text via the footnotes endpoint and link it to the observation; never concatenate marker text into a value.
-- Do not create observations for no-result cells (`N/A`, `not available`, `—`, `TBD`). Report them, with their explaining footnote, in the final report instead.
+- Do not create observations for no-result cells (`N/A`, `not available`, `—`, `TBD`). Link the explaining footnote to the measure (`POST /admin/measures/:id/footnote_links`) and report them in the final report instead.
+- Archive the fetched document bytes via `POST /admin/documents/:id/archive` and extract from those exact bytes. Assert the body is the expected document (organization, fiscal year) before extracting — CDNs intermittently serve wrong bodies to non-browser fetchers.
 - Do not write to `canonical_observations`; approval is a separate reviewer action.
 - Prefer existing units. Query the unit catalog first and reuse a matching `unit_symbol`; create a new unit via `/admin/units` only when no existing unit fits.
 - If the source presents values with a multiplier (e.g., `$000s`, `in thousands`, `in millions`), apply the multiplier to `value_numeric` before saving so it lands in an existing unit's display convention. Do not mint a new unit just to encode a multiplier.
@@ -107,9 +108,18 @@ RUN_ID=$(echo "$RUN" | jq -r '.id')
 test "$RUN_ID" != "null" || { echo "$RUN"; exit 1; }
 ```
 
-### 4. Register Source Document
+### 4. Register And Archive Source Document
 
 Use the canonical public URL as `doc_url`. For HTML, use the page URL. For PDFs, use the PDF URL.
+
+Fetch the document to a local file and ASSERT the content before doing anything
+with it. CDN-fronted sites (canada.ca/Akamai) intermittently serve wrong or
+partial bodies to non-browser fetchers — do not trust the URL or `<title>` alone:
+
+- the title/heading must name the expected organization and fiscal year
+- the results tables must carry the expected fiscal-year column headers
+- if the assertion fails, re-fetch; if it keeps failing, stop and report — do
+  not extract from a body you have not positively identified
 
 Before registering, inspect the page title and links. If the page is a listing
 or index of multiple reports, stop with a clear message and ask the caller to
@@ -142,6 +152,19 @@ DOC_ID=$(echo "$DOC" | jq -r '.id')
 test "$DOC_ID" != "null" || { echo "$DOC"; exit 1; }
 ```
 
+Then archive the exact bytes you fetched. This snapshot is what reviewers use
+to confirm they are validating the same document you extracted from:
+
+```bash
+curl -s -X POST "$API/api/v1/kpis/admin/documents/$DOC_ID/archive" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/octet-stream" \
+  --data-binary @"$LOCAL_DOC_FILE" | jq '{archived, content_hash}'
+```
+
+Extract from `$LOCAL_DOC_FILE` — the same bytes you archived — not from a
+second fetch. If the response says `archived: false`, the hash was still
+recorded; mention the storage failure in the final report.
+
 ### 5. Extract Measures And Values
 
 Read only relevant pages or sections first. Search headings like:
@@ -166,7 +189,7 @@ Value conventions:
 - `value_numeric` is in the measure's display unit. For `$B`, send `5.3`; for `%`, send `83`; for `CAD`, send full dollars.
 - `value_text` is for qualitative/date/pass-fail values.
 - `value_raw` is the exact visible source cell, excluding footnote reference markers. A cell rendered as `96.8% Footnote f` has `value_raw: "96.8%"` — the marker is captured as a linked footnote (see below), never glued into the value. The same applies to `metric_name_raw` and other `*_raw` fields.
-- Do not create observations for cells that report no result: `N/A`, `n/a`, `not available`, `—`, `TBD`, or equivalent. There is no value to claim. Instead, record the cell in the final report together with the footnote that explains it; if the footnote says the indicator was retired, re-based, or redefined, report it as a lineage/metric-version candidate.
+- Do not create observations for cells that report no result: `N/A`, `n/a`, `not available`, `—`, `TBD`, or equivalent. There is no value to claim. Instead: create the explaining footnote on the document and link it to the affected MEASURE via `POST /admin/measures/$MEASURE_ID/footnote_links` with `{"source_footnote_id": ID}` — that is where "why is there no data" context lives when no observation exists. Record the cell in the final report too; if the footnote says the indicator was retired, re-based, or redefined, report it as a lineage/metric-version candidate.
 - `source_page` is the physical PDF page index used by the reader, 1-based. For HTML, leave it null and use `source_section`.
 - `measurement_year` is the year the value is about. For federal `2024-25`, use `2025`.
 - `value_type` must be one of `actual`, `target`, `projected`, `plan`, `budget`.

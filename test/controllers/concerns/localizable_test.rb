@@ -45,4 +45,11 @@ class LocalizableTest < ActionDispatch::IntegrationTest
     data = JSON.parse(response.body)
     assert_equal "Housing Crisis Analysis", data["title"]
   end
+
+  test "locale does not leak past the request" do
+    get api_v1_memo_url("housing-crisis-memo"), params: { locale: "fr" }
+    assert_response :success
+
+    assert_equal I18n.default_locale, I18n.locale
+  end
 end

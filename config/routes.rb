@@ -50,6 +50,60 @@ Rails.application.routes.draw do
       namespace :warehouse do
         resources :jurisdictions, only: [ :index ]
       end
+
+      namespace :kpis do
+        resources :jurisdictions, only: [ :index, :show ], param: :slug do
+          resources :organizations, only: [ :index, :show ], param: :slug
+        end
+        resources :organizations, only: [], param: :slug
+        resources :measures, only: [ :index, :show ] do
+          resources :facts, only: [ :index ]
+          resources :citations, only: [ :index ]
+          resources :compositions, only: [ :index ]
+        end
+        resources :compositions, only: [ :index ]
+        resources :facts, only: [ :index ]
+        resources :citations, only: [ :index ]
+        resources :observations, only: [ :index, :show ] do
+          member do
+            get :derivations
+          end
+        end
+        resources :documents, only: [ :index, :show ]
+        resources :units, only: [ :index ]
+        resources :organization_lineages, only: [ :index ]
+        resources :measure_lineages, only: [ :index ]
+        resources :agent_runs, only: [ :index, :show ]
+
+        namespace :admin do
+          resources :organizations, only: [ :create ]
+          resources :units, only: [ :create ]
+          resources :measures, only: [ :create ] do
+            resources :footnote_links, only: [ :create, :destroy ], controller: "measure_footnotes"
+          end
+          resources :citations, only: [ :create ]
+          resources :organization_lineages, only: [ :create ]
+          resources :measure_lineages, only: [ :create ]
+          resources :agent_runs, only: [ :create, :update, :show ]
+          resources :review_queue, only: [ :index ]
+          resources :extracted_observations, only: [] do
+            member do
+              post :approve
+              post :reject
+            end
+            resources :review_flags, only: [ :create, :update ], controller: "observation_review_flags"
+            resources :assertions, only: [ :create ], controller: "extraction_assertions"
+            resources :footnote_links, only: [ :create, :destroy ], controller: "observation_footnotes"
+          end
+          resources :documents, only: [ :create ] do
+            resources :footnotes, only: [ :create ], controller: "source_footnotes"
+            member do
+              post :archive
+              get :archive, action: :archive_download
+            end
+          end
+        end
+      end
     end
   end
 
@@ -68,6 +122,12 @@ Rails.application.routes.draw do
 
     get "ingestions", to: "dashboard#ingestions"
     get "lineage_review", to: "dashboard#lineage_review"
+
+    namespace :kpis do
+      resources :agent_runs, only: [ :index, :show ]
+      resources :measures, only: [ :index, :show ]
+      resources :citations, only: [ :index, :show ]
+    end
 
     resources :posts, only: full do
       post :retranslate, on: :member

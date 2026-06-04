@@ -31,3 +31,8 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+
+# Local artifacts
+.DS_Store
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

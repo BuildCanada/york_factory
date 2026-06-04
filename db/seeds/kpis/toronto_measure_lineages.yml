@@ -1,0 +1,12 @@
+# Toronto measure-level transitions. Each row links a predecessor measure to its
+# successor when a budget doc replaced one KPI with another (rename, methodology
+# revision, unit change, split, or merge).
+#
+# Lookup keys: org slug + measure slug. Both must resolve to measures created by
+# the TorontoKpisV1Loader. This file is read AFTER the loader has run.
+#
+# TODO: this seed is a starting point distilled from v2 plan callouts. The full
+# set of transitions lives in v1_kpis.description and v1_kpi_values.notes — to
+# be expanded after a pass through the per-agency extraction reports.
+
+lineages: []

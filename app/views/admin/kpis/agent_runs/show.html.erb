@@ -1,0 +1,57 @@
+<div class="page-header">
+  <h1>Agent Run #<%= @run.id %></h1>
+  <%= link_to "← All runs", admin_kpis_agent_runs_path, class: "btn btn-sm" %>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="label">Status</div><div class="value">
+    <% status_class = case @run.status
+       when "completed" then "green"
+       when "running"   then "yellow"
+       when "failed"    then "red"
+       else "blue"
+       end %>
+    <span class="badge badge-<%= status_class %>"><%= @run.status %></span>
+  </div></div>
+  <div class="card"><div class="label">Documents</div><div class="value"><%= @document_count %></div></div>
+  <div class="card"><div class="label">Measures</div><div class="value"><%= @measure_count %></div></div>
+  <div class="card"><div class="label">Citations</div><div class="value">
+    <%= link_to @citation_count, admin_kpis_citations_path(agent_run_id: @run.id) %>
+  </div></div>
+</div>
+
+<h2>Metadata</h2>
+<table>
+  <tr><th>Agent name</th><td class="mono"><%= @run.agent_name %></td></tr>
+  <tr><th>Agent version</th><td class="mono"><%= @run.agent_version || "—" %></td></tr>
+  <tr><th>Triggered by</th><td class="mono"><%= @run.triggered_by || "—" %></td></tr>
+  <tr><th>Started</th><td><%= @run.started_at %></td></tr>
+  <tr><th>Finished</th><td><%= @run.finished_at || "—" %></td></tr>
+  <tr><th>Duration</th><td><%= @run.finished_at ? distance_of_time_in_words(@run.started_at, @run.finished_at) : "—" %></td></tr>
+  <% if @run.error_message.present? %>
+    <tr><th>Error</th><td class="mono" style="color: var(--red); white-space: pre-wrap;"><%= @run.error_message %></td></tr>
+  <% end %>
+</table>
+
+<h2>Input parameters</h2>
+<table>
+  <% Array(@run.input_params).each do |k, v| %>
+    <tr><th><%= k %></th><td class="mono"><%= v.is_a?(String) ? v : v.to_json %></td></tr>
+  <% end %>
+</table>
+
+<% if @run.summary.is_a?(Hash) && @run.summary.any? %>
+  <h2>Summary</h2>
+  <table>
+    <% @run.summary.each do |k, v| %>
+      <tr><th><%= k.to_s.titleize %></th><td class="mono"><%= v.is_a?(String) ? v : v.to_json %></td></tr>
+    <% end %>
+  </table>
+<% end %>
+
+<% if @run.report.present? %>
+  <h2>Report</h2>
+  <div class="card" style="padding: 1.5rem;">
+    <%= sanitize Markdown::Renderer.call(@run.report) %>
+  </div>
+<% end %>

@@ -6,7 +6,7 @@ class Admin::TradeBarriers::AgreementsControllerTest < ActionDispatch::Integrati
   setup do
     @theme = TradeBarriers::Theme.find_or_create_by!(name: "Goods")
     Warehouse::Jurisdiction.find_or_create_by!(code: "AB") do |j|
-      j.name = "Alberta"; j.level = "provincial"
+      j.name = "Alberta"; j.slug = "ab"; j.level = "provincial"; j.fiscal_year_start_month = 4
     end
   end
 

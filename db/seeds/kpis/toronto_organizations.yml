@@ -1,0 +1,75 @@
+# Toronto agencies / departments.
+#
+# Two kinds of rows:
+#   - CURRENT canonical orgs (active_to_year: null). 53 rows from kpis.agency_department.
+#   - HISTORICAL predecessor orgs (active_to_year set). These existed under a different
+#     name before a documented transition; they get their own organization_lineage row
+#     pointing to the successor(s).
+#
+# Aliases catch string variants of the SAME logical entity (curly quotes, &/and, internal
+# divisional naming). They do NOT catch renames — renames are separate org rows linked via
+# warehouse.organization_lineages.
+
+organizations:
+  # ----- CURRENT (active) -----
+  - { slug: "311-toronto",                                canonical_name: "311 Toronto",                                              aliases: [ "Customer Experience", "Customer Experience (311 Toronto)" ] }
+  - { slug: "arena-boards",                               canonical_name: "Arena Boards of Management" }
+  - { slug: "association-of-community-centres",           canonical_name: "Association of Community Centres" }
+  - { slug: "childrens-services",                         canonical_name: "Children's Services",                                      aliases: [ "Children’s Services" ] }
+  - { slug: "city-clerks-office",                         canonical_name: "City Clerk's Office",                                      aliases: [ "City Clerk’s Office" ] }
+  - { slug: "city-managers-office",                       canonical_name: "City Manager's Office",                                    aliases: [ "City Manager’s Office", "City Manager Services" ] }
+  - { slug: "city-planning",                              canonical_name: "City Planning",                                            aliases: [ "City Planning and Development Review", "Development Review" ] }
+  - { slug: "corporate-real-estate-management",           canonical_name: "Corporate Real Estate Management",                         aliases: [ "Toronto Realty Agency" ], active_from_year: 2019 }
+  - { slug: "court-services",                             canonical_name: "Court Services" }
+  - { slug: "createto",                                   canonical_name: "CreateTO" }
+  - { slug: "economic-development-and-culture",           canonical_name: "Economic Development and Culture",                         aliases: [ "Economic Development & Culture" ] }
+  - { slug: "engineering-and-construction-services",      canonical_name: "Engineering and Construction Services",                    aliases: [ "Engineering & Construction Services" ] }
+  - { slug: "exhibition-place",                           canonical_name: "Exhibition Place" }
+  - { slug: "fleet-services",                             canonical_name: "Fleet Services" }
+  - { slug: "heritage-toronto",                           canonical_name: "Heritage Toronto" }
+  - { slug: "housing-secretariat",                        canonical_name: "Housing Secretariat",                                      aliases: [ "Housing Secretariat and Housing Development Office" ] }
+  - { slug: "legal-services",                             canonical_name: "Legal Services" }
+  - { slug: "municipal-licensing-and-standards",          canonical_name: "Municipal Licensing and Standards",                        aliases: [ "Municipal Licensing & Standards" ] }
+  - { slug: "office-of-the-auditor-general",              canonical_name: "Office of the Auditor General",                            aliases: [ "Auditor General", "Auditor General's Office" ] }
+  - { slug: "office-of-the-chief-financial-officer",      canonical_name: "Office of the Chief Financial Officer and Treasurer",      aliases: [ "Office of the Chief Financial Officer", "Office of the Chief Financial Officer & Treasurer", "Office of the Treasurer" ] }
+  - { slug: "office-of-the-chief-information-security-officer", canonical_name: "Office of the Chief Information Security Officer",  aliases: [ "Chief Information Security Officer", "Toronto Cyber Security" ] }
+  - { slug: "office-of-the-controller",                   canonical_name: "Office of the Controller",                                 aliases: [ "Financial Operations & Control" ] }
+  - { slug: "office-of-the-integrity-commissioner",       canonical_name: "Office of the Integrity Commissioner",                     aliases: [ "Integrity Commissioner" ] }
+  - { slug: "ombudsman-toronto",                          canonical_name: "Ombudsman Toronto" }
+  - { slug: "parks-forestry-and-recreation",              canonical_name: "Parks, Forestry and Recreation",                           aliases: [ "Parks, Forestry & Recreation", "Parks & Recreation" ] }
+  - { slug: "policy-planning-finance-and-administration", canonical_name: "Policy, Planning, Finance and Administration",             aliases: [ "Policy, Planning, Finance & Administration", "Policy Planning, Finance & Administration" ] }
+  - { slug: "seniors-services-and-long-term-care",        canonical_name: "Seniors Services and Long-Term Care",                      aliases: [ "Seniors Services & Long-Term Care", "Senior Services and Long-Term Care", "Long Term Care Homes & Services", "Long-Term Care Homes & Services" ] }
+  - { slug: "social-development-finance-and-administration", canonical_name: "Social Development, Finance and Administration",        aliases: [ "Social Development, Finance & Administration", "Social Development" ] }
+  - { slug: "solid-waste-management-services",            canonical_name: "Solid Waste Management Services",                          aliases: [ "Solid Waste" ] }
+  - { slug: "to-live",                                    canonical_name: "TO Live",                                                  active_from_year: 2020 }
+  - { slug: "technology-services-division",               canonical_name: "Technology Services Division",                             aliases: [ "Technology Services" ], active_from_year: 2022 }
+  - { slug: "toronto-atmospheric-fund",                   canonical_name: "Toronto Atmospheric Fund" }
+  - { slug: "toronto-building",                           canonical_name: "Toronto Building" }
+  - { slug: "toronto-community-housing-corporation",      canonical_name: "Toronto Community Housing Corporation",                    aliases: [ "Toronto Community Housing" ] }
+  - { slug: "toronto-emergency-management",               canonical_name: "Toronto Emergency Management",                             active_from_year: 2023 }
+  - { slug: "toronto-employment-and-social-services",     canonical_name: "Toronto Employment and Social Services",                   aliases: [ "Toronto Employment & Social Services" ] }
+  - { slug: "toronto-fire-services",                      canonical_name: "Toronto Fire Services",                                    aliases: [ "Fire Services" ] }
+  - { slug: "toronto-lobbyist-registrar",                 canonical_name: "Toronto Lobbyist Registrar",                               aliases: [ "Lobbyist Registrar", "Office of the Lobbyist Registrar" ] }
+  - { slug: "toronto-paramedic-services",                 canonical_name: "Toronto Paramedic Services",                               aliases: [ "Toronto Paramedics Services" ] }
+  - { slug: "toronto-parking-authority",                  canonical_name: "Toronto Parking Authority" }
+  - { slug: "toronto-police-service",                     canonical_name: "Toronto Police Service",                                   aliases: [ "Toronto Police Services", "Toronto Police Service Board", "Toronto Police Services Board" ] }
+  - { slug: "toronto-police-parking-enforcement-unit",    canonical_name: "Toronto Police Service Parking Enforcement Unit",          aliases: [ "Toronto Police Services Parking Enforcement Unit", "Toronto Police Parking Enforcement Unit", "Parking Tag Enforcement and Operations", "Parking Tags Enforcement & Operations" ] }
+  - { slug: "toronto-public-health",                      canonical_name: "Toronto Public Health" }
+  - { slug: "toronto-public-library",                     canonical_name: "Toronto Public Library" }
+  - { slug: "toronto-shelter-and-support-services",       canonical_name: "Toronto Shelter and Support Services",                     aliases: [ "Toronto Shelter & Support Services" ], active_from_year: 2024 }
+  - { slug: "toronto-transit-commission",                 canonical_name: "Toronto Transit Commission",                               aliases: [ "Toronto Transit Commission (TTC)" ] }
+  - { slug: "toronto-water",                              canonical_name: "Toronto Water",                                            aliases: [ "Toronto Wastewater Program", "Toronto Water (Wastewater)" ] }
+  - { slug: "toronto-zoo",                                canonical_name: "Toronto Zoo" }
+  - { slug: "trca",                                       canonical_name: "Toronto and Region Conservation Authority",                aliases: [ "Toronto & Region Conservation Authority" ] }
+  - { slug: "transit-expansion",                          canonical_name: "Transit Expansion",                                        aliases: [ "Transit Expansion Office" ] }
+  - { slug: "transportation-services",                    canonical_name: "Transportation Services" }
+  - { slug: "waterfront-revitalization-initiative",       canonical_name: "Waterfront Revitalization Initiative",                     aliases: [ "Water Revitalization Initiative" ] }
+  - { slug: "yonge-dundas-square",                        canonical_name: "Yonge-Dundas Square",                                      aliases: [ "Yonge - Dundas Square", "Sankofa Square", "Sankofa Square (formerly Yonge-Dundas Square)" ] }
+
+  # ----- HISTORICAL (predecessors of documented transitions) -----
+  - { slug: "civic-theatres-toronto",                     canonical_name: "Civic Theatres Toronto",                                   aliases: [ "Theatres" ], active_to_year: 2020 }
+  - { slug: "facilities-and-real-estate",                 canonical_name: "Facilities and Real Estate Divisions",                     aliases: [ "Facilities, Real Estate, Environment & Energy" ], active_to_year: 2019 }
+  - { slug: "office-of-emergency-management",             canonical_name: "Office of Emergency Management",                           active_to_year: 2023 }
+  - { slug: "information-and-technology",                 canonical_name: "Information and Technology",                               aliases: [ "Information & Technology" ], active_to_year: 2022 }
+  - { slug: "shelter-support-and-housing-administration", canonical_name: "Shelter, Support and Housing Administration",              aliases: [ "Shelter, Support & Housing Administration" ], active_to_year: 2024 }
+  - { slug: "affordable-housing-office",                  canonical_name: "Affordable Housing Office",                                active_to_year: 2020 }

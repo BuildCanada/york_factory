@@ -1,0 +1,58 @@
+<div class="page-header">
+  <h1>Citation #<%= @citation.id %></h1>
+</div>
+
+<table>
+  <tr><th>Measure</th><td><%= link_to @citation.measure&.canonical_name, admin_kpis_measure_path(@citation.measure_id) %></td></tr>
+  <tr><th>Measurement year</th><td><%= @citation.measurement_year %></td></tr>
+  <tr><th>Value type</th><td><%= @citation.value_type %></td></tr>
+  <tr><th>Period basis</th><td class="mono"><%= @citation.period_basis %></td></tr>
+  <tr><th>value_numeric</th><td class="mono"><%= @citation.value_numeric || "—" %></td></tr>
+  <tr><th>value_text</th><td class="mono"><%= @citation.value_text || "—" %></td></tr>
+  <tr><th>value_raw</th><td class="mono"><%= @citation.value_raw || "—" %></td></tr>
+  <tr><th>Notes</th><td><%= @citation.notes || "—" %></td></tr>
+</table>
+
+<h2>Document</h2>
+<% if @citation.document %>
+  <table>
+    <tr><th>ID</th><td><%= @citation.document_id %></td></tr>
+    <tr><th>Title</th><td><%= @citation.document.doc_title || "—" %></td></tr>
+    <tr><th>Fiscal year</th><td><%= @citation.document.fiscal_year %></td></tr>
+    <tr><th>URL</th><td class="mono"><%= link_to @citation.document.doc_url, @citation.document.doc_url, target: "_blank", rel: "noopener" %></td></tr>
+    <tr><th>Published</th><td><%= @citation.document.published_at || "—" %> <% if @citation.document.published_at_source %><span class="text-muted">(<%= @citation.document.published_at_source %>)</span><% end %></td></tr>
+    <tr><th>Page</th><td><%= @citation.source_page || "—" %></td></tr>
+  </table>
+<% end %>
+
+<h2>Agent run</h2>
+<% if @citation.agent_run %>
+  <table>
+    <tr><th>Run</th><td><%= link_to "##{@citation.agent_run_id}", admin_kpis_agent_run_path(@citation.agent_run_id) %></td></tr>
+    <tr><th>Agent</th><td class="mono"><%= @citation.agent_run.agent_name %></td></tr>
+    <tr><th>Triggered by</th><td class="mono"><%= @citation.agent_run.triggered_by %></td></tr>
+    <tr><th>When</th><td><%= time_ago_in_words(@citation.agent_run.started_at) %> ago</td></tr>
+  </table>
+<% else %>
+  <div class="empty">No agent run associated (older row from before agent_runs existed, or hand-issued via admin API without agent_run_id).</div>
+<% end %>
+
+<h2>Sibling citations (same measure × year × type × period)</h2>
+<% if @sibling_citations.any? %>
+  <div class="text-muted mb-2">These are alternative observations of the same fact from different documents. The `measure_facts` view picks one as canonical (latest published_at, then highest id).</div>
+  <table>
+    <thead><tr><th>ID</th><th>Value</th><th>Document</th><th>Published</th></tr></thead>
+    <tbody>
+      <% @sibling_citations.each do |c| %>
+        <tr>
+          <td><%= link_to c.id, admin_kpis_citation_path(c) %></td>
+          <td class="mono"><%= c.value_numeric || c.value_text || "—" %></td>
+          <td><%= c.document&.doc_title || c.document_id %></td>
+          <td><%= c.document&.published_at || "—" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No sibling citations — this is the only observation for this fact.</div>
+<% end %>

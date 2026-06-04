@@ -1,0 +1,45 @@
+<div class="page-header">
+  <h1>Measures</h1>
+</div>
+
+<%= form_with url: admin_kpis_measures_path, method: :get, local: true, class: "filters" do |f| %>
+  <%= f.select :jurisdiction,
+        [["All jurisdictions", ""]] + @jurisdictions.map { |j| [j.name, j.slug] },
+        { selected: params[:jurisdiction] } %>
+  <%= f.text_field :organization, placeholder: "Org slug filter", value: params[:organization], class: "mono" %>
+  <%= f.text_field :q, placeholder: "Search measure name…", value: params[:q] %>
+  <%= f.submit "Filter", class: "btn btn-sm" %>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Organization</th>
+      <th>Jurisdiction</th>
+      <th>Unit</th>
+      <th>Years</th>
+      <th>Citations</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @measures.each do |m| %>
+      <tr>
+        <td><%= link_to m.canonical_name, admin_kpis_measure_path(m) %></td>
+        <td class="mono"><%= m.organization&.slug || "—" %></td>
+        <td><%= m.organization&.jurisdiction&.name || "—" %></td>
+        <td class="mono"><%= m.unit&.symbol %></td>
+        <td><%= [m.first_seen_year, m.last_seen_year].compact.uniq.join("–") %></td>
+        <td><%= link_to m.extracted_observations.count, admin_kpis_citations_path(measure_id: m.id) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @measures.empty? %>
+  <div class="empty">No measures match.</div>
+<% end %>
+
+<% if @pagy.pages > 1 %>
+  <div class="text-muted">Page <%= @pagy.page %> of <%= @pagy.pages %> · <%= @pagy.count %> total</div>
+<% end %>

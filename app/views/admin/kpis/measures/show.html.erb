@@ -1,0 +1,49 @@
+<div class="page-header">
+  <h1><%= @measure.canonical_name %></h1>
+  <%= link_to "← All measures", admin_kpis_measures_path, class: "btn btn-sm" %>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="label">Jurisdiction</div><div class="value" style="font-size: 1.1rem;"><%= @measure.organization&.jurisdiction&.name || "—" %></div></div>
+  <div class="card"><div class="label">Organization</div><div class="value" style="font-size: 1.1rem;"><%= @measure.organization&.canonical_name || "Cross-agency" %></div></div>
+  <div class="card"><div class="label">Unit</div><div class="value mono"><%= @measure.unit&.symbol %></div></div>
+  <div class="card"><div class="label">Citations</div><div class="value"><%= link_to @citation_count, admin_kpis_citations_path(measure_id: @measure.id) %></div></div>
+  <div class="card"><div class="label">Tagged runs</div><div class="value"><%= @run_count %></div></div>
+</div>
+
+<h2>Metadata</h2>
+<table>
+  <tr><th>Slug</th><td class="mono"><%= @measure.slug %></td></tr>
+  <tr><th>Service category</th><td><%= @measure.service_category || "—" %></td></tr>
+  <tr><th>Description</th><td><%= @measure.description || "—" %></td></tr>
+  <tr><th>First seen</th><td><%= @measure.first_seen_year || "—" %></td></tr>
+  <tr><th>Last seen</th><td><%= @measure.last_seen_year || "—" %></td></tr>
+</table>
+
+<h2>Resolved facts (measure_facts view)</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Year</th>
+      <th>Type</th>
+      <th>Period</th>
+      <th>Value</th>
+      <th>Citation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @facts.each do |f| %>
+      <tr>
+        <td><%= f.measurement_year %></td>
+        <td><span class="badge badge-<%= f.value_type == 'actual' ? 'green' : f.value_type == 'target' ? 'blue' : 'yellow' %>"><%= f.value_type %></span></td>
+        <td class="mono"><%= f.period_basis %></td>
+        <td class="mono"><%= f.value_numeric&.then { |n| number_with_delimiter(n) } || f.value_text || "—" %> <%= @measure.unit&.symbol %></td>
+        <td><%= link_to f.citation_id, admin_kpis_citation_path(f.citation_id) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @facts.to_a.empty? %>
+  <div class="empty">No resolved facts. (Citations may exist but none have made it through the view.)</div>
+<% end %>

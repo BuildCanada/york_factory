@@ -186,6 +186,17 @@
 
         <div class="sidebar-divider"></div>
 
+        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="kpis">
+          KPIs <span class="chevron open">&#9654;</span>
+        </div>
+        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="kpis">
+          <li><a href="/admin/kpis/agent_runs" class="<%= 'active' if controller_path == 'admin/kpis/agent_runs' %>">Agent Runs</a></li>
+          <li><a href="/admin/kpis/measures" class="<%= 'active' if controller_path == 'admin/kpis/measures' %>">Measures</a></li>
+          <li><a href="/admin/kpis/citations" class="<%= 'active' if controller_path == 'admin/kpis/citations' %>">Citations</a></li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+
         <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="cms">
           CMS <span class="chevron open">&#9654;</span>
         </div>

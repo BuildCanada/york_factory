@@ -15,4 +15,5 @@ class Warehouse::RawIngestion < Warehouse::Record
   has_object :relationship_loader
   has_object :population_loader
   has_object :address_loader
+  has_object :toronto_kpis_v1_loader
 end

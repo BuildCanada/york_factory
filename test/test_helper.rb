@@ -10,6 +10,19 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
+    # Federal Canada jurisdiction is referenced by default by Warehouse::Organization
+    # (it's the default jurisdiction for federal-pipeline-created orgs). Ensure it
+    # exists in every test database.
+    setup do
+      Warehouse::Jurisdiction.find_or_create_by!(code: "CA") do |j|
+        j.name = "Canada"
+        j.slug = "ca"
+        j.level = "federal"
+        j.fiscal_year_start_month = 4
+        j.default_currency = "CAD"
+      end
+    end
+
     # Add more helper methods to be used by all tests here...
   end
 end

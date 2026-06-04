@@ -29,12 +29,14 @@ module Metrics
       end
 
       def upsert_from_csv(account, csv_content, start_year: Date.current.year)
-        rows = parse_csv(csv_content, start_year)
-        return { inserted: 0, updated: 0, errors: [ "No data rows found" ] } if rows.empty?
+        rows, parse_errors = parse_csv(csv_content, start_year)
+        if rows.empty?
+          return { inserted: 0, updated: 0, errors: parse_errors.presence || [ "No data rows found" ] }
+        end
 
         inserted = 0
         updated = 0
-        errors = []
+        errors = parse_errors
 
         rows.each_with_index do |row, index|
           attrs = row.merge(account: account)
@@ -89,15 +91,20 @@ module Metrics
       def parse_csv(content, start_year)
         require "csv"
 
-        content = content.encode("UTF-8", invalid: :replace, undef: :replace)
-        content = content.sub(/\A\xEF\xBB\xBF/, "")
+        content = normalize_encoding(content)
 
-        parsed = CSV.parse(content, headers: true, liberal_parsing: true)
+        begin
+          parsed = CSV.parse(content, headers: true, liberal_parsing: true)
+        rescue CSV::MalformedCSVError => e
+          return [ [], [ "Malformed CSV: #{e.message}" ] ]
+        end
 
         year = start_year
         previous_month = nil
+        rows = []
+        errors = []
 
-        parsed.filter_map do |row|
+        parsed.each_with_index do |row, index|
           date_str = row["Date"]
           next if date_str.blank?
 
@@ -112,10 +119,33 @@ module Metrics
 
           attrs = { date: parsed_date }
           CSV_HEADER_MAP.each do |header, column|
-            attrs[column] = row[header].to_i
+            attrs[column] = parse_metric(row[header], header)
           end
-          attrs
+          rows << attrs
+        rescue ArgumentError => e
+          errors << "Row #{index + 1}: #{e.message}"
         end
+
+        [ rows, errors ]
+      end
+
+      # Reject unparseable metric values instead of letting to_i silently
+      # coerce corrupted data (e.g. "1\xFF234".to_i => 1) into the table.
+      def parse_metric(raw, header)
+        Integer(raw.to_s.strip.delete(","), 10)
+      rescue ArgumentError, TypeError
+        raise ArgumentError, "invalid #{header} value: #{raw.inspect}"
+      end
+
+      def normalize_encoding(content)
+        content = content.dup
+        if content.encoding == Encoding::ASCII_8BIT
+          content.force_encoding(Encoding::UTF_8)
+        elsif content.encoding != Encoding::UTF_8
+          content = content.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+        end
+        content = content.scrub unless content.valid_encoding?
+        content.delete_prefix("\uFEFF")
       end
     end
   end

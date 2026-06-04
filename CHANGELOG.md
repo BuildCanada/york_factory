@@ -2,6 +2,22 @@
 
 All notable changes to York Factory will be documented in this file.
 
+## [0.1.4.0] - 2026-06-04
+
+### Fixed
+
+- TikTok stats import failed with "No data rows found" for zip uploads: zip-extracted CSV content is binary-encoded, and transcoding it mangled the UTF-8 BOM into replacement characters, corrupting the header row. Content is now reinterpreted as UTF-8 and the BOM stripped as a character.
+- I18n locale leak: `Localizable` set `I18n.locale` in a `before_action`, so a request's locale persisted past the request (and made the test suite order-dependent). Now uses `around_action` with `I18n.with_locale`.
+
+### Changed
+
+- TikTok stats import rejects rows with unparseable metric values as row errors instead of silently coercing corrupted data to integers with `to_i`
+- TikTok stats import reports malformed CSV content and unparseable dates as import errors instead of raising a 500 in the admin controller
+
+### Added
+
+- Test coverage for `Metrics::TiktokStat` CSV/zip imports: BOM handling, binary encoding, year rollover, corrupted values, bad dates, update path, and zip round-trip (7 tests)
+
 ## [0.1.3.0] - 2026-04-12
 
 ### Added

@@ -5,7 +5,7 @@ Automated pipeline that normalizes Canadian federal government fiscal data (Publ
 
 ## Commands
 ```bash
-bin/rails test                    # run all tests (318 tests)
+bin/rails test                    # run all tests (533 tests)
 bin/rails db:migrate              # apply migrations
 bin/rails db:seed                 # seed data sources
 bin/rails cms:seed                # seed CMS development data

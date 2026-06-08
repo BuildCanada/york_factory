@@ -19,8 +19,6 @@ class NextjsRevalidator
         },
         timeout: { request_timeout: 5 }
       ).post(url, json: { tag: tag }).raise_for_status
-    rescue => e
-      Rails.logger.warn "error busting #{tag}: #{e.class}: #{e.message}"
     end
   end
 end

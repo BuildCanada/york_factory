@@ -37,9 +37,10 @@ class LinkedinOidc
         client_id:     client_id,
         client_secret: client_secret
       }
-    )
-    raise Error, "LinkedIn token exchange failed: HTTP #{response.status}" unless (200..299).cover?(response.status)
+    ).raise_for_status
     JSON.parse(response.body.to_s)
+  rescue HTTPX::HTTPError => e
+    raise Error, "LinkedIn token exchange failed: HTTP #{e.response.status}"
   end
 
   def self.verify_id_token(id_token, nonce:)
@@ -86,8 +87,9 @@ class LinkedinOidc
   end
 
   def self.fetch_jwks
-    response = HTTPX.get(JWKS_URL)
-    raise Error, "JWKS fetch failed: HTTP #{response.status}" unless (200..299).cover?(response.status)
+    response = HTTPX.get(JWKS_URL).raise_for_status
     JSON.parse(response.body.to_s)
+  rescue HTTPX::HTTPError => e
+    raise Error, "JWKS fetch failed: HTTP #{e.response.status}"
   end
 end

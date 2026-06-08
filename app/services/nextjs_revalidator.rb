@@ -4,25 +4,23 @@ class NextjsRevalidator
   end
 
   def self.bust_tag(tag)
-    url    = ENV["NEXTJS_REVALIDATE_URL"]
-    secret = ENV["NEXTJS_REVALIDATE_SECRET"]
-    if url.blank? || secret.blank?
-      Rails.logger.info "[NextjsRevalidator] skipped (NEXTJS_REVALIDATE_URL or _SECRET unset)"
-      return
-    end
+    Rails.logger.tagged("NextjsRevalidator") do
+      url    = ENV["NEXTJS_REVALIDATE_URL"]
+      secret = ENV["NEXTJS_REVALIDATE_SECRET"]
+      if url.blank? || secret.blank?
+        Rails.logger.info "skipped (NEXTJS_REVALIDATE_URL or _SECRET unset)"
+        return
+      end
 
-    response = HTTPX.with(
-      headers: {
-        "Authorization" => "Bearer #{secret}",
-        "Content-Type"  => "application/json"
-      },
-      timeout: { request_timeout: 5 }
-    ).post(url, json: { tag: tag })
-
-    unless (200..299).cover?(response.status)
-      Rails.logger.warn "[NextjsRevalidator] HTTP #{response.status} busting #{tag}: #{response.body.to_s.first(200)}"
+      HTTPX.with(
+        headers: {
+          "Authorization" => "Bearer #{secret}",
+          "Content-Type"  => "application/json"
+        },
+        timeout: { request_timeout: 5 }
+      ).post(url, json: { tag: tag }).raise_for_status
+    rescue => e
+      Rails.logger.warn "error busting #{tag}: #{e.class}: #{e.message}"
     end
-  rescue => e
-    Rails.logger.warn "[NextjsRevalidator] error busting #{tag}: #{e.class}: #{e.message}"
   end
 end

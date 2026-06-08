@@ -1,14 +1,5 @@
-class Critique < ApplicationRecord
-  include LinkedinVerified
-
-  belongs_to :memo
-  belongs_to :moderated_by, class_name: "User", optional: true
-
-  enum :status, { pending: 0, approved: 1, rejected: 2 }
-
+class Critique < Engagement
   validates :body, presence: true, length: { maximum: 10_000 }
-
-  scope :recent_first, -> { order(created_at: :desc) }
 
   after_save :sync_approved_counter, if: :saved_change_to_status?
   after_destroy :decrement_counter_if_approved

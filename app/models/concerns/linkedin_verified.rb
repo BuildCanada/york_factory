@@ -5,7 +5,8 @@ module LinkedinVerified
 
   included do
     validates :linkedin_sub, :name, :postal_code, presence: true
-    validates :linkedin_sub, uniqueness: { scope: :memo_id }
+    # Scope by :type (STI) so the same person can both endorse and critique a memo.
+    validates :linkedin_sub, uniqueness: { scope: [ :memo_id, :type ] }
     validates :postal_code, format: { with: POSTAL_CODE_REGEX, message: "must be a valid Canadian postal code" }
     validates :email, format: { with: URI::MailTo::EMAIL_REGEXP, allow_blank: true }
 

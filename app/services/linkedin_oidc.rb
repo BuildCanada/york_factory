@@ -79,16 +79,16 @@ class LinkedinOidc
 
   def self.jwks_loader
     ->(options) {
-      cached = Rails.cache.fetch(JWKS_CACHE_KEY, expires_in: JWKS_TTL, force: options[:invalidate]) do
+      keys = Rails.cache.fetch(JWKS_CACHE_KEY, expires_in: JWKS_TTL, force: options[:invalidate]) do
         fetch_jwks
       end
-      { keys: cached.fetch("keys") }
+      { keys: keys }
     }
   end
 
   def self.fetch_jwks
     response = HTTPX.get(JWKS_URL).raise_for_status
-    JSON.parse(response.body.to_s)
+    JSON.parse(response.body.to_s).fetch("keys")
   rescue HTTPX::HTTPError => e
     raise Error, "JWKS fetch failed: HTTP #{e.response.status}"
   end

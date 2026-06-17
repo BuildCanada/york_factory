@@ -27,7 +27,7 @@ module Users
     private
 
     def after_sign_in_path
-      current_user.admin? ? admin_root_path : profile_path
+      session.delete(:return_to).presence || (current_user.admin? ? admin_root_path : profile_path)
     end
   end
 end

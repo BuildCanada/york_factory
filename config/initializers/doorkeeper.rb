@@ -6,15 +6,18 @@ Doorkeeper.configure do
   # Resource owner is authenticated via the existing Devise session.
   # In production this runs under the auth.buildcanada.com subdomain, with the
   # session cookie shared across .buildcanada.com subdomains.
+  #
+  # Any authenticated user may mint a token — this provider doubles as general
+  # login for buildcanada.com. Admin status is NOT an OAuth scope; it's a
+  # property of the user, surfaced to clients via GET /api/v1/me and enforced
+  # server-side wherever it matters (e.g. draft preview, see
+  # Api::V1::CmsBaseController#doorkeeper_admin_token_valid?).
   resource_owner_authenticator do
-    requested_scopes = request.params[:scope].to_s.split
     user = current_user
 
     if user.nil?
       session[:return_to] = request.fullpath
       redirect_to new_user_session_url
-    elsif requested_scopes.include?("admin") && !user.admin? && !user.superadmin?
-      redirect_to new_user_session_url, alert: "Admin access required to authorize this application."
     else
       user
     end
@@ -28,11 +31,12 @@ Doorkeeper.configure do
   # Authorization code only — TradingPost is a confidential server-side app.
   grant_flows %w[authorization_code]
 
-  # No default scope; callers must declare the scope they need.
-  default_scopes
-  optional_scopes :admin
+  # A single baseline scope so clients needn't request one explicitly.
+  # Authorization is driven by the resource owner's role (exposed via
+  # GET /api/v1/me), not by OAuth scopes.
+  default_scopes :public
 
-  # Short-lived access tokens; refresh tokens allow admins to stay authenticated.
+  # Short-lived access tokens; refresh tokens let users stay authenticated.
   access_token_expires_in 2.hours
   use_refresh_token
 

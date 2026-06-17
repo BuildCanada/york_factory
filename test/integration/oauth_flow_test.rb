@@ -8,7 +8,7 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     @app = Doorkeeper::Application.create!(
       name: "TestApp",
       redirect_uri: "https://example.com/callback",
-      scopes: "admin",
+      scopes: "",
       confidential: true,
       trusted: false
     )
@@ -16,7 +16,7 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     @trusted_app = Doorkeeper::Application.create!(
       name: "TrustedApp",
       redirect_uri: "https://example.com/callback",
-      scopes: "admin",
+      scopes: "",
       confidential: true,
       trusted: true
     )
@@ -30,43 +30,29 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     get oauth_authorization_url(
       client_id: @app.uid,
       redirect_uri: @app.redirect_uri,
-      response_type: "code",
-      scope: "admin"
+      response_type: "code"
     )
     assert_redirected_to new_user_session_url
   end
 
-  test "GET /oauth/authorize redirects non-admin users to login" do
+  test "GET /oauth/authorize shows authorization form for any signed-in user" do
     sign_in_as @member
     get oauth_authorization_url(
       client_id: @app.uid,
       redirect_uri: @app.redirect_uri,
-      response_type: "code",
-      scope: "admin"
-    )
-    assert_redirected_to new_user_session_url
-  end
-
-  test "GET /oauth/authorize shows authorization form for admin user" do
-    sign_in_as @admin
-    get oauth_authorization_url(
-      client_id: @app.uid,
-      redirect_uri: @app.redirect_uri,
-      response_type: "code",
-      scope: "admin"
+      response_type: "code"
     )
     assert_response :success
     assert_match @app.name, response.body
   end
 
   test "GET /oauth/authorize auto-authorizes trusted apps without showing form" do
-    sign_in_as @admin
+    sign_in_as @member
     post oauth_authorization_url,
       params: {
         client_id: @trusted_app.uid,
         redirect_uri: @trusted_app.redirect_uri,
-        response_type: "code",
-        scope: "admin"
+        response_type: "code"
       }
     assert_response :redirect
     assert_match %r{https://example\.com/callback\?code=}, response.location
@@ -76,27 +62,25 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   # Full authorization code flow
   # ---------------------------------------------------------------------------
 
-  test "POST /oauth/authorize issues authorization code for admin" do
-    sign_in_as @admin
+  test "POST /oauth/authorize issues authorization code for any signed-in user" do
+    sign_in_as @member
     post oauth_authorization_url,
       params: {
         client_id: @app.uid,
         redirect_uri: @app.redirect_uri,
-        response_type: "code",
-        scope: "admin"
+        response_type: "code"
       }
     assert_response :redirect
     assert_match %r{https://example\.com/callback\?code=}, response.location
   end
 
-  test "POST /oauth/token exchanges code for access token with admin scope" do
-    sign_in_as @admin
+  test "POST /oauth/token exchanges code for an access token" do
+    sign_in_as @member
     post oauth_authorization_url,
       params: {
         client_id: @app.uid,
         redirect_uri: @app.redirect_uri,
-        response_type: "code",
-        scope: "admin"
+        response_type: "code"
       }
 
     code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
@@ -114,7 +98,6 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     json = response.parsed_body
     assert json["access_token"].present?
-    assert_equal "admin", json["scope"]
     assert json["refresh_token"].present?
     assert json["expires_in"].present?
   end
@@ -126,8 +109,8 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   test "POST /oauth/revoke revokes an active access token" do
     token = Doorkeeper::AccessToken.create!(
       application: @app,
+      scopes: "public",
       resource_owner_id: @admin.id,
-      scopes: "admin",
       expires_in: 7200
     )
 
@@ -143,14 +126,52 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   end
 
   # ---------------------------------------------------------------------------
-  # Preview mode via Doorkeeper token
+  # Userinfo endpoint
   # ---------------------------------------------------------------------------
 
-  test "memo API returns draft content when Doorkeeper admin token is present" do
+  test "GET /api/v1/me returns admin: true for an admin's token" do
     token = Doorkeeper::AccessToken.create!(
       application: @app,
+      scopes: "public",
       resource_owner_id: @admin.id,
-      scopes: "admin",
+      expires_in: 7200
+    )
+
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :success
+    json = response.parsed_body
+    assert_equal @admin.id, json["id"]
+    assert_equal @admin.email, json["email"]
+    assert_equal true, json["admin"]
+  end
+
+  test "GET /api/v1/me returns admin: false for a non-admin's token" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @member.id,
+      expires_in: 7200
+    )
+
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :success
+    assert_equal false, response.parsed_body["admin"]
+  end
+
+  test "GET /api/v1/me rejects requests without a token" do
+    get api_v1_me_url
+    assert_response :unauthorized
+  end
+
+  # ---------------------------------------------------------------------------
+  # Preview mode via Doorkeeper token (gated on real admin status)
+  # ---------------------------------------------------------------------------
+
+  test "memo API returns draft content for an admin's token" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @admin.id,
       expires_in: 7200
     )
 
@@ -168,8 +189,8 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   test "memo API rejects revoked Doorkeeper token for preview" do
     token = Doorkeeper::AccessToken.create!(
       application: @app,
+      scopes: "public",
       resource_owner_id: @admin.id,
-      scopes: "admin",
       expires_in: 7200
     )
     token.revoke
@@ -179,18 +200,11 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "memo API rejects Doorkeeper token without admin scope for preview" do
-    no_scope_app = Doorkeeper::Application.create!(
-      name: "NoScopeApp",
-      redirect_uri: "https://example.com/cb",
-      scopes: "",
-      confidential: true,
-      trusted: false
-    )
+  test "memo API rejects a non-admin's token for preview" do
     token = Doorkeeper::AccessToken.create!(
-      application: no_scope_app,
+      application: @app,
+      scopes: "public",
       resource_owner_id: @member.id,
-      scopes: "",
       expires_in: 7200
     )
 

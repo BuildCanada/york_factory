@@ -24,6 +24,9 @@ Rails.application.routes.draw do
         delete "session", to: "sessions#destroy"
       end
 
+      # OAuth userinfo — current user for the presented Doorkeeper token.
+      get "me", to: "me#show"
+
       resources :memos, param: :slug
       resources :posts, param: :slug
       resources :builders, param: :slug

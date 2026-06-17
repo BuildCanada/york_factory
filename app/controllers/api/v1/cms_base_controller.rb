@@ -23,7 +23,11 @@ module Api
         return false if raw_token.include?(".")  # JWTs contain dots; Doorkeeper tokens don't
 
         token = Doorkeeper::AccessToken.by_token(raw_token)
-        token&.accessible? && token.scopes.include?("admin")
+        return false unless token&.accessible?
+
+        # Any user can hold a token (general login), so preview access is gated on
+        # the token owner actually being an admin — never on the client's request.
+        User.find_by(id: token.resource_owner_id)&.admin? || false
       end
 
       def pagy_metadata(pagy)

@@ -13,7 +13,7 @@ app = Doorkeeper::Application.find_or_initialize_by(name: "TradingPost")
 
 if app.new_record?
   app.redirect_uri = redirect_uri
-  app.scopes = "admin"
+  app.scopes = ""
   app.confidential = true
   app.trusted = true
   app.save!
@@ -31,6 +31,6 @@ if app.new_record?
   puts "  OAUTH_CALLBACK_URL=#{redirect_uri}"
   puts ""
 else
-  app.update!(redirect_uri: redirect_uri, trusted: true)
+  app.update!(redirect_uri: redirect_uri, trusted: true, scopes: "")
   puts "TradingPost OAuth application already exists (uid: #{app.uid})"
 end

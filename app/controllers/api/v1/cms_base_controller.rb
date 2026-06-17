@@ -14,13 +14,7 @@ module Api
       end
 
       def preview_mode?
-        static_preview_token_valid? || doorkeeper_admin_token_valid?
-      end
-
-      def static_preview_token_valid?
-        params[:preview_token].present? &&
-          ENV["DRAFT_MODE_SECRET"].present? &&
-          ActiveSupport::SecurityUtils.secure_compare(params[:preview_token], ENV["DRAFT_MODE_SECRET"])
+        doorkeeper_admin_token_valid?
       end
 
       def doorkeeper_admin_token_valid?

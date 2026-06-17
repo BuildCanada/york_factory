@@ -199,25 +199,9 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "memo API still accepts static DRAFT_MODE_SECRET for preview" do
-    secret = "test-draft-secret"
-    with_env("DRAFT_MODE_SECRET" => secret) do
-      get api_v1_memo_url(memos(:draft_memo)), params: { preview_token: secret }
-      assert_response :success
-    end
-  end
-
   private
 
   def sign_in_as(user)
     post user_session_path, params: { user: { email: user.email, password: "password123" } }
-  end
-
-  def with_env(vars)
-    old = vars.transform_values { |_| ENV[_] }
-    vars.each { |k, v| ENV[k] = v }
-    yield
-  ensure
-    old.each { |k, v| v.nil? ? ENV.delete(k) : ENV.store(k, v) }
   end
 end

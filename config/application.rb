@@ -17,7 +17,9 @@ module YorkFactory
 
     config.middleware.use Rack::MethodOverride
     config.middleware.use ActionDispatch::Cookies
-    config.middleware.use ActionDispatch::Session::CookieStore, key: "_york_factory_session"
+    session_options = { key: "_york_factory_session" }
+    session_options[:domain] = ".buildcanada.com" if Rails.env.production?
+    config.middleware.use ActionDispatch::Session::CookieStore, **session_options
     config.middleware.use ActionDispatch::Flash
   end
 end

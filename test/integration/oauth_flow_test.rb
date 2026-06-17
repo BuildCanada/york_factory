@@ -140,9 +140,9 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     get api_v1_me_url, headers: { "Authorization" => "Bearer #{token.token}" }
     assert_response :success
     json = response.parsed_body
-    assert_equal @admin.id, json["id"]
     assert_equal @admin.email, json["email"]
     assert_equal true, json["admin"]
+    assert_not json.key?("id"), "/me must not expose the internal user id"
   end
 
   test "GET /api/v1/me returns admin: false for a non-admin's token" do

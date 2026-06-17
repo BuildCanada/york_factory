@@ -15,7 +15,6 @@ module Api
           render json: {
             token: token,
             user: {
-              id: user.id,
               email: user.email,
               name: user.name,
               role: user.role,

@@ -10,8 +10,8 @@ module Api
         user = User.find_by(id: doorkeeper_token.resource_owner_id)
         return render(json: { error: "Unauthorized" }, status: :unauthorized) unless user
 
+        # Deliberately no internal id — clients identify users by email.
         render json: {
-          id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,

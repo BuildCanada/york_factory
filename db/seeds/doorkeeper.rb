@@ -27,8 +27,8 @@ if app.new_record?
   puts "Add to TradingPost .env:"
   puts "  YF_OAUTH_CLIENT_ID=#{app.uid}"
   puts "  YF_OAUTH_CLIENT_SECRET=#{app.secret}"
-  puts "  YF_OAUTH_BASE=#{Rails.env.production? ? 'https://auth.buildcanada.com' : 'http://localhost:3000'}"
-  puts "  OAUTH_CALLBACK_URL=#{redirect_uri}"
+  puts "  YF_OAUTH_URL=#{Rails.env.production? ? 'https://auth.buildcanada.com' : 'http://localhost:3000'}"
+  puts "  YF_OAUTH_CALLBACK_URL=#{redirect_uri}"
   puts ""
 else
   app.update!(redirect_uri: redirect_uri, trusted: true, scopes: "")

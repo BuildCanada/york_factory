@@ -21,6 +21,8 @@ module YorkFactory
 
     config.session_store :cookie_store,
       key: "_york_factory_session",
-      domain: (".buildcanada.com" if Rails.env.production?)
+      domain: (".buildcanada.com" if Rails.env.production?),
+      secure: Rails.env.production?,
+      same_site: :lax
   end
 end

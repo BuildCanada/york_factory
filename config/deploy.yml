@@ -40,7 +40,7 @@ env:
   clear:
     SOLID_QUEUE_IN_PUMA: false
     RAILS_LOG_LEVEL: info
-    CORS_ORIGINS: "https://buildcanada.com,https://yorkfactory.buildcanada.com"
+    CORS_ORIGINS: "https://www.buildcanada.com,https://buildcanada.com,https://yorkfactory.buildcanada.com"
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"

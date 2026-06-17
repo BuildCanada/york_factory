@@ -83,11 +83,11 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.active_storage_attachments (
     id bigint NOT NULL,
-    blob_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     name character varying NOT NULL,
+    record_type character varying NOT NULL,
     record_id bigint NOT NULL,
-    record_type character varying NOT NULL
+    blob_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -116,14 +116,14 @@ ALTER SEQUENCE public.active_storage_attachments_id_seq OWNED BY public.active_s
 
 CREATE TABLE public.active_storage_blobs (
     id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    service_name character varying NOT NULL,
     byte_size bigint NOT NULL,
     checksum character varying,
-    content_type character varying,
-    created_at timestamp(6) without time zone NOT NULL,
-    filename character varying NOT NULL,
-    key character varying NOT NULL,
-    metadata text,
-    service_name character varying NOT NULL
+    created_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -194,15 +194,15 @@ CREATE TABLE public.ar_internal_metadata (
 
 CREATE TABLE public.builders (
     id bigint NOT NULL,
-    byline_en text,
-    byline_fr text,
-    created_at timestamp(6) without time zone NOT NULL,
-    published_at timestamp(6) without time zone,
-    quote_en text,
-    quote_fr text,
     slug character varying NOT NULL,
     title_en character varying,
     title_fr character varying,
+    byline_en text,
+    byline_fr text,
+    quote_en text,
+    quote_fr text,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     body_md_en text,
     body_md_fr text,
@@ -231,20 +231,65 @@ ALTER SEQUENCE public.builders_id_seq OWNED BY public.builders.id;
 
 
 --
+-- Name: engagements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.engagements (
+    id bigint NOT NULL,
+    type character varying NOT NULL,
+    memo_id bigint NOT NULL,
+    linkedin_sub character varying NOT NULL,
+    name character varying NOT NULL,
+    given_name character varying,
+    family_name character varying,
+    email character varying,
+    email_verified boolean DEFAULT false NOT NULL,
+    picture_url character varying,
+    postal_code character varying NOT NULL,
+    body text,
+    status integer DEFAULT 0 NOT NULL,
+    published_at timestamp(6) without time zone,
+    moderated_by_id bigint,
+    moderated_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: engagements_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.engagements_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: engagements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.engagements_id_seq OWNED BY public.engagements.id;
+
+
+--
 -- Name: faqs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.faqs (
     id bigint NOT NULL,
-    answer_text_en text,
-    answer_text_fr text,
-    created_at timestamp(6) without time zone NOT NULL,
-    link_href character varying,
-    link_text character varying,
-    "position" integer DEFAULT 0,
-    published_at timestamp(6) without time zone,
     question_en text,
     question_fr text,
+    answer_text_en text,
+    answer_text_fr text,
+    link_text character varying,
+    link_href character varying,
+    "position" integer DEFAULT 0,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     answer_md_en text,
     answer_md_fr text
@@ -311,11 +356,11 @@ ALTER SEQUENCE public.feed_entries_id_seq OWNED BY public.feed_entries.id;
 
 CREATE TABLE public.friendly_id_slugs (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone,
-    scope character varying,
     slug character varying NOT NULL,
     sluggable_id integer NOT NULL,
-    sluggable_type character varying(50)
+    sluggable_type character varying(50),
+    scope character varying,
+    created_at timestamp(6) without time zone
 );
 
 
@@ -344,8 +389,8 @@ ALTER SEQUENCE public.friendly_id_slugs_id_seq OWNED BY public.friendly_id_slugs
 
 CREATE TABLE public.jwt_denylists (
     id bigint NOT NULL,
-    exp timestamp(6) without time zone NOT NULL,
-    jti character varying NOT NULL
+    jti character varying NOT NULL,
+    exp timestamp(6) without time zone NOT NULL
 );
 
 
@@ -374,21 +419,21 @@ ALTER SEQUENCE public.jwt_denylists_id_seq OWNED BY public.jwt_denylists.id;
 
 CREATE TABLE public.memos (
     id bigint NOT NULL,
-    author_avatar character varying,
-    author_id bigint,
-    author_name character varying,
-    author_title character varying,
-    category character varying,
-    co_author_id bigint,
-    created_at timestamp(6) without time zone NOT NULL,
-    featured boolean DEFAULT false,
-    key_messages_en jsonb DEFAULT '[]'::jsonb,
-    key_messages_fr jsonb DEFAULT '[]'::jsonb,
-    published_at timestamp(6) without time zone,
     slug character varying NOT NULL,
     title_en character varying,
     title_fr character varying,
+    author_id bigint,
+    co_author_id bigint,
+    author_name character varying,
+    author_title character varying,
+    author_avatar character varying,
+    key_messages_en jsonb DEFAULT '[]'::jsonb,
+    key_messages_fr jsonb DEFAULT '[]'::jsonb,
+    category character varying,
     twitter_embed text,
+    published_at timestamp(6) without time zone,
+    featured boolean DEFAULT false,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     body_md_en text,
     body_md_fr text,
@@ -396,7 +441,9 @@ CREATE TABLE public.memos (
     appendix_md_fr text,
     supporters_md_en text,
     supporters_md_fr text,
-    publication character varying DEFAULT 'build_canada'::character varying NOT NULL
+    publication character varying DEFAULT 'build_canada'::character varying NOT NULL,
+    endorsements_count integer DEFAULT 0 NOT NULL,
+    approved_critiques_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -626,14 +673,14 @@ ALTER SEQUENCE public.metrics_twitter_stats_id_seq OWNED BY public.metrics_twitt
 
 CREATE TABLE public.posts (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    hidden boolean DEFAULT false,
-    published_at timestamp(6) without time zone,
     slug character varying NOT NULL,
-    summary_en text,
-    summary_fr text,
     title_en character varying,
     title_fr character varying,
+    summary_en text,
+    summary_fr text,
+    hidden boolean DEFAULT false,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     body_md_en text,
     body_md_fr text
@@ -716,11 +763,11 @@ ALTER SEQUENCE public.social_posts_id_seq OWNED BY public.social_posts.id;
 
 CREATE TABLE public.subscribers (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    email character varying NOT NULL,
     first_name character varying,
     last_name character varying,
+    email character varying NOT NULL,
     postal_code character varying,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -787,16 +834,16 @@ ALTER SEQUENCE public.substack_posts_id_seq OWNED BY public.substack_posts.id;
 
 CREATE TABLE public.team_members (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    linkedin_url character varying,
     name character varying NOT NULL,
-    "position" integer DEFAULT 0,
-    published_at timestamp(6) without time zone,
-    role character varying,
     slug character varying,
     title_en character varying,
     title_fr character varying,
+    role character varying,
     twitter_url character varying,
+    linkedin_url character varying,
+    "position" integer DEFAULT 0,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -826,12 +873,12 @@ ALTER SEQUENCE public.team_members_id_seq OWNED BY public.team_members.id;
 
 CREATE TABLE public.testimonials (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     name character varying NOT NULL,
-    "position" integer DEFAULT 0,
-    published_at timestamp(6) without time zone,
     quote_en text,
     quote_fr text,
+    "position" integer DEFAULT 0,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -861,17 +908,17 @@ ALTER SEQUENCE public.testimonials_id_seq OWNED BY public.testimonials.id;
 
 CREATE TABLE public.tools (
     id bigint NOT NULL,
-    accent_color character varying,
-    created_at timestamp(6) without time zone NOT NULL,
-    featured boolean DEFAULT false,
-    "position" integer DEFAULT 0,
-    published_at timestamp(6) without time zone,
-    size character varying DEFAULT 'small'::character varying,
     slug character varying NOT NULL,
     title_en character varying,
     title_fr character varying,
-    updated_at timestamp(6) without time zone NOT NULL,
     url character varying,
+    featured boolean DEFAULT false,
+    "position" integer DEFAULT 0,
+    accent_color character varying,
+    size character varying DEFAULT 'small'::character varying,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
     description_md_en text,
     description_md_fr text
 );
@@ -1072,21 +1119,21 @@ ALTER SEQUENCE public.trade_barriers_themes_id_seq OWNED BY public.trade_barrier
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    avatar_url character varying,
-    created_at timestamp(6) without time zone NOT NULL,
-    current_sign_in_at timestamp(6) without time zone,
-    current_sign_in_ip character varying,
     email character varying DEFAULT ''::character varying NOT NULL,
     encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    reset_password_token character varying,
+    reset_password_sent_at timestamp(6) without time zone,
+    remember_created_at timestamp(6) without time zone,
+    sign_in_count integer DEFAULT 0 NOT NULL,
+    current_sign_in_at timestamp(6) without time zone,
     last_sign_in_at timestamp(6) without time zone,
+    current_sign_in_ip character varying,
     last_sign_in_ip character varying,
     name character varying,
     provider character varying,
-    remember_created_at timestamp(6) without time zone,
-    reset_password_sent_at timestamp(6) without time zone,
-    reset_password_token character varying,
-    sign_in_count integer DEFAULT 0 NOT NULL,
     uid character varying,
+    avatar_url character varying,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     role character varying DEFAULT 'member'::character varying NOT NULL,
     postal_code character varying,
@@ -1602,10 +1649,10 @@ CREATE TABLE warehouse.measures (
 CREATE TABLE warehouse.organizations (
     id bigint NOT NULL,
     canonical_name character varying NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    needs_review boolean DEFAULT false NOT NULL,
     org_id_infobase integer,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    needs_review boolean DEFAULT false NOT NULL,
     jurisdiction_id bigint NOT NULL,
     slug character varying NOT NULL,
     kind character varying,
@@ -1838,17 +1885,17 @@ ALTER SEQUENCE warehouse.extraction_assertions_id_seq OWNED BY warehouse.extract
 
 CREATE TABLE warehouse.fiscal_authorities (
     id bigint NOT NULL,
-    amount numeric(15,2),
-    created_at timestamp(6) without time zone NOT NULL,
-    description text,
-    document_type character varying NOT NULL,
-    fiscal_year character varying NOT NULL,
-    lineage_entry_id bigint,
     organization_id bigint NOT NULL,
-    raw_ingestion_id bigint,
-    updated_at timestamp(6) without time zone NOT NULL,
+    fiscal_year character varying NOT NULL,
+    document_type character varying NOT NULL,
     vote_number character varying,
-    vote_type character varying NOT NULL
+    vote_type character varying NOT NULL,
+    description text,
+    amount numeric(15,2),
+    raw_ingestion_id bigint,
+    lineage_entry_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1877,17 +1924,17 @@ ALTER SEQUENCE warehouse.fiscal_authorities_id_seq OWNED BY warehouse.fiscal_aut
 
 CREATE TABLE warehouse.fiscal_expenditures (
     id bigint NOT NULL,
-    actual_expenditure numeric(15,2),
-    created_at timestamp(6) without time zone NOT NULL,
-    description text,
-    fiscal_year character varying NOT NULL,
-    lineage_entry_id bigint,
     organization_id bigint NOT NULL,
-    pa_voted_ceiling numeric(15,2),
-    raw_ingestion_id bigint,
-    updated_at timestamp(6) without time zone NOT NULL,
+    fiscal_year character varying NOT NULL,
     vote_number character varying,
-    vote_type character varying NOT NULL
+    vote_type character varying NOT NULL,
+    description text,
+    pa_voted_ceiling numeric(15,2),
+    actual_expenditure numeric(15,2),
+    raw_ingestion_id bigint,
+    lineage_entry_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -2148,20 +2195,20 @@ ALTER SEQUENCE warehouse.kpi_documents_id_seq OWNED BY warehouse.kpi_documents.i
 
 CREATE TABLE warehouse.lineage_entries (
     id bigint NOT NULL,
-    confidence numeric(5,4),
-    created_at timestamp(6) without time zone NOT NULL,
-    human_override boolean DEFAULT false,
-    llm_model character varying,
-    llm_prompt_snapshot jsonb,
-    llm_response_snapshot jsonb,
-    override_at timestamp(6) without time zone,
-    override_by character varying,
     raw_ingestion_id bigint,
     source_field character varying,
     source_value character varying,
     target_field character varying,
     target_value character varying,
     transformation_type character varying NOT NULL,
+    llm_model character varying,
+    llm_prompt_snapshot jsonb,
+    llm_response_snapshot jsonb,
+    confidence numeric(5,4),
+    human_override boolean DEFAULT false,
+    override_by character varying,
+    override_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -2191,16 +2238,16 @@ ALTER SEQUENCE warehouse.lineage_entries_id_seq OWNED BY warehouse.lineage_entri
 
 CREATE TABLE warehouse.lobbying_activities (
     id bigint NOT NULL,
-    client_name character varying,
-    created_at timestamp(6) without time zone NOT NULL,
-    end_date date,
-    lineage_entry_id bigint,
     lobbyist_id bigint NOT NULL,
     organization_id bigint,
-    raw_ingestion_id bigint,
-    start_date date,
-    status character varying,
+    client_name character varying,
     subject_matter character varying,
+    start_date date,
+    end_date date,
+    status character varying,
+    raw_ingestion_id bigint,
+    lineage_entry_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -2230,10 +2277,10 @@ ALTER SEQUENCE warehouse.lobbying_activities_id_seq OWNED BY warehouse.lobbying_
 
 CREATE TABLE warehouse.lobbyists (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    lobbyist_type character varying,
     name character varying NOT NULL,
     registration_number character varying,
+    lobbyist_type character varying,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -2652,12 +2699,12 @@ ALTER SEQUENCE warehouse.observation_review_flags_id_seq OWNED BY warehouse.obse
 
 CREATE TABLE warehouse.organization_aliases (
     id bigint NOT NULL,
-    alias_name character varying NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     organization_id bigint NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
+    alias_name character varying NOT NULL,
     valid_from date,
-    valid_to date
+    valid_to date,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -2743,13 +2790,13 @@ ALTER SEQUENCE warehouse.organizations_id_seq OWNED BY warehouse.organizations.i
 
 CREATE TABLE warehouse.raw_ingestions (
     id bigint NOT NULL,
-    checksum character varying NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    error_message text,
+    source_id bigint NOT NULL,
     fetched_at timestamp(6) without time zone NOT NULL,
     raw_file_path character varying NOT NULL,
-    source_id bigint NOT NULL,
+    checksum character varying NOT NULL,
     status character varying DEFAULT 'pending'::character varying NOT NULL,
+    error_message text,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -2851,13 +2898,13 @@ ALTER SEQUENCE warehouse.source_footnotes_id_seq OWNED BY warehouse.source_footn
 
 CREATE TABLE warehouse.sources (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    fetch_frequency character varying,
-    format character varying NOT NULL,
-    last_fetched_at timestamp(6) without time zone,
     name character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    url character varying NOT NULL
+    url character varying NOT NULL,
+    format character varying NOT NULL,
+    fetch_frequency character varying,
+    last_fetched_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -2907,12 +2954,12 @@ CREATE VIEW warehouse.spending_deviations AS
 
 CREATE TABLE warehouse.standard_object_expenditures (
     id bigint NOT NULL,
-    amount numeric(15,2),
-    created_at timestamp(6) without time zone NOT NULL,
-    fiscal_year character varying NOT NULL,
     organization_id bigint NOT NULL,
-    raw_ingestion_id bigint,
+    fiscal_year character varying NOT NULL,
     standard_object character varying NOT NULL,
+    amount numeric(15,2),
+    raw_ingestion_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -2981,6 +3028,13 @@ ALTER TABLE ONLY public.active_storage_variant_records ALTER COLUMN id SET DEFAU
 --
 
 ALTER TABLE ONLY public.builders ALTER COLUMN id SET DEFAULT nextval('public.builders_id_seq'::regclass);
+
+
+--
+-- Name: engagements id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements ALTER COLUMN id SET DEFAULT nextval('public.engagements_id_seq'::regclass);
 
 
 --
@@ -3462,6 +3516,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.builders
     ADD CONSTRAINT builders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: engagements engagements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT engagements_pkey PRIMARY KEY (id);
 
 
 --
@@ -4008,6 +4070,13 @@ CREATE INDEX idx_on_jurisdiction_id_cb07659517 ON public.trade_barriers_agreemen
 
 
 --
+-- Name: idx_on_memo_id_type_status_created_at_1b33302aff; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_memo_id_type_status_created_at_1b33302aff ON public.engagements USING btree (memo_id, type, status, created_at);
+
+
+--
 -- Name: idx_tb_agreement_jurisdictions_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4054,6 +4123,27 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 --
 
 CREATE UNIQUE INDEX index_builders_on_slug ON public.builders USING btree (slug);
+
+
+--
+-- Name: index_engagements_on_memo_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_engagements_on_memo_id ON public.engagements USING btree (memo_id);
+
+
+--
+-- Name: index_engagements_on_memo_id_and_type_and_linkedin_sub; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_engagements_on_memo_id_and_type_and_linkedin_sub ON public.engagements USING btree (memo_id, type, linkedin_sub);
+
+
+--
+-- Name: index_engagements_on_moderated_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_engagements_on_moderated_by_id ON public.engagements USING btree (moderated_by_id);
 
 
 --
@@ -5402,11 +5492,27 @@ ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
 
 
 --
+-- Name: engagements fk_rails_7e95c5d6f6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT fk_rails_7e95c5d6f6 FOREIGN KEY (memo_id) REFERENCES public.memos(id);
+
+
+--
 -- Name: trade_barriers_agreements fk_rails_81f3d13d08; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.trade_barriers_agreements
     ADD CONSTRAINT fk_rails_81f3d13d08 FOREIGN KEY (theme_id) REFERENCES public.trade_barriers_themes(id);
+
+
+--
+-- Name: engagements fk_rails_8e08421d42; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT fk_rails_8e08421d42 FOREIGN KEY (moderated_by_id) REFERENCES public.users(id);
 
 
 --
@@ -6347,6 +6453,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260525000002'),
 ('20260525000001'),
 ('20260513180113'),
+('20260510000003'),
+('20260510000001'),
 ('20260504204633'),
 ('20260428000002'),
 ('20260428000001'),
@@ -6372,7 +6480,6 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260409200000'),
 ('20260406043854'),
 ('20260403210357'),
-('20260326200001'),
 ('20260326184648'),
 ('20260326184647'),
 ('20260324230847'),

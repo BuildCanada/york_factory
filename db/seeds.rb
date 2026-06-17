@@ -203,3 +203,4 @@ puts "Seeded #{Warehouse::Source.count} sources"
 load Rails.root.join("db/seeds/trade_barriers_jurisdictions.rb")
 load Rails.root.join("db/seeds/trade_barriers_themes.rb")
 load Rails.root.join("db/seeds/trade_barriers_agreements.rb")
+load Rails.root.join("db/seeds/memo_engagements.rb")

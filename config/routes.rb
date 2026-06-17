@@ -13,9 +13,14 @@ Rails.application.routes.draw do
       namespace :auth do
         post "google", to: "sessions#create"
         delete "session", to: "sessions#destroy"
+        get  "linkedin/start",    to: "linkedin#start"
+        get  "linkedin/callback", to: "linkedin#callback"
       end
 
-      resources :memos, param: :slug
+      resources :memos, param: :slug do
+        resources :endorsements, only: [ :index, :create ]
+        resources :critiques,    only: [ :index, :create ]
+      end
       resources :posts, param: :slug
       resources :builders, param: :slug
       resources :team_members, path: "team" do
@@ -156,6 +161,12 @@ Rails.application.routes.draw do
     resources :testimonials, only: full do
       put :reorder, on: :collection
       post :retranslate, on: :member
+    end
+    resources :critiques, only: [ :index, :show, :destroy ] do
+      member do
+        post :approve
+        post :reject
+      end
     end
     resources :subscribers, only: [ :index ]
     resources :users, only: %i[index new create edit update destroy]

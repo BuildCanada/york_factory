@@ -18,7 +18,12 @@ proxy:
   ssl:
     certificate_pem: CERTIFICATE_PEM
     private_key_pem: PRIVATE_KEY_PEM
-  host: yorkfactory.buildcanada.com
+  # auth.buildcanada.com serves the Doorkeeper OAuth endpoints (/oauth/*) used by
+  # TradingPost for draft preview. Both hosts route to the same Rails app; the
+  # supplied TLS cert must cover both names (SAN or *.buildcanada.com wildcard).
+  hosts:
+    - yorkfactory.buildcanada.com
+    - auth.buildcanada.com
 
 registry:
   server: localhost:5555

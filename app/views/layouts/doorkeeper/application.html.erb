@@ -6,6 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <%# Doorkeeper's bundled application.css is a Sprockets manifest (*= require) %>
+  <%# that Propshaft does not expand, so we link Bootstrap and the self-CSS %>
+  <%# directly. The require comment in application.css is ignored by browsers. %>
+  <%= stylesheet_link_tag "doorkeeper/bootstrap.min" %>
   <%= stylesheet_link_tag "doorkeeper/application" %>
   <%= csrf_meta_tags %>
 </head>

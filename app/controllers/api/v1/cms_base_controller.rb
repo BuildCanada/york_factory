@@ -18,11 +18,10 @@ module Api
       end
 
       def doorkeeper_admin_token_valid?
-        raw_token = request.headers["Authorization"]&.split(" ", 2)&.last
-        return false if raw_token.blank?
-        return false if raw_token.include?(".")  # JWTs contain dots; Doorkeeper tokens don't
-
-        token = Doorkeeper::AccessToken.by_token(raw_token)
+        # doorkeeper_token extracts the bearer token from the request and looks it
+        # up, returning nil for anything that isn't a live Doorkeeper token (a
+        # devise JWT, an expired/revoked token, or no token at all).
+        token = doorkeeper_token
         return false unless token&.accessible?
 
         # Any user can hold a token (general login), so preview access is gated on

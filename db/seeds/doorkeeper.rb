@@ -6,7 +6,7 @@
 
 redirect_uri = ENV.fetch(
   "TRADING_POST_CALLBACK_URL",
-  Rails.env.production? ? "https://buildcanada.com/api/auth/callback" : "http://localhost:5050/api/auth/callback"
+  Rails.env.production? ? "https://www.buildcanada.com/api/auth/callback" : "http://localhost:5050/api/auth/callback"
 )
 
 app = Doorkeeper::Application.find_or_initialize_by(name: "TradingPost")

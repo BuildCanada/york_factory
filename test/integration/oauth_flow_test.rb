@@ -103,6 +103,69 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   end
 
   # ---------------------------------------------------------------------------
+  # Refresh token grant (silent session renewal — TradingPost middleware)
+  # ---------------------------------------------------------------------------
+
+  test "POST /oauth/token renews an access token via the refresh_token grant" do
+    sign_in_as @admin
+    post oauth_authorization_url,
+      params: {
+        client_id: @app.uid,
+        redirect_uri: @app.redirect_uri,
+        response_type: "code"
+      }
+    code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
+
+    post oauth_token_url,
+      params: {
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: @app.redirect_uri,
+        client_id: @app.uid,
+        client_secret: @app.secret
+      }
+    original = response.parsed_body
+    refresh_token = original["refresh_token"]
+    assert refresh_token.present?
+
+    # Exchange the refresh token for a fresh access token, as the middleware does
+    # once the short-lived access token has expired.
+    post oauth_token_url,
+      params: {
+        grant_type: "refresh_token",
+        refresh_token: refresh_token,
+        client_id: @app.uid,
+        client_secret: @app.secret
+      }
+    assert_response :success
+    refreshed = response.parsed_body
+    assert refreshed["access_token"].present?
+    assert refreshed["refresh_token"].present?
+    assert_not_equal original["access_token"], refreshed["access_token"]
+
+    # The renewed access token authorizes a request…
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{refreshed['access_token']}" }
+    assert_response :success
+    assert_equal @admin.email, response.parsed_body["email"]
+
+    # …and the superseded access token is revoked.
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{original['access_token']}" }
+    assert_response :unauthorized
+  end
+
+  test "POST /oauth/token rejects an invalid refresh token" do
+    post oauth_token_url,
+      params: {
+        grant_type: "refresh_token",
+        refresh_token: "not-a-real-refresh-token",
+        client_id: @app.uid,
+        client_secret: @app.secret
+      }
+    assert_response :bad_request
+    assert_equal "invalid_grant", response.parsed_body["error"]
+  end
+
+  # ---------------------------------------------------------------------------
   # Token revocation
   # ---------------------------------------------------------------------------
 

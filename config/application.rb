@@ -9,15 +9,20 @@ module YorkFactory
     config.load_defaults 8.1
     config.autoload_lib(ignore: %w[assets tasks])
 
-    config.api_only = true
+    # Not api_only: Doorkeeper's provider UI (authorization screen, OAuth
+    # application management) needs the full middleware stack — cookies, session,
+    # flash and view rendering. The full stack provides these by default, so we
+    # only configure the session cookie (shared across .buildcanada.com
+    # subdomains in production for SSO).
     config.active_record.schema_format = :sql
 
     config.i18n.available_locales = %i[en fr]
     config.i18n.default_locale = :en
 
-    config.middleware.use Rack::MethodOverride
-    config.middleware.use ActionDispatch::Cookies
-    config.middleware.use ActionDispatch::Session::CookieStore, key: "_york_factory_session"
-    config.middleware.use ActionDispatch::Flash
+    config.session_store :cookie_store,
+      key: "_york_factory_session",
+      domain: (".buildcanada.com" if Rails.env.production?),
+      secure: Rails.env.production?,
+      same_site: :lax
   end
 end

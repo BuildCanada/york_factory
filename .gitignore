@@ -9,6 +9,7 @@
 
 # Ignore all environment files.
 /.env*
+/.aurora.env
 
 # Ignore all logfiles and tempfiles.
 /log/*

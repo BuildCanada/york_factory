@@ -92,6 +92,9 @@ gem "importmap-rails"
 gem "omniauth-google-oauth2"
 gem "omniauth-rails_csrf_protection"
 
+# OAuth provider (Doorkeeper) — issues tokens to first-party apps (e.g., TradingPost)
+gem "doorkeeper"
+
 # CMS: rate limiting
 gem "rack-attack"
 

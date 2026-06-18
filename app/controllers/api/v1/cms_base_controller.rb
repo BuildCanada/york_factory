@@ -14,9 +14,19 @@ module Api
       end
 
       def preview_mode?
-        params[:preview_token].present? &&
-          ENV["DRAFT_MODE_SECRET"].present? &&
-          ActiveSupport::SecurityUtils.secure_compare(params[:preview_token], ENV["DRAFT_MODE_SECRET"])
+        doorkeeper_admin_token_valid?
+      end
+
+      def doorkeeper_admin_token_valid?
+        # doorkeeper_token extracts the bearer token from the request and looks it
+        # up, returning nil for anything that isn't a live Doorkeeper token (a
+        # devise JWT, an expired/revoked token, or no token at all).
+        token = doorkeeper_token
+        return false unless token&.accessible?
+
+        # Any user can hold a token (general login), so preview access is gated on
+        # the token owner actually being an admin — never on the client's request.
+        User.find_by(id: token.resource_owner_id)&.admin? || false
       end
 
       def pagy_metadata(pagy)

@@ -66,7 +66,7 @@ gem "dotenv-rails", groups: [ :development, :test ]
 gem "mobility", "~> 1.3"
 
 # CMS: lightweight pagination
-gem "pagy", "~> 43.4"
+gem "pagy", "~> 43.5"
 
 # CMS: authentication
 gem "devise"

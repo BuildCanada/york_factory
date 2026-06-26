@@ -31,8 +31,8 @@
       <tr>
         <td><%= critique.memo&.title_en || "—" %></td>
         <td>
-          <div><%= critique.name %></div>
-          <div class="text-muted mono" style="font-size: 0.7rem;"><%= critique.email %></div>
+          <div><%= critique.author_name %></div>
+          <div class="text-muted mono" style="font-size: 0.7rem;"><%= critique.user&.email %></div>
         </td>
         <td style="max-width: 360px;"><%= truncate(critique.body, length: 160) %></td>
         <td>

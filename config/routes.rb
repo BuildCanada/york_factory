@@ -12,6 +12,13 @@ Rails.application.routes.draw do
     controllers: { sessions: "users/sessions", passwords: "users/passwords" },
     skip: [ :registrations, :confirmations, :unlocks ]
 
+  # Sign in with LinkedIn (browser OIDC → Devise session). Used by the Doorkeeper
+  # authorize flow so TradingPost readers can self-register and engage with memos.
+  devise_scope :user do
+    get "auth/linkedin",          to: "users/linkedin#start",    as: :user_linkedin_authorize
+    get "auth/linkedin/callback", to: "users/linkedin#callback", as: :user_linkedin_callback
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 
   namespace :api do
@@ -24,9 +31,8 @@ Rails.application.routes.draw do
         delete "session", to: "sessions#destroy"
       end
 
-      # OAuth userinfo — current user for the presented Doorkeeper token.
-      get   "me", to: "me#show"
-      patch "me", to: "me#update"
+      # OAuth userinfo / profile — the user behind the presented Doorkeeper token.
+      resource :me, only: [ :show, :update ], controller: "me"
 
       resources :memos, param: :slug do
         resources :endorsements, only: [ :index, :create ]

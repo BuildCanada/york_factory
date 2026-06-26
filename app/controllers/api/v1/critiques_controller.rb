@@ -1,10 +1,14 @@
 module Api
   module V1
     class CritiquesController < CmsBaseController
+      include EngagementAuthorization
+
+      before_action :doorkeeper_authorize!, only: :create
       before_action :set_memo
+      before_action :require_postal_code!, only: :create
 
       def index
-        scope = @memo.approved_critiques.recent_first
+        scope = @memo.approved_critiques.includes(:user).recent_first
         pagy, critiques = pagy(scope)
         render json: {
           data: critiques.map { |c| serialize(c) },
@@ -13,28 +17,16 @@ module Api
       end
 
       def create
-        ticket = decoded_ticket
-        critique = @memo.critiques.build(
-          linkedin_sub:   ticket["sub"],
-          name:           ticket["name"],
-          given_name:     ticket["given_name"],
-          family_name:    ticket["family_name"],
-          email:          ticket["email"],
-          email_verified: !!ticket["email_verified"],
-          picture_url:    ticket["picture"],
-          postal_code:    params[:postal_code],
-          body:           params[:body]
-        )
+        critique = @memo.critiques.build(user: engagement_user, body: params[:body])
         if critique.save
           render json: serialize(critique).merge(status: critique.status), status: :created
+        elsif critique.errors.of_kind?(:user_id, :taken)
+          render_already_submitted
         else
           render json: { errors: critique.errors.full_messages }, status: :unprocessable_entity
         end
       rescue ActiveRecord::RecordNotUnique
-        existing = @memo.critiques.find_by(linkedin_sub: ticket["sub"])
-        render json: { error: "already_submitted", existing: { created_at: existing&.created_at, status: existing&.status } }, status: :conflict
-      rescue VerificationTicket::Error => e
-        render json: { error: "invalid_ticket", message: e.message }, status: :unauthorized
+        render_already_submitted
       end
 
       private
@@ -43,17 +35,17 @@ module Api
         @memo = Memo.friendly.find(params[:memo_slug])
       end
 
-      def decoded_ticket
-        token = params[:verified_ticket].to_s
-        VerificationTicket.decode(token, expected_kind: "critique", expected_memo_slug: @memo.slug)
+      def render_already_submitted
+        existing = @memo.critiques.find_by(user_id: engagement_user.id)
+        render json: { error: "already_submitted", existing: { created_at: existing&.created_at, status: existing&.status } }, status: :conflict
       end
 
-      def serialize(c)
+      def serialize(critique)
         {
-          id: c.id,
-          name: c.name,
-          body: c.body,
-          created_at: c.created_at
+          id: critique.id,
+          name: critique.author_name,
+          body: critique.body,
+          created_at: critique.created_at
         }
       end
     end

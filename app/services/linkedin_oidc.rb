@@ -60,7 +60,6 @@ class LinkedinOidc
     payload
   end
 
-  # Public so the controller can render it for the popup origin filter.
   def self.client_id
     ENV.fetch("LINKEDIN_CLIENT_ID") { raise ConfigError, "LINKEDIN_CLIENT_ID not set" }
   end
@@ -69,12 +68,11 @@ class LinkedinOidc
     ENV.fetch("LINKEDIN_CLIENT_SECRET") { raise ConfigError, "LINKEDIN_CLIENT_SECRET not set" }
   end
 
+  # Must exactly match a redirect URL registered with the LinkedIn app and the
+  # Users::LinkedinController#callback route. Defaults to the dev callback so
+  # local sign-in works without extra config.
   def self.redirect_uri
-    ENV.fetch("LINKEDIN_REDIRECT_URI") { raise ConfigError, "LINKEDIN_REDIRECT_URI not set" }
-  end
-
-  def self.postmessage_origin
-    ENV.fetch("LINKEDIN_POSTMESSAGE_ORIGIN") { raise ConfigError, "LINKEDIN_POSTMESSAGE_ORIGIN not set" }
+    ENV.fetch("LINKEDIN_REDIRECT_URI", "http://localhost:3000/auth/linkedin/callback")
   end
 
   def self.jwks_loader

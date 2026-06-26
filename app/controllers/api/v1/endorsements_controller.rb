@@ -1,10 +1,14 @@
 module Api
   module V1
     class EndorsementsController < CmsBaseController
+      include EngagementAuthorization
+
+      before_action :doorkeeper_authorize!, only: :create
       before_action :set_memo
+      before_action :require_postal_code!, only: :create
 
       def index
-        scope = @memo.endorsements.order(created_at: :desc)
+        scope = @memo.endorsements.includes(:user).order(created_at: :desc)
         pagy, endorsements = pagy(scope)
         render json: {
           data: endorsements.map { |e| serialize(e) },
@@ -13,27 +17,16 @@ module Api
       end
 
       def create
-        ticket = decoded_ticket
-        endorsement = @memo.endorsements.build(
-          linkedin_sub:   ticket["sub"],
-          name:           ticket["name"],
-          given_name:     ticket["given_name"],
-          family_name:    ticket["family_name"],
-          email:          ticket["email"],
-          email_verified: !!ticket["email_verified"],
-          picture_url:    ticket["picture"],
-          postal_code:    params[:postal_code]
-        )
+        endorsement = @memo.endorsements.build(user: engagement_user)
         if endorsement.save
           render json: serialize(endorsement), status: :created
+        elsif endorsement.errors.of_kind?(:user_id, :taken)
+          render_already_submitted
         else
           render json: { errors: endorsement.errors.full_messages }, status: :unprocessable_entity
         end
       rescue ActiveRecord::RecordNotUnique
-        existing = @memo.endorsements.find_by(linkedin_sub: ticket["sub"])
-        render json: { error: "already_submitted", existing: { created_at: existing&.created_at } }, status: :conflict
-      rescue VerificationTicket::Error => e
-        render json: { error: "invalid_ticket", message: e.message }, status: :unauthorized
+        render_already_submitted
       end
 
       private
@@ -42,16 +35,16 @@ module Api
         @memo = Memo.friendly.find(params[:memo_slug])
       end
 
-      def decoded_ticket
-        token = params[:verified_ticket].to_s
-        VerificationTicket.decode(token, expected_kind: "endorsement", expected_memo_slug: @memo.slug)
+      def render_already_submitted
+        existing = @memo.endorsements.find_by(user_id: engagement_user.id)
+        render json: { error: "already_submitted", existing: { created_at: existing&.created_at } }, status: :conflict
       end
 
-      def serialize(e)
+      def serialize(endorsement)
         {
-          id: e.id,
-          name: e.name,
-          created_at: e.created_at
+          id: endorsement.id,
+          name: endorsement.author_name,
+          created_at: endorsement.created_at
         }
       end
     end

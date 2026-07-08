@@ -1,0 +1,143 @@
+# Canonical (organization-less) measures for the CAN-15 Individual Economics &
+# Welfare dashboard.
+#
+# International measures follow the CAN-14 economy pattern: observations per
+# jurisdiction (Canada + G7 countries + OECD average where the source reports
+# one + computed G7 average). Canada-only measures come from Statistics Canada
+# WDS vectors and have a single jurisdiction series.
+#
+# Coverage notes:
+# - real-minimum-wage-ppp has no Italy series (no statutory minimum wage), so
+#   the computed G7 average never materializes for it.
+# - household-debt-to-income (OECD NAAG) has no OECD-average series.
+# - employment-rate uses the ILO-modeled World Bank series for comparability;
+#   the StatCan LFS monthly series (table 14-10-0287) is deferred until we
+#   need monthly-to-annual aggregation.
+#
+# Deferred (no free no-auth automatable source yet): disability benefit
+# purchasing power, PPP of minimum wage relative to living wage.
+
+measures:
+  - slug: employment-rate
+    canonical_name: "Employment to population ratio, 15+ (%)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of the population aged 15 and over that is employed (ILO modeled
+      estimate). Source: World Bank WDI indicator SL.EMP.TOTL.SP.ZS. G7 series
+      is an unweighted mean of member countries computed at import time.
+
+  - slug: age-dependency-ratio
+    canonical_name: "Age dependency ratio (% of working-age population)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Ratio of dependents (younger than 15 or older than 64) to the
+      working-age population. Source: World Bank WDI indicator SP.POP.DPND.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: gini-index
+    canonical_name: "Gini index (World Bank estimate)"
+    unit: index
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gini index of income inequality on a 0-100 scale, where 0 is perfect
+      equality. Source: World Bank WDI indicator SI.POV.GINI. Coverage is
+      sparse for some countries and years. G7 series is an unweighted mean of
+      member countries computed at import time.
+
+  - slug: bottom-quintile-income-share
+    canonical_name: "Income share held by lowest 20% (%)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of income or consumption that accrues to the bottom quintile of
+      the population. Source: World Bank WDI indicator SI.DST.FRST.20.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: real-minimum-wage-ppp
+    canonical_name: "Real hourly minimum wage (constant prices, USD PPP)"
+    unit: intl_$_per_hour
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Statutory hourly minimum wage at constant prices, converted with
+      purchasing power parities. Source: OECD earnings database
+      (DSD_EARNINGS@RMW, unit USD_PPP, hourly, constant prices). Italy has no
+      statutory minimum wage, so no G7 average is computed.
+
+  - slug: average-annual-hours-worked
+    canonical_name: "Average annual hours actually worked per worker"
+    unit: hours
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Total hours actually worked per year divided by the average number of
+      people in employment. Source: OECD hours worked database
+      (DSD_HW@DF_AVG_ANN_HRS_WKD, total employment, mean). G7 series is an
+      unweighted mean of member countries computed at import time.
+
+  - slug: household-debt-to-income
+    canonical_name: "Household debt (% of net disposable income)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Total debt of households and non-profit institutions serving households
+      as a share of their net disposable income. Source: OECD National
+      Accounts at a Glance chapter 5 (DSD_NAAG@DF_NAAG_V, measure LES1M_FD4).
+      No OECD-average series is published.
+
+  - slug: gini-after-tax-canada
+    canonical_name: "Gini coefficient, adjusted after-tax income (Canada)"
+    unit: ratio
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gini coefficient (0-1 scale) of adjusted after-tax household income for
+      Canada. Source: Statistics Canada table 11-10-0134 (vector v96439638).
+      Canada-only series; longer and more current than the World Bank Gini.
+
+  - slug: low-income-entry-rate
+    canonical_name: "Low income entry rate of tax filers (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Share of tax filers not in low income in one year who entered low income
+      the following year (variable low income measure). Source: Statistics
+      Canada table 11-10-0024 (vector v96730402). Canada-only series.
+
+  - slug: low-income-exit-rate
+    canonical_name: "Low income exit rate of tax filers (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of tax filers in low income in one year who exited low income the
+      following year (variable low income measure). Source: Statistics Canada
+      table 11-10-0024 (vector v96730403). Canada-only series.

@@ -1,0 +1,60 @@
+# Canonical (organization-less) measures for the CAN-14 Overall Economy dashboard.
+#
+# Observations are stored per jurisdiction (Canada + G7 countries + OECD average
+# + computed G7 average). The G7 average is an unweighted mean across the seven
+# member countries, computed only for years where all seven report a value, and
+# stored with status "estimated".
+#
+# Deferred (no free no-auth automatable source yet): velocity of money,
+# VC investment as % of GDP, sovereign wealth per capita.
+
+measures:
+  - slug: gdp-per-capita-ppp
+    canonical_name: "GDP per capita, PPP (constant 2021 international $)"
+    unit: intl_$
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic product converted to international dollars using purchasing
+      power parity rates, divided by population. Source: World Bank WDI
+      indicator NY.GDP.PCAP.PP.KD. G7 series is an unweighted mean of member
+      countries computed at import time.
+
+  - slug: gdp-growth-annual
+    canonical_name: "GDP growth (annual %)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Annual percentage growth rate of GDP at market prices based on constant
+      local currency. Source: World Bank WDI indicator NY.GDP.MKTP.KD.ZG.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: trade-balance-pct-gdp
+    canonical_name: "External balance on goods and services (% of GDP)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Exports minus imports of goods and services as a share of GDP. Source:
+      World Bank WDI indicator NE.RSB.GNFS.ZS. G7 series is an unweighted mean
+      of member countries computed at import time.
+
+  - slug: labour-productivity-gdp-per-hour
+    canonical_name: "GDP per hour worked (USD, constant prices, PPP)"
+    unit: intl_$_per_hour
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Labour productivity measured as GDP per hour worked, USD at constant
+      prices and PPP. Source: OECD Productivity Database (DSD_PDB@DF_PDB,
+      measure GDPHRS, unit USD_PPP_H, price base LR). G7 series is an
+      unweighted mean of member countries computed at import time.

@@ -17,12 +17,20 @@ namespace :kpis do
         path: seed_dir.join("federal_organizations.yml")
       )
       lineages_seeded = seed_toronto_organization_lineages(seed_dir.join("toronto_organization_lineages.yml"))
+      countries_seeded = seed_countries(seed_dir.join("countries.yml"))
+      measure_counts = Dir.glob(seed_dir.join("*_measures.yml")).sort.to_h do |path|
+        [ File.basename(path, ".yml"), seed_economy_measures(path) ]
+      end
 
       puts "Seeded:"
       puts "  units:                  #{units_seeded}"
       puts "  toronto organizations:  #{tor_orgs}  (aliases: #{tor_aliases})"
       puts "  federal organizations:  #{fed_orgs}  (aliases: #{fed_aliases})"
       puts "  organization_lineages:  #{lineages_seeded}"
+      puts "  countries:              #{countries_seeded}"
+      measure_counts.each do |name, count|
+        puts "  #{name.ljust(22)} #{count}"
+      end
     end
   end
 
@@ -296,6 +304,49 @@ namespace :kpis do
       j.default_currency = "CAD"
       j.region_code = "ON"
     end
+  end
+
+  def seed_countries(yaml_path)
+    return 0 unless File.exist?(yaml_path)
+    data = YAML.safe_load_file(yaml_path, permitted_classes: [ Symbol ], aliases: true)
+    count = 0
+
+    data.fetch("countries").each do |row|
+      jurisdiction = Warehouse::Jurisdiction.find_or_initialize_by(code: row.fetch("code"))
+      jurisdiction.name = row.fetch("name")
+      jurisdiction.level = row.fetch("level")
+      jurisdiction.slug ||= row.fetch("slug")
+      jurisdiction.fiscal_year_start_month ||= 1
+      jurisdiction.default_currency ||= row.fetch("default_currency")
+      jurisdiction.save!
+      count += 1
+    end
+
+    count
+  end
+
+  def seed_economy_measures(yaml_path)
+    return 0 unless File.exist?(yaml_path)
+    data = YAML.safe_load_file(yaml_path, permitted_classes: [ Symbol ], aliases: true)
+    count = 0
+
+    data.fetch("measures").each do |row|
+      unit = Warehouse::Unit.find_by!(symbol: row.fetch("unit"))
+      measure = Warehouse::Measure.find_or_initialize_by(organization_id: nil, slug: row.fetch("slug"))
+      measure.assign_attributes(
+        canonical_name: row.fetch("canonical_name"),
+        unit_id: unit.id,
+        category: row.fetch("category"),
+        frequency: row.fetch("frequency"),
+        aggregation_type: row.fetch("aggregation_type"),
+        higher_is_bad: row.fetch("higher_is_bad", false),
+        description: row["description"]
+      )
+      measure.save!
+      count += 1
+    end
+
+    count
   end
 
   def seed_units(yaml_path)

@@ -64,6 +64,7 @@ Rails.application.routes.draw do
       end
 
       namespace :kpis do
+        get "series", to: "series#index"
         resources :jurisdictions, only: [ :index, :show ], param: :slug do
           resources :organizations, only: [ :index, :show ], param: :slug
         end

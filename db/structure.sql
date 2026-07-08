@@ -1290,7 +1290,7 @@ CREATE TABLE warehouse.agent_runs (
     error_message text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT agent_runs_status_check CHECK (((status)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'cancelled'::character varying])::text[])))
+    CONSTRAINT agent_runs_status_check CHECK (((status)::text = ANY (ARRAY[('running'::character varying)::text, ('completed'::character varying)::text, ('failed'::character varying)::text, ('cancelled'::character varying)::text])))
 );
 
 
@@ -1369,8 +1369,8 @@ CREATE TABLE warehouse.alerts (
     notes text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT alerts_condition_type_check CHECK (((condition_type)::text = ANY ((ARRAY['above'::character varying, 'below'::character varying, 'percent_change'::character varying, 'absolute_change'::character varying, 'missing_update'::character varying, 'rank_change'::character varying, 'new_definition'::character varying, 'new_component'::character varying, 'conflicting_source'::character varying])::text[]))),
-    CONSTRAINT alerts_severity_check CHECK (((severity)::text = ANY ((ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying, 'critical'::character varying])::text[])))
+    CONSTRAINT alerts_condition_type_check CHECK (((condition_type)::text = ANY (ARRAY[('above'::character varying)::text, ('below'::character varying)::text, ('percent_change'::character varying)::text, ('absolute_change'::character varying)::text, ('missing_update'::character varying)::text, ('rank_change'::character varying)::text, ('new_definition'::character varying)::text, ('new_component'::character varying)::text, ('conflicting_source'::character varying)::text]))),
+    CONSTRAINT alerts_severity_check CHECK (((severity)::text = ANY (ARRAY[('low'::character varying)::text, ('medium'::character varying)::text, ('high'::character varying)::text, ('critical'::character varying)::text])))
 );
 
 
@@ -1463,9 +1463,9 @@ CREATE TABLE warehouse.canonical_observations (
     metric_version_id bigint,
     composition_id bigint,
     component_id bigint,
-    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY ((ARRAY['full_year'::character varying, 'ytd_q1'::character varying, 'ytd_q2'::character varying, 'ytd_q3'::character varying, 'as_of_date'::character varying])::text[]))),
-    CONSTRAINT canonical_observations_status_check CHECK (((status)::text = ANY ((ARRAY['reported'::character varying, 'estimated'::character varying, 'revised'::character varying, 'final'::character varying])::text[]))),
-    CONSTRAINT canonical_observations_value_type_check CHECK (((value_type)::text = ANY ((ARRAY['actual'::character varying, 'target'::character varying, 'projected'::character varying, 'plan'::character varying, 'budget'::character varying])::text[])))
+    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text]))),
+    CONSTRAINT canonical_observations_status_check CHECK (((status)::text = ANY (ARRAY[('reported'::character varying)::text, ('estimated'::character varying)::text, ('revised'::character varying)::text, ('final'::character varying)::text]))),
+    CONSTRAINT canonical_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
 
 
@@ -1510,8 +1510,8 @@ CREATE TABLE warehouse.composition_validation_results (
     message text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT cvr_severity_check CHECK (((severity IS NULL) OR ((severity)::text = ANY ((ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying, 'critical'::character varying])::text[])))),
-    CONSTRAINT cvr_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'warn'::character varying, 'fail'::character varying])::text[])))
+    CONSTRAINT cvr_severity_check CHECK (((severity IS NULL) OR ((severity)::text = ANY (ARRAY[('low'::character varying)::text, ('medium'::character varying)::text, ('high'::character varying)::text, ('critical'::character varying)::text])))),
+    CONSTRAINT cvr_status_check CHECK (((status)::text = ANY (ARRAY[('ok'::character varying)::text, ('warn'::character varying)::text, ('fail'::character varying)::text])))
 );
 
 
@@ -1546,7 +1546,7 @@ CREATE TABLE warehouse.crosswalk_metric_compatibility (
     reason text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT cmc_compatibility_check CHECK (((compatibility)::text = ANY ((ARRAY['recommended'::character varying, 'acceptable'::character varying, 'risky'::character varying, 'not_allowed'::character varying])::text[])))
+    CONSTRAINT cmc_compatibility_check CHECK (((compatibility)::text = ANY (ARRAY[('recommended'::character varying)::text, ('acceptable'::character varying)::text, ('risky'::character varying)::text, ('not_allowed'::character varying)::text])))
 );
 
 
@@ -1587,7 +1587,7 @@ CREATE TABLE warehouse.geography_crosswalk_entries (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT crosswalk_entries_confidence_range CHECK (((confidence IS NULL) OR ((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))),
-    CONSTRAINT crosswalk_entries_relationship_kind_check CHECK (((relationship_type)::text = ANY ((ARRAY['equivalent'::character varying, 'contains'::character varying, 'contained_by'::character varying, 'split'::character varying, 'merged'::character varying, 'overlaps'::character varying, 'allocated'::character varying, 'estimated'::character varying, 'manual'::character varying])::text[]))),
+    CONSTRAINT crosswalk_entries_relationship_kind_check CHECK (((relationship_type)::text = ANY (ARRAY[('equivalent'::character varying)::text, ('contains'::character varying)::text, ('contained_by'::character varying)::text, ('split'::character varying)::text, ('merged'::character varying)::text, ('overlaps'::character varying)::text, ('allocated'::character varying)::text, ('estimated'::character varying)::text, ('manual'::character varying)::text]))),
     CONSTRAINT crosswalk_entries_weight_range CHECK (((weight >= (0)::numeric) AND (weight <= (1)::numeric)))
 );
 
@@ -1646,7 +1646,7 @@ CREATE TABLE warehouse.jurisdictions (
     default_currency character varying DEFAULT 'CAD'::character varying NOT NULL,
     region_code character varying,
     CONSTRAINT jurisdictions_fiscal_year_start_month_check CHECK (((fiscal_year_start_month >= 1) AND (fiscal_year_start_month <= 12))),
-    CONSTRAINT jurisdictions_level_check CHECK (((level)::text = ANY ((ARRAY['municipal'::character varying, 'regional'::character varying, 'provincial'::character varying, 'territorial'::character varying, 'federal'::character varying, 'crown_corp'::character varying, 'authority'::character varying])::text[])))
+    CONSTRAINT jurisdictions_level_check CHECK (((level)::text = ANY (ARRAY['municipal'::text, 'regional'::text, 'provincial'::text, 'territorial'::text, 'federal'::text, 'crown_corp'::text, 'authority'::text, 'national'::text, 'supranational'::text])))
 );
 
 
@@ -1671,7 +1671,7 @@ CREATE TABLE warehouse.kpi_documents (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     agent_run_id bigint,
-    CONSTRAINT kpi_documents_published_at_source_check CHECK (((published_at_source IS NULL) OR ((published_at_source)::text = ANY ((ARRAY['pdf_metadata'::character varying, 'http_last_modified'::character varying, 'council_schedule'::character varying, 'discovered_at_fallback'::character varying, 'manual'::character varying])::text[]))))
+    CONSTRAINT kpi_documents_published_at_source_check CHECK (((published_at_source IS NULL) OR ((published_at_source)::text = ANY (ARRAY[('pdf_metadata'::character varying)::text, ('http_last_modified'::character varying)::text, ('council_schedule'::character varying)::text, ('discovered_at_fallback'::character varying)::text, ('manual'::character varying)::text]))))
 );
 
 
@@ -1698,10 +1698,10 @@ CREATE TABLE warehouse.measures (
     higher_is_bad boolean,
     frequency character varying,
     category character varying,
-    CONSTRAINT measures_aggregation_type_check CHECK (((aggregation_type)::text = ANY ((ARRAY['additive'::character varying, 'semi_additive'::character varying, 'average'::character varying, 'ratio'::character varying, 'median'::character varying, 'index'::character varying, 'rate'::character varying, 'part_of_whole'::character varying, 'non_aggregable'::character varying, 'unknown'::character varying])::text[]))),
-    CONSTRAINT measures_frequency_check CHECK (((frequency IS NULL) OR ((frequency)::text = ANY ((ARRAY['annual'::character varying, 'fiscal_year'::character varying, 'quarterly'::character varying, 'monthly'::character varying, 'point_in_time'::character varying, 'irregular'::character varying, 'unknown'::character varying])::text[])))),
+    CONSTRAINT measures_aggregation_type_check CHECK (((aggregation_type)::text = ANY (ARRAY[('additive'::character varying)::text, ('semi_additive'::character varying)::text, ('average'::character varying)::text, ('ratio'::character varying)::text, ('median'::character varying)::text, ('index'::character varying)::text, ('rate'::character varying)::text, ('part_of_whole'::character varying)::text, ('non_aggregable'::character varying)::text, ('unknown'::character varying)::text]))),
+    CONSTRAINT measures_frequency_check CHECK (((frequency IS NULL) OR ((frequency)::text = ANY (ARRAY[('annual'::character varying)::text, ('fiscal_year'::character varying)::text, ('quarterly'::character varying)::text, ('monthly'::character varying)::text, ('point_in_time'::character varying)::text, ('irregular'::character varying)::text, ('unknown'::character varying)::text])))),
     CONSTRAINT measures_no_self_ratio CHECK ((((numerator_measure_id IS NULL) OR (numerator_measure_id <> id)) AND ((denominator_measure_id IS NULL) OR (denominator_measure_id <> id)))),
-    CONSTRAINT measures_ratio_has_components CHECK ((((aggregation_type)::text <> ALL ((ARRAY['ratio'::character varying, 'rate'::character varying])::text[])) OR ((numerator_measure_id IS NOT NULL) AND (denominator_measure_id IS NOT NULL)) OR ((aggregation_type)::text = 'unknown'::text)))
+    CONSTRAINT measures_ratio_has_components CHECK ((((aggregation_type)::text <> ALL (ARRAY[('ratio'::character varying)::text, ('rate'::character varying)::text])) OR ((numerator_measure_id IS NOT NULL) AND (denominator_measure_id IS NOT NULL)) OR ((aggregation_type)::text = 'unknown'::text)))
 );
 
 
@@ -1742,8 +1742,8 @@ CREATE TABLE warehouse.units (
     notes text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT units_base_unit_check CHECK (((base_unit IS NULL) OR ((base_unit)::text = ANY ((ARRAY['ratio'::character varying, 'count'::character varying, 'dollars'::character varying, 'seconds'::character varying, 'minutes'::character varying, 'hours'::character varying, 'days'::character varying, 'meters'::character varying, 'kilometers'::character varying, 'square_meters'::character varying, 'hectares'::character varying, 'tonnes'::character varying, 'kwh'::character varying, 'mwh'::character varying, 'tco2e'::character varying, 'other'::character varying])::text[])))),
-    CONSTRAINT units_kind_check CHECK (((kind)::text = ANY ((ARRAY['absolute'::character varying, 'ratio'::character varying, 'rate'::character varying, 'qualitative'::character varying])::text[]))),
+    CONSTRAINT units_base_unit_check CHECK (((base_unit IS NULL) OR ((base_unit)::text = ANY (ARRAY[('ratio'::character varying)::text, ('count'::character varying)::text, ('dollars'::character varying)::text, ('seconds'::character varying)::text, ('minutes'::character varying)::text, ('hours'::character varying)::text, ('days'::character varying)::text, ('meters'::character varying)::text, ('kilometers'::character varying)::text, ('square_meters'::character varying)::text, ('hectares'::character varying)::text, ('tonnes'::character varying)::text, ('kwh'::character varying)::text, ('mwh'::character varying)::text, ('tco2e'::character varying)::text, ('other'::character varying)::text])))),
+    CONSTRAINT units_kind_check CHECK (((kind)::text = ANY (ARRAY[('absolute'::character varying)::text, ('ratio'::character varying)::text, ('rate'::character varying)::text, ('qualitative'::character varying)::text]))),
     CONSTRAINT units_qualitative_has_no_base CHECK ((((kind)::text = 'qualitative'::text) = (base_unit IS NULL))),
     CONSTRAINT units_rate_has_denominator CHECK ((((kind)::text = 'rate'::text) = (denominator_unit IS NOT NULL)))
 );
@@ -1830,7 +1830,7 @@ CREATE TABLE warehouse.derived_observations (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT derived_observations_confidence_range CHECK (((confidence IS NULL) OR ((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))),
-    CONSTRAINT derived_observations_method_check CHECK (((derivation_method)::text = ANY ((ARRAY['crosswalk_allocation'::character varying, 'aggregation'::character varying, 'ratio_recompute'::character varying, 'definition_normalization'::character varying, 'rebase'::character varying, 'manual'::character varying])::text[])))
+    CONSTRAINT derived_observations_method_check CHECK (((derivation_method)::text = ANY (ARRAY[('crosswalk_allocation'::character varying)::text, ('aggregation'::character varying)::text, ('ratio_recompute'::character varying)::text, ('definition_normalization'::character varying)::text, ('rebase'::character varying)::text, ('manual'::character varying)::text])))
 );
 
 
@@ -1899,9 +1899,9 @@ CREATE TABLE warehouse.extracted_observations (
     composition_id bigint,
     component_id bigint,
     CONSTRAINT extracted_observations_confidence_range CHECK (((extraction_confidence IS NULL) OR ((extraction_confidence >= (0)::numeric) AND (extraction_confidence <= (1)::numeric)))),
-    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY ((ARRAY['full_year'::character varying, 'ytd_q1'::character varying, 'ytd_q2'::character varying, 'ytd_q3'::character varying, 'as_of_date'::character varying])::text[]))),
-    CONSTRAINT extracted_observations_review_status_check CHECK (((review_status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'superseded'::character varying])::text[]))),
-    CONSTRAINT extracted_observations_value_type_check CHECK (((value_type)::text = ANY ((ARRAY['actual'::character varying, 'target'::character varying, 'projected'::character varying, 'plan'::character varying, 'budget'::character varying])::text[])))
+    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text]))),
+    CONSTRAINT extracted_observations_review_status_check CHECK (((review_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text, ('superseded'::character varying)::text]))),
+    CONSTRAINT extracted_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
 
 
@@ -2154,7 +2154,7 @@ CREATE TABLE warehouse.geography_crosswalk_sets (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT crosswalk_sets_valid_range CHECK (((valid_to IS NULL) OR (valid_from IS NULL) OR (valid_to >= valid_from))),
-    CONSTRAINT crosswalk_sets_weight_basis_check CHECK (((weight_basis)::text = ANY ((ARRAY['area'::character varying, 'population'::character varying, 'dwellings'::character varying, 'households'::character varying, 'business_count'::character varying, 'employment'::character varying, 'road_length'::character varying, 'property_assessment'::character varying, 'manual'::character varying, 'exact_containment'::character varying, 'unknown'::character varying])::text[])))
+    CONSTRAINT crosswalk_sets_weight_basis_check CHECK (((weight_basis)::text = ANY (ARRAY[('area'::character varying)::text, ('population'::character varying)::text, ('dwellings'::character varying)::text, ('households'::character varying)::text, ('business_count'::character varying)::text, ('employment'::character varying)::text, ('road_length'::character varying)::text, ('property_assessment'::character varying)::text, ('manual'::character varying)::text, ('exact_containment'::character varying)::text, ('unknown'::character varying)::text])))
 );
 
 
@@ -2410,30 +2410,18 @@ CREATE VIEW warehouse.measure_facts AS
             c.extracted_observation_id,
             c.measure_id,
             c.document_id,
-            c.reporting_organization_id,
-            c.responsible_organization_id,
             c.observed_organization_id,
             c.geo_boundary_id,
             c.jurisdiction_id,
             c.measurement_year,
-            c.period_start,
-            c.period_end,
-            c.period_type,
             c.value_type,
             c.period_basis,
             c.value_numeric,
             c.value_text,
-            c.unit_id,
             c.vintage_date,
             c.status,
-            c.is_total,
-            c.is_residual,
-            c.approved_by,
             c.approved_at,
-            c.notes,
-            c.created_at,
-            c.updated_at,
-            row_number() OVER (PARTITION BY c.measure_id, c.measurement_year, c.value_type, c.period_basis, c.observed_organization_id, c.geo_boundary_id ORDER BY c.vintage_date DESC NULLS LAST, c.approved_at DESC, c.id DESC) AS rn
+            row_number() OVER (PARTITION BY c.measure_id, c.measurement_year, c.value_type, c.period_basis, c.observed_organization_id, c.geo_boundary_id, c.jurisdiction_id ORDER BY c.vintage_date DESC NULLS LAST, c.approved_at DESC, c.id DESC) AS rn
            FROM warehouse.canonical_observations c) co
   WHERE (rn = 1);
 
@@ -2464,7 +2452,7 @@ CREATE TABLE warehouse.measure_lineages (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT measure_lineages_distinct CHECK ((predecessor_id <> successor_id)),
-    CONSTRAINT measure_lineages_kind_check CHECK (((transition_kind)::text = ANY ((ARRAY['rename'::character varying, 'methodology_revision'::character varying, 'split'::character varying, 'merge'::character varying, 'unit_change'::character varying, 'scope_change'::character varying, 'revived'::character varying])::text[])))
+    CONSTRAINT measure_lineages_kind_check CHECK (((transition_kind)::text = ANY (ARRAY[('rename'::character varying)::text, ('methodology_revision'::character varying)::text, ('split'::character varying)::text, ('merge'::character varying)::text, ('unit_change'::character varying)::text, ('scope_change'::character varying)::text, ('revived'::character varying)::text])))
 );
 
 
@@ -2524,7 +2512,7 @@ CREATE TABLE warehouse.metric_aliases (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT metric_aliases_equivalence_target CHECK ((((kind)::text <> 'measure_equivalence'::text) OR ((canonical_measure_id IS NOT NULL) AND (canonical_measure_id <> measure_id)))),
-    CONSTRAINT metric_aliases_kind_check CHECK (((kind)::text = ANY ((ARRAY['raw_text'::character varying, 'measure_equivalence'::character varying])::text[])))
+    CONSTRAINT metric_aliases_kind_check CHECK (((kind)::text = ANY (ARRAY[('raw_text'::character varying)::text, ('measure_equivalence'::character varying)::text])))
 );
 
 
@@ -2563,7 +2551,7 @@ CREATE TABLE warehouse.metric_component_relationships (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT mcr_distinct CHECK ((from_component_id <> to_component_id)),
-    CONSTRAINT mcr_relationship_kind_check CHECK (((relationship_type)::text = ANY ((ARRAY['renamed_to'::character varying, 'split_into'::character varying, 'merged_into'::character varying, 'reclassified_as'::character varying, 'equivalent_to'::character varying, 'parent_of'::character varying, 'child_of'::character varying])::text[])))
+    CONSTRAINT mcr_relationship_kind_check CHECK (((relationship_type)::text = ANY (ARRAY[('renamed_to'::character varying)::text, ('split_into'::character varying)::text, ('merged_into'::character varying)::text, ('reclassified_as'::character varying)::text, ('equivalent_to'::character varying)::text, ('parent_of'::character varying)::text, ('child_of'::character varying)::text])))
 );
 
 
@@ -2733,7 +2721,7 @@ CREATE TABLE warehouse.observation_review_flags (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT observation_review_flags_resolved_pair CHECK (((resolved_at IS NULL) = (resolved_by IS NULL))),
-    CONSTRAINT observation_review_flags_severity_check CHECK (((severity)::text = ANY ((ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying, 'critical'::character varying])::text[])))
+    CONSTRAINT observation_review_flags_severity_check CHECK (((severity)::text = ANY (ARRAY[('low'::character varying)::text, ('medium'::character varying)::text, ('high'::character varying)::text, ('critical'::character varying)::text])))
 );
 
 
@@ -2805,7 +2793,7 @@ CREATE TABLE warehouse.organization_lineages (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT organization_lineages_distinct CHECK ((predecessor_id <> successor_id)),
-    CONSTRAINT organization_lineages_kind_check CHECK (((transition_kind)::text = ANY ((ARRAY['rename'::character varying, 'merge'::character varying, 'split'::character varying, 'absorb'::character varying, 'spin_off'::character varying, 'revived'::character varying])::text[])))
+    CONSTRAINT organization_lineages_kind_check CHECK (((transition_kind)::text = ANY (ARRAY[('rename'::character varying)::text, ('merge'::character varying)::text, ('split'::character varying)::text, ('absorb'::character varying)::text, ('spin_off'::character varying)::text, ('revived'::character varying)::text])))
 );
 
 
@@ -2897,7 +2885,7 @@ CREATE TABLE warehouse.review_decisions (
     notes text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT review_decisions_decision_check CHECK (((decision)::text = ANY ((ARRAY['approved'::character varying, 'rejected'::character varying, 'edited'::character varying, 'needs_more_info'::character varying])::text[])))
+    CONSTRAINT review_decisions_decision_check CHECK (((decision)::text = ANY (ARRAY[('approved'::character varying)::text, ('rejected'::character varying)::text, ('edited'::character varying)::text, ('needs_more_info'::character varying)::text])))
 );
 
 
@@ -4894,7 +4882,7 @@ CREATE INDEX idx_extracted_observations_review_status ON warehouse.extracted_obs
 -- Name: idx_extracted_observations_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_extracted_observations_unique ON warehouse.extracted_observations USING btree (measure_id, measurement_year, value_type, period_basis, document_id, composition_id, component_id, observed_organization_id, geo_boundary_id) NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX idx_extracted_observations_unique ON warehouse.extracted_observations USING btree (measure_id, measurement_year, value_type, period_basis, document_id, composition_id, component_id, observed_organization_id, geo_boundary_id, jurisdiction_id) NULLS NOT DISTINCT;
 
 
 --
@@ -6547,6 +6535,8 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260708000002'),
+('20260708000001'),
 ('20260617145412'),
 ('20260617145403'),
 ('20260603000001'),

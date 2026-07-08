@@ -61,7 +61,8 @@ class Warehouse::ExtractedObservation < Warehouse::Record
     allow_nil: true
   validates :measure_id, uniqueness: {
     scope: [ :measurement_year, :value_type, :period_basis, :document_id,
-             :composition_id, :component_id, :observed_organization_id, :geo_boundary_id ]
+             :composition_id, :component_id, :observed_organization_id, :geo_boundary_id,
+             :jurisdiction_id ]
   }
 
   scope :pending,      -> { where(review_status: "pending") }

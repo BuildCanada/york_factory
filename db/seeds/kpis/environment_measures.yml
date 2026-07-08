@@ -1,0 +1,56 @@
+# Canonical (organization-less) measures for the CAN-24 Environment
+# dashboard. The decoupling narrative (emissions vs GDP) is a frontend
+# overlay of co2-emissions-per-capita with gdp-per-capita-ppp, not a separate
+# measure.
+#
+# Deferred (no free no-auth automatable source yet): waste diversion
+# (StatCan table 38-10-0032 is biennial with irregular coverage — revisit).
+
+measures:
+  - slug: co2-emissions-per-capita
+    canonical_name: "CO2 emissions per capita (tonnes)"
+    unit: t_co2_per_capita
+    category: environment
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Production-based carbon dioxide emissions per person, in tonnes per
+      year. Source: Global Carbon Budget via Our World in Data. G7 series is
+      an unweighted mean of member countries computed at import time.
+
+  - slug: air-pollution-pm25
+    canonical_name: "PM2.5 air pollution, population-weighted (µg/m³)"
+    unit: ug_m3
+    category: environment
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Mean annual population-weighted exposure to fine particulate matter
+      (PM2.5). Source: World Bank WDI indicator EN.ATM.PM25.MC.M3. G7 series
+      is an unweighted mean of member countries computed at import time.
+
+  - slug: protected-areas-pct
+    canonical_name: "Terrestrial protected areas (% of land area)"
+    unit: "%"
+    category: environment
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Terrestrial protected areas as a share of total land area. Source:
+      World Bank WDI indicator ER.LND.PTLD.ZS (UNEP-WCMC). G7 series is an
+      unweighted mean of member countries computed at import time.
+
+  - slug: forest-area-pct
+    canonical_name: "Forest area (% of land area)"
+    unit: "%"
+    category: environment
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Land under natural or planted forest as a share of total land area.
+      Source: World Bank WDI indicator AG.LND.FRST.ZS (FAO). G7 series is an
+      unweighted mean of member countries computed at import time.

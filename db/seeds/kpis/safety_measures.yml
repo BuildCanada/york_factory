@@ -1,0 +1,43 @@
+# Canonical (organization-less) measures for the CAN-18 Crime & Public Safety
+# dashboard.
+#
+# Deferred (no free no-auth automatable source yet): incarceration rate
+# (World Prison Brief has no API), violent crime by province (the warehouse
+# jurisdiction model for this pipeline is countries).
+
+measures:
+  - slug: crime-severity-index
+    canonical_name: "Crime Severity Index (Canada, 2006 = 100)"
+    unit: index
+    category: safety
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Police-reported Crime Severity Index, which weights offences by their
+      seriousness (2006 = 100). Source: Statistics Canada table 35-10-0026.
+      Canada-only series.
+
+  - slug: police-reported-crime-rate
+    canonical_name: "Police-reported crime rate (Canada, per 100,000)"
+    unit: rate_per_100k
+    category: safety
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Police-reported Criminal Code incidents (excluding traffic) per 100,000
+      population. Source: Statistics Canada table 35-10-0177. Canada-only
+      series.
+
+  - slug: homicide-rate
+    canonical_name: "Homicide rate (per 100,000)"
+    unit: rate_per_100k
+    category: safety
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Intentional homicides per 100,000 population. Source: UNODC via Our
+      World in Data. G7 series is an unweighted mean of member countries
+      computed at import time.

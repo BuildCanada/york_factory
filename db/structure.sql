@@ -1463,7 +1463,7 @@ CREATE TABLE warehouse.canonical_observations (
     metric_version_id bigint,
     composition_id bigint,
     component_id bigint,
-    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text]))),
+    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text]))),
     CONSTRAINT canonical_observations_status_check CHECK (((status)::text = ANY (ARRAY[('reported'::character varying)::text, ('estimated'::character varying)::text, ('revised'::character varying)::text, ('final'::character varying)::text]))),
     CONSTRAINT canonical_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
@@ -1899,7 +1899,7 @@ CREATE TABLE warehouse.extracted_observations (
     composition_id bigint,
     component_id bigint,
     CONSTRAINT extracted_observations_confidence_range CHECK (((extraction_confidence IS NULL) OR ((extraction_confidence >= (0)::numeric) AND (extraction_confidence <= (1)::numeric)))),
-    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text]))),
+    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text]))),
     CONSTRAINT extracted_observations_review_status_check CHECK (((review_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text, ('superseded'::character varying)::text]))),
     CONSTRAINT extracted_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
@@ -2396,6 +2396,9 @@ CREATE VIEW warehouse.measure_facts AS
     measurement_year,
     value_type,
     period_basis,
+    period_start,
+    period_end,
+    period_type,
     value_numeric,
     value_text,
     document_id,
@@ -2416,12 +2419,15 @@ CREATE VIEW warehouse.measure_facts AS
             c.measurement_year,
             c.value_type,
             c.period_basis,
+            c.period_start,
+            c.period_end,
+            c.period_type,
             c.value_numeric,
             c.value_text,
             c.vintage_date,
             c.status,
             c.approved_at,
-            row_number() OVER (PARTITION BY c.measure_id, c.measurement_year, c.value_type, c.period_basis, c.observed_organization_id, c.geo_boundary_id, c.jurisdiction_id ORDER BY c.vintage_date DESC NULLS LAST, c.approved_at DESC, c.id DESC) AS rn
+            row_number() OVER (PARTITION BY c.measure_id, c.measurement_year, c.value_type, c.period_basis, c.period_start, c.observed_organization_id, c.geo_boundary_id, c.jurisdiction_id ORDER BY c.vintage_date DESC NULLS LAST, c.approved_at DESC, c.id DESC) AS rn
            FROM warehouse.canonical_observations c) co
   WHERE (rn = 1);
 
@@ -4882,7 +4888,7 @@ CREATE INDEX idx_extracted_observations_review_status ON warehouse.extracted_obs
 -- Name: idx_extracted_observations_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_extracted_observations_unique ON warehouse.extracted_observations USING btree (measure_id, measurement_year, value_type, period_basis, document_id, composition_id, component_id, observed_organization_id, geo_boundary_id, jurisdiction_id) NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX idx_extracted_observations_unique ON warehouse.extracted_observations USING btree (measure_id, measurement_year, value_type, period_basis, period_start, document_id, composition_id, component_id, observed_organization_id, geo_boundary_id, jurisdiction_id) NULLS NOT DISTINCT;
 
 
 --
@@ -6535,6 +6541,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260709000001'),
 ('20260708000002'),
 ('20260708000001'),
 ('20260617145412'),

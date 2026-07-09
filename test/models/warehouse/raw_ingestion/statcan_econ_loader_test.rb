@@ -59,6 +59,38 @@ class Warehouse::RawIngestion::StatcanEconLoaderTest < ActiveSupport::TestCase
     )
   end
 
+  test "loads monthly CPI vectors as one observation per month" do
+    unit = Warehouse::Unit.find_or_create_by!(symbol: "index") do |u|
+      u.kind = "ratio"
+      u.base_unit = "ratio"
+    end
+    cpi = Warehouse::Measure.find_or_create_by!(organization_id: nil, slug: "cpi-all-items") do |m|
+      m.canonical_name = "Consumer Price Index, all-items (2002=100)"
+      m.unit = unit
+      m.aggregation_type = "non_aggregable"
+      m.frequency = "monthly"
+    end
+
+    body = JSON.generate([
+      { "vectorId" => 41690973, "refPer" => "2026-04-01", "value" => 165.1 },
+      { "vectorId" => 41690973, "refPer" => "2026-05-01", "value" => 165.7 }
+    ])
+
+    counts = @raw_ingestion.statcan_econ_loader.load(json_content: body)
+
+    assert_equal 2, counts[:inserted]
+    assert_equal 2, counts[:promoted]
+
+    canada = Warehouse::Jurisdiction.find_by!(code: "CA")
+    may = Warehouse::CanonicalObservation.find_by!(
+      measure_id: cpi.id, jurisdiction_id: canada.id, period_start: Date.new(2026, 5, 1)
+    )
+    assert_equal 165.7, may.value_numeric
+    assert_equal "month", may.period_basis
+    assert_equal Date.new(2026, 5, 31), may.period_end
+    assert_equal 2026, may.measurement_year
+  end
+
   test "marks the ingestion failed and re-raises on bad payloads" do
     assert_raises(JSON::ParserError) do
       @raw_ingestion.statcan_econ_loader.load(json_content: "not json")

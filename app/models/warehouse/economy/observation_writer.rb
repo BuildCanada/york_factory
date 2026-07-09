@@ -2,7 +2,9 @@
 #
 # Loaders parse their source format down to normalized tuples
 #   { measure_slug:, country_code:, year:, value: }
-# and this writer does everything stateful: resolves measures and country
+# with an optional period: (ISO date) that monthly measures (by
+# measure.frequency) require — each month becomes its own observation row.
+# The writer does everything stateful: resolves measures and country
 # jurisdictions, creates a per-ingestion KpiDocument (vintage anchor), bulk
 # upserts extracted_observations, auto-promotes them to canonical (trusted
 # machine-ingested statistics), and computes the G7 average series.
@@ -101,32 +103,61 @@ class Warehouse::Economy::ObservationWriter
     rows = tuples.filter_map do |tuple|
       measure = measures[tuple[:measure_slug]]
       jurisdiction = jurisdictions[COUNTRY_CODES[tuple[:country_code]]]
-      year = tuple[:year].to_i
       value = tuple[:value]
+      period = period_attributes(measure, tuple)
 
-      if measure.nil? || jurisdiction.nil? || value.nil? || year.zero?
+      if measure.nil? || jurisdiction.nil? || value.nil? || period.nil?
         skipped += 1
         next
       end
 
-      {
+      period.merge(
         measure_id: measure.id,
-        measurement_year: year,
         value_type: "actual",
         value_numeric: value.to_f,
-        period_basis: "full_year",
-        period_start: Date.new(year, 1, 1),
-        period_end: Date.new(year, 12, 31),
-        period_type: "calendar_year",
         jurisdiction_id: jurisdiction.id,
         document_id: document.id,
         review_status: "pending",
         created_at: now,
         updated_at: now
-      }
+      )
     end
 
     [ rows, skipped ]
+  end
+
+  # Annual measures key off tuple[:year]; monthly measures key off
+  # tuple[:period] (an ISO date, e.g. StatCan refPer "2026-05-01").
+  def period_attributes(measure, tuple)
+    return nil if measure.nil?
+
+    if measure.frequency == "monthly"
+      month = begin
+        Date.parse(tuple[:period].to_s).beginning_of_month
+      rescue Date::Error
+        nil
+      end
+      return nil if month.nil?
+
+      {
+        measurement_year: month.year,
+        period_basis: "month",
+        period_start: month,
+        period_end: month.end_of_month,
+        period_type: "month"
+      }
+    else
+      year = tuple[:year].to_i
+      return nil if year.zero?
+
+      {
+        measurement_year: year,
+        period_basis: "full_year",
+        period_start: Date.new(year, 1, 1),
+        period_end: Date.new(year, 12, 31),
+        period_type: "calendar_year"
+      }
+    end
   end
 
   def build_g7_rows(rows, jurisdictions)
@@ -139,7 +170,7 @@ class Warehouse::Economy::ObservationWriter
 
     rows
       .select { |r| member_ids.include?(r[:jurisdiction_id]) }
-      .group_by { |r| [ r[:measure_id], r[:measurement_year] ] }
+      .group_by { |r| [ r[:measure_id], r[:measurement_year], r[:period_start] ] }
       .filter_map do |_, member_rows|
         next unless member_rows.map { |r| r[:jurisdiction_id] }.uniq.size == member_ids.size
         values = member_rows.map { |r| r[:value_numeric] }

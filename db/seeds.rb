@@ -205,6 +205,7 @@ end
   "econ_worldbank_gdp_per_capita_ppp" => "NY.GDP.PCAP.PP.KD",
   "econ_worldbank_gdp_growth" => "NY.GDP.MKTP.KD.ZG",
   "econ_worldbank_trade_balance" => "NE.RSB.GNFS.ZS",
+  "econ_worldbank_inflation" => "FP.CPI.TOTL.ZG",
   # CAN-15 Individual Economics & Welfare
   "econ_worldbank_employment_rate" => "SL.EMP.TOTL.SP.ZS",
   "econ_worldbank_age_dependency" => "SP.POP.DPND",
@@ -270,6 +271,16 @@ end
 Warehouse::Source.find_or_create_by!(name: "econ_oecd_oda") do |s|
   s.url = "https://sdmx.oecd.org/public/rest/data/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,/CAN+USA+GBR+FRA+DEU+ITA+JPN._Z.11002._Z.1160.PT_B5G.V?startPeriod=2018&format=csvfile"
   s.format = "csv"
+  s.fetch_frequency = "weekly"
+end
+
+# Cost of living — monthly CPI for Canadian essentials (Canada-only).
+Warehouse::Source.find_or_create_by!(name: "econ_statcan_cpi_essentials") do |s|
+  # Table 18-10-0004: CPI monthly, not seasonally adjusted, 2002=100, Canada.
+  # Vectors: all-items, food, shelter, rent, clothing and footwear,
+  # transportation, gasoline, energy. latestN=400 covers ~33 years of months.
+  s.url = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=41690973,41690974,41691050,41691052,41691108,41691128,41691136,41691239&latestN=400"
+  s.format = "statcan_json"
   s.fetch_frequency = "weekly"
 end
 

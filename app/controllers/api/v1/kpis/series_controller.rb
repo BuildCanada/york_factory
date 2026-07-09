@@ -9,27 +9,33 @@ module Api
       #   &from=2000&to=2025                   (optional year bounds)
       #
       # Unpaginated by design: a series response is bounded (~10 jurisdictions
-      # x ~30 annual points). Data changes at most weekly, so responses carry
-      # public HTTP caching headers.
+      # x ~30 annual points, or one jurisdiction x a few hundred monthly
+      # points). Data changes at most weekly, so responses carry public HTTP
+      # caching headers.
+      #
+      # Monthly measures (measure.frequency == "monthly") serve one point per
+      # month as { date:, value: } instead of { year:, value: }.
       class SeriesController < BaseController
         def index
           measure = ::Warehouse::Measure.canonical.find_by!(slug: params[:measure])
+          period_basis = measure.frequency == "monthly" ? "month" : "full_year"
 
           scope = ::Warehouse::MeasureFact
-            .where(measure_id: measure.id, value_type: "actual", period_basis: "full_year")
+            .where(measure_id: measure.id, value_type: "actual", period_basis: period_basis)
             .where.not(jurisdiction_id: nil)
           scope = scope.where(measurement_year: params[:from].to_i..) if params[:from].present?
           scope = scope.where(measurement_year: ..params[:to].to_i) if params[:to].present?
 
           jurisdictions = requested_jurisdictions(scope)
-          facts = scope.where(jurisdiction_id: jurisdictions.keys).order(:measurement_year).to_a
+          facts = scope.where(jurisdiction_id: jurisdictions.keys)
+            .order(:measurement_year, :period_start).to_a
 
           return unless stale_response?(measure, facts)
 
           render json: {
             data: {
               measure: serialize_measure(measure),
-              series: serialize_series(facts, jurisdictions)
+              series: serialize_series(facts, jurisdictions, monthly: period_basis == "month")
             },
             meta: {
               source: serialize_source(facts),
@@ -72,7 +78,7 @@ module Api
           }
         end
 
-        def serialize_series(facts, jurisdictions)
+        def serialize_series(facts, jurisdictions, monthly:)
           facts.group_by(&:jurisdiction_id).map do |jurisdiction_id, jurisdiction_facts|
             jurisdiction = jurisdictions.fetch(jurisdiction_id)
             {
@@ -84,7 +90,11 @@ module Api
               },
               computed: jurisdiction.code == "G7",
               points: jurisdiction_facts.map do |fact|
-                { year: fact.measurement_year, value: fact.value_numeric }
+                if monthly
+                  { date: fact.period_start.iso8601, value: fact.value_numeric }
+                else
+                  { year: fact.measurement_year, value: fact.value_numeric }
+                end
               end
             }
           end.sort_by { |series| series[:jurisdiction][:name] }

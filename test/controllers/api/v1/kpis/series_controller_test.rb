@@ -94,6 +94,48 @@ class Api::V1::Kpis::SeriesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ 2021 ], series.first["points"].map { |p| p["year"] }
   end
 
+  test "serves monthly measures as date-keyed points" do
+    unit = Warehouse::Unit.find_or_create_by!(symbol: "index") do |u|
+      u.kind = "ratio"
+      u.base_unit = "ratio"
+    end
+    monthly = Warehouse::Measure.create!(
+      organization_id: nil,
+      slug: "cpi-series-test-#{SecureRandom.hex(4)}",
+      canonical_name: "CPI series test",
+      unit: unit,
+      aggregation_type: "non_aggregable",
+      frequency: "monthly",
+      category: "economy"
+    )
+    { Date.new(2026, 4, 1) => 165.1, Date.new(2026, 5, 1) => 165.7 }.each do |month, value|
+      Warehouse::ExtractedObservation.create!(
+        measure_id: monthly.id,
+        measurement_year: month.year,
+        value_type: "actual",
+        period_basis: "month",
+        period_start: month,
+        period_end: month.end_of_month,
+        period_type: "month",
+        value_numeric: value,
+        jurisdiction_id: @canada.id,
+        document_id: @document.id
+      ).promote_to_canonical!(approved_by: "test", status: "reported", vintage_date: Date.current)
+    end
+
+    get "/api/v1/kpis/series", params: { measure: monthly.slug }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "monthly", body.dig("data", "measure", "frequency")
+
+    series = body.dig("data", "series")
+    assert_equal 1, series.size
+    assert_equal [ { "date" => "2026-04-01", "value" => 165.1 }, { "date" => "2026-05-01", "value" => 165.7 } ],
+                 series.first["points"]
+    assert_equal [ 2026, 2026 ], body.dig("meta", "year_range")
+  end
+
   test "returns 404 for an unknown measure" do
     get "/api/v1/kpis/series", params: { measure: "no-such-measure" }
 

@@ -10,6 +10,7 @@ class Warehouse::RawIngestion::WorldBankEconLoader < ActiveRecord::AssociatedObj
     "NY.GDP.PCAP.PP.KD" => "gdp-per-capita-ppp",
     "NY.GDP.MKTP.KD.ZG" => "gdp-growth-annual",
     "NE.RSB.GNFS.ZS" => "trade-balance-pct-gdp",
+    "FP.CPI.TOTL.ZG" => "inflation-cpi-annual",
     "SL.EMP.TOTL.SP.ZS" => "employment-rate",
     "SP.POP.DPND" => "age-dependency-ratio",
     "SI.POV.GINI" => "gini-index",

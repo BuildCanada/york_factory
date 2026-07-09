@@ -46,6 +46,119 @@ measures:
       World Bank WDI indicator NE.RSB.GNFS.ZS. G7 series is an unweighted mean
       of member countries computed at import time.
 
+  - slug: inflation-cpi-annual
+    canonical_name: "Inflation, consumer prices (annual %)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Annual percentage change in the consumer price index (annual average),
+      as measured by each country's national CPI (Statistics Canada's CPI for
+      Canada). Source: World Bank WDI indicator FP.CPI.TOTL.ZG. G7 series is
+      an unweighted mean of member countries computed at import time.
+
+  # Cost of living — monthly Consumer Price Index for Canadian essentials
+  # (StatCan table 18-10-0004-01, not seasonally adjusted, 2002=100,
+  # Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: cpi-all-items
+    canonical_name: "Consumer Price Index, all-items (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      All-items Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41690973.
+
+  - slug: cpi-food
+    canonical_name: "Consumer Price Index, food (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Food Consumer Price Index for Canada, monthly, not seasonally adjusted,
+      2002=100. Source: Statistics Canada table 18-10-0004-01, vector
+      v41690974.
+
+  - slug: cpi-shelter
+    canonical_name: "Consumer Price Index, shelter (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Shelter Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691050.
+
+  - slug: cpi-rent
+    canonical_name: "Consumer Price Index, rent (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Rent Consumer Price Index for Canada, monthly, not seasonally adjusted,
+      2002=100. Source: Statistics Canada table 18-10-0004-01, vector
+      v41691052.
+
+  - slug: cpi-clothing-footwear
+    canonical_name: "Consumer Price Index, clothing and footwear (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Clothing and footwear Consumer Price Index for Canada, monthly, not
+      seasonally adjusted, 2002=100. Source: Statistics Canada table
+      18-10-0004-01, vector v41691108.
+
+  - slug: cpi-transportation
+    canonical_name: "Consumer Price Index, transportation (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Transportation Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691128.
+
+  - slug: cpi-gasoline
+    canonical_name: "Consumer Price Index, gasoline (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gasoline Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691136.
+
+  - slug: cpi-energy
+    canonical_name: "Consumer Price Index, energy (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Energy Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691239.
+
   - slug: labour-productivity-gdp-per-hour
     canonical_name: "GDP per hour worked (USD, constant prices, PPP)"
     unit: intl_$_per_hour

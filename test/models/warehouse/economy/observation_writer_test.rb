@@ -111,6 +111,57 @@ class Warehouse::Economy::ObservationWriterTest < ActiveSupport::TestCase
     assert_equal 3, counts[:skipped]
   end
 
+  test "monthly measures write one row per month keyed by period_start" do
+    monthly = Warehouse::Measure.create!(
+      organization_id: nil,
+      slug: "cpi-test-#{SecureRandom.hex(4)}",
+      canonical_name: "CPI test",
+      unit: @unit,
+      aggregation_type: "non_aggregable",
+      frequency: "monthly"
+    )
+    tuples = %w[2025-11-01 2025-12-01 2026-01-01].map.with_index do |period, i|
+      { measure_slug: monthly.slug, country_code: "CAN", year: period.first(4), period: period, value: 160.0 + i }
+    end
+
+    counts = writer.write(tuples)
+
+    assert_equal 3, counts[:inserted]
+    assert_equal 3, counts[:promoted]
+
+    canada = Warehouse::Jurisdiction.find_by!(code: "CA")
+    december = Warehouse::CanonicalObservation.find_by!(
+      measure_id: monthly.id, jurisdiction_id: canada.id, period_start: Date.new(2025, 12, 1)
+    )
+    assert_equal 161.0, december.value_numeric
+    assert_equal "month", december.period_basis
+    assert_equal "month", december.period_type
+    assert_equal Date.new(2025, 12, 31), december.period_end
+    assert_equal 2025, december.measurement_year
+
+    rerun = writer.write(tuples)
+    assert_equal 0, rerun[:inserted]
+  end
+
+  test "monthly tuples without a parseable period are skipped" do
+    monthly = Warehouse::Measure.create!(
+      organization_id: nil,
+      slug: "cpi-skip-test-#{SecureRandom.hex(4)}",
+      canonical_name: "CPI skip test",
+      unit: @unit,
+      aggregation_type: "non_aggregable",
+      frequency: "monthly"
+    )
+
+    counts = writer.write([
+      { measure_slug: monthly.slug, country_code: "CAN", year: "2026", value: 1.0 },
+      { measure_slug: monthly.slug, country_code: "CAN", year: "2026", period: "not-a-date", value: 1.0 }
+    ])
+
+    assert_equal 0, counts[:inserted]
+    assert_equal 2, counts[:skipped]
+  end
+
   test "a new ingestion creates a new document so revisions get a later vintage" do
     writer.write([ tuple(country_code: "CAN", year: 2022, value: 10.0) ])
 

@@ -22,6 +22,22 @@ measures:
       indicator NY.GDP.PCAP.PP.KD. G7 series is an unweighted mean of member
       countries computed at import time.
 
+  # Canadian-source GDP (StatCan, monthly, ~60-day lag). Kept alongside the
+  # World Bank annual series so the dashboard can display both Canada GDP
+  # values while we evaluate switching to Canadian sources for real-timeness.
+  - slug: gdp-monthly-canada
+    canonical_name: "Real GDP, all industries, monthly (chained 2017 dollars)"
+    unit: $M
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic product at basic prices, all industries, Canada, monthly,
+      seasonally adjusted at annual rates, millions of chained 2017 dollars.
+      More real-time than the World Bank annual series (~60-day lag vs 1+
+      year). Source: Statistics Canada table 36-10-0434-01, vector v65201210.
+
   - slug: gdp-growth-annual
     canonical_name: "GDP growth (annual %)"
     unit: "%"

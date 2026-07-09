@@ -15,7 +15,7 @@ For the resolved canonical-value view, see [facts.md](./facts.md) instead.
 | `document_id` | Every citation from one source doc. |
 | `year` | One `measurement_year`. |
 | `value_type` | `actual`, `target`, `projected`, `plan`, `budget`. |
-| `period_basis` | `full_year`, `ytd_q1`, `ytd_q2`, `ytd_q3`, `as_of_date`. |
+| `period_basis` | `full_year`, `ytd_q1`, `ytd_q2`, `ytd_q3`, `as_of_date`, `month`. |
 | `agent_run_id` | Every citation written by one agent run. |
 | `per_page` | Default 100. |
 

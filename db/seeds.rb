@@ -274,6 +274,16 @@ Warehouse::Source.find_or_create_by!(name: "econ_oecd_oda") do |s|
   s.fetch_frequency = "weekly"
 end
 
+# CAN-14 Overall Economy — Canadian-source real-time GDP (Canada-only).
+Warehouse::Source.find_or_create_by!(name: "econ_statcan_gdp_monthly") do |s|
+  # Table 36-10-0434: real GDP at basic prices, all industries, monthly,
+  # seasonally adjusted at annual rates, chained 2017 $ millions.
+  # latestN=400 covers the full series (monthly since 1997).
+  s.url = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=65201210&latestN=400"
+  s.format = "statcan_json"
+  s.fetch_frequency = "weekly"
+end
+
 # Cost of living — monthly CPI for Canadian essentials (Canada-only).
 Warehouse::Source.find_or_create_by!(name: "econ_statcan_cpi_essentials") do |s|
   # Table 18-10-0004: CPI monthly, not seasonally adjusted, 2002=100, Canada.

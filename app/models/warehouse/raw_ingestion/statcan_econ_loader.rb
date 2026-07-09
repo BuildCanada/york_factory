@@ -17,6 +17,9 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     733334 => "rental-vacancy-rate-canada",
     44312461 => "crime-severity-index",
     44407600 => "police-reported-crime-rate",
+    # Table 36-10-0434: real GDP at basic prices, all industries, Canada,
+    # monthly, seasonally adjusted at annual rates, chained 2017 $ millions
+    65201210 => "gdp-monthly-canada",
     # Table 18-10-0004: CPI monthly, not seasonally adjusted, Canada, 2002=100
     41690973 => "cpi-all-items",
     41690974 => "cpi-food",

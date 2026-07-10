@@ -5,21 +5,25 @@ class AddPeriodStartToObservationUniqueness < ActiveRecord::Migration[8.1]
   # economy data was annual, one row per year). Adds a "month" period_basis,
   # includes period_start in the uniqueness key, and exposes the period
   # columns in measure_facts so the series API can serve month-level points.
+  TABLE = "warehouse.extracted_observations"
+  INDEX_NAME = "idx_extracted_observations_unique"
+
+  COLUMNS_WITH_PERIOD_START = %i[
+    measure_id measurement_year value_type period_basis period_start
+    document_id composition_id component_id observed_organization_id
+    geo_boundary_id jurisdiction_id
+  ].freeze
+  COLUMNS_WITHOUT_PERIOD_START = COLUMNS_WITH_PERIOD_START - %i[period_start]
+
   PERIOD_BASES_WITH_MONTH = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date month].freeze
-  PERIOD_BASES_WITHOUT_MONTH = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date].freeze
+  PERIOD_BASES_WITHOUT_MONTH = PERIOD_BASES_WITH_MONTH - %w[month]
 
   def up
     replace_period_basis_checks(PERIOD_BASES_WITH_MONTH)
 
-    execute "DROP INDEX IF EXISTS warehouse.idx_extracted_observations_unique"
-    execute <<~SQL
-      CREATE UNIQUE INDEX idx_extracted_observations_unique
-        ON warehouse.extracted_observations (
-          measure_id, measurement_year, value_type, period_basis, period_start,
-          document_id, composition_id, component_id, observed_organization_id,
-          geo_boundary_id, jurisdiction_id
-        ) NULLS NOT DISTINCT
-    SQL
+    remove_index TABLE, name: INDEX_NAME
+    add_index TABLE, COLUMNS_WITH_PERIOD_START,
+      unique: true, nulls_not_distinct: true, name: INDEX_NAME
 
     execute "DROP VIEW warehouse.measure_facts"
     execute <<~SQL
@@ -74,15 +78,9 @@ class AddPeriodStartToObservationUniqueness < ActiveRecord::Migration[8.1]
   def down
     replace_period_basis_checks(PERIOD_BASES_WITHOUT_MONTH)
 
-    execute "DROP INDEX IF EXISTS warehouse.idx_extracted_observations_unique"
-    execute <<~SQL
-      CREATE UNIQUE INDEX idx_extracted_observations_unique
-        ON warehouse.extracted_observations (
-          measure_id, measurement_year, value_type, period_basis, document_id,
-          composition_id, component_id, observed_organization_id, geo_boundary_id,
-          jurisdiction_id
-        ) NULLS NOT DISTINCT
-    SQL
+    remove_index TABLE, name: INDEX_NAME
+    add_index TABLE, COLUMNS_WITHOUT_PERIOD_START,
+      unique: true, nulls_not_distinct: true, name: INDEX_NAME
 
     execute "DROP VIEW warehouse.measure_facts"
     execute <<~SQL
@@ -133,15 +131,13 @@ class AddPeriodStartToObservationUniqueness < ActiveRecord::Migration[8.1]
     values_sql = allowed_values.map { |v| "'#{v}'::character varying" }.join(", ")
 
     {
-      "extracted_observations" => "extracted_observations_period_basis_check",
-      "canonical_observations" => "canonical_observations_period_basis_check"
+      "warehouse.extracted_observations" => "extracted_observations_period_basis_check",
+      "warehouse.canonical_observations" => "canonical_observations_period_basis_check"
     }.each do |table, constraint|
-      execute "ALTER TABLE warehouse.#{table} DROP CONSTRAINT IF EXISTS #{constraint}"
-      execute <<~SQL
-        ALTER TABLE warehouse.#{table}
-          ADD CONSTRAINT #{constraint}
-          CHECK (period_basis::text = ANY (ARRAY[#{values_sql}]::text[]))
-      SQL
+      remove_check_constraint table, name: constraint, if_exists: true
+      add_check_constraint table,
+        "period_basis::text = ANY (ARRAY[#{values_sql}]::text[])",
+        name: constraint
     end
   end
 end

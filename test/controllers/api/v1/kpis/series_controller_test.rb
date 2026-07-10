@@ -31,7 +31,9 @@ class Api::V1::Kpis::SeriesControllerTest < ActionDispatch::IntegrationTest
       name: "econ_worldbank_series_test_#{suffix}",
       url: "https://api.worldbank.org/v2/test",
       format: "worldbank_json",
-      last_fetched_at: Time.current
+      last_fetched_at: Time.current,
+      license: "CC BY 4.0",
+      attribution: "World Bank Open Data (data.worldbank.org), CC BY 4.0"
     )
     raw_ingestion = @source.raw_ingestions.create!(
       fetched_at: Time.current,
@@ -80,6 +82,8 @@ class Api::V1::Kpis::SeriesControllerTest < ActionDispatch::IntegrationTest
                  canada_series["points"]
 
     assert_equal @source.name, body.dig("meta", "source", "name")
+    assert_equal "CC BY 4.0", body.dig("meta", "source", "license")
+    assert_equal "World Bank Open Data (data.worldbank.org), CC BY 4.0", body.dig("meta", "source", "attribution")
     assert_equal [ 2020, 2021 ], body.dig("meta", "year_range")
   end
 

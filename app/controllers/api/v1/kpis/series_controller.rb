@@ -8,10 +8,13 @@ module Api
       #   &jurisdictions=ca,united-states,g7   (optional, defaults to all with data)
       #   &from=2000&to=2025                   (optional year bounds)
       #
-      # Unpaginated by design: a series response is bounded (~10 jurisdictions
-      # x ~30 annual points, or one jurisdiction x a few hundred monthly
-      # points). Data changes at most weekly, so responses carry public HTTP
-      # caching headers.
+      # Unpaginated by design: a series response is bounded by the seeded
+      # jurisdiction list (9: G7 members + OECD + G7 averages) times the
+      # source history (annual series reach back to 1960 at most, monthly
+      # StatCan series are Canada-only and capped at ~400 points by their
+      # fetch URLs), so worst case is a few hundred points per jurisdiction.
+      # Data changes at most weekly, so responses carry public HTTP caching
+      # headers.
       #
       # Monthly measures (measure.frequency == "monthly") serve one point per
       # month as { date:, value: } instead of { year:, value: }.
@@ -46,11 +49,13 @@ module Api
 
         private
 
+        # Explicit ?jurisdictions= filters by slug; otherwise serve every
+        # jurisdiction that has facts for this measure.
         def requested_jurisdictions(scope)
           jurisdictions = if params[:jurisdictions].present?
             ::Warehouse::Jurisdiction.where(slug: params[:jurisdictions].split(",").map(&:strip))
           else
-            ::Warehouse::Jurisdiction.where(id: scope.select(:jurisdiction_id).distinct)
+            ::Warehouse::Jurisdiction.where(id: scope.distinct.pluck(:jurisdiction_id))
           end
           jurisdictions.index_by(&:id)
         end
@@ -109,7 +114,13 @@ module Api
             .first
           return nil if source.nil?
 
-          { name: source.name, url: source.url, last_fetched_at: source.last_fetched_at }
+          {
+            name: source.name,
+            url: source.url,
+            last_fetched_at: source.last_fetched_at,
+            license: source.license,
+            attribution: source.attribution
+          }
         end
       end
     end

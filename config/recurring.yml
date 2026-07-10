@@ -20,7 +20,7 @@ production:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday
   fetch_economy_sources:
-    # Weekly poll of economy dashboard sources; checksum dedupe in
-    # Source::Fetcher makes unchanged fetches no-ops.
-    command: "Warehouse::Source.where(\"name LIKE 'econ\\\\_%'\").where(fetch_frequency: 'weekly').find_each { |s| s.fetcher.fetch_later }"
-    schedule: at 7am every Monday
+    # Daily poll of economy dashboard sources; the job fetches each source
+    # only when its own fetch_frequency interval has elapsed.
+    class: Warehouse::FetchEconomySourcesJob
+    schedule: every day at 7am

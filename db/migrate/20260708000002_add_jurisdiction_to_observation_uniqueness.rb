@@ -3,16 +3,23 @@ class AddJurisdictionToObservationUniqueness < ActiveRecord::Migration[8.1]
   # differentiated only by jurisdiction_id — which the unique index and the
   # measure_facts dedupe window didn't include (all prior data was
   # single-jurisdiction via organizations, so jurisdiction_id was always NULL).
+  #
+  # NULLS NOT DISTINCT (so rows with NULL dimension columns still collide)
+  # requires Postgres 15+.
+  TABLE = "warehouse.extracted_observations"
+  INDEX_NAME = "idx_extracted_observations_unique"
+
+  COLUMNS_WITH_JURISDICTION = %i[
+    measure_id measurement_year value_type period_basis document_id
+    composition_id component_id observed_organization_id geo_boundary_id
+    jurisdiction_id
+  ].freeze
+  COLUMNS_WITHOUT_JURISDICTION = COLUMNS_WITH_JURISDICTION - %i[jurisdiction_id]
+
   def up
-    execute "DROP INDEX IF EXISTS warehouse.idx_extracted_observations_unique"
-    execute <<~SQL
-      CREATE UNIQUE INDEX idx_extracted_observations_unique
-        ON warehouse.extracted_observations (
-          measure_id, measurement_year, value_type, period_basis, document_id,
-          composition_id, component_id, observed_organization_id, geo_boundary_id,
-          jurisdiction_id
-        ) NULLS NOT DISTINCT
-    SQL
+    remove_index TABLE, name: INDEX_NAME
+    add_index TABLE, COLUMNS_WITH_JURISDICTION,
+      unique: true, nulls_not_distinct: true, name: INDEX_NAME
 
     execute <<~SQL
       CREATE OR REPLACE VIEW warehouse.measure_facts AS
@@ -57,14 +64,9 @@ class AddJurisdictionToObservationUniqueness < ActiveRecord::Migration[8.1]
   end
 
   def down
-    execute "DROP INDEX IF EXISTS warehouse.idx_extracted_observations_unique"
-    execute <<~SQL
-      CREATE UNIQUE INDEX idx_extracted_observations_unique
-        ON warehouse.extracted_observations (
-          measure_id, measurement_year, value_type, period_basis, document_id,
-          composition_id, component_id, observed_organization_id, geo_boundary_id
-        ) NULLS NOT DISTINCT
-    SQL
+    remove_index TABLE, name: INDEX_NAME
+    add_index TABLE, COLUMNS_WITHOUT_JURISDICTION,
+      unique: true, nulls_not_distinct: true, name: INDEX_NAME
 
     execute <<~SQL
       CREATE OR REPLACE VIEW warehouse.measure_facts AS

@@ -2961,7 +2961,9 @@ CREATE TABLE warehouse.sources (
     last_fetched_at timestamp(6) without time zone,
     name character varying NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    url character varying NOT NULL
+    url character varying NOT NULL,
+    license character varying,
+    attribution character varying
 );
 
 
@@ -6541,6 +6543,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260710000001'),
 ('20260709000001'),
 ('20260708000002'),
 ('20260708000001'),

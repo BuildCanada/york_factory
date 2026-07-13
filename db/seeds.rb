@@ -198,6 +198,8 @@ end
   end
 end
 
+load Rails.root.join("db/seeds/economy_sources.rb")
+
 puts "Seeded #{Warehouse::Source.count} sources"
 
 load Rails.root.join("db/seeds/trade_barriers_jurisdictions.rb")

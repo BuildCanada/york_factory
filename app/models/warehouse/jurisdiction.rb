@@ -6,7 +6,9 @@ class Warehouse::Jurisdiction < Warehouse::Record
     territorial: "territorial",
     federal: "federal",
     crown_corp: "crown_corp",
-    authority: "authority"
+    authority: "authority",
+    national: "national",
+    supranational: "supranational"
   }
 
   has_many :organizations, dependent: :restrict_with_error

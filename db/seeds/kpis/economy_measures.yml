@@ -1,0 +1,189 @@
+# Canonical (organization-less) measures for the CAN-14 Overall Economy dashboard.
+#
+# Observations are stored per jurisdiction (Canada + G7 countries + OECD average
+# + computed G7 average). The G7 average is an unweighted mean across the seven
+# member countries, computed only for years where all seven report a value, and
+# stored with status "estimated".
+#
+# Deferred (no free no-auth automatable source yet): velocity of money,
+# VC investment as % of GDP, sovereign wealth per capita.
+
+measures:
+  - slug: gdp-per-capita-ppp
+    canonical_name: "GDP per capita, PPP (constant 2021 international $)"
+    unit: intl_$
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic product converted to international dollars using purchasing
+      power parity rates, divided by population. Source: World Bank WDI
+      indicator NY.GDP.PCAP.PP.KD. G7 series is an unweighted mean of member
+      countries computed at import time.
+
+  # Canadian-source GDP (StatCan, monthly, ~60-day lag). Kept alongside the
+  # World Bank annual series so the dashboard can display both Canada GDP
+  # values while we evaluate switching to Canadian sources for real-timeness.
+  - slug: gdp-monthly-canada
+    canonical_name: "Real GDP, all industries, monthly (chained 2017 dollars)"
+    unit: $M
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic product at basic prices, all industries, Canada, monthly,
+      seasonally adjusted at annual rates, millions of chained 2017 dollars.
+      More real-time than the World Bank annual series (~60-day lag vs 1+
+      year). Source: Statistics Canada table 36-10-0434-01, vector v65201210.
+
+  - slug: gdp-growth-annual
+    canonical_name: "GDP growth (annual %)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Annual percentage growth rate of GDP at market prices based on constant
+      local currency. Source: World Bank WDI indicator NY.GDP.MKTP.KD.ZG.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: trade-balance-pct-gdp
+    canonical_name: "External balance on goods and services (% of GDP)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Exports minus imports of goods and services as a share of GDP. Source:
+      World Bank WDI indicator NE.RSB.GNFS.ZS. G7 series is an unweighted mean
+      of member countries computed at import time.
+
+  - slug: inflation-cpi-annual
+    canonical_name: "Inflation, consumer prices (annual %)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Annual percentage change in the consumer price index (annual average),
+      as measured by each country's national CPI (Statistics Canada's CPI for
+      Canada). Source: World Bank WDI indicator FP.CPI.TOTL.ZG. G7 series is
+      an unweighted mean of member countries computed at import time.
+
+  # Cost of living — monthly Consumer Price Index for Canadian essentials
+  # (StatCan table 18-10-0004-01, not seasonally adjusted, 2002=100,
+  # Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: cpi-all-items
+    canonical_name: "Consumer Price Index, all-items (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      All-items Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41690973.
+
+  - slug: cpi-food
+    canonical_name: "Consumer Price Index, food (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Food Consumer Price Index for Canada, monthly, not seasonally adjusted,
+      2002=100. Source: Statistics Canada table 18-10-0004-01, vector
+      v41690974.
+
+  - slug: cpi-shelter
+    canonical_name: "Consumer Price Index, shelter (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Shelter Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691050.
+
+  - slug: cpi-rent
+    canonical_name: "Consumer Price Index, rent (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Rent Consumer Price Index for Canada, monthly, not seasonally adjusted,
+      2002=100. Source: Statistics Canada table 18-10-0004-01, vector
+      v41691052.
+
+  - slug: cpi-clothing-footwear
+    canonical_name: "Consumer Price Index, clothing and footwear (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Clothing and footwear Consumer Price Index for Canada, monthly, not
+      seasonally adjusted, 2002=100. Source: Statistics Canada table
+      18-10-0004-01, vector v41691108.
+
+  - slug: cpi-transportation
+    canonical_name: "Consumer Price Index, transportation (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Transportation Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691128.
+
+  - slug: cpi-gasoline
+    canonical_name: "Consumer Price Index, gasoline (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gasoline Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691136.
+
+  - slug: cpi-energy
+    canonical_name: "Consumer Price Index, energy (2002=100)"
+    unit: index
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Energy Consumer Price Index for Canada, monthly, not seasonally
+      adjusted, 2002=100. Source: Statistics Canada table 18-10-0004-01,
+      vector v41691239.
+
+  - slug: labour-productivity-gdp-per-hour
+    canonical_name: "GDP per hour worked (USD, constant prices, PPP)"
+    unit: intl_$_per_hour
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Labour productivity measured as GDP per hour worked, USD at constant
+      prices and PPP. Source: OECD Productivity Database (DSD_PDB@DF_PDB,
+      measure GDPHRS, unit USD_PPP_H, price base LR). G7 series is an
+      unweighted mean of member countries computed at import time.

@@ -1,0 +1,36 @@
+# Canonical (organization-less) measures for the CAN-19 Governance, Democracy
+# & Transparency dashboard. Hardest category to measure — leans on validated
+# international indices.
+#
+# Deferred (no free no-auth automatable source yet): RSF Press Freedom Index
+# (no stable machine-readable endpoint; methodology change in 2022 breaks the
+# series), ATI response times (Treasury Board publishes reports, not an API),
+# voter turnout (federal elections are irregular events, not an annual
+# series), ethics investigations (manual tracking).
+
+measures:
+  - slug: corruption-perceptions-index
+    canonical_name: "Corruption Perceptions Index (0-100, higher is cleaner)"
+    unit: score
+    category: governance
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Transparency International's Corruption Perceptions Index, 0 (highly
+      corrupt) to 100 (very clean). Comparable since the 2012 methodology
+      revision. Source: Transparency International via Our World in Data.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: government-effectiveness
+    canonical_name: "Government effectiveness (WGI, -2.5 to 2.5)"
+    unit: score
+    category: governance
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      World Governance Indicators estimate of the quality of public services,
+      policy formulation and implementation, from -2.5 (weak) to 2.5
+      (strong). Source: World Bank WGI indicator GE.EST. G7 series is an
+      unweighted mean of member countries computed at import time.

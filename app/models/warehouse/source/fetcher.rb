@@ -8,7 +8,13 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     body = download_body
     checksum = Digest::SHA256.hexdigest(body)
 
-    if source.raw_ingestions.exists?(checksum: checksum)
+    # A checksum match only skips when the prior load got somewhere: pending
+    # and partial may be in flight or awaiting review, and re-dispatching
+    # could double-run them. A failed ingestion is retried on the same row
+    # (checksum is unique per source), so a load crash can't wedge the source
+    # until its upstream data changes.
+    existing = source.raw_ingestions.find_by(checksum: checksum)
+    if existing && !existing.failed?
       Rails.logger.info "[Fetcher] Source #{source.name}: data unchanged (checksum match), skipping"
       return
     end
@@ -17,18 +23,19 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     r2_key = "raw/#{source.name}/#{Date.current.iso8601}/#{filename}"
     store_raw_file(r2_key, body)
 
-    ingestion = source.raw_ingestions.create!(
+    ingestion = existing || source.raw_ingestions.new(checksum: checksum)
+    ingestion.update!(
       fetched_at: Time.current,
       raw_file_path: r2_key,
-      checksum: checksum,
-      status: :pending
+      status: :pending,
+      error_message: nil
     )
 
     source.update!(last_fetched_at: Time.current)
 
     dispatch_loader(ingestion, body)
 
-    Rails.logger.info "[Fetcher] Source #{source.name}: ingestion #{ingestion.id} created"
+    Rails.logger.info "[Fetcher] Source #{source.name}: ingestion #{ingestion.id} #{existing ? "retried" : "created"}"
   end
 
   private

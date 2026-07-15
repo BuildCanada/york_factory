@@ -16,12 +16,17 @@ module Api
       # Data changes at most weekly, so responses carry public HTTP caching
       # headers.
       #
-      # Monthly measures (measure.frequency == "monthly") serve one point per
-      # month as { date:, value: } instead of { year:, value: }.
+      # Monthly and quarterly measures (measure.frequency) serve one point per
+      # period as { date:, value: } instead of { year:, value: }.
       class SeriesController < BaseController
+        PERIOD_BASES_BY_FREQUENCY = {
+          "monthly" => "month",
+          "quarterly" => "quarter"
+        }.freeze
+
         def index
           measure = ::Warehouse::Measure.canonical.find_by!(slug: params[:measure])
-          period_basis = measure.frequency == "monthly" ? "month" : "full_year"
+          period_basis = PERIOD_BASES_BY_FREQUENCY.fetch(measure.frequency, "full_year")
 
           scope = ::Warehouse::MeasureFact
             .where(measure_id: measure.id, value_type: "actual", period_basis: period_basis)
@@ -38,7 +43,7 @@ module Api
           render json: {
             data: {
               measure: serialize_measure(measure),
-              series: serialize_series(facts, jurisdictions, monthly: period_basis == "month")
+              series: serialize_series(facts, jurisdictions, dated: period_basis != "full_year")
             },
             meta: {
               source: serialize_source(facts),
@@ -83,7 +88,7 @@ module Api
           }
         end
 
-        def serialize_series(facts, jurisdictions, monthly:)
+        def serialize_series(facts, jurisdictions, dated:)
           facts.group_by(&:jurisdiction_id).map do |jurisdiction_id, jurisdiction_facts|
             jurisdiction = jurisdictions.fetch(jurisdiction_id)
             {
@@ -95,7 +100,7 @@ module Api
               },
               computed: jurisdiction.code == "G7",
               points: jurisdiction_facts.map do |fact|
-                if monthly
+                if dated
                   { date: fact.period_start.iso8601, value: fact.value_numeric }
                 else
                   { year: fact.measurement_year, value: fact.value_numeric }

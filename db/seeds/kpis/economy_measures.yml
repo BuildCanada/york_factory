@@ -38,6 +38,21 @@ measures:
       More real-time than the World Bank annual series (~60-day lag vs 1+
       year). Source: Statistics Canada table 36-10-0434-01, vector v65201210.
 
+  # Canadian-source GDP per capita (StatCan, quarterly). Current within about
+  # two months where the World Bank PPP series runs a year or more behind —
+  # the per-person read on living standards for the dashboard headline.
+  - slug: gdp-per-capita-canada
+    canonical_name: "Real GDP per capita, quarterly (chained 2017 dollars)"
+    unit: $
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic product per capita, Canada, quarterly, chained 2017
+      dollars. Source: Statistics Canada table 36-10-0706-01, vector
+      v1645315579.
+
   - slug: gdp-growth-annual
     canonical_name: "GDP growth (annual %)"
     unit: "%"
@@ -187,3 +202,148 @@ measures:
       prices and PPP. Source: OECD Productivity Database (DSD_PDB@DF_PDB,
       measure GDPHRS, unit USD_PPP_H, price base LR). G7 series is an
       unweighted mean of member countries computed at import time.
+
+  # New business formation — experimental estimates of business entrants and
+  # exits (StatCan table 33-10-0270, business sector industries, monthly,
+  # seasonally adjusted, Canada-only). Entrants/exits are used over the
+  # table's openings/closings members, which count any 0<->1+ employee
+  # transition including temporary reopenings and closures. StatCan flags
+  # this program as experimental. Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: business-entrants
+    canonical_name: "Business entrants (Canada, monthly)"
+    unit: count
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of businesses appearing for the first time (new business
+      formation, excluding reopenings of existing businesses), business
+      sector industries, monthly, seasonally adjusted. Experimental
+      estimates. Source: Statistics Canada table 33-10-0270-01, vector
+      v1271259491. Canada-only series.
+
+  - slug: business-exits
+    canonical_name: "Business exits (Canada, monthly)"
+    unit: count
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Number of businesses permanently ceasing operations (excluding
+      temporary closures), business sector industries, monthly, seasonally
+      adjusted. Published with a roughly six-month lag because an exit is
+      only confirmed once the business stays closed. Experimental estimates.
+      Source: Statistics Canada table 33-10-0270-01, vector v1296954897.
+      Canada-only series.
+
+  - slug: active-businesses
+    canonical_name: "Active businesses (Canada, monthly)"
+    unit: count
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of businesses with at least one employee, business sector
+      industries, monthly, seasonally adjusted. Experimental estimates.
+      Source: Statistics Canada table 33-10-0270-01, vector v1203704156.
+      Canada-only series.
+
+  # Investment flows — balance of international payments FDI flows (StatCan
+  # table 36-10-0025, all countries, total net flows, quarterly, CAD millions,
+  # Canada-only).
+  - slug: fdi-inflows
+    canonical_name: "Foreign direct investment in Canada, total net flows ($M, quarterly)"
+    unit: $M
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Flows of foreign direct investment into Canada, all countries, total net
+      flows, quarterly, millions of dollars. Source: Statistics Canada table
+      36-10-0025-01, vector v61913923. Canada-only series.
+
+  - slug: fdi-outflows
+    canonical_name: "Canadian direct investment abroad, total net flows ($M, quarterly)"
+    unit: $M
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Flows of Canadian direct investment abroad, all countries, total net
+      flows, quarterly, millions of dollars. Source: Statistics Canada table
+      36-10-0025-01, vector v61913911. Canada-only series.
+
+  # Capital formation — quarterly Canadian levels (StatCan table 36-10-0104)
+  # plus the World Bank % of GDP series for G7 comparison.
+  - slug: gross-fixed-capital-formation
+    canonical_name: "Gross fixed capital formation (chained 2017 $M, quarterly)"
+    unit: $M
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross fixed capital formation, quarterly, seasonally adjusted at annual
+      rates, millions of chained 2017 dollars. Source: Statistics Canada table
+      36-10-0104-01, vector v62305732. Canada-only series.
+
+  - slug: business-gross-fixed-capital-formation
+    canonical_name: "Business gross fixed capital formation (chained 2017 $M, quarterly)"
+    unit: $M
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Business gross fixed capital formation, quarterly, seasonally adjusted
+      at annual rates, millions of chained 2017 dollars. Source: Statistics
+      Canada table 36-10-0104-01, vector v62305733. Canada-only series.
+
+  - slug: capital-formation-pct-gdp
+    canonical_name: "Gross fixed capital formation (% of GDP)"
+    unit: "%"
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross fixed capital formation as a share of GDP. Source: World Bank WDI
+      indicator NE.GDI.FTOT.ZS. G7 series is an unweighted mean of member
+      countries computed at import time.
+
+  # Government debt — general government (federal + provincial/territorial +
+  # local + CPP/QPP) debt ratios from the national balance sheet accounts
+  # (StatCan table 38-10-0237, quarterly, Canada-only).
+  - slug: govt-gross-debt-to-gdp
+    canonical_name: "General government gross debt to GDP (Canada, %)"
+    unit: "%"
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      General government gross debt as a share of gross domestic product,
+      quarterly, all levels of government consolidated (federal, provincial,
+      territorial, local, and social security funds), national balance sheet
+      accounts basis. Source: Statistics Canada table 38-10-0237-01, vector
+      v62698056. Canada-only series.
+
+  - slug: govt-net-debt-to-gdp
+    canonical_name: "General government net financial liabilities to GDP (Canada, %)"
+    unit: "%"
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      General government net financial liabilities (gross debt minus financial
+      assets) as a share of gross domestic product, quarterly, all levels of
+      government consolidated, national balance sheet accounts basis. Source:
+      Statistics Canada table 38-10-0237-01, vector v62698059. Canada-only
+      series.

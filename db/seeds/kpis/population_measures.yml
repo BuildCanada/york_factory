@@ -1,0 +1,202 @@
+# Canonical (organization-less) measures for population and immigration
+# dashboards (State of the Nation additions). All Canada-only series.
+#
+# Sources:
+# - StatCan table 17-10-0008 (components of demographic growth, annual —
+#   each reference year covers July 1 to June 30, so "2024" means the
+#   July 2023 to June 2024 demographic year). Net temporary emigration is
+#   excluded: StatCan's 2016 methodology revision folded it into the
+#   emigrant/returning-emigrant components and the vector is null after 2015.
+# - StatCan table 17-10-0121 (non-permanent residents by type, quarterly
+#   stock estimates as of the first day of the quarter; series starts 2021 Q3).
+# - IRCC Permanent Residents Monthly Updates (admissions by immigration
+#   category, monthly, loaded by Warehouse::RawIngestion::IrccAdmissionsLoader;
+#   IRCC suppresses values below 6 and rounds to the nearest 5, so category
+#   sums are approximate and will not exactly match the StatCan immigrants
+#   series, which also uses a July-June reference year).
+
+measures:
+  - slug: immigrants-annual
+    canonical_name: "Immigrants (Canada, persons, July-June year)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of immigrants (permanent resident admissions) in the July 1 to
+      June 30 demographic year. Source: Statistics Canada table 17-10-0008-01,
+      vector v391099. Canada-only series.
+
+  - slug: emigrants-annual
+    canonical_name: "Emigrants (Canada, persons, July-June year)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Number of emigrants in the July 1 to June 30 demographic year. Since the
+      2016 methodology revision this component also absorbs what was
+      previously reported as net temporary emigration. Source: Statistics
+      Canada table 17-10-0008-01, vector v29768526. Canada-only series.
+
+  - slug: returning-emigrants-annual
+    canonical_name: "Returning emigrants (Canada, persons, July-June year)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of returning emigrants in the July 1 to June 30 demographic year.
+      Net emigration can be derived client-side as emigrants minus returning
+      emigrants. Source: Statistics Canada table 17-10-0008-01, vector
+      v29768527. Canada-only series.
+
+  - slug: net-non-permanent-residents-annual
+    canonical_name: "Net non-permanent residents (Canada, persons, July-June year)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Net change in non-permanent residents in the July 1 to June 30
+      demographic year (can be negative). Source: Statistics Canada table
+      17-10-0008-01, vector v29768529. Canada-only series.
+
+  # Non-permanent residents by type — quarterly stock estimates. The "work
+  # permit holders only" series is the closest available proxy for temporary
+  # foreign workers (there is no member literally named that; IRCC's TFWP/IMP
+  # split is not in this table).
+  - slug: npr-total
+    canonical_name: "Non-permanent residents, total (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated number of non-permanent residents, quarterly stock as of the
+      first day of the quarter. Source: Statistics Canada table 17-10-0121-01,
+      vector v1566927590. Canada-only series.
+
+  - slug: npr-asylum-claimants
+    canonical_name: "Asylum claimants, protected persons and related groups (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated number of asylum claimants, protected persons and related
+      groups, quarterly stock as of the first day of the quarter. Source:
+      Statistics Canada table 17-10-0121-01, vector v1566927591. Canada-only
+      series.
+
+  - slug: npr-work-permit-holders
+    canonical_name: "Work permit holders only (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated number of non-permanent residents holding a work permit only
+      (closest available proxy for temporary foreign workers), quarterly stock
+      as of the first day of the quarter. Source: Statistics Canada table
+      17-10-0121-01, vector v1566927597. Canada-only series.
+
+  - slug: npr-study-permit-holders
+    canonical_name: "Study permit holders only (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated number of non-permanent residents holding a study permit only,
+      quarterly stock as of the first day of the quarter. Source: Statistics
+      Canada table 17-10-0121-01, vector v1566927598. Canada-only series.
+
+  - slug: npr-work-and-study-permit-holders
+    canonical_name: "Work and study permit holders (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated number of non-permanent residents holding both work and study
+      permits, quarterly stock as of the first day of the quarter. Source:
+      Statistics Canada table 17-10-0121-01, vector v1566927599. Canada-only
+      series.
+
+  # PR admissions by immigration category — IRCC monthly updates, summed
+  # across provinces and category components at load time.
+  - slug: pr-admissions-total
+    canonical_name: "Permanent resident admissions, all categories (Canada, persons)"
+    unit: count
+    category: population
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Permanent resident admissions across all immigration categories, monthly.
+      Values are suppressed below 6 and rounded to the nearest 5 by IRCC, so
+      totals are approximate. Source: IRCC Permanent Residents Monthly Updates
+      (admissions by province/territory and immigration category). Canada-only
+      series.
+
+  - slug: pr-admissions-economic
+    canonical_name: "Permanent resident admissions, economic (Canada, persons)"
+    unit: count
+    category: population
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Permanent resident admissions in the economic category (worker programs,
+      provincial nominees, business, TR-to-PR pathway), monthly. Values are
+      suppressed below 6 and rounded to the nearest 5 by IRCC. Source: IRCC
+      Permanent Residents Monthly Updates. Canada-only series.
+
+  - slug: pr-admissions-family
+    canonical_name: "Permanent resident admissions, sponsored family (Canada, persons)"
+    unit: count
+    category: population
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Permanent resident admissions in the sponsored family category, monthly.
+      Values are suppressed below 6 and rounded to the nearest 5 by IRCC.
+      Source: IRCC Permanent Residents Monthly Updates. Canada-only series.
+
+  - slug: pr-admissions-refugee
+    canonical_name: "Permanent resident admissions, refugees and protected persons (Canada, persons)"
+    unit: count
+    category: population
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Permanent resident admissions of resettled refugees and protected
+      persons in Canada, monthly. Values are suppressed below 6 and rounded to
+      the nearest 5 by IRCC. Source: IRCC Permanent Residents Monthly Updates.
+      Canada-only series.
+
+  - slug: pr-admissions-other
+    canonical_name: "Permanent resident admissions, all other immigration (Canada, persons)"
+    unit: count
+    category: population
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Permanent resident admissions in the all-other-immigration category
+      (humanitarian and compassionate, public policy, permit holder class),
+      monthly. Values are suppressed below 6 and rounded to the nearest 5 by
+      IRCC. Source: IRCC Permanent Residents Monthly Updates. Canada-only
+      series.

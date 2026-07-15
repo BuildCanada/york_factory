@@ -115,6 +115,8 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.oecd_sdmx_loader.load(csv_content: body)
     when /^econ_statcan/
       ingestion.statcan_econ_loader.load(json_content: body)
+    when /^econ_ircc/
+      ingestion.ircc_admissions_loader.load(csv_content: body)
     when /^econ_owid/
       ingestion.owid_econ_loader.load(csv_content: body)
     else

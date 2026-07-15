@@ -1463,7 +1463,7 @@ CREATE TABLE warehouse.canonical_observations (
     metric_version_id bigint,
     composition_id bigint,
     component_id bigint,
-    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text]))),
+    CONSTRAINT canonical_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text, ('quarter'::character varying)::text]))),
     CONSTRAINT canonical_observations_status_check CHECK (((status)::text = ANY (ARRAY[('reported'::character varying)::text, ('estimated'::character varying)::text, ('revised'::character varying)::text, ('final'::character varying)::text]))),
     CONSTRAINT canonical_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
@@ -1899,7 +1899,7 @@ CREATE TABLE warehouse.extracted_observations (
     composition_id bigint,
     component_id bigint,
     CONSTRAINT extracted_observations_confidence_range CHECK (((extraction_confidence IS NULL) OR ((extraction_confidence >= (0)::numeric) AND (extraction_confidence <= (1)::numeric)))),
-    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text]))),
+    CONSTRAINT extracted_observations_period_basis_check CHECK (((period_basis)::text = ANY (ARRAY[('full_year'::character varying)::text, ('ytd_q1'::character varying)::text, ('ytd_q2'::character varying)::text, ('ytd_q3'::character varying)::text, ('as_of_date'::character varying)::text, ('month'::character varying)::text, ('quarter'::character varying)::text]))),
     CONSTRAINT extracted_observations_review_status_check CHECK (((review_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text, ('superseded'::character varying)::text]))),
     CONSTRAINT extracted_observations_value_type_check CHECK (((value_type)::text = ANY (ARRAY[('actual'::character varying)::text, ('target'::character varying)::text, ('projected'::character varying)::text, ('plan'::character varying)::text, ('budget'::character varying)::text])))
 );
@@ -6543,6 +6543,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260714000001'),
 ('20260710000001'),
 ('20260709000001'),
 ('20260708000002'),

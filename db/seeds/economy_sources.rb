@@ -46,6 +46,9 @@ statcan_terms = {
   "econ_worldbank_bottom_quintile_income" => "SI.DST.FRST.20",
   # CAN-17 Wellbeing
   "econ_worldbank_fertility_rate" => "SP.DYN.TFRT.IN",
+  # State of the Nation — gross fixed capital formation as % of GDP for G7
+  # comparison (the Canada-only quarterly level series is econ_statcan_capital_formation).
+  "econ_worldbank_capital_formation" => "NE.GDI.FTOT.ZS",
   # CAN-22 Infrastructure & Industrialization
   "econ_worldbank_rd_spending" => "GB.XPD.RSDV.GD.ZS",
   "econ_worldbank_manufacturing_va" => "NV.IND.MANF.ZS",
@@ -119,6 +122,17 @@ econ_source.call(
 econ_source.call(
   "econ_statcan_gdp_monthly",
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=65201210&latestN=400",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Real GDP per capita, quarterly, chained 2017 dollars — the dashboard's
+# headline living-standards measure. Table 36-10-0706: GDP per capita and
+# other per capita macroeconomic indicators, Canada. latestN=200 covers the
+# full 1981->present quarterly history.
+econ_source.call(
+  "econ_statcan_gdp_per_capita",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1645315579&latestN=200",
   format: "statcan_json",
   **statcan_terms
 )
@@ -236,4 +250,121 @@ econ_source.call(
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=733334&latestN=60",
   format: "statcan_json",
   **statcan_terms
+)
+
+# State of the Nation additions — StatCan WDS vector sources (Canada-only).
+# Vector ids map to measures in Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+
+# Table 14-10-0287: LFS employment rate, monthly, seasonally adjusted, percent.
+# Vectors: 15 years and over, 15-24, 25-54, 55-64. latestN=400 covers ~33 years.
+econ_source.call(
+  "econ_statcan_employment_rate_by_age",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2062817,2062844,2062952,101885408&latestN=400",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 14-10-0288: LFS employment by class of worker, monthly, seasonally
+# adjusted, thousands of persons. Vectors: total employed, public sector
+# employees, private sector employees, self-employed.
+econ_source.call(
+  "econ_statcan_employment_by_class",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2066967,2066969,2066970,2066971&latestN=400",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 33-10-0270: experimental estimates of business dynamics, business
+# sector, monthly, seasonally adjusted, counts. Series starts 2015. Vectors:
+# active businesses, entrants (first-ever appearance = new business
+# formation), exits (permanent disappearance; published with a ~6-month lag
+# because an exit is only confirmed once the business stays closed). Entrants
+# and exits are used over the table's openings/closings members, which count
+# any 0<->1+ employee transition including temporary reopenings/closures.
+# (Table 33-10-0165 has the same entry/exit concepts quarterly with rates,
+# but its data ends at 2019 Q4.)
+econ_source.call(
+  "econ_statcan_business_dynamics",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1203704156,1271259491,1296954897&latestN=200",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 36-10-0025: balance of international payments, FDI flows, quarterly,
+# CAD millions. Vectors: foreign direct investment in Canada (total net
+# flows), Canadian direct investment abroad (total net flows). Starts 2007.
+econ_source.call(
+  "econ_statcan_fdi_flows",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=61913923,61913911&latestN=100",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 36-10-0104: GDP expenditure-based, quarterly, chained 2017 dollars,
+# seasonally adjusted at annual rates, millions. Vectors: gross fixed capital
+# formation, business gross fixed capital formation. latestN=280 covers the
+# full series (quarterly since 1961).
+econ_source.call(
+  "econ_statcan_capital_formation",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=62305732,62305733&latestN=280",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 38-10-0237: financial indicators of the general government sector
+# (federal + provincial/territorial + local + CPP/QPP), national balance
+# sheet accounts, quarterly, percent of GDP. Vectors: gross debt to GDP,
+# net financial liabilities to GDP. Starts 1990.
+econ_source.call(
+  "econ_statcan_govt_debt_to_gdp",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=62698056,62698059&latestN=160",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 14-10-0064: LFS employee wages, all industries, both full- and
+# part-time employees, 15 years and over, annual, current dollars. Vectors:
+# average and median hourly wage rate. (StatCan WDS publishes no 10th/90th
+# percentile wage series; average vs median is the closest dispersion proxy.)
+econ_source.call(
+  "econ_statcan_hourly_wages",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2196615,2196617&latestN=40",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 17-10-0008: components of demographic growth, annual (each reference
+# year covers July 1 to June 30), persons. Vectors: immigrants, emigrants,
+# returning emigrants, net non-permanent residents. (Net temporary emigration
+# v29768528 is excluded: the series is null after the 2016 methodology
+# revision folded it into the emigrant components.)
+econ_source.call(
+  "econ_statcan_population_components",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=391099,29768526,29768527,29768529&latestN=60",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 17-10-0121: estimates of the number of non-permanent residents by
+# type, quarterly stock (as of the first day of the quarter), persons.
+# Vectors: total NPR, asylum claimants and related, work permit holders only,
+# study permit holders only, work-and-study permit holders. Starts 2021 Q3.
+econ_source.call(
+  "econ_statcan_npr_by_type",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1566927590,1566927591,1566927597,1566927598,1566927599&latestN=40",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# IRCC open data: permanent resident admissions by immigration category,
+# monthly, by province (summed to Canada at load time by IrccAdmissionsLoader).
+# The file is tab-separated despite the .csv extension, bilingual, updated in
+# place monthly (~2-month publication lag), values suppressed below 6 and
+# rounded to the nearest 5.
+econ_source.call(
+  "econ_ircc_pr_admissions",
+  url: "https://www.ircc.canada.ca/opendata-donneesouvertes/data/ODP-PR-PT_IMMCAT.csv",
+  format: "csv",
+  license: "Open Government Licence - Canada",
+  attribution: "Immigration, Refugees and Citizenship Canada, Permanent Residents - Monthly IRCC Updates, Open Government Licence - Canada"
 )

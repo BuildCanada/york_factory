@@ -16,6 +16,7 @@ class Warehouse::RawIngestion::WorldBankEconLoader < ActiveRecord::AssociatedObj
     "SI.POV.GINI" => "gini-index",
     "SI.DST.FRST.20" => "bottom-quintile-income-share",
     "SP.DYN.TFRT.IN" => "fertility-rate",
+    "NE.GDI.FTOT.ZS" => "capital-formation-pct-gdp",
     "GOV_WGI_GE.EST" => "government-effectiveness",
     "GB.XPD.RSDV.GD.ZS" => "rd-spending-pct-gdp",
     "NV.IND.MANF.ZS" => "manufacturing-value-added-pct-gdp",

@@ -4,7 +4,7 @@ class Warehouse::ExtractedObservation < Warehouse::Record
   # (the jurisdiction's fiscal year, per jurisdictions.fiscal_year_start_month)
   # — they don't imply the same calendar months across jurisdictions. Economy
   # importers only write full_year and month.
-  PERIOD_BASES    = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date month].freeze
+  PERIOD_BASES    = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date month quarter].freeze
   REVIEW_STATUSES = %w[pending approved rejected superseded].freeze
 
   self.table_name = "warehouse.extracted_observations"

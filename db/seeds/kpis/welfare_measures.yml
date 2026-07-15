@@ -11,8 +11,8 @@
 #   the computed G7 average never materializes for it.
 # - household-debt-to-income (OECD NAAG) has no OECD-average series.
 # - employment-rate uses the ILO-modeled World Bank series for comparability;
-#   the StatCan LFS monthly series (table 14-10-0287) is deferred until we
-#   need monthly-to-annual aggregation.
+#   the StatCan LFS monthly series (table 14-10-0287) is carried alongside it
+#   as Canada-only monthly employment-rate-* measures by age group.
 #
 # Deferred (no free no-auth automatable source yet): disability benefit
 # purchasing power, PPP of minimum wage relative to living wage.
@@ -141,3 +141,133 @@ measures:
       Share of tax filers in low income in one year who exited low income the
       following year (variable low income measure). Source: Statistics Canada
       table 11-10-0024 (vector v96730403). Canada-only series.
+
+  # Employment by age group — LFS monthly employment rates (StatCan table
+  # 14-10-0287, seasonally adjusted, Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: employment-rate-15-plus
+    canonical_name: "Employment rate, 15 years and over (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 15 and over, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062817. Canada-only series.
+
+  - slug: employment-rate-15-to-24
+    canonical_name: "Employment rate, 15 to 24 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 15 to 24, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062844. Canada-only series.
+
+  - slug: employment-rate-25-to-54
+    canonical_name: "Employment rate, 25 to 54 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 25 to 54, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062952. Canada-only series.
+
+  - slug: employment-rate-55-to-64
+    canonical_name: "Employment rate, 55 to 64 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 55 to 64, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v101885408. Canada-only series.
+
+  # Private vs public employment — LFS employment by class of worker (StatCan
+  # table 14-10-0288, monthly, seasonally adjusted, thousands of persons,
+  # Canada-only). Shares are computed client-side from the level series.
+  - slug: employment-all-classes
+    canonical_name: "Total employed, all classes of workers (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Total employment across all classes of workers, monthly, seasonally
+      adjusted, thousands of persons. Source: Statistics Canada table
+      14-10-0288-01 (Labour Force Survey), vector v2066967. Canada-only series.
+
+  - slug: employment-public-sector
+    canonical_name: "Public sector employees (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Public sector employees, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066969. Canada-only series.
+
+  - slug: employment-private-sector
+    canonical_name: "Private sector employees (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Private sector employees, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066970. Canada-only series.
+
+  - slug: employment-self-employed
+    canonical_name: "Self-employed workers (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Self-employed workers, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066971. Canada-only series.
+
+  # Wages — LFS employee hourly wages, annual, current dollars (StatCan table
+  # 14-10-0064, all industries, both full- and part-time employees, 15 years
+  # and over, Canada-only). StatCan WDS publishes no 10th/90th percentile
+  # hourly wage series; average vs median is the closest dispersion proxy.
+  - slug: average-hourly-wage
+    canonical_name: "Average hourly wage rate (Canada, current $)"
+    unit: "$"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Average hourly wage rate for all employees, all industries, both full-
+      and part-time, current dollars. Source: Statistics Canada table
+      14-10-0064-01 (Labour Force Survey), vector v2196615. Canada-only series.
+
+  - slug: median-hourly-wage
+    canonical_name: "Median hourly wage rate (Canada, current $)"
+    unit: "$"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Median hourly wage rate for all employees, all industries, both full-
+      and part-time, current dollars. Source: Statistics Canada table
+      14-10-0064-01 (Labour Force Survey), vector v2196617. Canada-only series.

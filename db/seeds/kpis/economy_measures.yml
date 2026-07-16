@@ -279,6 +279,36 @@ measures:
       flows, quarterly, millions of dollars. Source: Statistics Canada table
       36-10-0025-01, vector v61913911. Canada-only series.
 
+  # International investment position — the accumulated book-value stock of
+  # direct investment (StatCan table 36-10-0008, annual, 1987→). Unlike the
+  # quarterly flow series above, these are levels: how much direct investment
+  # is parked in Canada vs how much Canadian capital is parked abroad.
+  - slug: fdi-position-in-canada
+    canonical_name: "Foreign direct investment position in Canada, book value ($M, annual)"
+    unit: $M
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Foreign direct investment position in Canada, all countries, total book
+      value, annual, millions of dollars. This is a stock (accumulated
+      position), not a flow. Source: Statistics Canada table 36-10-0008-01,
+      vector v7117859. Canada-only series.
+
+  - slug: cdi-position-abroad
+    canonical_name: "Canadian direct investment position abroad, book value ($M, annual)"
+    unit: $M
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Canadian direct investment position abroad, all countries, total book
+      value, annual, millions of dollars. This is a stock (accumulated
+      position), not a flow. Source: Statistics Canada table 36-10-0008-01,
+      vector v7117682. Canada-only series.
+
   # Capital formation — quarterly Canadian levels (StatCan table 36-10-0104)
   # plus the World Bank % of GDP series for G7 comparison.
   - slug: gross-fixed-capital-formation

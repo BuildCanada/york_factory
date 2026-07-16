@@ -49,6 +49,10 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     # Table 36-10-0025: FDI flows, quarterly, CAD millions
     61913923 => "fdi-inflows",
     61913911 => "fdi-outflows",
+    # Table 36-10-0008: international investment position, annual, CAD millions
+    # (book-value stock, all countries). Inward = FDI in Canada; outward = CDIA.
+    7117859 => "fdi-position-in-canada",
+    7117682 => "cdi-position-abroad",
     # Table 36-10-0104: GDP expenditure-based, quarterly, chained 2017 $M SAAR
     62305732 => "gross-fixed-capital-formation",
     62305733 => "business-gross-fixed-capital-formation",
@@ -58,6 +62,8 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     # Table 14-10-0064: employee hourly wages, annual, current dollars
     2196615 => "average-hourly-wage",
     2196617 => "median-hourly-wage",
+    # Table 17-10-0009: population estimates, quarterly, persons (Canada total)
+    1 => "population-canada",
     # Table 17-10-0008: components of demographic growth, annual (Jul-Jun)
     391099 => "immigrants-annual",
     29768526 => "emigrants-annual",

@@ -140,10 +140,11 @@ econ_source.call(
 # Cost of living — monthly CPI for Canadian essentials (Canada-only).
 # Table 18-10-0004: CPI monthly, not seasonally adjusted, 2002=100, Canada.
 # Vectors: all-items, food, shelter, rent, clothing and footwear,
-# transportation, gasoline, energy. latestN=400 covers ~33 years of months.
+# transportation, gasoline, energy. latestN=1400 covers each component's full
+# published history (all-items reaches back to 1914; components start later).
 econ_source.call(
   "econ_statcan_cpi_essentials",
-  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=41690973,41690974,41691050,41691052,41691108,41691128,41691136,41691239&latestN=400",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=41690973,41690974,41691050,41691052,41691108,41691128,41691136,41691239&latestN=1400",
   format: "statcan_json",
   **statcan_terms
 )
@@ -256,20 +257,22 @@ econ_source.call(
 # Vector ids map to measures in Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
 
 # Table 14-10-0287: LFS employment rate, monthly, seasonally adjusted, percent.
-# Vectors: 15 years and over, 15-24, 25-54, 55-64. latestN=400 covers ~33 years.
+# Vectors: 15 years and over, 15-24, 25-54, 55-64. latestN=700 covers the full
+# series (monthly since 1976).
 econ_source.call(
   "econ_statcan_employment_rate_by_age",
-  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2062817,2062844,2062952,101885408&latestN=400",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2062817,2062844,2062952,101885408&latestN=700",
   format: "statcan_json",
   **statcan_terms
 )
 
 # Table 14-10-0288: LFS employment by class of worker, monthly, seasonally
 # adjusted, thousands of persons. Vectors: total employed, public sector
-# employees, private sector employees, self-employed.
+# employees, private sector employees, self-employed. latestN=700 covers the
+# full series (monthly since 1976).
 econ_source.call(
   "econ_statcan_employment_by_class",
-  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2066967,2066969,2066970,2066971&latestN=400",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2066967,2066969,2066970,2066971&latestN=700",
   format: "statcan_json",
   **statcan_terms
 )
@@ -296,6 +299,18 @@ econ_source.call(
 econ_source.call(
   "econ_statcan_fdi_flows",
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=61913923,61913911&latestN=100",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 36-10-0008: international investment position, annual, CAD millions
+# (book value, all countries). Vectors: foreign direct investment position in
+# Canada (total book value), Canadian direct investment position abroad (total
+# book value). These are stocks, not flows. latestN=50 covers the full series
+# (annual since 1987).
+econ_source.call(
+  "econ_statcan_investment_position",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=7117859,7117682&latestN=50",
   format: "statcan_json",
   **statcan_terms
 )
@@ -329,6 +344,16 @@ econ_source.call(
 econ_source.call(
   "econ_statcan_hourly_wages",
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2196615,2196617&latestN=40",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 17-10-0009: population estimates, quarterly, persons. Vector: Canada
+# total population (the denominator for per-capita measures such as housing
+# starts per capita). latestN=400 covers the full series (quarterly since 1946).
+econ_source.call(
+  "econ_statcan_population_total",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1&latestN=400",
   format: "statcan_json",
   **statcan_terms
 )

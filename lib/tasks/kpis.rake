@@ -61,6 +61,108 @@ namespace :kpis do
     puts "Imported. RawIngestion #{raw.id} status: #{raw.reload.status}"
   end
 
+  desc "Seed frozen historical PR admissions (total + by class, 1980-2015) from IRCC's archived by-category dataset."
+  task seed_pr_admissions_historical: :environment do
+    # Grand-total and class-subtotal rows of IRCC's "Admissions of Permanent
+    # Residents by Immigration Category, 1980-Q2 2016" (IRCC_PRadmiss_0002_E.xls).
+    # Frozen — the dataset is archived and will not update. 2016 is excluded
+    # (Q1-Q2 only). The frontend splices each with the live monthly series for
+    # 2015+.
+    series = {
+      "pr-admissions-annual-historical" => {
+        1980 => 143138, 1981 => 128641, 1982 => 121178, 1983 => 89185,
+        1984 => 88272, 1985 => 84347, 1986 => 99352, 1987 => 152077,
+        1988 => 161585, 1989 => 191550, 1990 => 216451, 1991 => 232790,
+        1992 => 254787, 1993 => 256637, 1994 => 224382, 1995 => 212862,
+        1996 => 226071, 1997 => 216036, 1998 => 174195, 1999 => 189950,
+        2000 => 227470, 2001 => 250656, 2002 => 229123, 2003 => 221396,
+        2004 => 235858, 2005 => 262246, 2006 => 251649, 2007 => 236762,
+        2008 => 247261, 2009 => 252218, 2010 => 280730, 2011 => 248732,
+        2012 => 257809, 2013 => 259039, 2014 => 260282, 2015 => 271847
+      },
+      "pr-admissions-economic-historical" => {
+        1980 => 49891, 1981 => 60238, 1982 => 51706, 1983 => 24185,
+        1984 => 26078, 1985 => 26112, 1986 => 35837, 1987 => 74101,
+        1988 => 80219, 1989 => 90143, 1990 => 97929, 1991 => 86499,
+        1992 => 95789, 1993 => 105651, 1994 => 102307, 1995 => 106624,
+        1996 => 125368, 1997 => 128349, 1998 => 97909, 1999 => 109247,
+        2000 => 136292, 2001 => 155716, 2002 => 138503, 2003 => 122738,
+        2004 => 134308, 2005 => 156370, 2006 => 138338, 2007 => 131271,
+        2008 => 149111, 2009 => 153548, 2010 => 186968, 2011 => 156120,
+        2012 => 160790, 2013 => 148254, 2014 => 165188, 2015 => 170398
+      },
+      "pr-admissions-family-historical" => {
+        1980 => 51353, 1981 => 51360, 1982 => 50287, 1983 => 48938,
+        1984 => 44520, 1985 => 39362, 1986 => 42476, 1987 => 53839,
+        1988 => 51429, 1989 => 60969, 1990 => 74684, 1991 => 87956,
+        1992 => 101110, 1993 => 112644, 1994 => 94188, 1995 => 77384,
+        1996 => 68360, 1997 => 59979, 1998 => 50896, 1999 => 55274,
+        2000 => 60623, 2001 => 66814, 2002 => 65338, 2003 => 70732,
+        2004 => 63554, 2005 => 64008, 2006 => 71288, 2007 => 67081,
+        2008 => 66422, 2009 => 66064, 2010 => 60743, 2011 => 56990,
+        2012 => 65502, 2013 => 83379, 2014 => 67647, 2015 => 65490
+      },
+      "pr-admissions-refugee-historical" => {
+        1980 => 40344, 1981 => 14980, 1982 => 16933, 1983 => 13968,
+        1984 => 15360, 1985 => 16772, 1986 => 19204, 1987 => 21471,
+        1988 => 26766, 1989 => 36869, 1990 => 40237, 1991 => 54087,
+        1992 => 52344, 1993 => 30591, 1994 => 20433, 1995 => 28093,
+        1996 => 28477, 1997 => 24308, 1998 => 22843, 1999 => 24398,
+        2000 => 30095, 2001 => 27919, 2002 => 25118, 2003 => 25993,
+        2004 => 32695, 2005 => 35776, 2006 => 32501, 2007 => 27955,
+        2008 => 21860, 2009 => 22855, 2010 => 24699, 2011 => 27873,
+        2012 => 23092, 2013 => 24129, 2014 => 24068, 2015 => 32111
+      },
+      "pr-admissions-other-historical" => {
+        1980 => 1548, 1981 => 2063, 1982 => 2252, 1983 => 2094,
+        1984 => 2314, 1985 => 2101, 1986 => 1835, 1987 => 2666,
+        1988 => 3171, 1989 => 3567, 1990 => 3601, 1991 => 4248,
+        1992 => 5544, 1993 => 7751, 1994 => 7453, 1995 => 761,
+        1996 => 3865, 1997 => 3400, 1998 => 2547, 1999 => 1031,
+        2000 => 460, 2001 => 206, 2002 => 164, 2003 => 1933,
+        2004 => 5301, 2005 => 6092, 2006 => 9522, 2007 => 10455,
+        2008 => 9868, 2009 => 9751, 2010 => 8320, 2011 => 7749,
+        2012 => 8425, 2013 => 3277, 2014 => 3379, 2015 => 3848
+      }
+    }
+
+    source = Warehouse::Source.find_or_create_by!(name: "ircc_pr_admissions_historical") do |s|
+      s.url = "https://www.ircc.canada.ca/opendata-donneesouvertes/data/IRCC_PRadmiss_0002_E.xls"
+      s.format = "xls_static"
+      s.fetch_frequency = "manual"
+    end
+    source.update!(
+      license: "Open Government Licence - Canada",
+      attribution: "Immigration, Refugees and Citizenship Canada, Admissions of Permanent Residents by Immigration Category (1980-Q2 2016), Open Government Licence - Canada"
+    )
+
+    raw = Warehouse::RawIngestion.find_or_initialize_by(
+      source: source, checksum: "pr-admiss-hist-1980-2015-v2-byclass"
+    )
+    raw.assign_attributes(
+      fetched_at: Time.current,
+      raw_file_path: "IRCC_PRadmiss_0002_E.xls",
+      status: "pending"
+    )
+    raw.save!
+
+    tuples = series.flat_map do |slug, by_year|
+      by_year.map do |year, value|
+        {
+          measure_slug: slug,
+          country_code: "CAN",
+          year: year.to_s,
+          period: year.to_s,
+          value: value
+        }
+      end
+    end
+
+    counts = Warehouse::Economy::ObservationWriter.new(raw_ingestion: raw).write(tuples)
+    raw.update!(status: "complete")
+    puts "Seeded historical PR admissions (#{series.keys.size} series): #{counts.inspect}"
+  end
+
   desc "Export period_basis candidate citations to CSV for human labeling"
   task :export_period_basis_candidates, [ :csv_path ] => :environment do |_, args|
     require "csv"

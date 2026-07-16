@@ -16,6 +16,21 @@
 #   series, which also uses a July-June reference year).
 
 measures:
+  # Total population — the denominator for per-capita measures (e.g. housing
+  # starts per capita). Quarterly stock as of the first day of the quarter.
+  - slug: population-canada
+    canonical_name: "Population (Canada, persons)"
+    unit: count
+    category: population
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Estimated total population of Canada, quarterly stock as of the first day
+      of the quarter. Serves as the denominator for per-capita measures such as
+      housing starts per capita. Source: Statistics Canada table 17-10-0009-01,
+      vector v1. Canada-only series, starts 1946 Q1.
+
   - slug: immigrants-annual
     canonical_name: "Immigrants (Canada, persons, July-June year)"
     unit: count
@@ -200,3 +215,79 @@ measures:
       monthly. Values are suppressed below 6 and rounded to the nearest 5 by
       IRCC. Source: IRCC Permanent Residents Monthly Updates. Canada-only
       series.
+
+  # Frozen historical PR admissions — annual calendar-year totals, 1980–2015,
+  # from IRCC's archived "Admissions of Permanent Residents by Immigration
+  # Category, 1980–Q2 2016" dataset. Seeded once via
+  # `bin/rails kpis:seed_pr_admissions_historical`; the frontend splices it with
+  # the ongoing monthly pr-admissions-total (summed to years) for 2015 onward.
+  - slug: pr-admissions-annual-historical
+    canonical_name: "Permanent resident admissions, annual total (Canada, 1980-2015)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Total permanent resident admissions per calendar year, 1980-2015, from
+      the grand-total row of IRCC's archived "Admissions of Permanent Residents
+      by Immigration Category, 1980-Q2 2016" dataset. A frozen historical series
+      spliced with the ongoing monthly IRCC admissions for 2015 onward. Source:
+      IRCC, June 2016 data.
+
+  # Frozen historical PR admissions by immigration class (annual, 1980–2015),
+  # from the class-subtotal rows of the same archived dataset. Each is spliced
+  # on the frontend with the matching monthly pr-admissions-{class} for 2015+.
+  - slug: pr-admissions-economic-historical
+    canonical_name: "PR admissions, economic class, annual (Canada, 1980-2015)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Economic-class permanent resident admissions per calendar year, 1980-2015
+      ("Economic immigrants Total" row), from IRCC's archived by-category
+      dataset. Frozen historical series spliced with pr-admissions-economic for
+      2015 onward. Source: IRCC, June 2016 data.
+
+  - slug: pr-admissions-family-historical
+    canonical_name: "PR admissions, family class, annual (Canada, 1980-2015)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Family-class permanent resident admissions per calendar year, 1980-2015
+      ("Family class Total" row), from IRCC's archived by-category dataset.
+      Frozen historical series spliced with pr-admissions-family for 2015
+      onward. Source: IRCC, June 2016 data.
+
+  - slug: pr-admissions-refugee-historical
+    canonical_name: "PR admissions, refugees, annual (Canada, 1980-2015)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Refugee permanent resident admissions per calendar year, 1980-2015
+      ("Refugees Total" row), from IRCC's archived by-category dataset. Frozen
+      historical series spliced with pr-admissions-refugee for 2015 onward.
+      Source: IRCC, June 2016 data.
+
+  - slug: pr-admissions-other-historical
+    canonical_name: "PR admissions, other, annual (Canada, 1980-2015)"
+    unit: count
+    category: population
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      All-other-immigration permanent resident admissions per calendar year,
+      1980-2015 ("Other immigrants" row), from IRCC's archived by-category
+      dataset. The archived "Other" bucket is defined slightly more narrowly
+      than IRCC's current monthly "other" category, so the 2015 seam is
+      approximate. Spliced with pr-admissions-other for 2015 onward. Source:
+      IRCC, June 2016 data.

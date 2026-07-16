@@ -224,6 +224,42 @@ measures:
       estimates. Source: Statistics Canada table 33-10-0270-01, vector
       v1271259491. Canada-only series.
 
+  # Business openings — the broader entry concept (a business with a paid
+  # employee this month that had none last month, INCLUDING seasonal
+  # reopenings). Used as the modern half of the "business entries" splice with
+  # the discontinued quarterly series below (which uses the same broad concept).
+  - slug: business-openings
+    canonical_name: "Business openings (Canada, monthly)"
+    unit: count
+    category: economy
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of businesses with a paid employee in the current month that had
+      none in the previous month (includes seasonal reopenings, not only
+      first-time formation), business sector industries, monthly, seasonally
+      adjusted. Experimental estimates. Source: Statistics Canada table
+      33-10-0270-01, vector v1203704157. Canada-only series.
+
+  # Discontinued quarterly business entry series (2000-2019), private sector.
+  # Its "entrants" use the broad entry concept (includes reopenings), matching
+  # business-openings above rather than business-entrants. Spliced (chain-
+  # linked) on the frontend with business-openings to extend business entries
+  # back to 2000.
+  - slug: business-entries-historical
+    canonical_name: "Business entries, quarterly (Canada, 2000-2019)"
+    unit: count
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of business entrants (broad concept including reopenings), private
+      sector, quarterly, not seasonally adjusted, 2000-2019. From StatCan's
+      discontinued quarterly business entry/exit table. Source: Statistics
+      Canada table 33-10-0165-01, vector v114829668. Canada-only series.
+
   - slug: business-exits
     canonical_name: "Business exits (Canada, monthly)"
     unit: count

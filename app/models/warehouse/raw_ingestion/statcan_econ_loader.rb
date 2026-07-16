@@ -45,7 +45,11 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     # first-ever appearance; exits = permanent disappearance, ~6-month lag)
     1203704156 => "active-businesses",
     1271259491 => "business-entrants",
+    1203704157 => "business-openings",
     1296954897 => "business-exits",
+    # Table 33-10-0165: discontinued quarterly business entry/exit, 2000-2019.
+    # Entrants, private sector (broad entry concept, matches business-openings).
+    114829668 => "business-entries-historical",
     # Table 36-10-0025: FDI flows, quarterly, CAD millions
     61913923 => "fdi-inflows",
     61913911 => "fdi-outflows",

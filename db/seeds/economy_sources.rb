@@ -280,15 +280,23 @@ econ_source.call(
 # Table 33-10-0270: experimental estimates of business dynamics, business
 # sector, monthly, seasonally adjusted, counts. Series starts 2015. Vectors:
 # active businesses, entrants (first-ever appearance = new business
-# formation), exits (permanent disappearance; published with a ~6-month lag
-# because an exit is only confirmed once the business stays closed). Entrants
-# and exits are used over the table's openings/closings members, which count
-# any 0<->1+ employee transition including temporary reopenings/closures.
-# (Table 33-10-0165 has the same entry/exit concepts quarterly with rates,
-# but its data ends at 2019 Q4.)
+# formation), openings (broad entry incl. seasonal reopenings), exits
+# (permanent disappearance; published with a ~6-month lag). Openings is used
+# to extend the discontinued quarterly entry series (33-10-0165) to the present.
 econ_source.call(
   "econ_statcan_business_dynamics",
-  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1203704156,1271259491,1296954897&latestN=200",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1203704156,1271259491,1203704157,1296954897&latestN=200",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 33-10-0165: discontinued quarterly estimates of business entry and
+# exit, 2000-2019. Vector: number of entrants, private sector (the broad entry
+# concept including reopenings — matches business-openings, not the narrower
+# business-entrants). latestN=100 covers the full quarterly series.
+econ_source.call(
+  "econ_statcan_business_entries_historical",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=114829668&latestN=100",
   format: "statcan_json",
   **statcan_terms
 )

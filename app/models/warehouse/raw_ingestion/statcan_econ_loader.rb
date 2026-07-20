@@ -183,7 +183,7 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
   # All three vectors are quarterly $M and share a refPer. Returns [] for any
   # ingestion missing these vectors (i.e. every source but the net-debt one).
   def net_debt_excl_pension_tuples(rows)
-    wanted = [NFW_CONSOLIDATED_VECTOR, NFW_CPP_QPP_VECTOR, NOMINAL_GDP_VECTOR]
+    wanted = [ NFW_CONSOLIDATED_VECTOR, NFW_CPP_QPP_VECTOR, NOMINAL_GDP_VECTOR ]
     relevant = rows.select { |r| wanted.include?(r["vectorId"]) && !r["value"].nil? }
     return [] if relevant.empty?
 

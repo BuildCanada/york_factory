@@ -260,6 +260,27 @@ measures:
       discontinued quarterly business entry/exit table. Source: Statistics
       Canada table 33-10-0165-01, vector v114829668. Canada-only series.
 
+  # Long-run business entrants — LEAP (Longitudinal Employment Analysis
+  # Program) annual firm-level entry counts, private sector, 2001-2023.
+  # A single consistent methodology across the whole span (unlike the churny
+  # quarterly 33-10-0165 or the shorter monthly 33-10-0270). Table 33-10-0087
+  # has no Canada geography member, so the national total is summed from the
+  # 11 provincial/territorial entrant vectors in the loader (see
+  # Warehouse::RawIngestion::StatcanEconLoader::LEAP_ENTRANT_VECTORS).
+  - slug: business-entrants-annual
+    canonical_name: "Business entrants, annual (Canada, LEAP)"
+    unit: count
+    category: economy
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Number of private-sector employer businesses entering per year (firms
+      with their first paid employee), national total summed from the ten
+      provinces and territories. Source: Statistics Canada table 33-10-0087-01
+      (Longitudinal Employment Analysis Program), 2001-2023. Canada-only
+      series.
+
   - slug: business-exits
     canonical_name: "Business exits (Canada, monthly)"
     unit: count
@@ -413,3 +434,28 @@ measures:
       government consolidated, national balance sheet accounts basis. Source:
       Statistics Canada table 38-10-0237-01, vector v62698059. Canada-only
       series.
+
+  # Net debt excluding CPP/QPP assets, as a share of GDP. The ready-made
+  # 38-10-0237 net-debt ratio nets out the CPP/QPP investment holdings, which
+  # sit against future pension obligations rather than being available to the
+  # government — masking how much it actually owes. This measure adds those
+  # assets back and is computed in the loader from net financial worth (table
+  # 10-10-0015-01) and nominal GDP (table 36-10-0104); see
+  # Warehouse::RawIngestion::StatcanEconLoader#net_debt_excl_pension_tuples.
+  - slug: govt-net-debt-excl-pension-to-gdp
+    canonical_name: "General government net debt excluding CPP/QPP to GDP (Canada, %)"
+    unit: "%"
+    category: economy
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      General government net debt as a share of gross domestic product,
+      quarterly, all levels of government consolidated (federal, provincial,
+      territorial, and local), but excluding the net financial worth of the
+      Canada and Quebec Pension Plans. Net debt is the negative of net
+      financial worth (financial assets minus liabilities). Computed as
+      -(consolidated government net financial worth - CPP/QPP net financial
+      worth) / nominal GDP. Sources: Statistics Canada table 10-10-0015-01
+      (vectors v52531052 and v52531280) and table 36-10-0104 nominal GDP at
+      market prices (v62305783). Canada-only series.

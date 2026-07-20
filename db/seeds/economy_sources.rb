@@ -253,15 +253,28 @@ econ_source.call(
   **statcan_terms
 )
 
+# Table 11-10-0065: household debt service indicators, national balance sheet
+# accounts, quarterly, seasonally adjusted. Vector: mortgage debt service ratio
+# (v1001696814) — obligated mortgage principal and interest as a percent of
+# household disposable income, the headline non-indexed housing-affordability
+# measure. latestN=160 covers the series (quarterly since 1990).
+econ_source.call(
+  "econ_statcan_mortgage_debt_service",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=1001696814&latestN=160",
+  format: "statcan_json",
+  **statcan_terms
+)
+
 # State of the Nation additions — StatCan WDS vector sources (Canada-only).
 # Vector ids map to measures in Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
 
 # Table 14-10-0287: LFS employment rate, monthly, seasonally adjusted, percent.
-# Vectors: 15 years and over, 15-24, 25-54, 55-64. latestN=700 covers the full
-# series (monthly since 1976).
+# Vectors: employment rate 15+, 15-24, 25-54, 55-64 followed by unemployment
+# rate for the same four age groups (all from table 14-10-0287). latestN=700
+# covers the full series (monthly since 1976).
 econ_source.call(
   "econ_statcan_employment_rate_by_age",
-  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2062817,2062844,2062952,101885408&latestN=700",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=2062817,2062844,2062952,101885408,2062815,2062842,2062950,101885216&latestN=700",
   format: "statcan_json",
   **statcan_terms
 )
@@ -297,6 +310,18 @@ econ_source.call(
 econ_source.call(
   "econ_statcan_business_entries_historical",
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=114829668&latestN=100",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Table 33-10-0087: LEAP annual business dynamics by province, 2001-2023.
+# The eleven "Number of entrants, private sector" vectors (one per province and
+# the territories) are summed into the national business-entrants-annual series
+# in the loader — the table carries no Canada geography member. latestN=30
+# covers the full annual series (2001-present).
+econ_source.call(
+  "econ_statcan_business_entrants_leap",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=90465270,90465378,90465486,90465594,90465702,90465810,90465918,90466026,90466134,90466242,90466350&latestN=30",
   format: "statcan_json",
   **statcan_terms
 )
@@ -341,6 +366,20 @@ econ_source.call(
 econ_source.call(
   "econ_statcan_govt_debt_to_gdp",
   url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=62698056,62698059&latestN=160",
+  format: "statcan_json",
+  **statcan_terms
+)
+
+# Net debt excluding CPP/QPP assets, as a share of GDP — computed in the loader
+# (see Warehouse::RawIngestion::StatcanEconLoader#net_debt_excl_pension_tuples).
+# Table 10-10-0015-01, quarterly, $M: consolidated government net financial
+# worth (v52531052) and CPP/QPP net financial worth (v52531280). Table
+# 36-10-0104: nominal GDP at market prices, current dollars, seasonally adjusted
+# at annual rates, $M (v62305783) — the denominator. latestN=160 covers the
+# balance-sheet series (quarterly since 1990).
+econ_source.call(
+  "econ_statcan_govt_net_debt_excl_pension",
+  url: "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods?vectors=52531052,52531280,62305783&latestN=160",
   format: "statcan_json",
   **statcan_terms
 )

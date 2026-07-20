@@ -36,6 +36,11 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     2062844 => "employment-rate-15-to-24",
     2062952 => "employment-rate-25-to-54",
     101885408 => "employment-rate-55-to-64",
+    # Table 14-10-0287: LFS unemployment rate by age group, monthly, SA, percent
+    2062815 => "unemployment-rate-15-plus",
+    2062842 => "unemployment-rate-15-to-24",
+    2062950 => "unemployment-rate-25-to-54",
+    101885216 => "unemployment-rate-55-to-64",
     # Table 14-10-0288: employment by class of worker, monthly, SA, thousands
     2066967 => "employment-all-classes",
     2066969 => "employment-public-sector",
@@ -63,6 +68,10 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     # Table 38-10-0237: general government debt ratios, quarterly, % of GDP
     62698056 => "govt-gross-debt-to-gdp",
     62698059 => "govt-net-debt-to-gdp",
+    # Table 11-10-0065: household debt service indicators, quarterly, seasonally
+    # adjusted. Mortgage debt service ratio — obligated mortgage principal and
+    # interest payments as a percent of household disposable income.
+    1001696814 => "mortgage-debt-service-ratio",
     # Table 14-10-0064: employee hourly wages, annual, current dollars
     2196615 => "average-hourly-wage",
     2196617 => "median-hourly-wage",
@@ -81,6 +90,37 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
     1566927599 => "npr-work-and-study-permit-holders"
   }.freeze
 
+  # Table 33-10-0087 (LEAP annual business dynamics) has no Canada geography
+  # member — only the ten provinces and the territories. The national
+  # "business-entrants-annual" total is summed from these eleven provincial
+  # "Number of entrants; Private sector" vectors per year (see the summing
+  # branch in #load). Kept out of VECTORS so they don't each become a measure.
+  LEAP_ENTRANT_VECTORS = [
+    90465270,  # Newfoundland and Labrador
+    90465378,  # Prince Edward Island
+    90465486,  # Nova Scotia
+    90465594,  # New Brunswick
+    90465702,  # Quebec
+    90465810,  # Ontario
+    90465918,  # Manitoba
+    90466026,  # Saskatchewan
+    90466134,  # Alberta
+    90466242,  # British Columbia
+    90466350   # Territories
+  ].freeze
+
+  # Net debt excluding CPP/QPP, computed per quarter (see
+  # #net_debt_excl_pension_tuples). StatCan's ready-made net-debt ratio
+  # (38-10-0237) nets out the pension plans' large asset holdings, which masks
+  # how much the government actually owes; this measure adds those assets back.
+  # Table 10-10-0015-01 net financial worth, $M: consolidated government and
+  # CPP/QPP. Table 36-10-0104 nominal GDP at market prices (current $, seasonally
+  # adjusted at annual rates), $M — the denominator. Kept out of VECTORS so the
+  # raw inputs don't each become a measure.
+  NFW_CONSOLIDATED_VECTOR = 52531052
+  NFW_CPP_QPP_VECTOR = 52531280
+  NOMINAL_GDP_VECTOR = 62305783
+
   def load(json_content:)
     rows = JSON.parse(json_content)
 
@@ -97,6 +137,9 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
       }
     end
 
+    tuples.concat(leap_entrant_tuples(rows))
+    tuples.concat(net_debt_excl_pension_tuples(rows))
+
     counts = Warehouse::Economy::ObservationWriter.new(raw_ingestion: raw_ingestion).write(tuples)
 
     raw_ingestion.update!(status: "complete")
@@ -105,5 +148,60 @@ class Warehouse::RawIngestion::StatcanEconLoader < ActiveRecord::AssociatedObjec
   rescue => e
     raw_ingestion.update!(status: "failed", error_message: e.message)
     raise
+  end
+
+  private
+
+  # Sums the eleven provincial/territorial LEAP entrant vectors into one
+  # national "business-entrants-annual" tuple per year. Only years where all
+  # eleven jurisdictions report are emitted, so a partial year never shows as
+  # an artificial dip. Returns [] for any ingestion that carries none of these
+  # vectors (i.e. every source other than the LEAP one).
+  def leap_entrant_tuples(rows)
+    leap = rows.select { |r| LEAP_ENTRANT_VECTORS.include?(r["vectorId"]) && !r["value"].nil? }
+    return [] if leap.empty?
+
+    leap.group_by { |r| r.fetch("refPer").to_s.first(4) }.filter_map do |year, year_rows|
+      next unless year_rows.map { |r| r["vectorId"] }.uniq.size == LEAP_ENTRANT_VECTORS.size
+
+      {
+        measure_slug: "business-entrants-annual",
+        country_code: "CAN",
+        year: year,
+        period: year_rows.first.fetch("refPer"),
+        value: year_rows.sum { |r| r["value"] }
+      }
+    end
+  end
+
+  # Computes general government net debt EXCLUDING CPP/QPP assets as a share of
+  # GDP, per quarter. Net financial worth (financial assets minus liabilities)
+  # for the consolidated government already nets out CPP/QPP holdings; adding
+  # those back — subtracting the pension plans' net financial worth — isolates
+  # the government's own financial position. Net debt is the negative of that
+  # net financial worth, divided by nominal GDP and expressed as a percent.
+  # All three vectors are quarterly $M and share a refPer. Returns [] for any
+  # ingestion missing these vectors (i.e. every source but the net-debt one).
+  def net_debt_excl_pension_tuples(rows)
+    wanted = [NFW_CONSOLIDATED_VECTOR, NFW_CPP_QPP_VECTOR, NOMINAL_GDP_VECTOR]
+    relevant = rows.select { |r| wanted.include?(r["vectorId"]) && !r["value"].nil? }
+    return [] if relevant.empty?
+
+    relevant.group_by { |r| r.fetch("refPer") }.filter_map do |ref_per, period_rows|
+      by_vector = period_rows.index_by { |r| r["vectorId"] }
+      consolidated = by_vector[NFW_CONSOLIDATED_VECTOR]
+      cpp_qpp = by_vector[NFW_CPP_QPP_VECTOR]
+      gdp = by_vector[NOMINAL_GDP_VECTOR]
+      next if consolidated.nil? || cpp_qpp.nil? || gdp.nil? || gdp["value"].zero?
+
+      net_financial_worth = consolidated["value"] - cpp_qpp["value"]
+      {
+        measure_slug: "govt-net-debt-excl-pension-to-gdp",
+        country_code: "CAN",
+        year: ref_per.to_s.first(4),
+        period: ref_per,
+        value: -net_financial_worth / gdp["value"] * 100.0
+      }
+    end
   end
 end

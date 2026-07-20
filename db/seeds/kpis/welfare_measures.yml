@@ -193,6 +193,57 @@ measures:
       seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
       (Labour Force Survey), vector v101885408. Canada-only series.
 
+  # Unemployment by age group — LFS monthly unemployment rates (StatCan table
+  # 14-10-0287, seasonally adjusted, Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: unemployment-rate-15-plus
+    canonical_name: "Unemployment rate, 15 years and over (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 15 and over, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062815. Canada-only series.
+
+  - slug: unemployment-rate-15-to-24
+    canonical_name: "Unemployment rate, 15 to 24 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 15 to 24, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062842. Canada-only series.
+
+  - slug: unemployment-rate-25-to-54
+    canonical_name: "Unemployment rate, 25 to 54 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 25 to 54, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062950. Canada-only series.
+
+  - slug: unemployment-rate-55-to-64
+    canonical_name: "Unemployment rate, 55 to 64 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 55 to 64, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v101885216. Canada-only series.
+
   # Private vs public employment — LFS employment by class of worker (StatCan
   # table 14-10-0288, monthly, seasonally adjusted, thousands of persons,
   # Canada-only). Shares are computed client-side from the level series.

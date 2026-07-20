@@ -126,17 +126,15 @@ class Warehouse::Economy::ObservationWriter
     [ rows, skipped ]
   end
 
-  # Annual measures key off tuple[:year]; monthly measures key off
-  # tuple[:period] (an ISO date, e.g. StatCan refPer "2026-05-01").
+  # Annual measures key off tuple[:year]; monthly and quarterly measures key
+  # off tuple[:period] (an ISO date, e.g. StatCan refPer "2026-05-01" — for
+  # quarterly series StatCan uses the first day of the quarter).
   def period_attributes(measure, tuple)
     return nil if measure.nil?
 
-    if measure.frequency == "monthly"
-      month = begin
-        Date.parse(tuple[:period].to_s).beginning_of_month
-      rescue Date::Error
-        nil
-      end
+    case measure.frequency
+    when "monthly"
+      month = parse_period_date(tuple[:period])&.beginning_of_month
       return nil if month.nil?
 
       {
@@ -145,6 +143,17 @@ class Warehouse::Economy::ObservationWriter
         period_start: month,
         period_end: month.end_of_month,
         period_type: "month"
+      }
+    when "quarterly"
+      quarter = parse_period_date(tuple[:period])&.beginning_of_quarter
+      return nil if quarter.nil?
+
+      {
+        measurement_year: quarter.year,
+        period_basis: "quarter",
+        period_start: quarter,
+        period_end: quarter.end_of_quarter,
+        period_type: "quarter"
       }
     else
       year = tuple[:year].to_i
@@ -158,6 +167,12 @@ class Warehouse::Economy::ObservationWriter
         period_type: "calendar_year"
       }
     end
+  end
+
+  def parse_period_date(period)
+    Date.parse(period.to_s)
+  rescue Date::Error
+    nil
   end
 
   def build_g7_rows(rows, jurisdictions)

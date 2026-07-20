@@ -31,6 +31,25 @@ measures:
       measure HPI_YDH_AVG). G7 series is an unweighted mean of member
       countries computed at import time.
 
+  # Non-indexed housing affordability measure: the share of household
+  # disposable income absorbed by mortgage obligations. Unlike the OECD
+  # price-to-income indicators above (indexed to a base or long-term average),
+  # this is an actual percentage, quarterly, and captures carrying-cost burden
+  # rather than price levels.
+  - slug: mortgage-debt-service-ratio
+    canonical_name: "Mortgage debt service ratio (Canada, %)"
+    unit: "%"
+    category: housing
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Obligated mortgage principal and interest payments as a percent of
+      household disposable income, quarterly, seasonally adjusted, national
+      balance sheet accounts basis. A non-indexed measure of housing
+      carrying-cost burden. Source: Statistics Canada table 11-10-0065-01,
+      vector v1001696814. Canada-only series.
+
   - slug: real-house-price-index
     canonical_name: "Real house price index (2015 = 100)"
     unit: index

@@ -91,6 +91,82 @@ class Warehouse::RawIngestion::StatcanEconLoaderTest < ActiveSupport::TestCase
     assert_equal 2026, may.measurement_year
   end
 
+  test "loads quarterly vectors as one observation per quarter" do
+    unit = Warehouse::Unit.find_or_create_by!(symbol: "$M") do |u|
+      u.kind = "absolute"
+      u.base_unit = "dollars"
+      u.scale = 1_000_000.0
+      u.currency_code = "CAD"
+    end
+    fdi = Warehouse::Measure.find_or_create_by!(organization_id: nil, slug: "fdi-inflows") do |m|
+      m.canonical_name = "Foreign direct investment in Canada, total net flows ($M, quarterly)"
+      m.unit = unit
+      m.aggregation_type = "non_aggregable"
+      m.frequency = "quarterly"
+    end
+
+    body = JSON.generate([
+      { "vectorId" => 61913923, "refPer" => "2025-10-01", "value" => 24519.0 },
+      { "vectorId" => 61913923, "refPer" => "2026-01-01", "value" => 20133.0 }
+    ])
+
+    counts = @raw_ingestion.statcan_econ_loader.load(json_content: body)
+
+    assert_equal 2, counts[:inserted]
+    assert_equal 2, counts[:promoted]
+
+    canada = Warehouse::Jurisdiction.find_by!(code: "CA")
+    q4 = Warehouse::CanonicalObservation.find_by!(
+      measure_id: fdi.id, jurisdiction_id: canada.id, period_start: Date.new(2025, 10, 1)
+    )
+    assert_equal 24519.0, q4.value_numeric
+    assert_equal "quarter", q4.period_basis
+    assert_equal Date.new(2025, 12, 31), q4.period_end
+    assert_equal 2025, q4.measurement_year
+    assert Warehouse::CanonicalObservation.exists?(
+      measure_id: fdi.id, jurisdiction_id: canada.id, period_start: Date.new(2026, 1, 1)
+    )
+  end
+
+  test "computes net debt excluding CPP/QPP as a share of GDP per quarter" do
+    unit = Warehouse::Unit.find_or_create_by!(symbol: "%") do |u|
+      u.kind = "ratio"
+      u.base_unit = "ratio"
+    end
+    measure = Warehouse::Measure.find_or_create_by!(organization_id: nil, slug: "govt-net-debt-excl-pension-to-gdp") do |m|
+      m.canonical_name = "General government net debt excluding CPP/QPP to GDP (Canada, %)"
+      m.unit = unit
+      m.aggregation_type = "non_aggregable"
+      m.frequency = "quarterly"
+    end
+
+    body = JSON.generate([
+      # 2026-Q1: complete — all three vectors present.
+      { "vectorId" => 52531052, "refPer" => "2026-01-01", "value" => -538133.0 },
+      { "vectorId" => 52531280, "refPer" => "2026-01-01", "value" => 951885.0 },
+      { "vectorId" => 62305783, "refPer" => "2026-01-01", "value" => 3321588.0 },
+      # 2025-Q4: missing the GDP vector — skipped rather than emitting a partial.
+      { "vectorId" => 52531052, "refPer" => "2025-10-01", "value" => -514934.0 },
+      { "vectorId" => 52531280, "refPer" => "2025-10-01", "value" => 884620.0 }
+    ])
+
+    counts = @raw_ingestion.statcan_econ_loader.load(json_content: body)
+
+    assert_equal 1, counts[:inserted]
+
+    canada = Warehouse::Jurisdiction.find_by!(code: "CA")
+    q1 = Warehouse::CanonicalObservation.find_by!(
+      measure_id: measure.id, jurisdiction_id: canada.id, period_start: Date.new(2026, 1, 1)
+    )
+    # -(-538133 - 951885) / 3321588 * 100
+    assert_in_delta 44.859, q1.value_numeric, 0.001
+    assert_equal "quarter", q1.period_basis
+
+    refute Warehouse::CanonicalObservation.exists?(
+      measure_id: measure.id, jurisdiction_id: canada.id, period_start: Date.new(2025, 10, 1)
+    )
+  end
+
   test "marks the ingestion failed and re-raises on bad payloads" do
     assert_raises(JSON::ParserError) do
       @raw_ingestion.statcan_econ_loader.load(json_content: "not json")

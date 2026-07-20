@@ -21,4 +21,5 @@ class Warehouse::RawIngestion < Warehouse::Record
   has_object :oecd_sdmx_loader
   has_object :statcan_econ_loader
   has_object :owid_econ_loader
+  has_object :ircc_admissions_loader
 end

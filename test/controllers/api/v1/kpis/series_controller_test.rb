@@ -140,6 +140,50 @@ class Api::V1::Kpis::SeriesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ 2026, 2026 ], body.dig("meta", "year_range")
   end
 
+  test "serves quarterly measures as date-keyed points" do
+    unit = Warehouse::Unit.find_or_create_by!(symbol: "$M") do |u|
+      u.kind = "absolute"
+      u.base_unit = "dollars"
+      u.scale = 1_000_000.0
+      u.currency_code = "CAD"
+    end
+    quarterly = Warehouse::Measure.create!(
+      organization_id: nil,
+      slug: "fdi-series-test-#{SecureRandom.hex(4)}",
+      canonical_name: "FDI series test",
+      unit: unit,
+      aggregation_type: "non_aggregable",
+      frequency: "quarterly",
+      category: "economy"
+    )
+    { Date.new(2025, 10, 1) => 24_519.0, Date.new(2026, 1, 1) => 20_133.0 }.each do |quarter, value|
+      Warehouse::ExtractedObservation.create!(
+        measure_id: quarterly.id,
+        measurement_year: quarter.year,
+        value_type: "actual",
+        period_basis: "quarter",
+        period_start: quarter,
+        period_end: quarter.end_of_quarter,
+        period_type: "quarter",
+        value_numeric: value,
+        jurisdiction_id: @canada.id,
+        document_id: @document.id
+      ).promote_to_canonical!(approved_by: "test", status: "reported", vintage_date: Date.current)
+    end
+
+    get "/api/v1/kpis/series", params: { measure: quarterly.slug }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "quarterly", body.dig("data", "measure", "frequency")
+
+    series = body.dig("data", "series")
+    assert_equal 1, series.size
+    assert_equal [ { "date" => "2025-10-01", "value" => 24_519.0 }, { "date" => "2026-01-01", "value" => 20_133.0 } ],
+                 series.first["points"]
+    assert_equal [ 2025, 2026 ], body.dig("meta", "year_range")
+  end
+
   test "returns 404 for an unknown measure" do
     get "/api/v1/kpis/series", params: { measure: "no-such-measure" }
 

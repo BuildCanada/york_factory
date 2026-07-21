@@ -60,18 +60,34 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "from_linkedin upserts a member by provider and uid" do
-    identity = { "sub" => "li-abc", "name" => "Lin Kedin", "email" => "lin@example.com", "picture" => "https://x/p.jpg" }
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-abc",
+      info: { email: "lin@example.com", first_name: "Lin", last_name: "Kedin", picture_url: "https://x/p.jpg" },
+      extra: { "raw_info" => { "name" => "Lin Kedin" } }
+    )
     assert_difference -> { User.count }, 1 do
-      User.from_linkedin(identity)
+      User.from_linkedin(auth)
     end
     user = User.find_by(provider: "linkedin", uid: "li-abc")
     assert_equal "lin@example.com", user.email
     assert_equal "Lin Kedin", user.name
+    assert_equal "https://x/p.jpg", user.avatar_url
     assert user.member?
 
     assert_no_difference -> { User.count } do
-      User.from_linkedin(identity)
+      User.from_linkedin(auth)
     end
+  end
+
+  test "from_linkedin falls back to first/last name when raw_info name is absent" do
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-noname",
+      info: { email: "nn@example.com", first_name: "No", last_name: "Name", picture_url: nil }
+    )
+    User.from_linkedin(auth)
+    assert_equal "No Name", User.find_by(provider: "linkedin", uid: "li-noname").name
   end
 
   test "admin does not require name or postal_code" do

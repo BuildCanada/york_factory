@@ -8,16 +8,17 @@ Rails.application.routes.draw do
     use_doorkeeper
   end
 
+  # Sign in with LinkedIn (browser OmniAuth → Devise session) is used by the
+  # Doorkeeper authorize flow so TradingPost readers can self-register and
+  # engage with memos. The strategy is registered in config/initializers/devise.rb
+  # and callbacks land in Users::OmniauthCallbacksController.
   devise_for :users, path: "", path_names: { sign_in: "login", sign_out: "logout" },
-    controllers: { sessions: "users/sessions", passwords: "users/passwords" },
+    controllers: {
+      sessions: "users/sessions",
+      passwords: "users/passwords",
+      omniauth_callbacks: "users/omniauth_callbacks"
+    },
     skip: [ :registrations, :confirmations, :unlocks ]
-
-  # Sign in with LinkedIn (browser OIDC → Devise session). Used by the Doorkeeper
-  # authorize flow so TradingPost readers can self-register and engage with memos.
-  devise_scope :user do
-    get "auth/linkedin",          to: "users/linkedin#start",    as: :user_linkedin_authorize
-    get "auth/linkedin/callback", to: "users/linkedin#callback", as: :user_linkedin_callback
-  end
 
   get "up" => "rails/health#show", as: :rails_health_check
 

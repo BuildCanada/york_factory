@@ -2,7 +2,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :recoverable,
          :trackable, :omniauthable, :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist,
-         omniauth_providers: [ :google_oauth2 ]
+         omniauth_providers: [ :google_oauth2, :linkedin ]
 
   enum :role, {
     member: "member",
@@ -45,17 +45,23 @@ class User < ApplicationRecord
     where(provider: auth[:provider], uid: auth[:uid]).first!
   end
 
-  # Upserts the user behind a verified LinkedIn OIDC identity (the decoded
-  # id_token claims: sub/name/email/picture). Mirrors from_google.
-  def self.from_linkedin(identity)
-    where(provider: "linkedin", uid: identity["sub"]).first_or_create do |user|
-      user.email = identity["email"]
+  # Upserts the user behind a LinkedIn OIDC identity from the OmniAuth auth hash
+  # (omniauth-linkedin-openid). The gem's info hash omits a combined name, so we
+  # read it from the raw userinfo response and fall back to first/last. Mirrors
+  # from_google.
+  def self.from_linkedin(auth)
+    info = auth.info
+    full_name = auth.dig("extra", "raw_info", "name").presence ||
+      [ info.first_name, info.last_name ].compact_blank.join(" ").presence
+
+    where(provider: "linkedin", uid: auth.uid).first_or_create do |user|
+      user.email = info.email
       user.password = Devise.friendly_token[0, 20]
-      user.name = identity["name"]
-      user.avatar_url = identity["picture"]
+      user.name = full_name
+      user.avatar_url = info.picture_url
     end
   rescue ActiveRecord::RecordNotUnique
-    where(provider: "linkedin", uid: identity["sub"]).first!
+    where(provider: "linkedin", uid: auth.uid).first!
   end
 
   # True once the user has the data required to publicly engage with a memo.

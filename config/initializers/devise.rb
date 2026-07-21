@@ -282,6 +282,13 @@ Devise.setup do |config|
     ENV["GOOGLE_CLIENT_SECRET"],
     scope: "email,profile"
 
+  # "Sign In with LinkedIn using OpenID Connect" via omniauth-linkedin-openid.
+  # The strategy pins LinkedIn's OIDC endpoints and scopes (openid profile
+  # email), so no scope/issuer/nonce handling is needed here.
+  config.omniauth :linkedin,
+    ENV["LINKEDIN_CLIENT_ID"],
+    ENV["LINKEDIN_CLIENT_SECRET"]
+
   # ==> JWT configuration
   config.jwt do |jwt|
     jwt.secret = Rails.application.secret_key_base

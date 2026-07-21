@@ -231,6 +231,44 @@ ALTER SEQUENCE public.builders_id_seq OWNED BY public.builders.id;
 
 
 --
+-- Name: engagements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.engagements (
+    id bigint NOT NULL,
+    type character varying NOT NULL,
+    memo_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    body text,
+    status integer DEFAULT 0 NOT NULL,
+    published_at timestamp(6) without time zone,
+    moderated_by_id bigint,
+    moderated_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: engagements_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.engagements_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: engagements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.engagements_id_seq OWNED BY public.engagements.id;
+
+
+--
 -- Name: faqs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -396,7 +434,9 @@ CREATE TABLE public.memos (
     appendix_md_fr text,
     supporters_md_en text,
     supporters_md_fr text,
-    publication character varying DEFAULT 'build_canada'::character varying NOT NULL
+    publication character varying DEFAULT 'build_canada'::character varying NOT NULL,
+    endorsements_count integer DEFAULT 0 NOT NULL,
+    approved_critiques_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -3090,6 +3130,13 @@ ALTER TABLE ONLY public.builders ALTER COLUMN id SET DEFAULT nextval('public.bui
 
 
 --
+-- Name: engagements id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements ALTER COLUMN id SET DEFAULT nextval('public.engagements_id_seq'::regclass);
+
+
+--
 -- Name: faqs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3589,6 +3636,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.builders
     ADD CONSTRAINT builders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: engagements engagements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT engagements_pkey PRIMARY KEY (id);
 
 
 --
@@ -4159,6 +4214,13 @@ CREATE INDEX idx_on_jurisdiction_id_cb07659517 ON public.trade_barriers_agreemen
 
 
 --
+-- Name: idx_on_memo_id_type_status_created_at_1b33302aff; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_memo_id_type_status_created_at_1b33302aff ON public.engagements USING btree (memo_id, type, status, created_at);
+
+
+--
 -- Name: idx_tb_agreement_jurisdictions_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4205,6 +4267,27 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 --
 
 CREATE UNIQUE INDEX index_builders_on_slug ON public.builders USING btree (slug);
+
+
+--
+-- Name: index_engagements_on_memo_id_and_type_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_engagements_on_memo_id_and_type_and_user_id ON public.engagements USING btree (memo_id, type, user_id);
+
+
+--
+-- Name: index_engagements_on_moderated_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_engagements_on_moderated_by_id ON public.engagements USING btree (moderated_by_id);
+
+
+--
+-- Name: index_engagements_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_engagements_on_user_id ON public.engagements USING btree (user_id);
 
 
 --
@@ -5601,6 +5684,14 @@ ALTER TABLE ONLY public.trade_barriers_agreement_histories
 
 
 --
+-- Name: engagements fk_rails_53a9175bb0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT fk_rails_53a9175bb0 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: trade_barriers_agreement_jurisdictions fk_rails_59687ac24a; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5617,11 +5708,27 @@ ALTER TABLE ONLY public.oauth_access_tokens
 
 
 --
+-- Name: engagements fk_rails_7e95c5d6f6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT fk_rails_7e95c5d6f6 FOREIGN KEY (memo_id) REFERENCES public.memos(id);
+
+
+--
 -- Name: trade_barriers_agreements fk_rails_81f3d13d08; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.trade_barriers_agreements
     ADD CONSTRAINT fk_rails_81f3d13d08 FOREIGN KEY (theme_id) REFERENCES public.trade_barriers_themes(id);
+
+
+--
+-- Name: engagements fk_rails_8e08421d42; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.engagements
+    ADD CONSTRAINT fk_rails_8e08421d42 FOREIGN KEY (moderated_by_id) REFERENCES public.users(id);
 
 
 --
@@ -6577,6 +6684,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260525000002'),
 ('20260525000001'),
 ('20260513180113'),
+('20260510000003'),
+('20260510000001'),
 ('20260504204633'),
 ('20260428000002'),
 ('20260428000001'),

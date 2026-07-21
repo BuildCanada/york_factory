@@ -31,11 +31,63 @@ class UserTest < ActiveSupport::TestCase
     assert user.errors.where(:email, :blank).any?, "expected a blank error on email"
   end
 
-  test "validates name and postal_code for members" do
+  test "validates name for members" do
     user = User.new(email: "test@example.com", password: "password123", role: "member")
     assert_not user.valid?
     assert user.errors.where(:name, :blank).any?, "expected a blank error on name"
-    assert user.errors.where(:postal_code, :blank).any?, "expected a blank error on postal_code"
+  end
+
+  test "a member may be created without a postal_code (collected later via OAuth signup)" do
+    user = User.new(email: "newmember@example.com", password: "password123", role: "member", name: "New Member")
+    assert user.valid?, user.errors.full_messages.to_sentence
+    assert_not user.engagement_ready?
+  end
+
+  test "postal_code must be a valid Canadian format when present" do
+    user = User.new(email: "bad@example.com", password: "password123", role: "member", name: "Bad Postal", postal_code: "12345")
+    assert_not user.valid?
+    assert user.errors.where(:postal_code, :invalid).any?
+  end
+
+  test "postal_code is normalized to A1A 1A1 on save" do
+    user = User.create!(email: "norm@example.com", password: "password123", role: "member", name: "Norm", postal_code: "m5v2t6")
+    assert_equal "M5V 2T6", user.reload.postal_code
+  end
+
+  test "engagement_ready? is true once a postal code is set" do
+    assert users(:member).engagement_ready?
+    refute User.new.engagement_ready?
+  end
+
+  test "from_linkedin upserts a member by provider and uid" do
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-abc",
+      info: { email: "lin@example.com", first_name: "Lin", last_name: "Kedin", picture_url: "https://x/p.jpg" },
+      extra: { "raw_info" => { "name" => "Lin Kedin" } }
+    )
+    assert_difference -> { User.count }, 1 do
+      User.from_linkedin(auth)
+    end
+    user = User.find_by(provider: "linkedin", uid: "li-abc")
+    assert_equal "lin@example.com", user.email
+    assert_equal "Lin Kedin", user.name
+    assert_equal "https://x/p.jpg", user.avatar_url
+    assert user.member?
+
+    assert_no_difference -> { User.count } do
+      User.from_linkedin(auth)
+    end
+  end
+
+  test "from_linkedin falls back to first/last name when raw_info name is absent" do
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-noname",
+      info: { email: "nn@example.com", first_name: "No", last_name: "Name", picture_url: nil }
+    )
+    User.from_linkedin(auth)
+    assert_equal "No Name", User.find_by(provider: "linkedin", uid: "li-noname").name
   end
 
   test "admin does not require name or postal_code" do

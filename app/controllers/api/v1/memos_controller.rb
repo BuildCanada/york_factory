@@ -94,7 +94,14 @@ module Api
             twitter_embed: memo.twitter_embed,
             author_name: memo.author_name,
             author_title: memo.author_title,
-            co_author: memo.co_author ? { id: memo.co_author.id, name: memo.co_author.name, slug: memo.co_author.slug } : nil
+            co_author: memo.co_author ? { id: memo.co_author.id, name: memo.co_author.name, slug: memo.co_author.slug } : nil,
+            endorsements_count: memo.endorsements_count,
+            critiques_count: memo.approved_critiques_count,
+            recent_endorsers: memo.endorsements.joins(:user).order(created_at: :desc).limit(5)
+              .pluck("users.name", :created_at).map { |n, t| { name: n, created_at: t } },
+            critiques: memo.approved_critiques.joins(:user).order(created_at: :desc).limit(20)
+              .pluck(:id, "users.name", :body, :created_at)
+              .map { |id, name, body, t| { id: id, name: name, body: body, created_at: t } }
           )
         end
 

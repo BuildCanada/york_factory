@@ -8,8 +8,16 @@ Rails.application.routes.draw do
     use_doorkeeper
   end
 
+  # Sign in with LinkedIn (browser OmniAuth → Devise session) is used by the
+  # Doorkeeper authorize flow so TradingPost readers can self-register and
+  # engage with memos. The strategy is registered in config/initializers/devise.rb
+  # and callbacks land in Users::OmniauthCallbacksController.
   devise_for :users, path: "", path_names: { sign_in: "login", sign_out: "logout" },
-    controllers: { sessions: "users/sessions", passwords: "users/passwords" },
+    controllers: {
+      sessions: "users/sessions",
+      passwords: "users/passwords",
+      omniauth_callbacks: "users/omniauth_callbacks"
+    },
     skip: [ :registrations, :confirmations, :unlocks ]
 
   get "up" => "rails/health#show", as: :rails_health_check
@@ -24,10 +32,13 @@ Rails.application.routes.draw do
         delete "session", to: "sessions#destroy"
       end
 
-      # OAuth userinfo — current user for the presented Doorkeeper token.
-      get "me", to: "me#show"
+      # OAuth userinfo / profile — the user behind the presented Doorkeeper token.
+      resource :me, only: [ :show, :update ], controller: "me"
 
-      resources :memos, param: :slug
+      resources :memos, param: :slug do
+        resources :endorsements, only: [ :index, :create ]
+        resources :critiques,    only: [ :index, :create ]
+      end
       resources :posts, param: :slug
       resources :builders, param: :slug
       resources :team_members, path: "team" do
@@ -169,6 +180,12 @@ Rails.application.routes.draw do
     resources :testimonials, only: full do
       put :reorder, on: :collection
       post :retranslate, on: :member
+    end
+    resources :critiques, only: [ :index, :show, :destroy ] do
+      member do
+        post :approve
+        post :reject
+      end
     end
     resources :subscribers, only: [ :index ]
     resources :users, only: %i[index new create edit update destroy]

@@ -205,5 +205,8 @@ puts "Seeded #{Warehouse::Source.count} sources"
 load Rails.root.join("db/seeds/trade_barriers_jurisdictions.rb")
 load Rails.root.join("db/seeds/trade_barriers_themes.rb")
 load Rails.root.join("db/seeds/trade_barriers_agreements.rb")
-
 load Rails.root.join("db/seeds/doorkeeper.rb")
+
+# Sample memo + engagements are development-only fixtures (production memos come
+# from the Webflow export). Guard against seeding fake data into production.
+load Rails.root.join("db/seeds/memo_engagements.rb") if Rails.env.development?

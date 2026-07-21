@@ -19,4 +19,12 @@
     </div>
     <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
   <% end %>
+
+  <div style="text-align: center; margin: 1.5rem 0; color: #888;">or</div>
+
+  <%= button_to "Continue with LinkedIn",
+        user_linkedin_omniauth_authorize_path(return_to: params[:return_to].presence),
+        data: { turbo: false },
+        class: "btn",
+        style: "display: block; width: 100%; box-sizing: border-box; text-align: center; background: #0a66c2; color: #fff; border: none; text-decoration: none; padding: 0.6rem 0; cursor: pointer;" %>
 </div>

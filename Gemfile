@@ -90,6 +90,7 @@ gem "importmap-rails"
 
 # CMS: Google OAuth
 gem "omniauth-google-oauth2"
+gem "omniauth-linkedin-openid"
 gem "omniauth-rails_csrf_protection"
 
 # OAuth provider (Doorkeeper) — issues tokens to first-party apps (e.g., TradingPost)

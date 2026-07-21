@@ -2116,6 +2116,128 @@ ALTER SEQUENCE warehouse.derived_observations_id_seq OWNED BY warehouse.derived_
 
 
 --
+-- Name: election_candidates; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.election_candidates (
+    id bigint NOT NULL,
+    election_race_id bigint NOT NULL,
+    full_name character varying NOT NULL,
+    first_name character varying,
+    last_name character varying,
+    status character varying DEFAULT 'active'::character varying NOT NULL,
+    nomination_date date,
+    withdrawn_date date,
+    email character varying,
+    phone character varying,
+    website character varying,
+    social_links jsonb DEFAULT '[]'::jsonb NOT NULL,
+    last_seen_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    photo_source character varying,
+    photo_attribution character varying,
+    photo_suggestions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    CONSTRAINT election_candidates_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'withdrawn'::character varying])::text[])))
+);
+
+
+--
+-- Name: election_candidates_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.election_candidates_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: election_candidates_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.election_candidates_id_seq OWNED BY warehouse.election_candidates.id;
+
+
+--
+-- Name: election_races; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.election_races (
+    id bigint NOT NULL,
+    election_id bigint NOT NULL,
+    office_type character varying NOT NULL,
+    district_type character varying DEFAULT 'at_large'::character varying NOT NULL,
+    district_number integer,
+    district_name character varying,
+    office_body character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT election_races_district_type_check CHECK (((district_type)::text = ANY ((ARRAY['at_large'::character varying, 'ward'::character varying, 'school_board_ward'::character varying, 'riding'::character varying, 'district'::character varying])::text[]))),
+    CONSTRAINT election_races_office_type_check CHECK (((office_type)::text = ANY ((ARRAY['mayor'::character varying, 'councillor'::character varying, 'trustee'::character varying, 'mp'::character varying, 'mpp'::character varying])::text[])))
+);
+
+
+--
+-- Name: election_races_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.election_races_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: election_races_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.election_races_id_seq OWNED BY warehouse.election_races.id;
+
+
+--
+-- Name: elections; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.elections (
+    id bigint NOT NULL,
+    jurisdiction_id bigint NOT NULL,
+    name character varying NOT NULL,
+    slug character varying NOT NULL,
+    kind character varying DEFAULT 'municipal'::character varying NOT NULL,
+    election_date date NOT NULL,
+    nomination_close_date date,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY ((ARRAY['municipal'::character varying, 'provincial'::character varying, 'federal'::character varying, 'by_election'::character varying])::text[])))
+);
+
+
+--
+-- Name: elections_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.elections_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: elections_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.elections_id_seq OWNED BY warehouse.elections.id;
+
+
+--
 -- Name: extracted_observations; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -3104,6 +3226,40 @@ ALTER SEQUENCE warehouse.organizations_id_seq OWNED BY warehouse.organizations.i
 
 
 --
+-- Name: pledges_to_vote; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.pledges_to_vote (
+    id bigint NOT NULL,
+    election_id bigint NOT NULL,
+    subscriber_id bigint NOT NULL,
+    region character varying NOT NULL,
+    pledged_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: pledges_to_vote_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.pledges_to_vote_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pledges_to_vote_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.pledges_to_vote_id_seq OWNED BY warehouse.pledges_to_vote.id;
+
+
+--
 -- Name: raw_ingestions; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -3632,6 +3788,27 @@ ALTER TABLE ONLY warehouse.derived_observations ALTER COLUMN id SET DEFAULT next
 
 
 --
+-- Name: election_candidates id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidates ALTER COLUMN id SET DEFAULT nextval('warehouse.election_candidates_id_seq'::regclass);
+
+
+--
+-- Name: election_races id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_races ALTER COLUMN id SET DEFAULT nextval('warehouse.election_races_id_seq'::regclass);
+
+
+--
+-- Name: elections id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.elections ALTER COLUMN id SET DEFAULT nextval('warehouse.elections_id_seq'::regclass);
+
+
+--
 -- Name: extracted_observations id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -3804,6 +3981,13 @@ ALTER TABLE ONLY warehouse.organization_lineages ALTER COLUMN id SET DEFAULT nex
 --
 
 ALTER TABLE ONLY warehouse.organizations ALTER COLUMN id SET DEFAULT nextval('warehouse.organizations_id_seq'::regclass);
+
+
+--
+-- Name: pledges_to_vote id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.pledges_to_vote ALTER COLUMN id SET DEFAULT nextval('warehouse.pledges_to_vote_id_seq'::regclass);
 
 
 --
@@ -4217,6 +4401,30 @@ ALTER TABLE ONLY warehouse.derived_observations
 
 
 --
+-- Name: election_candidates election_candidates_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidates
+    ADD CONSTRAINT election_candidates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: election_races election_races_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_races
+    ADD CONSTRAINT election_races_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: elections elections_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.elections
+    ADD CONSTRAINT elections_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: extraction_assertions extraction_assertions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -4433,6 +4641,14 @@ ALTER TABLE ONLY warehouse.organizations
 
 
 --
+-- Name: pledges_to_vote pledges_to_vote_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.pledges_to_vote
+    ADD CONSTRAINT pledges_to_vote_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: raw_ingestions raw_ingestions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -4486,6 +4702,14 @@ ALTER TABLE ONLY warehouse.units
 
 ALTER TABLE ONLY warehouse.units
     ADD CONSTRAINT units_symbol_key UNIQUE (symbol);
+
+
+--
+-- Name: pledges_to_vote ux_pledges_to_vote_election_subscriber; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.pledges_to_vote
+    ADD CONSTRAINT ux_pledges_to_vote_election_subscriber UNIQUE (election_id, subscriber_id);
 
 
 --
@@ -5301,6 +5525,20 @@ CREATE INDEX idx_derived_observations_source ON warehouse.derived_observations U
 
 
 --
+-- Name: idx_election_candidates_status; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_election_candidates_status ON warehouse.election_candidates USING btree (status);
+
+
+--
+-- Name: idx_elections_jurisdiction; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_elections_jurisdiction ON warehouse.elections USING btree (jurisdiction_id);
+
+
+--
 -- Name: idx_extracted_observations_component; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -5714,6 +5952,27 @@ CREATE UNIQUE INDEX idx_organizations_jurisdiction_slug ON warehouse.organizatio
 
 
 --
+-- Name: idx_pledges_to_vote_election_region; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_pledges_to_vote_election_region ON warehouse.pledges_to_vote USING btree (election_id, region);
+
+
+--
+-- Name: idx_pledges_to_vote_pledged_at; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_pledges_to_vote_pledged_at ON warehouse.pledges_to_vote USING btree (pledged_at);
+
+
+--
+-- Name: idx_pledges_to_vote_subscriber; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_pledges_to_vote_subscriber ON warehouse.pledges_to_vote USING btree (subscriber_id);
+
+
+--
 -- Name: idx_review_decisions_created; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6019,6 +6278,27 @@ CREATE INDEX index_standard_object_expenditures_on_organization_id ON warehouse.
 --
 
 CREATE INDEX index_standard_object_expenditures_on_raw_ingestion_id ON warehouse.standard_object_expenditures USING btree (raw_ingestion_id);
+
+
+--
+-- Name: ux_election_candidates_race_name; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_election_candidates_race_name ON warehouse.election_candidates USING btree (election_race_id, full_name);
+
+
+--
+-- Name: ux_election_races_identity; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_election_races_identity ON warehouse.election_races USING btree (election_id, office_type, COALESCE(office_body, ''::character varying), COALESCE(district_number, 0));
+
+
+--
+-- Name: ux_elections_slug; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_elections_slug ON warehouse.elections USING btree (slug);
 
 
 --
@@ -6449,6 +6729,30 @@ ALTER TABLE ONLY warehouse.derived_observations
 
 ALTER TABLE ONLY warehouse.derived_observations
     ADD CONSTRAINT derived_observations_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES warehouse.units(id);
+
+
+--
+-- Name: election_candidates election_candidates_election_race_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidates
+    ADD CONSTRAINT election_candidates_election_race_id_fkey FOREIGN KEY (election_race_id) REFERENCES warehouse.election_races(id) ON DELETE CASCADE;
+
+
+--
+-- Name: election_races election_races_election_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_races
+    ADD CONSTRAINT election_races_election_id_fkey FOREIGN KEY (election_id) REFERENCES warehouse.elections(id) ON DELETE CASCADE;
+
+
+--
+-- Name: elections elections_jurisdiction_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.elections
+    ADD CONSTRAINT elections_jurisdiction_id_fkey FOREIGN KEY (jurisdiction_id) REFERENCES warehouse.jurisdictions(id);
 
 
 --
@@ -7044,6 +7348,22 @@ ALTER TABLE ONLY warehouse.organization_lineages
 
 
 --
+-- Name: pledges_to_vote pledges_to_vote_election_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.pledges_to_vote
+    ADD CONSTRAINT pledges_to_vote_election_id_fkey FOREIGN KEY (election_id) REFERENCES warehouse.elections(id) ON DELETE CASCADE;
+
+
+--
+-- Name: pledges_to_vote pledges_to_vote_subscriber_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.pledges_to_vote
+    ADD CONSTRAINT pledges_to_vote_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.subscribers(id) ON DELETE CASCADE;
+
+
+--
 -- Name: review_decisions review_decisions_extracted_observation_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -7079,6 +7399,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260722000003'),
 ('20260722000002'),
 ('20260722000001'),
+('20260721000003'),
+('20260721000002'),
+('20260721000001'),
 ('20260714000001'),
 ('20260710000001'),
 ('20260709000001'),

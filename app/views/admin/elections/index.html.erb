@@ -1,0 +1,29 @@
+<div class="page-header">
+  <h1>Elections</h1>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Election</th>
+      <th>Jurisdiction</th>
+      <th>Election day</th>
+      <th>Races</th>
+      <th>Candidates</th>
+      <th>Photos</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @elections.each do |election| %>
+      <% candidates = Warehouse::ElectionCandidate.where(election_race_id: election.races.select(:id)) %>
+      <tr>
+        <td><a href="<%= admin_election_path(election) %>"><%= election.name %></a></td>
+        <td class="text-muted"><%= election.jurisdiction.name %></td>
+        <td><%= election.election_date.strftime("%b %-d, %Y") %></td>
+        <td><%= election.races.count %></td>
+        <td><%= candidates.count %></td>
+        <td><%= candidates.joins(:photo_attachment).count %> / <%= candidates.where(status: "active").count %> active</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

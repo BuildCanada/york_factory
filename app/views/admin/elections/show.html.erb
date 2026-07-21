@@ -1,0 +1,92 @@
+<div class="page-header">
+  <h1><%= @election.name %></h1>
+  <%= button_to "Fetch photo suggestions",
+        fetch_photo_suggestions_admin_election_path(@election),
+        method: :post, class: "btn btn-primary",
+        data: { turbo_confirm: "Queue Wikipedia / campaign-site photo lookups for all active candidates without a photo?" } %>
+</div>
+
+<p class="text-muted" style="margin-bottom: 1rem;">
+  Photos shown on buildcanada.com come only from this page — upload one, or accept a
+  fetched suggestion after checking it's really a portrait of the right person.
+  Suggestions from campaign sites are often logos or share cards.
+</p>
+
+<% @races.each do |race| %>
+  <% race_title = case race.office_type
+     when "mayor" then "Mayor"
+     when "councillor" then "Councillor — Ward #{race.district_number}#{" (#{race.district_name})" if race.district_name}"
+     when "trustee" then "Trustee — #{race.office_body}, Ward #{race.district_number}"
+     else "#{race.office_type.titleize} — #{race.district_name || race.district_number}"
+     end %>
+  <h2 style="margin: 1.5rem 0 0.5rem; font-size: 1rem;"><%= race_title %></h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:70px">Photo</th>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Suggestions</th>
+        <th style="width:320px">Upload / attribution</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% race.candidates.sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }.each do |candidate| %>
+        <tr id="candidate-<%= candidate.id %>">
+          <td>
+            <% if candidate.photo.attached? %>
+              <%= image_tag url_for(candidate.photo), style: "width:56px;height:70px;object-fit:cover;" %>
+              <div class="text-muted" style="font-size:0.7rem;"><%= candidate.photo_source %></div>
+            <% else %>
+              <span class="text-muted">—</span>
+            <% end %>
+          </td>
+          <td>
+            <%= candidate.display_name %>
+            <% if candidate.website.present? %>
+              <div><a href="<%= candidate.website %>" target="_blank" rel="noopener" class="text-muted" style="font-size:0.75rem;"><%= candidate.website %></a></div>
+            <% end %>
+          </td>
+          <td>
+            <span class="badge badge-<%= candidate.active? ? "green" : "yellow" %>"><%= candidate.status %></span>
+          </td>
+          <td>
+            <% candidate.photo_suggestions.each do |suggestion| %>
+              <div style="display:inline-block; margin: 0 0.75rem 0.5rem 0; text-align:center; vertical-align:top;">
+                <a href="<%= suggestion["page_url"] || suggestion["image_url"] %>" target="_blank" rel="noopener">
+                  <img src="<%= suggestion["image_url"] %>" style="width:56px;height:70px;object-fit:cover;" loading="lazy">
+                </a>
+                <div class="text-muted" style="font-size:0.7rem; max-width:110px;">
+                  <%= suggestion["source"] == "wikipedia" ? "Wikipedia" : "Campaign site" %>
+                  <% if suggestion["source"] == "wikipedia" && suggestion["note"].present? %>
+                    <br><%= truncate(suggestion["note"], length: 40) %>
+                  <% end %>
+                </div>
+                <%= button_to "Use", apply_photo_suggestion_admin_election_candidate_path(candidate, image_url: suggestion["image_url"]),
+                      method: :post, class: "btn btn-sm" %>
+              </div>
+            <% end %>
+            <% if candidate.photo_suggestions.empty? %>
+              <span class="text-muted" style="font-size:0.8rem;">none</span>
+            <% end %>
+          </td>
+          <td>
+            <%= form_with model: candidate, url: admin_election_candidate_path(candidate), scope: :warehouse_election_candidate, method: :patch, multipart: true do |f| %>
+              <%= f.file_field :photo, accept: "image/*", class: "form-control", style: "font-size:0.8rem;" %>
+              <%= f.text_field :photo_attribution, placeholder: "Attribution (optional)", class: "form-control mt-1", style: "font-size:0.8rem;" %>
+              <div class="mt-1" style="display:flex; gap:0.5rem; align-items:center;">
+                <%= f.submit "Save", class: "btn btn-sm" %>
+                <% if candidate.photo.attached? %>
+                  <label style="font-size:0.75rem;">
+                    <%= f.check_box :purge_photo, { checked: false }, "1", "0" %> Remove photo
+                  </label>
+                <% end %>
+              </div>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

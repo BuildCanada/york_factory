@@ -39,3 +39,8 @@ production:
   luma_daily_guest_sync:
     class: LumaDailyGuestSyncJob
     schedule: every day at 8am
+  fetch_election_sources:
+    # Daily poll of election candidate sources (Toronto candidate list);
+    # unchanged feeds dedupe on checksum and are no-ops.
+    class: Warehouse::FetchElectionSourcesJob
+    schedule: every day at 8am

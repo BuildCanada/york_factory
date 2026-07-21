@@ -63,6 +63,10 @@ Rails.application.routes.draw do
       resources :subscribers, only: [ :create ]
       resources :uploads, only: [ :create ]
 
+      resources :elections, only: [ :index, :show ], param: :slug do
+        resources :pledges, only: [ :index, :create ], controller: "election_pledges"
+      end
+
       namespace :geo do
         get "crosswalk", to: "crosswalk#show"
         get "boundaries", to: "boundaries#index"
@@ -193,6 +197,13 @@ Rails.application.routes.draw do
     end
     resources :subscribers, only: [ :index ]
     resources :users, only: %i[index new create edit update destroy]
+
+    resources :elections, only: [ :index, :show ] do
+      post :fetch_photo_suggestions, on: :member
+    end
+    resources :election_candidates, only: [ :update ] do
+      post :apply_photo_suggestion, on: :member
+    end
 
     namespace :metrics do
       get "/", to: "overview#index", as: :root

@@ -4270,13 +4270,6 @@ CREATE UNIQUE INDEX index_builders_on_slug ON public.builders USING btree (slug)
 
 
 --
--- Name: index_engagements_on_memo_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_engagements_on_memo_id ON public.engagements USING btree (memo_id);
-
-
---
 -- Name: index_engagements_on_memo_id_and_type_and_user_id; Type: INDEX; Schema: public; Owner: -
 --
 

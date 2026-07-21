@@ -2,7 +2,9 @@ class CreateEngagements < ActiveRecord::Migration[8.1]
   def change
     create_table :engagements do |t|
       t.string     :type, null: false
-      t.references :memo, null: false, foreign_key: true
+      # index: false — the composite indexes below both lead with memo_id and
+      # cover it; a standalone memo_id index would only add write overhead.
+      t.references :memo, null: false, foreign_key: true, index: false
       t.references :user, null: false, foreign_key: true
       t.text       :body
       t.integer    :status, null: false, default: 0

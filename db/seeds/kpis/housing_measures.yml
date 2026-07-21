@@ -1,0 +1,89 @@
+# Canonical (organization-less) measures for the CAN-21 Housing dashboard.
+#
+# International measures come from the OECD analytical house prices database
+# (DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES) via the existing OECD SDMX loader.
+# Canada-only measures come from Statistics Canada WDS vectors republishing
+# CMHC survey data.
+#
+# Coverage notes:
+# - rental-vacancy-rate-canada covers census metropolitan areas (the CMHC
+#   rental market survey universe), apartment structures of six units and over.
+#
+# Deferred (no free no-auth automatable source yet): average dollar house
+# price (CREA/MLS, licensed), homeownership rate (census, one observation per
+# 5-year cycle), homelessness point-in-time counts (Infrastructure Canada,
+# PDF releases), housing starts per capita (needs a population denominator —
+# derive downstream from housing-starts-canada).
+
+measures:
+  - slug: house-price-to-income
+    canonical_name: "House price-to-income ratio (% of long-term average)"
+    unit: index
+    category: housing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Nominal house prices divided by nominal disposable income per head,
+      expressed relative to the country's long-term average (100 = long-term
+      average). The OECD's headline affordability indicator. Source: OECD
+      analytical house prices database (DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES,
+      measure HPI_YDH_AVG). G7 series is an unweighted mean of member
+      countries computed at import time.
+
+  # Non-indexed housing affordability measure: the share of household
+  # disposable income absorbed by mortgage obligations. Unlike the OECD
+  # price-to-income indicators above (indexed to a base or long-term average),
+  # this is an actual percentage, quarterly, and captures carrying-cost burden
+  # rather than price levels.
+  - slug: mortgage-debt-service-ratio
+    canonical_name: "Mortgage debt service ratio (Canada, %)"
+    unit: "%"
+    category: housing
+    frequency: quarterly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Obligated mortgage principal and interest payments as a percent of
+      household disposable income, quarterly, seasonally adjusted, national
+      balance sheet accounts basis. A non-indexed measure of housing
+      carrying-cost burden. Source: Statistics Canada table 11-10-0065-01,
+      vector v1001696814. Canada-only series.
+
+  - slug: real-house-price-index
+    canonical_name: "Real house price index (2015 = 100)"
+    unit: index
+    category: housing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      House price index deflated by the consumer price index, 2015 = 100.
+      Source: OECD analytical house prices database
+      (DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES, measure RHP). G7 series is an
+      unweighted mean of member countries computed at import time.
+
+  - slug: housing-starts-canada
+    canonical_name: "Housing starts, all areas (Canada, units)"
+    unit: units
+    category: housing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Total dwelling units started per year, all areas. Source: CMHC starts
+      and completions survey via Statistics Canada table 34-10-0126
+      (vector v730579). Canada-only series.
+
+  - slug: rental-vacancy-rate-canada
+    canonical_name: "Rental vacancy rate, census metropolitan areas (Canada, %)"
+    unit: "%"
+    category: housing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Vacancy rate in privately initiated apartment structures of six units
+      and over, all census metropolitan areas. Source: CMHC rental market
+      survey via Statistics Canada table 34-10-0127 (vector v733334).
+      Canada-only series.

@@ -1,0 +1,21 @@
+# Canonical (organization-less) measures for the CAN-23 International
+# Relations & Soft Power dashboard.
+#
+# Deferred (no free no-auth automatable source yet): Brand Finance Soft Power
+# Index (commercial report), international students and immigration vs
+# targets (IRCC open-data portal has unstable download URLs), trade partner
+# diversification (needs a derivation from bilateral trade tables).
+
+measures:
+  - slug: oda-pct-gni
+    canonical_name: "Official development assistance (% of GNI)"
+    unit: "%"
+    category: international
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Net official development assistance as a share of gross national
+      income, against the UN's 0.7% target. Source: OECD DAC1 via the OECD
+      data explorer. G7 series is an unweighted mean of member countries
+      computed at import time.

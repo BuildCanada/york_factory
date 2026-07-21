@@ -19,3 +19,8 @@ production:
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday
+  fetch_economy_sources:
+    # Daily poll of economy dashboard sources; the job fetches each source
+    # only when its own fetch_frequency interval has elapsed.
+    class: Warehouse::FetchEconomySourcesJob
+    schedule: every day at 7am

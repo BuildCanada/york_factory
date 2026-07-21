@@ -77,6 +77,15 @@ units:
   - { symbol: "kWH per ML",       kind: rate,        base_unit: kwh, denominator_unit: other, denominator_scale: 1.0, notes: "denominator is megalitre", review: true }
   - { symbol: "eKWH/sqft",        kind: rate,        base_unit: kwh, denominator_unit: square_meters, denominator_scale: 0.092903 }
 
+  # --- International economic comparisons (economy dashboard) ---
+  - { symbol: "intl_$",          kind: absolute,    base_unit: dollars, notes: "constant international dollars (PPP)" }
+  - { symbol: "intl_$_per_hour", kind: rate,        base_unit: dollars, denominator_unit: hours, denominator_scale: 1.0, notes: "international dollars (PPP) per hour worked" }
+  - { symbol: "births_per_woman", kind: rate,       base_unit: count, denominator_unit: count, denominator_scale: 1.0, notes: "total fertility rate" }
+  - { symbol: "per_100_people",  kind: rate,        base_unit: count, denominator_unit: count, denominator_scale: 100.0 }
+  - { symbol: "t_co2_per_capita", kind: rate,       base_unit: tco2e, denominator_unit: count, denominator_scale: 1.0, notes: "tonnes of CO2 per person per year" }
+  - { symbol: "ug_m3",           kind: absolute,    base_unit: other, notes: "micrograms per cubic metre" }
+  - { symbol: "tonne_km_millions", kind: absolute,  base_unit: other, scale: 1000000.0, notes: "million metric ton-km" }
+
   # --- Qualitative ---
   - { symbol: "qualitative",      kind: qualitative }
   - { symbol: "pass/fail",        kind: qualitative }

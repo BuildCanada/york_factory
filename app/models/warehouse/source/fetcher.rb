@@ -5,39 +5,67 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
   BACKOFF_BASE = 4 # seconds: 1, 4, 16
 
   def fetch
-    body = download_with_retries
+    body = download_body
     checksum = Digest::SHA256.hexdigest(body)
 
-    if source.raw_ingestions.exists?(checksum: checksum)
+    # A checksum match only skips when the prior load got somewhere: pending
+    # and partial may be in flight or awaiting review, and re-dispatching
+    # could double-run them. A failed ingestion is retried on the same row
+    # (checksum is unique per source), so a load crash can't wedge the source
+    # until its upstream data changes.
+    existing = source.raw_ingestions.find_by(checksum: checksum)
+    if existing && !existing.failed?
       Rails.logger.info "[Fetcher] Source #{source.name}: data unchanged (checksum match), skipping"
       return
     end
 
-    r2_key = "raw/#{source.name}/#{Date.current.iso8601}/#{File.basename(URI.parse(source.url).path)}"
+    filename = File.basename(URI.parse(source.url).path).presence || "data.#{source.format}"
+    r2_key = "raw/#{source.name}/#{Date.current.iso8601}/#{filename}"
     store_raw_file(r2_key, body)
 
-    ingestion = source.raw_ingestions.create!(
+    ingestion = existing || source.raw_ingestions.new(checksum: checksum)
+    ingestion.update!(
       fetched_at: Time.current,
       raw_file_path: r2_key,
-      checksum: checksum,
-      status: :pending
+      status: :pending,
+      error_message: nil
     )
 
     source.update!(last_fetched_at: Time.current)
 
     dispatch_loader(ingestion, body)
 
-    Rails.logger.info "[Fetcher] Source #{source.name}: ingestion #{ingestion.id} created"
+    Rails.logger.info "[Fetcher] Source #{source.name}: ingestion #{ingestion.id} #{existing ? "retried" : "created"}"
   end
 
   private
 
+  # API-style sources (paginated JSON, multi-step downloads) normalize their
+  # payload to a single canonical body at fetch time, so checksum dedupe and
+  # the R2 archive operate on exactly what the loader parses.
+  def download_body
+    case source.format
+    when "worldbank_json"
+      with_retries { Warehouse::Source::Fetcher::WorldBankDownload.new(source.url).call }
+    when "statcan_json"
+      with_retries { Warehouse::Source::Fetcher::StatcanVectors.new(source.url).call }
+    else
+      download_with_retries
+    end
+  end
+
   def download_with_retries
-    retries = 0
-    begin
+    with_retries do
       response = HTTPX.plugin(:follow_redirects).get(source.url)
       raise "HTTP #{response.status}: #{source.url}" unless response.status == 200
       response.body.to_s
+    end
+  end
+
+  def with_retries
+    retries = 0
+    begin
+      yield
     rescue => e
       retries += 1
       if retries <= MAX_RETRIES
@@ -81,6 +109,16 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.population_loader.load(csv_content: body)
     when /^oda_/
       ingestion.address_loader.load(file_content: body)
+    when /^econ_worldbank/
+      ingestion.world_bank_econ_loader.load(json_content: body)
+    when /^econ_oecd/
+      ingestion.oecd_sdmx_loader.load(csv_content: body)
+    when /^econ_statcan/
+      ingestion.statcan_econ_loader.load(json_content: body)
+    when /^econ_ircc/
+      ingestion.ircc_admissions_loader.load(csv_content: body)
+    when /^econ_owid/
+      ingestion.owid_econ_loader.load(csv_content: body)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

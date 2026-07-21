@@ -5,7 +5,7 @@ Automated pipeline that normalizes Canadian federal government fiscal data (Publ
 
 ## Commands
 ```bash
-bin/rails test                    # run all tests (533 tests)
+bin/rails test                    # run all tests (599 tests)
 bin/rails db:migrate              # apply migrations
 bin/rails db:seed                 # seed data sources
 bin/rails cms:seed                # seed CMS development data
@@ -31,6 +31,7 @@ RawIngestion::BoundaryLoader      → shapefile import for 13 geo boundary types
 RawIngestion::RelationshipLoader  → DA→parent geographic relationships from StatsCan
 RawIngestion::PopulationLoader    → DA population data for crosswalk weighting
 RawIngestion::AddressLoader       → Open Database of Addresses (ZIP→CSV import)
+RawIngestion::IrccAdmissionsLoader → IRCC PR admissions by immigration category (monthly TSV)
 Organization::EntityResolver      → shared entity resolution cascade
 ```
 

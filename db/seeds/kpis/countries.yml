@@ -1,0 +1,20 @@
+# Comparator countries and aggregates for the economic dashboards (CAN-14+).
+#
+# Stored as warehouse.jurisdictions: `national` for G7 member countries,
+# `supranational` for aggregates. Canada is NOT listed here — loaders map
+# source code CAN to the existing federal `CA` jurisdiction.
+#
+# OECD = source-provided OECD average (World Bank code OED / OECD area code).
+# G7   = computed by Warehouse::Economy::ObservationWriter (unweighted mean).
+# INTL = owner jurisdiction for kpi_documents from international sources.
+
+countries:
+  - { code: USA,  name: "United States",  slug: united-states,  level: national,      default_currency: USD }
+  - { code: GBR,  name: "United Kingdom", slug: united-kingdom, level: national,      default_currency: GBP }
+  - { code: FRA,  name: "France",         slug: france,         level: national,      default_currency: EUR }
+  - { code: DEU,  name: "Germany",        slug: germany,        level: national,      default_currency: EUR }
+  - { code: ITA,  name: "Italy",          slug: italy,          level: national,      default_currency: EUR }
+  - { code: JPN,  name: "Japan",          slug: japan,          level: national,      default_currency: JPY }
+  - { code: OECD, name: "OECD (average)", slug: oecd,           level: supranational, default_currency: USD }
+  - { code: G7,   name: "G7 (average)",   slug: g7,             level: supranational, default_currency: USD }
+  - { code: INTL, name: "International",  slug: international,  level: supranational, default_currency: USD }

@@ -1,0 +1,36 @@
+# Canonical (organization-less) measures for the CAN-17 Happiness, Wellbeing &
+# Optimism dashboard. Subjective wellbeing is the most-debated category, so
+# only validated cross-country metrics ship here.
+#
+# Deferred (no free no-auth automatable source yet): World Happiness Report
+# rank (the underlying Cantril ladder score is the better metric and is what
+# the report ranks), social trust (World Values Survey waves are too sparse;
+# StatCan GSS is occasional), youth satisfaction (GSS breakdown),
+# volunteering (GSS table 45-10-0014, occasional).
+
+measures:
+  - slug: life-satisfaction
+    canonical_name: "Self-reported life satisfaction (Cantril ladder, 0-10)"
+    unit: score
+    category: wellbeing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Average self-reported life evaluation on the 0-10 Cantril ladder, from
+      the Gallup World Poll — the measure ranked by the World Happiness
+      Report. Source: World Happiness Report via Our World in Data. G7 series
+      is an unweighted mean of member countries computed at import time.
+
+  - slug: fertility-rate
+    canonical_name: "Total fertility rate (births per woman)"
+    unit: births_per_woman
+    category: wellbeing
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Births per woman over a lifetime at current age-specific rates. Used
+      here as a future-confidence proxy. Source: World Bank WDI indicator
+      SP.DYN.TFRT.IN. G7 series is an unweighted mean of member countries
+      computed at import time.

@@ -15,13 +15,12 @@
   { code: "NU", name: "Nunavut",                   level: "territorial" },
   { code: "YT", name: "Yukon",                     level: "territorial" }
 ].each do |attrs|
-  Warehouse::Jurisdiction.create_or_find_by!(code: attrs[:code]) do |j|
+  Warehouse::Jurisdiction.find_or_create_by!(code: attrs[:code]) do |j|
     j.name = attrs[:name]
     j.level = attrs[:level]
-    # slug / fiscal_year_start_month are NOT NULL with no column default
-    # (see AddKpiFieldsToJurisdictions); mirror that migration's backfill.
-    j.slug = attrs[:code].downcase
-    j.fiscal_year_start_month = attrs[:level] == "municipal" ? 1 : 4
+    j.slug = attrs[:name].parameterize
+    j.fiscal_year_start_month = 4
+    j.default_currency = "CAD"
   end
 end
 

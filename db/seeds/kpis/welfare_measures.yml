@@ -1,0 +1,324 @@
+# Canonical (organization-less) measures for the CAN-15 Individual Economics &
+# Welfare dashboard.
+#
+# International measures follow the CAN-14 economy pattern: observations per
+# jurisdiction (Canada + G7 countries + OECD average where the source reports
+# one + computed G7 average). Canada-only measures come from Statistics Canada
+# WDS vectors and have a single jurisdiction series.
+#
+# Coverage notes:
+# - real-minimum-wage-ppp has no Italy series (no statutory minimum wage), so
+#   the computed G7 average never materializes for it.
+# - household-debt-to-income (OECD NAAG) has no OECD-average series.
+# - employment-rate uses the ILO-modeled World Bank series for comparability;
+#   the StatCan LFS monthly series (table 14-10-0287) is carried alongside it
+#   as Canada-only monthly employment-rate-* measures by age group.
+#
+# Deferred (no free no-auth automatable source yet): disability benefit
+# purchasing power, PPP of minimum wage relative to living wage.
+
+measures:
+  - slug: employment-rate
+    canonical_name: "Employment to population ratio, 15+ (%)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of the population aged 15 and over that is employed (ILO modeled
+      estimate). Source: World Bank WDI indicator SL.EMP.TOTL.SP.ZS. G7 series
+      is an unweighted mean of member countries computed at import time.
+
+  - slug: age-dependency-ratio
+    canonical_name: "Age dependency ratio (% of working-age population)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Ratio of dependents (younger than 15 or older than 64) to the
+      working-age population. Source: World Bank WDI indicator SP.POP.DPND.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: gini-index
+    canonical_name: "Gini index (World Bank estimate)"
+    unit: index
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gini index of income inequality on a 0-100 scale, where 0 is perfect
+      equality. Source: World Bank WDI indicator SI.POV.GINI. Coverage is
+      sparse for some countries and years. G7 series is an unweighted mean of
+      member countries computed at import time.
+
+  - slug: bottom-quintile-income-share
+    canonical_name: "Income share held by lowest 20% (%)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of income or consumption that accrues to the bottom quintile of
+      the population. Source: World Bank WDI indicator SI.DST.FRST.20.
+      G7 series is an unweighted mean of member countries computed at import time.
+
+  - slug: real-minimum-wage-ppp
+    canonical_name: "Real hourly minimum wage (constant prices, USD PPP)"
+    unit: intl_$_per_hour
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Statutory hourly minimum wage at constant prices, converted with
+      purchasing power parities. Source: OECD earnings database
+      (DSD_EARNINGS@RMW, unit USD_PPP, hourly, constant prices). Italy has no
+      statutory minimum wage, so no G7 average is computed.
+
+  - slug: average-annual-hours-worked
+    canonical_name: "Average annual hours actually worked per worker"
+    unit: hours
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Total hours actually worked per year divided by the average number of
+      people in employment. Source: OECD hours worked database
+      (DSD_HW@DF_AVG_ANN_HRS_WKD, total employment, mean). G7 series is an
+      unweighted mean of member countries computed at import time.
+
+  - slug: household-debt-to-income
+    canonical_name: "Household debt (% of net disposable income)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Total debt of households and non-profit institutions serving households
+      as a share of their net disposable income. Source: OECD National
+      Accounts at a Glance chapter 5 (DSD_NAAG@DF_NAAG_V, measure LES1M_FD4).
+      No OECD-average series is published.
+
+  - slug: gini-after-tax-canada
+    canonical_name: "Gini coefficient, adjusted after-tax income (Canada)"
+    unit: ratio
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Gini coefficient (0-1 scale) of adjusted after-tax household income for
+      Canada. Source: Statistics Canada table 11-10-0134 (vector v96439638).
+      Canada-only series; longer and more current than the World Bank Gini.
+
+  - slug: low-income-entry-rate
+    canonical_name: "Low income entry rate of tax filers (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Share of tax filers not in low income in one year who entered low income
+      the following year (variable low income measure). Source: Statistics
+      Canada table 11-10-0024 (vector v96730402). Canada-only series.
+
+  - slug: low-income-exit-rate
+    canonical_name: "Low income exit rate of tax filers (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Share of tax filers in low income in one year who exited low income the
+      following year (variable low income measure). Source: Statistics Canada
+      table 11-10-0024 (vector v96730403). Canada-only series.
+
+  # Employment by age group — LFS monthly employment rates (StatCan table
+  # 14-10-0287, seasonally adjusted, Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: employment-rate-15-plus
+    canonical_name: "Employment rate, 15 years and over (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 15 and over, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062817. Canada-only series.
+
+  - slug: employment-rate-15-to-24
+    canonical_name: "Employment rate, 15 to 24 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 15 to 24, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062844. Canada-only series.
+
+  - slug: employment-rate-25-to-54
+    canonical_name: "Employment rate, 25 to 54 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 25 to 54, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062952. Canada-only series.
+
+  - slug: employment-rate-55-to-64
+    canonical_name: "Employment rate, 55 to 64 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Employment as a share of the population aged 55 to 64, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v101885408. Canada-only series.
+
+  # Unemployment by age group — LFS monthly unemployment rates (StatCan table
+  # 14-10-0287, seasonally adjusted, Canada-only). Vector ids map to slugs in
+  # Warehouse::RawIngestion::StatcanEconLoader::VECTORS.
+  - slug: unemployment-rate-15-plus
+    canonical_name: "Unemployment rate, 15 years and over (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 15 and over, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062815. Canada-only series.
+
+  - slug: unemployment-rate-15-to-24
+    canonical_name: "Unemployment rate, 15 to 24 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 15 to 24, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062842. Canada-only series.
+
+  - slug: unemployment-rate-25-to-54
+    canonical_name: "Unemployment rate, 25 to 54 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 25 to 54, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v2062950. Canada-only series.
+
+  - slug: unemployment-rate-55-to-64
+    canonical_name: "Unemployment rate, 55 to 64 years (Canada, %)"
+    unit: "%"
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: true
+    description: >-
+      Unemployed as a share of the labour force aged 55 to 64, monthly,
+      seasonally adjusted. Source: Statistics Canada table 14-10-0287-01
+      (Labour Force Survey), vector v101885216. Canada-only series.
+
+  # Private vs public employment — LFS employment by class of worker (StatCan
+  # table 14-10-0288, monthly, seasonally adjusted, thousands of persons,
+  # Canada-only). Shares are computed client-side from the level series.
+  - slug: employment-all-classes
+    canonical_name: "Total employed, all classes of workers (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Total employment across all classes of workers, monthly, seasonally
+      adjusted, thousands of persons. Source: Statistics Canada table
+      14-10-0288-01 (Labour Force Survey), vector v2066967. Canada-only series.
+
+  - slug: employment-public-sector
+    canonical_name: "Public sector employees (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Public sector employees, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066969. Canada-only series.
+
+  - slug: employment-private-sector
+    canonical_name: "Private sector employees (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Private sector employees, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066970. Canada-only series.
+
+  - slug: employment-self-employed
+    canonical_name: "Self-employed workers (Canada, thousands)"
+    unit: count_thousands
+    category: welfare
+    frequency: monthly
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Self-employed workers, monthly, seasonally adjusted, thousands of
+      persons. Source: Statistics Canada table 14-10-0288-01 (Labour Force
+      Survey), vector v2066971. Canada-only series.
+
+  # Wages — LFS employee hourly wages, annual, current dollars (StatCan table
+  # 14-10-0064, all industries, both full- and part-time employees, 15 years
+  # and over, Canada-only). StatCan WDS publishes no 10th/90th percentile
+  # hourly wage series; average vs median is the closest dispersion proxy.
+  - slug: average-hourly-wage
+    canonical_name: "Average hourly wage rate (Canada, current $)"
+    unit: "$"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Average hourly wage rate for all employees, all industries, both full-
+      and part-time, current dollars. Source: Statistics Canada table
+      14-10-0064-01 (Labour Force Survey), vector v2196615. Canada-only series.
+
+  - slug: median-hourly-wage
+    canonical_name: "Median hourly wage rate (Canada, current $)"
+    unit: "$"
+    category: welfare
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Median hourly wage rate for all employees, all industries, both full-
+      and part-time, current dollars. Source: Statistics Canada table
+      14-10-0064-01 (Labour Force Survey), vector v2196617. Canada-only series.

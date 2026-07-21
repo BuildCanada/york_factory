@@ -1,0 +1,55 @@
+# Canonical (organization-less) measures for the CAN-22 Infrastructure &
+# Industrialization dashboard.
+#
+# Deferred (no free no-auth automatable source yet): infrastructure
+# investment as % of GDP (OECD ITF series is patchy and lags several years),
+# StatCan capital stock table 23-10-0215 (needs derivation decisions).
+
+measures:
+  - slug: rd-spending-pct-gdp
+    canonical_name: "Research and development expenditure (% of GDP)"
+    unit: "%"
+    category: infrastructure
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Gross domestic expenditure on R&D as a share of GDP. Source: World Bank
+      WDI indicator GB.XPD.RSDV.GD.ZS (UNESCO). G7 series is an unweighted
+      mean of member countries computed at import time.
+
+  - slug: manufacturing-value-added-pct-gdp
+    canonical_name: "Manufacturing value added (% of GDP)"
+    unit: "%"
+    category: infrastructure
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Manufacturing value added as a share of GDP. Source: World Bank WDI
+      indicator NV.IND.MANF.ZS. G7 series is an unweighted mean of member
+      countries computed at import time.
+
+  - slug: fixed-broadband-subscriptions
+    canonical_name: "Fixed broadband subscriptions (per 100 people)"
+    unit: per_100_people
+    category: infrastructure
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Fixed broadband subscriptions per 100 people. Source: World Bank WDI
+      indicator IT.NET.BBND.P2 (ITU). G7 series is an unweighted mean of
+      member countries computed at import time.
+
+  - slug: rail-freight-tonne-km
+    canonical_name: "Rail freight (million ton-km)"
+    unit: tonne_km_millions
+    category: infrastructure
+    frequency: annual
+    aggregation_type: non_aggregable
+    higher_is_bad: false
+    description: >-
+      Goods transported by rail, in million metric tons times kilometres
+      travelled. Source: World Bank WDI indicator IS.RRS.GOOD.MT.K6. G7
+      series is an unweighted mean of member countries computed at import time.

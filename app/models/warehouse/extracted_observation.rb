@@ -1,6 +1,10 @@
 class Warehouse::ExtractedObservation < Warehouse::Record
   VALUE_TYPES     = %w[actual target projected plan budget].freeze
-  PERIOD_BASES    = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date].freeze
+  # ytd_q* quarters are relative to the observation's own reporting calendar
+  # (the jurisdiction's fiscal year, per jurisdictions.fiscal_year_start_month)
+  # — they don't imply the same calendar months across jurisdictions. Economy
+  # importers only write full_year and month.
+  PERIOD_BASES    = %w[full_year ytd_q1 ytd_q2 ytd_q3 as_of_date month quarter].freeze
   REVIEW_STATUSES = %w[pending approved rejected superseded].freeze
 
   self.table_name = "warehouse.extracted_observations"
@@ -60,8 +64,9 @@ class Warehouse::ExtractedObservation < Warehouse::Record
     numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 },
     allow_nil: true
   validates :measure_id, uniqueness: {
-    scope: [ :measurement_year, :value_type, :period_basis, :document_id,
-             :composition_id, :component_id, :observed_organization_id, :geo_boundary_id ]
+    scope: [ :measurement_year, :value_type, :period_basis, :period_start, :document_id,
+             :composition_id, :component_id, :observed_organization_id, :geo_boundary_id,
+             :jurisdiction_id ]
   }
 
   scope :pending,      -> { where(review_status: "pending") }

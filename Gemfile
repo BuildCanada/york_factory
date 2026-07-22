@@ -56,6 +56,12 @@ gem "rss"
 # HTTP client for fetching CSVs
 gem "httpx"
 
+# HubSpot CRM sync (contacts + marketing events)
+gem "hubspot-api-client", "~> 20.0"
+
+# HTTP client for HubSpot REST endpoints the SDK doesn't cover
+gem "http", "~> 5.3"
+
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 

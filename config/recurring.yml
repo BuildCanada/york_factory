@@ -24,3 +24,18 @@ production:
     # only when its own fetch_frequency interval has elapsed.
     class: Warehouse::FetchEconomySourcesJob
     schedule: every day at 7am
+  hubspot_bulk_sync_recent:
+    # command form: recurring args: hashes arrive with string keys, which the
+    # job's **options kwargs would silently drop.
+    command: "HubspotBulkSyncJob.perform_later(:recent, hours: 26)"
+    schedule: every day at 1am
+  hubspot_bulk_sync_all:
+    class: HubspotBulkSyncJob
+    args: [ all ]
+    schedule: at 3am every Sunday
+  luma_event_sync:
+    class: LumaEventSyncJob
+    schedule: every day at 6am
+  luma_daily_guest_sync:
+    class: LumaDailyGuestSyncJob
+    schedule: every day at 8am

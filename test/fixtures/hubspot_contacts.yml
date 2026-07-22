@@ -1,0 +1,41 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  hubspot_contact_id: "12345"
+  email: "john.doe@example.com"
+  firstname: "John"
+  lastname: "Doe"
+  phone: "+1234567890"
+  company: "Test Corp"
+  city: "Toronto"
+  country: "Canada"
+  website: "https://example.com"
+  background: "Software developer"
+  linkedin_url: "https://linkedin.com/in/johndoe"
+  bluesky_handle: "@johndoe.bsky.social"
+  twitter_handle: "@johndoe"
+  create_date: <%= 1.day.ago %>
+  last_activity_date: <%= 1.hour.ago %>
+  email_confirmed: true
+  raw_properties: '{"email": "john.doe@example.com", "firstname": "John"}'
+  synced_at: <%= 1.hour.ago %>
+
+two:
+  hubspot_contact_id: "67890"
+  email: "jane.smith@example.com"
+  firstname: "Jane"
+  lastname: "Smith"
+  phone: "+0987654321"
+  company: "Another Corp"
+  city: "Vancouver"
+  country: "Canada"
+  website: "https://janesmith.com"
+  background: "Designer"
+  linkedin_url: "https://linkedin.com/in/janesmith"
+  bluesky_handle: "@jane.bsky.social"
+  twitter_handle: "@janesmith"
+  create_date: <%= 2.days.ago %>
+  last_activity_date: <%= 2.hours.ago %>
+  email_confirmed: false
+  raw_properties: '{"email": "jane.smith@example.com", "firstname": "Jane"}'
+  synced_at: <%= 2.hours.ago %>

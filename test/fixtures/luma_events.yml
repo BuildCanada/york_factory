@@ -1,0 +1,29 @@
+upcoming_event:
+  luma_event_id: "evt-123456"
+  name: "Test Upcoming Event"
+  description: "A test event for the future"
+  start_at: <%= 1.week.from_now %>
+  end_at: <%= 1.week.from_now + 2.hours %>
+  timezone: "America/Toronto"
+  visibility: "public"
+  url: "https://lu.ma/test-event"
+  location_name: "Test Venue"
+  location_address: "123 Test St, Toronto, ON"
+  created_at_luma: <%= 1.day.ago %>
+  updated_at_luma: <%= 1.hour.ago %>
+  last_synced_at: <%= 30.minutes.ago %>
+
+past_event:
+  luma_event_id: "evt-789012"
+  name: "Test Past Event"
+  description: "A test event that already happened"
+  start_at: <%= 1.week.ago %>
+  end_at: <%= 1.week.ago + 2.hours %>
+  timezone: "America/Toronto"
+  visibility: "public"
+  url: "https://lu.ma/past-test-event"
+  location_name: "Past Venue"
+  location_address: "456 Past Ave, Toronto, ON"
+  created_at_luma: <%= 2.weeks.ago %>
+  updated_at_luma: <%= 1.week.ago %>
+  last_synced_at: <%= 1.week.ago %>

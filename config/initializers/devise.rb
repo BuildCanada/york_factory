@@ -18,7 +18,12 @@ Devise.setup do |config|
 
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
-  # config.parent_controller = 'DeviseController'
+  # ApplicationController is ActionController::API, which does NOT include
+  # ActionController::Flash — so `redirect_to ..., alert:` from the OmniAuth
+  # callbacks controller silently drops the alert. Anchor Devise's browser
+  # controllers to ActionController::Base (same base our custom Sessions/
+  # Passwords controllers use) so flash messages actually render.
+  config.parent_controller = "ActionController::Base"
 
   # ==> Mailer Configuration
   # Configure the e-mail address which will be shown in Devise::Mailer,
@@ -283,11 +288,14 @@ Devise.setup do |config|
     scope: "email,profile"
 
   # "Sign In with LinkedIn using OpenID Connect" via omniauth-linkedin-openid.
-  # The strategy pins LinkedIn's OIDC endpoints and scopes (openid profile
-  # email), so no scope/issuer/nonce handling is needed here.
+  # The strategy pins LinkedIn's OIDC endpoints; it defaults to "openid profile
+  # email". We request the full set of scopes the app is authorized for. Note:
+  # the strategy still reads identity from /v2/userinfo (openid/profile/email);
+  # the r_* scopes are granted at consent but back separate REST endpoints.
   config.omniauth :linkedin,
     Rails.application.credentials.dig(:linkedin, :client_id),
-    Rails.application.credentials.dig(:linkedin, :client_secret)
+    Rails.application.credentials.dig(:linkedin, :client_secret),
+    scope: "openid profile email r_profile_basicinfo r_verify r_events"
 
   # ==> JWT configuration
   config.jwt do |jwt|

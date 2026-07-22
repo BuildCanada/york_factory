@@ -4,9 +4,16 @@ module Users
   # Doorkeeper authorize flow can issue an authorization code to TradingPost.
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
     def linkedin
-      user = User.from_linkedin(request.env["omniauth.auth"])
+      auth = request.env["omniauth.auth"]
+      user = User.from_linkedin(auth)
 
       unless user.persisted?
+        Rails.logger.warn(
+          "[linkedin_sign_in] user not persisted: errors=#{user.errors.full_messages.inspect} " \
+          "uid=#{auth.uid.inspect} info_keys=#{auth.info.to_h.keys.inspect} " \
+          "email_present=#{auth.info.email.present?} name_present=#{user.name.present?} " \
+          "raw_info_keys=#{auth.dig('extra', 'raw_info').to_h.keys.inspect}"
+        )
         return redirect_to new_user_session_path,
           alert: user.errors.full_messages.to_sentence.presence || "Could not sign you in."
       end

@@ -286,8 +286,8 @@ Devise.setup do |config|
   # The strategy pins LinkedIn's OIDC endpoints and scopes (openid profile
   # email), so no scope/issuer/nonce handling is needed here.
   config.omniauth :linkedin,
-    ENV["LINKEDIN_CLIENT_ID"],
-    ENV["LINKEDIN_CLIENT_SECRET"]
+    Rails.application.credentials.dig(:linkedin, :client_id),
+    Rails.application.credentials.dig(:linkedin, :client_secret)
 
   # ==> JWT configuration
   config.jwt do |jwt|

@@ -45,23 +45,50 @@ class User < ApplicationRecord
     where(provider: auth[:provider], uid: auth[:uid]).first!
   end
 
-  # Upserts the user behind a LinkedIn OIDC identity from the OmniAuth auth hash
+  # Resolves the user behind a LinkedIn OIDC identity from the OmniAuth auth hash
   # (omniauth-linkedin-openid). The gem's info hash omits a combined name, so we
-  # read it from the raw userinfo response and fall back to first/last. Mirrors
-  # from_google.
+  # read it from the raw userinfo response and fall back to first/last.
+  #
+  # Resolution order:
+  #   1. Already linked — a user with this (provider, uid).
+  #   2. Existing account with the same email — link LinkedIn onto it so a
+  #      username/password user keeps their password login and gains LinkedIn.
+  #      Only merged when LinkedIn reports the email as verified, to avoid
+  #      linking (and thereby taking over) an account via an unverified email.
+  #   3. Brand-new user.
+  #
+  # Note: the schema stores a single provider/uid per user, so linking replaces
+  # any prior OAuth identity on the matched account (e.g. a pre-existing Google
+  # link); password-based accounts (provider nil) link cleanly.
   def self.from_linkedin(auth)
     info = auth.info
-    full_name = auth.dig("extra", "raw_info", "name").presence ||
+    raw = auth.dig("extra", "raw_info").to_h
+    full_name = raw["name"].presence ||
       [ info.first_name, info.last_name ].compact_blank.join(" ").presence
 
-    where(provider: "linkedin", uid: auth.uid).first_or_create do |user|
+    linked = find_by(provider: "linkedin", uid: auth.uid)
+    return linked if linked
+
+    if info.email.present? && raw["email_verified"] != false &&
+        (existing = find_by(email: info.email))
+      existing.provider = "linkedin"
+      existing.uid = auth.uid
+      existing.name = full_name if existing.name.blank?
+      existing.avatar_url = info.picture_url if existing.avatar_url.blank?
+      existing.save
+      return existing
+    end
+
+    create do |user|
+      user.provider = "linkedin"
+      user.uid = auth.uid
       user.email = info.email
       user.password = Devise.friendly_token[0, 20]
       user.name = full_name
       user.avatar_url = info.picture_url
     end
   rescue ActiveRecord::RecordNotUnique
-    where(provider: "linkedin", uid: auth.uid).first!
+    find_by(provider: "linkedin", uid: auth.uid) || find_by(email: info.email)
   end
 
   # True once the user has the data required to publicly engage with a memo.

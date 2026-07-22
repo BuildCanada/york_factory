@@ -90,6 +90,42 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "No Name", User.find_by(provider: "linkedin", uid: "li-noname").name
   end
 
+  test "from_linkedin links onto an existing account with the same email, preserving password login" do
+    existing = User.create!(email: "merge@example.com", password: "password123", name: "Merge Me")
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-merge",
+      info: { email: "merge@example.com", first_name: "Merge", last_name: "Me", picture_url: "https://x/m.jpg" },
+      extra: { "raw_info" => { "name" => "Merge Me", "email_verified" => true } }
+    )
+
+    assert_no_difference -> { User.count } do
+      User.from_linkedin(auth)
+    end
+
+    existing.reload
+    assert_equal "linkedin", existing.provider
+    assert_equal "li-merge", existing.uid
+    assert existing.valid_password?("password123"), "password login should be preserved after linking"
+  end
+
+  test "from_linkedin does not link onto an existing email when LinkedIn reports it unverified" do
+    User.create!(email: "unverified@example.com", password: "password123", name: "Real Owner")
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-unverified",
+      info: { email: "unverified@example.com", first_name: "Imp", last_name: "Oster" },
+      extra: { "raw_info" => { "name" => "Imp Oster", "email_verified" => false } }
+    )
+
+    result = nil
+    assert_no_difference -> { User.count } do
+      result = User.from_linkedin(auth)
+    end
+    refute result.persisted?, "must not link/create when the LinkedIn email is unverified"
+    assert_nil User.find_by(provider: "linkedin", uid: "li-unverified")
+  end
+
   test "admin does not require name or postal_code" do
     user = User.new(email: "noadmin@test.com", password: "password123", role: "admin")
     assert user.valid?

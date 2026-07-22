@@ -377,6 +377,105 @@ ALTER SEQUENCE public.friendly_id_slugs_id_seq OWNED BY public.friendly_id_slugs
 
 
 --
+-- Name: hubspot_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hubspot_contacts (
+    id bigint NOT NULL,
+    hubspot_contact_id character varying,
+    email character varying,
+    firstname character varying,
+    lastname character varying,
+    phone character varying,
+    company character varying,
+    city character varying,
+    country character varying,
+    website character varying,
+    background text,
+    linkedin_url character varying,
+    bluesky_handle character varying,
+    twitter_handle character varying,
+    create_date timestamp(6) without time zone,
+    last_activity_date timestamp(6) without time zone,
+    email_confirmed boolean,
+    raw_properties jsonb,
+    synced_at timestamp(6) without time zone,
+    member_source character varying,
+    joined_at timestamp(6) without time zone,
+    provincial_constituency character varying,
+    federal_constituency character varying,
+    zip character varying,
+    hs_state_code character varying,
+    state character varying,
+    hs_marketable_status character varying,
+    discord_join_date timestamp(6) without time zone,
+    is_member boolean,
+    discord_username character varying,
+    whatsapp_groups text,
+    twitter_subscriptions text,
+    substack_subscriptions text,
+    num_unique_conversion_events integer,
+    first_conversion_event_name character varying,
+    role boolean,
+    message character varying,
+    industry character varying,
+    jobtitle character varying,
+    house_rules boolean,
+    full_name character varying,
+    interests character varying,
+    skillsets character varying,
+    ip_country character varying,
+    ip_city character varying,
+    ip_state character varying,
+    the_basics character varying,
+    hs_timezone character varying,
+    time_commitment character varying,
+    substack_handle character varying,
+    hs_latest_source character varying,
+    associatedcompanyid character varying,
+    profession character varying,
+    skills text,
+    work_interest text,
+    about_accomplishments text,
+    non_partisan_agreement boolean,
+    postal_code character varying,
+    province character varying,
+    country_code character varying,
+    latitude numeric(10,7),
+    longitude numeric(10,7),
+    timezone character varying,
+    raw_constituencies jsonb,
+    newsletter_subscription boolean DEFAULT true,
+    hs_createdate timestamp(6) without time zone,
+    hs_object_source_label character varying,
+    hs_object_source_detail_1 character varying,
+    member_join_date timestamp(6) without time zone,
+    discord_display_name text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: hubspot_contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.hubspot_contacts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hubspot_contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.hubspot_contacts_id_seq OWNED BY public.hubspot_contacts.id;
+
+
+--
 -- Name: jwt_denylists; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -404,6 +503,91 @@ CREATE SEQUENCE public.jwt_denylists_id_seq
 --
 
 ALTER SEQUENCE public.jwt_denylists_id_seq OWNED BY public.jwt_denylists.id;
+
+
+--
+-- Name: luma_event_guests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.luma_event_guests (
+    id bigint NOT NULL,
+    luma_event_id bigint NOT NULL,
+    luma_user_id character varying NOT NULL,
+    name character varying,
+    email character varying,
+    approval_status character varying,
+    checked_in boolean DEFAULT false,
+    checked_in_at timestamp(6) without time zone,
+    registered_at timestamp(6) without time zone,
+    guest_data jsonb DEFAULT '{}'::jsonb,
+    last_synced_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: luma_event_guests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.luma_event_guests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: luma_event_guests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.luma_event_guests_id_seq OWNED BY public.luma_event_guests.id;
+
+
+--
+-- Name: luma_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.luma_events (
+    id bigint NOT NULL,
+    luma_event_id character varying NOT NULL,
+    name text,
+    description text,
+    start_at timestamp(6) without time zone,
+    end_at timestamp(6) without time zone,
+    timezone character varying,
+    visibility character varying,
+    url character varying,
+    location_name character varying,
+    location_address text,
+    created_at_luma timestamp(6) without time zone,
+    updated_at_luma timestamp(6) without time zone,
+    event_data jsonb DEFAULT '{}'::jsonb,
+    last_synced_at timestamp(6) without time zone,
+    hubspot_synced_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: luma_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.luma_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: luma_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.luma_events_id_seq OWNED BY public.luma_events.id;
 
 
 --
@@ -3158,10 +3342,31 @@ ALTER TABLE ONLY public.friendly_id_slugs ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
+-- Name: hubspot_contacts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hubspot_contacts ALTER COLUMN id SET DEFAULT nextval('public.hubspot_contacts_id_seq'::regclass);
+
+
+--
 -- Name: jwt_denylists id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.jwt_denylists ALTER COLUMN id SET DEFAULT nextval('public.jwt_denylists_id_seq'::regclass);
+
+
+--
+-- Name: luma_event_guests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.luma_event_guests ALTER COLUMN id SET DEFAULT nextval('public.luma_event_guests_id_seq'::regclass);
+
+
+--
+-- Name: luma_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.luma_events ALTER COLUMN id SET DEFAULT nextval('public.luma_events_id_seq'::regclass);
 
 
 --
@@ -3671,11 +3876,35 @@ ALTER TABLE ONLY public.friendly_id_slugs
 
 
 --
+-- Name: hubspot_contacts hubspot_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hubspot_contacts
+    ADD CONSTRAINT hubspot_contacts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: jwt_denylists jwt_denylists_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.jwt_denylists
     ADD CONSTRAINT jwt_denylists_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: luma_event_guests luma_event_guests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.luma_event_guests
+    ADD CONSTRAINT luma_event_guests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: luma_events luma_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.luma_events
+    ADD CONSTRAINT luma_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -4347,10 +4576,129 @@ CREATE INDEX index_friendly_id_slugs_on_sluggable_type_and_sluggable_id ON publi
 
 
 --
+-- Name: index_hubspot_contacts_on_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hubspot_contacts_on_email ON public.hubspot_contacts USING btree (email);
+
+
+--
+-- Name: index_hubspot_contacts_on_full_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hubspot_contacts_on_full_name ON public.hubspot_contacts USING btree (full_name);
+
+
+--
+-- Name: index_hubspot_contacts_on_hs_latest_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hubspot_contacts_on_hs_latest_source ON public.hubspot_contacts USING btree (hs_latest_source);
+
+
+--
+-- Name: index_hubspot_contacts_on_hubspot_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_hubspot_contacts_on_hubspot_contact_id ON public.hubspot_contacts USING btree (hubspot_contact_id);
+
+
+--
+-- Name: index_hubspot_contacts_on_postal_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hubspot_contacts_on_postal_code ON public.hubspot_contacts USING btree (postal_code);
+
+
+--
+-- Name: index_hubspot_contacts_on_synced_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hubspot_contacts_on_synced_at ON public.hubspot_contacts USING btree (synced_at);
+
+
+--
 -- Name: index_jwt_denylists_on_jti; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jwt_denylists_on_jti ON public.jwt_denylists USING btree (jti);
+
+
+--
+-- Name: index_luma_event_guests_on_approval_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_approval_status ON public.luma_event_guests USING btree (approval_status);
+
+
+--
+-- Name: index_luma_event_guests_on_checked_in; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_checked_in ON public.luma_event_guests USING btree (checked_in);
+
+
+--
+-- Name: index_luma_event_guests_on_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_email ON public.luma_event_guests USING btree (email);
+
+
+--
+-- Name: index_luma_event_guests_on_last_synced_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_last_synced_at ON public.luma_event_guests USING btree (last_synced_at);
+
+
+--
+-- Name: index_luma_event_guests_on_luma_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_luma_event_id ON public.luma_event_guests USING btree (luma_event_id);
+
+
+--
+-- Name: index_luma_event_guests_on_luma_event_id_and_luma_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_luma_event_guests_on_luma_event_id_and_luma_user_id ON public.luma_event_guests USING btree (luma_event_id, luma_user_id);
+
+
+--
+-- Name: index_luma_event_guests_on_luma_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_event_guests_on_luma_user_id ON public.luma_event_guests USING btree (luma_user_id);
+
+
+--
+-- Name: index_luma_events_on_last_synced_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_events_on_last_synced_at ON public.luma_events USING btree (last_synced_at);
+
+
+--
+-- Name: index_luma_events_on_luma_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_luma_events_on_luma_event_id ON public.luma_events USING btree (luma_event_id);
+
+
+--
+-- Name: index_luma_events_on_start_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_events_on_start_at ON public.luma_events USING btree (start_at);
+
+
+--
+-- Name: index_luma_events_on_visibility; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_luma_events_on_visibility ON public.luma_events USING btree (visibility);
 
 
 --
@@ -5724,6 +6072,14 @@ ALTER TABLE ONLY public.trade_barriers_agreements
 
 
 --
+-- Name: luma_event_guests fk_rails_871979e163; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.luma_event_guests
+    ADD CONSTRAINT fk_rails_871979e163 FOREIGN KEY (luma_event_id) REFERENCES public.luma_events(id);
+
+
+--
 -- Name: engagements fk_rails_8e08421d42; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6650,6 +7006,8 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722000002'),
+('20260722000001'),
 ('20260714000001'),
 ('20260710000001'),
 ('20260709000001'),

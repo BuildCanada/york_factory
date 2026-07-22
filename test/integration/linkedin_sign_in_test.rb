@@ -31,7 +31,7 @@ class LinkedinSignInTest < ActionDispatch::IntegrationTest
       follow_redirect! # OmniAuth test mode redirects the authorize POST to the callback
     end
 
-    user = User.find_by(provider: "linkedin", uid: "li-42")
+    user = Identity.find_by(provider: "linkedin", uid: "li-42")&.user
     assert_not_nil user
     assert_equal "nora@example.com", user.email
     assert_redirected_to profile_path
@@ -67,6 +67,6 @@ class LinkedinSignInTest < ActionDispatch::IntegrationTest
       follow_redirect! # to the OmniAuth failure endpoint
       follow_redirect! # failure endpoint redirects to the sign-in page
     end
-    assert_equal 0, User.where(provider: "linkedin").count
+    assert_equal 0, Identity.where(provider: "linkedin").count
   end
 end

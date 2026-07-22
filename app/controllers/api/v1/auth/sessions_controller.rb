@@ -52,7 +52,8 @@ module Api
             uid: data["sub"],
             email: data["email"],
             name: data["name"],
-            avatar_url: data["picture"]
+            avatar_url: data["picture"],
+            email_verified: data["email_verified"].to_s == "true"
           }
         rescue StandardError
           nil

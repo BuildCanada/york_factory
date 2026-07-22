@@ -4,6 +4,8 @@ class User < ApplicationRecord
          jwt_revocation_strategy: JwtDenylist,
          omniauth_providers: [ :google_oauth2, :linkedin ]
 
+  has_many :identities, dependent: :destroy
+
   enum :role, {
     member: "member",
     trade_barriers_editor: "trade_barriers_editor",
@@ -34,61 +36,73 @@ class User < ApplicationRecord
 
   before_save :normalize_postal_code
 
-  def self.from_google(auth)
-    where(provider: auth[:provider], uid: auth[:uid]).first_or_create do |user|
-      user.email = auth[:email]
-      user.password = Devise.friendly_token[0, 20]
-      user.name = auth[:name]
-      user.avatar_url = auth[:avatar_url]
-    end
-  rescue ActiveRecord::RecordNotUnique
-    where(provider: auth[:provider], uid: auth[:uid]).first!
-  end
-
-  # Resolves the user behind a LinkedIn OIDC identity from the OmniAuth auth hash
-  # (omniauth-linkedin-openid). The gem's info hash omits a combined name, so we
-  # read it from the raw userinfo response and fall back to first/last.
+  # Resolves (and links) the user behind an external OAuth identity. Supports
+  # multiple linked providers per user via the identities table.
   #
   # Resolution order:
-  #   1. Already linked — a user with this (provider, uid).
-  #   2. Existing account with the same email — link LinkedIn onto it so a
-  #      username/password user keeps their password login and gains LinkedIn.
-  #      Only merged when LinkedIn reports the email as verified, to avoid
-  #      linking (and thereby taking over) an account via an unverified email.
-  #   3. Brand-new user.
+  #   1. Identity already exists for (provider, uid) — return its user.
+  #   2. An existing account has the same email — link a new identity onto it,
+  #      preserving password login and any other already-linked providers. Only
+  #      merged when the provider reports the email verified, to avoid linking
+  #      (and thereby taking over) an account via an unverified address.
+  #   3. Brand-new user + its first identity.
   #
-  # Note: the schema stores a single provider/uid per user, so linking replaces
-  # any prior OAuth identity on the matched account (e.g. a pre-existing Google
-  # link); password-based accounts (provider nil) link cleanly.
+  # Returns the (possibly unpersisted) user; callers check #persisted?.
+  def self.from_omniauth(provider:, uid:, email:, name: nil, avatar_url: nil, email_verified: true)
+    if (identity = Identity.find_by(provider:, uid:))
+      return identity.user
+    end
+
+    user = find_by(email:) if email.present? && email_verified != false
+
+    unless user
+      user = new do |u|
+        u.email = email
+        u.password = Devise.friendly_token[0, 20]
+        u.name = name
+        u.avatar_url = avatar_url
+      end
+      return user unless user.save # validation failed (e.g. blank/duplicate email) — caller handles
+    end
+
+    user.identities.create(provider:, uid:, email:, avatar_url:)
+    user.update(name:) if user.name.blank? && name.present?
+    user.update(avatar_url:) if user.avatar_url.blank? && avatar_url.present?
+    user
+  rescue ActiveRecord::RecordNotUnique
+    Identity.find_by(provider:, uid:)&.user
+  end
+
+  # Google Sign-In (API JWT path). Receives a plain hash from the tokeninfo
+  # verification in Api::V1::Auth::SessionsController.
+  def self.from_google(auth)
+    from_omniauth(
+      provider: auth[:provider],
+      uid: auth[:uid],
+      email: auth[:email],
+      name: auth[:name],
+      avatar_url: auth[:avatar_url],
+      email_verified: auth.fetch(:email_verified, true)
+    )
+  end
+
+  # LinkedIn "Sign In with OpenID Connect" (browser OmniAuth path). The gem's
+  # info hash omits a combined name, so read it from the raw userinfo and fall
+  # back to first/last.
   def self.from_linkedin(auth)
     info = auth.info
     raw = auth.dig("extra", "raw_info").to_h
     full_name = raw["name"].presence ||
       [ info.first_name, info.last_name ].compact_blank.join(" ").presence
 
-    linked = find_by(provider: "linkedin", uid: auth.uid)
-    return linked if linked
-
-    if info.email.present? && raw["email_verified"] != false &&
-        (existing = find_by(email: info.email))
-      existing.provider = "linkedin"
-      existing.uid = auth.uid
-      existing.name = full_name if existing.name.blank?
-      existing.avatar_url = info.picture_url if existing.avatar_url.blank?
-      existing.save
-      return existing
-    end
-
-    create do |user|
-      user.provider = "linkedin"
-      user.uid = auth.uid
-      user.email = info.email
-      user.password = Devise.friendly_token[0, 20]
-      user.name = full_name
-      user.avatar_url = info.picture_url
-    end
-  rescue ActiveRecord::RecordNotUnique
-    find_by(provider: "linkedin", uid: auth.uid) || find_by(email: info.email)
+    from_omniauth(
+      provider: "linkedin",
+      uid: auth.uid,
+      email: info.email,
+      name: full_name,
+      avatar_url: info.picture_url,
+      email_verified: raw["email_verified"] != false
+    )
   end
 
   # True once the user has the data required to publicly engage with a memo.

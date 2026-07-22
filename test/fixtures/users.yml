@@ -9,8 +9,6 @@ admin:
   encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
   name: Admin User
   role: admin
-  provider: google_oauth2
-  uid: "123456"
 
 member:
   email: member@example.com

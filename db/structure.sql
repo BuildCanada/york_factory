@@ -476,6 +476,41 @@ ALTER SEQUENCE public.hubspot_contacts_id_seq OWNED BY public.hubspot_contacts.i
 
 
 --
+-- Name: identities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.identities (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    provider character varying NOT NULL,
+    uid character varying NOT NULL,
+    email character varying,
+    avatar_url character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: identities_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.identities_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: identities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.identities_id_seq OWNED BY public.identities.id;
+
+
+--
 -- Name: jwt_denylists; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1415,12 +1450,10 @@ CREATE TABLE public.users (
     last_sign_in_at timestamp(6) without time zone,
     last_sign_in_ip character varying,
     name character varying,
-    provider character varying,
     remember_created_at timestamp(6) without time zone,
     reset_password_sent_at timestamp(6) without time zone,
     reset_password_token character varying,
     sign_in_count integer DEFAULT 0 NOT NULL,
-    uid character varying,
     updated_at timestamp(6) without time zone NOT NULL,
     role character varying DEFAULT 'member'::character varying NOT NULL,
     postal_code character varying,
@@ -3349,6 +3382,13 @@ ALTER TABLE ONLY public.hubspot_contacts ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: identities id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.identities ALTER COLUMN id SET DEFAULT nextval('public.identities_id_seq'::regclass);
+
+
+--
 -- Name: jwt_denylists id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3881,6 +3921,14 @@ ALTER TABLE ONLY public.friendly_id_slugs
 
 ALTER TABLE ONLY public.hubspot_contacts
     ADD CONSTRAINT hubspot_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: identities identities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.identities
+    ADD CONSTRAINT identities_pkey PRIMARY KEY (id);
 
 
 --
@@ -4618,6 +4666,20 @@ CREATE INDEX index_hubspot_contacts_on_synced_at ON public.hubspot_contacts USIN
 
 
 --
+-- Name: index_identities_on_provider_and_uid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_identities_on_provider_and_uid ON public.identities USING btree (provider, uid);
+
+
+--
+-- Name: index_identities_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_identities_on_user_id ON public.identities USING btree (user_id);
+
+
+--
 -- Name: index_jwt_denylists_on_jti; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4972,13 +5034,6 @@ CREATE UNIQUE INDEX index_trade_barriers_themes_on_name ON public.trade_barriers
 --
 
 CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
-
-
---
--- Name: index_users_on_provider_and_uid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_users_on_provider_and_uid ON public.users USING btree (provider, uid);
 
 
 --
@@ -6032,6 +6087,14 @@ ALTER TABLE ONLY public.trade_barriers_agreement_histories
 
 
 --
+-- Name: identities fk_rails_5373344100; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.identities
+    ADD CONSTRAINT fk_rails_5373344100 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: engagements fk_rails_53a9175bb0; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7006,6 +7069,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722000003'),
 ('20260722000002'),
 ('20260722000001'),
 ('20260714000001'),

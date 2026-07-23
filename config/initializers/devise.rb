@@ -295,7 +295,7 @@ Devise.setup do |config|
   config.omniauth :linkedin,
     Rails.application.credentials.dig(:linkedin, :client_id),
     Rails.application.credentials.dig(:linkedin, :client_secret),
-    scope: "openid profile email r_profile_basicinfo r_verify r_events"
+    scope: "openid profile email r_profile_basicinfo r_verify"
 
   # ==> JWT configuration
   config.jwt do |jwt|

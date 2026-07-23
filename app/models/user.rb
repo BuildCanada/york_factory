@@ -47,9 +47,13 @@ class User < ApplicationRecord
   #      (and thereby taking over) an account via an unverified address.
   #   3. Brand-new user + its first identity.
   #
+  # `raw` is the full provider payload, stored verbatim on the identity and
+  # backfilled onto an existing identity that doesn't have it yet.
+  #
   # Returns the (possibly unpersisted) user; callers check #persisted?.
-  def self.from_omniauth(provider:, uid:, email:, name: nil, avatar_url: nil, email_verified: true)
+  def self.from_omniauth(provider:, uid:, email:, name: nil, avatar_url: nil, email_verified: true, raw: nil)
     if (identity = Identity.find_by(provider:, uid:))
+      identity.update(raw:) if raw.present? && identity.raw.blank?
       return identity.user
     end
 
@@ -65,7 +69,7 @@ class User < ApplicationRecord
       return user unless user.save # validation failed (e.g. blank/duplicate email) — caller handles
     end
 
-    user.identities.create(provider:, uid:, email:, avatar_url:)
+    user.identities.create(provider:, uid:, email:, avatar_url:, raw:)
     user.update(name:) if user.name.blank? && name.present?
     user.update(avatar_url:) if user.avatar_url.blank? && avatar_url.present?
     user
@@ -82,7 +86,8 @@ class User < ApplicationRecord
       email: auth[:email],
       name: auth[:name],
       avatar_url: auth[:avatar_url],
-      email_verified: auth.fetch(:email_verified, true)
+      email_verified: auth.fetch(:email_verified, true),
+      raw: auth.to_h
     )
   end
 
@@ -101,7 +106,8 @@ class User < ApplicationRecord
       email: info.email,
       name: full_name,
       avatar_url: info.picture_url,
-      email_verified: raw["email_verified"] != false
+      email_verified: raw["email_verified"] != false,
+      raw: auth.to_h
     )
   end
 

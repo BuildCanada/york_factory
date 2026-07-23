@@ -71,6 +71,9 @@ class UserTest < ActiveSupport::TestCase
     end
     identity = Identity.find_by(provider: "linkedin", uid: "li-abc")
     assert_not_nil identity
+    # Full OAuth payload stored raw on the identity (not on the user).
+    assert_equal "Lin Kedin", identity.raw.dig("extra", "raw_info", "name")
+    assert_equal "lin@example.com", identity.raw.dig("info", "email")
     user = identity.user
     assert_equal "lin@example.com", user.email
     assert_equal "Lin Kedin", user.name

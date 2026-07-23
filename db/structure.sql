@@ -487,7 +487,8 @@ CREATE TABLE public.identities (
     email character varying,
     avatar_url character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    raw jsonb
 );
 
 
@@ -7069,6 +7070,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723000001'),
 ('20260722000003'),
 ('20260722000002'),
 ('20260722000001'),

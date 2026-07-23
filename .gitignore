@@ -37,3 +37,6 @@
 .DS_Store
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Postal code source data lives in the misc_data R2 bucket
+CanadianPostalCodes202403.csv

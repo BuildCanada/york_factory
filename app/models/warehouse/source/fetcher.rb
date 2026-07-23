@@ -49,6 +49,9 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       with_retries { Warehouse::Source::Fetcher::WorldBankDownload.new(source.url).call }
     when "statcan_json"
       with_retries { Warehouse::Source::Fetcher::StatcanVectors.new(source.url).call }
+    when "toronto_candidates_json"
+      # The election year comes from the source name suffix (election_toronto_2026).
+      with_retries { Warehouse::Source::Fetcher::TorontoCandidateList.new(source.url, year: source.name[/(\d{4})\z/, 1]).call }
     else
       download_with_retries
     end
@@ -119,6 +122,8 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.ircc_admissions_loader.load(csv_content: body)
     when /^econ_owid/
       ingestion.owid_econ_loader.load(csv_content: body)
+    when /^election_toronto/
+      ingestion.toronto_candidates_loader.load(json_content: body)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

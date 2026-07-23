@@ -13,6 +13,7 @@ class Warehouse::Jurisdiction < Warehouse::Record
 
   has_many :organizations, dependent: :restrict_with_error
   has_many :kpi_documents, dependent: :restrict_with_error
+  has_many :elections, dependent: :restrict_with_error
 
   validates :name, :code, :level, :slug, presence: true
   validates :code, uniqueness: true

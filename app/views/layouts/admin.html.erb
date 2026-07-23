@@ -227,6 +227,15 @@
 
         <div class="sidebar-divider"></div>
 
+        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="elections">
+          Elections <span class="chevron open">&#9654;</span>
+        </div>
+        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="elections">
+          <li><a href="/admin/elections" class="<%= 'active' if controller_name == 'elections' %>">Elections</a></li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+
         <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="metrics">
           Metrics <span class="chevron open">&#9654;</span>
         </div>

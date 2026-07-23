@@ -32,12 +32,13 @@ RawIngestion::RelationshipLoader  → DA→parent geographic relationships from 
 RawIngestion::PopulationLoader    → DA population data for crosswalk weighting
 RawIngestion::AddressLoader       → Open Database of Addresses (ZIP→CSV import)
 RawIngestion::IrccAdmissionsLoader → IRCC PR admissions by immigration category (monthly TSV)
+RawIngestion::TorontoCandidatesLoader → Toronto election candidates into elections/races/candidates tables
 Organization::EntityResolver      → shared entity resolution cascade
 ```
 
 ## CMS API
 ```
-API v1: memos, posts, builders, team_members, tools, faqs, feed_items, testimonials, subscribers, uploads
+API v1: memos, posts, builders, team_members, tools, faqs, feed_items, testimonials, subscribers, uploads, elections
 Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
 ```
 

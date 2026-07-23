@@ -19,6 +19,10 @@ class R2Storage
     @client.get_object(bucket: @bucket, key: key).body.read
   end
 
+  def download_to(key:, path:)
+    @client.get_object(bucket: @bucket, key: key, response_target: path)
+  end
+
   def exists?(key:)
     @client.head_object(bucket: @bucket, key: key)
     true

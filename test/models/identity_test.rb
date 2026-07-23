@@ -7,13 +7,17 @@ class IdentityTest < ActiveSupport::TestCase
     )
   end
 
-  # Temporarily replaces Net::HTTP.post_form with a stub returning `response`.
-  def stubbing_post_form(response)
-    original = Net::HTTP.method(:post_form)
-    Net::HTTP.define_singleton_method(:post_form) { |*_args| response }
+  # Temporarily replaces a class method with a stub returning `value`.
+  def stubbing(klass, method, value)
+    original = klass.method(method)
+    klass.define_singleton_method(method) { |*_args| value }
     yield
   ensure
-    Net::HTTP.singleton_class.send(:define_method, :post_form, original)
+    klass.singleton_class.send(:define_method, method, original)
+  end
+
+  def stubbing_post_form(response, &)
+    stubbing(Net::HTTP, :post_form, response, &)
   end
 
   test "access_token and refresh_token are encrypted at rest" do
@@ -46,8 +50,11 @@ class IdentityTest < ActiveSupport::TestCase
     response.instance_variable_set(:@body,
       { access_token: "new-tok", refresh_token: "ref-2", expires_in: 3600 }.to_json)
 
-    stubbing_post_form(response) do
-      assert identity.refresh!
+    # Stub client creds so the test doesn't depend on decryptable credentials (CI has none).
+    stubbing(Identity, :client_credentials, [ "client-id", "client-secret" ]) do
+      stubbing_post_form(response) do
+        assert identity.refresh!
+      end
     end
 
     identity.reload

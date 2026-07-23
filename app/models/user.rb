@@ -47,13 +47,19 @@ class User < ApplicationRecord
   #      (and thereby taking over) an account via an unverified address.
   #   3. Brand-new user + its first identity.
   #
-  # `raw` is the full provider payload, stored verbatim on the identity and
-  # backfilled onto an existing identity that doesn't have it yet.
+  # `raw` is the provider payload (with credentials stripped — tokens live in
+  # the dedicated encrypted columns), stored verbatim on the identity and
+  # backfilled onto an existing identity that doesn't have it yet. `credentials`
+  # is the OmniAuth credentials block ({ token:, refresh_token:, expires_at: });
+  # its tokens are refreshed on the identity on every login.
   #
   # Returns the (possibly unpersisted) user; callers check #persisted?.
-  def self.from_omniauth(provider:, uid:, email:, name: nil, avatar_url: nil, email_verified: true, raw: nil)
+  def self.from_omniauth(provider:, uid:, email:, name: nil, avatar_url: nil, email_verified: true, raw: nil, credentials: nil)
+    tokens = token_attributes(credentials)
+
     if (identity = Identity.find_by(provider:, uid:))
       identity.update(raw:) if raw.present? && identity.raw.blank?
+      identity.update(tokens) if tokens.present?
       return identity.user
     end
 
@@ -69,7 +75,7 @@ class User < ApplicationRecord
       return user unless user.save # validation failed (e.g. blank/duplicate email) — caller handles
     end
 
-    user.identities.create(provider:, uid:, email:, avatar_url:, raw:)
+    user.identities.create(provider:, uid:, email:, avatar_url:, raw:, **tokens)
     user.update(name:) if user.name.blank? && name.present?
     user.update(avatar_url:) if user.avatar_url.blank? && avatar_url.present?
     user
@@ -77,8 +83,21 @@ class User < ApplicationRecord
     Identity.find_by(provider:, uid:)&.user
   end
 
+  # Maps an OmniAuth credentials block to Identity token columns. Compacted so a
+  # missing field never overwrites a previously stored token on re-login.
+  def self.token_attributes(credentials)
+    return {} if credentials.blank?
+
+    creds = credentials.symbolize_keys
+    {
+      access_token: creds[:token],
+      refresh_token: creds[:refresh_token],
+      token_expires_at: (Time.at(creds[:expires_at]) if creds[:expires_at].present?)
+    }.compact
+  end
+
   # Google Sign-In (API JWT path). Receives a plain hash from the tokeninfo
-  # verification in Api::V1::Auth::SessionsController.
+  # verification in Api::V1::Auth::SessionsController (no OAuth token to store).
   def self.from_google(auth)
     from_omniauth(
       provider: auth[:provider],
@@ -87,18 +106,22 @@ class User < ApplicationRecord
       name: auth[:name],
       avatar_url: auth[:avatar_url],
       email_verified: auth.fetch(:email_verified, true),
-      raw: auth.to_h
+      raw: auth.to_h.except(:credentials, "credentials")
     )
   end
 
   # LinkedIn "Sign In with OpenID Connect" (browser OmniAuth path). The gem's
   # info hash omits a combined name, so read it from the raw userinfo and fall
-  # back to first/last.
+  # back to first/last. The access token is stripped from `raw` and stored in
+  # the identity's encrypted token columns instead.
   def self.from_linkedin(auth)
     info = auth.info
     raw = auth.dig("extra", "raw_info").to_h
     full_name = raw["name"].presence ||
       [ info.first_name, info.last_name ].compact_blank.join(" ").presence
+
+    payload = auth.to_h
+    credentials = payload.delete("credentials")
 
     from_omniauth(
       provider: "linkedin",
@@ -107,7 +130,8 @@ class User < ApplicationRecord
       name: full_name,
       avatar_url: info.picture_url,
       email_verified: raw["email_verified"] != false,
-      raw: auth.to_h
+      raw: payload,
+      credentials: credentials
     )
   end
 

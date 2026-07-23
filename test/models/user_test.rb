@@ -59,11 +59,12 @@ class UserTest < ActiveSupport::TestCase
     refute User.new.engagement_ready?
   end
 
-  test "from_linkedin creates a member with a linkedin identity" do
+  test "from_linkedin creates a member, stores tokens, and strips credentials from raw" do
     auth = OmniAuth::AuthHash.new(
       provider: "linkedin",
       uid: "li-abc",
       info: { email: "lin@example.com", first_name: "Lin", last_name: "Kedin", picture_url: "https://x/p.jpg" },
+      credentials: { token: "acc-tok", refresh_token: "ref-tok", expires_at: 1_900_000_000 },
       extra: { "raw_info" => { "name" => "Lin Kedin" } }
     )
     assert_difference -> { User.count }, 1 do
@@ -71,9 +72,14 @@ class UserTest < ActiveSupport::TestCase
     end
     identity = Identity.find_by(provider: "linkedin", uid: "li-abc")
     assert_not_nil identity
-    # Full OAuth payload stored raw on the identity (not on the user).
+    # Provider payload stored raw on the identity (not on the user), credentials removed.
     assert_equal "Lin Kedin", identity.raw.dig("extra", "raw_info", "name")
     assert_equal "lin@example.com", identity.raw.dig("info", "email")
+    refute identity.raw.key?("credentials"), "credentials must be stripped from raw"
+    # Tokens live in the dedicated (encrypted) columns.
+    assert_equal "acc-tok", identity.access_token
+    assert_equal "ref-tok", identity.refresh_token
+    assert_equal Time.at(1_900_000_000), identity.token_expires_at
     user = identity.user
     assert_equal "lin@example.com", user.email
     assert_equal "Lin Kedin", user.name

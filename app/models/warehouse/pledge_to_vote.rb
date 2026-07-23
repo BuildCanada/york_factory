@@ -14,4 +14,16 @@ class Warehouse::PledgeToVote < Warehouse::Record
   validates :subscriber_id, uniqueness: { scope: :election_id }
 
   before_validation { self.pledged_at ||= Time.current }
+  before_create :generate_share_token
+
+  private
+
+  # Public identifier for the pledge's shareable page — random rather than
+  # the sequential id so pledge URLs can't be enumerated.
+  def generate_share_token
+    self.share_token ||= loop do
+      token = SecureRandom.alphanumeric(10).downcase
+      break token unless self.class.exists?(share_token: token)
+    end
+  end
 end

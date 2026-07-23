@@ -3236,7 +3236,8 @@ CREATE TABLE warehouse.pledges_to_vote (
     region character varying NOT NULL,
     pledged_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    share_token character varying NOT NULL
 );
 
 
@@ -3257,6 +3258,42 @@ CREATE SEQUENCE warehouse.pledges_to_vote_id_seq
 --
 
 ALTER SEQUENCE warehouse.pledges_to_vote_id_seq OWNED BY warehouse.pledges_to_vote.id;
+
+
+--
+-- Name: postal_codes; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.postal_codes (
+    id bigint NOT NULL,
+    postal_code character varying(7) NOT NULL,
+    city character varying,
+    province_code character varying(2),
+    time_zone_offset integer,
+    latitude numeric(10,7) NOT NULL,
+    longitude numeric(11,7) NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: postal_codes_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.postal_codes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: postal_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.postal_codes_id_seq OWNED BY warehouse.postal_codes.id;
 
 
 --
@@ -3991,6 +4028,13 @@ ALTER TABLE ONLY warehouse.pledges_to_vote ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: postal_codes id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.postal_codes ALTER COLUMN id SET DEFAULT nextval('warehouse.postal_codes_id_seq'::regclass);
+
+
+--
 -- Name: raw_ingestions id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -4646,6 +4690,14 @@ ALTER TABLE ONLY warehouse.organizations
 
 ALTER TABLE ONLY warehouse.pledges_to_vote
     ADD CONSTRAINT pledges_to_vote_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: postal_codes postal_codes_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.postal_codes
+    ADD CONSTRAINT postal_codes_pkey PRIMARY KEY (id);
 
 
 --
@@ -5973,6 +6025,20 @@ CREATE INDEX idx_pledges_to_vote_subscriber ON warehouse.pledges_to_vote USING b
 
 
 --
+-- Name: idx_postal_codes_lat_lng; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_postal_codes_lat_lng ON warehouse.postal_codes USING btree (latitude, longitude);
+
+
+--
+-- Name: idx_postal_codes_province_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_postal_codes_province_code ON warehouse.postal_codes USING btree (province_code);
+
+
+--
 -- Name: idx_review_decisions_created; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6299,6 +6365,20 @@ CREATE UNIQUE INDEX ux_election_races_identity ON warehouse.election_races USING
 --
 
 CREATE UNIQUE INDEX ux_elections_slug ON warehouse.elections USING btree (slug);
+
+
+--
+-- Name: ux_pledges_to_vote_share_token; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_pledges_to_vote_share_token ON warehouse.pledges_to_vote USING btree (share_token);
+
+
+--
+-- Name: ux_postal_codes_postal_code; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_postal_codes_postal_code ON warehouse.postal_codes USING btree (postal_code);
 
 
 --
@@ -7396,6 +7476,8 @@ SET search_path TO public,warehouse;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260723000002'),
 ('20260723000001'),
+('20260722160000'),
+('20260722153000'),
 ('20260722000003'),
 ('20260722000002'),
 ('20260722000001'),

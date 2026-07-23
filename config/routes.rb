@@ -64,7 +64,7 @@ Rails.application.routes.draw do
       resources :uploads, only: [ :create ]
 
       resources :elections, only: [ :index, :show ], param: :slug do
-        resources :pledges, only: [ :index, :create ], controller: "election_pledges"
+        resources :pledges, only: [ :index, :create, :show ], controller: "election_pledges"
       end
 
       namespace :geo do

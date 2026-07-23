@@ -213,6 +213,72 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "post API returns draft content for an admin's token" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @admin.id,
+      expires_in: 7200
+    )
+
+    get api_v1_post_url(slug: posts(:draft_post).slug),
+      headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :success
+    assert_equal "draft-post", response.parsed_body["slug"]
+  end
+
+  test "post API returns 404 for draft without a preview token" do
+    get api_v1_post_url(slug: posts(:draft_post).slug)
+    assert_response :not_found
+  end
+
+  test "post API rejects a non-admin's token for preview" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @member.id,
+      expires_in: 7200
+    )
+
+    get api_v1_post_url(slug: posts(:draft_post).slug),
+      headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :not_found
+  end
+
+  test "builder API returns draft content with published_at for an admin's token" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @admin.id,
+      expires_in: 7200
+    )
+
+    get api_v1_builder_url(slug: builders(:draft_builder).slug),
+      headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :success
+    assert_equal "draft-builder", response.parsed_body["slug"]
+    assert response.parsed_body.key?("published_at")
+    assert_nil response.parsed_body["published_at"]
+  end
+
+  test "builder API returns 404 for draft without a preview token" do
+    get api_v1_builder_url(slug: builders(:draft_builder).slug)
+    assert_response :not_found
+  end
+
+  test "builder API rejects a non-admin's token for preview" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public",
+      resource_owner_id: @member.id,
+      expires_in: 7200
+    )
+
+    get api_v1_builder_url(slug: builders(:draft_builder).slug),
+      headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :not_found
+  end
+
   private
 
   def sign_in_as(user)

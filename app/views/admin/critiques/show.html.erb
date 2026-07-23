@@ -16,7 +16,9 @@
     <div class="value" style="font-size: 1rem;"><%= @critique.author_name %></div>
     <div class="text-muted mono"><%= @critique.user&.email %></div>
     <div class="text-muted mono">postal: <%= @critique.author_postal_code %></div>
-    <div class="text-muted mono"><%= @critique.user&.provider %> · uid <%= @critique.user&.uid %></div>
+    <div class="text-muted mono">
+      <%= @critique.user&.identities&.map { |i| "#{i.provider} · uid #{i.uid}" }&.join(" · ").presence || "password" %>
+    </div>
   </div>
   <div class="card">
     <div class="label">Status</div>

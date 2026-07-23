@@ -59,23 +59,34 @@ class UserTest < ActiveSupport::TestCase
     refute User.new.engagement_ready?
   end
 
-  test "from_linkedin upserts a member by provider and uid" do
+  test "from_linkedin creates a member, stores tokens, and strips credentials from raw" do
     auth = OmniAuth::AuthHash.new(
       provider: "linkedin",
       uid: "li-abc",
       info: { email: "lin@example.com", first_name: "Lin", last_name: "Kedin", picture_url: "https://x/p.jpg" },
+      credentials: { token: "acc-tok", refresh_token: "ref-tok", expires_at: 1_900_000_000 },
       extra: { "raw_info" => { "name" => "Lin Kedin" } }
     )
     assert_difference -> { User.count }, 1 do
       User.from_linkedin(auth)
     end
-    user = User.find_by(provider: "linkedin", uid: "li-abc")
+    identity = Identity.find_by(provider: "linkedin", uid: "li-abc")
+    assert_not_nil identity
+    # Provider payload stored raw on the identity (not on the user), credentials removed.
+    assert_equal "Lin Kedin", identity.raw.dig("extra", "raw_info", "name")
+    assert_equal "lin@example.com", identity.raw.dig("info", "email")
+    refute identity.raw.key?("credentials"), "credentials must be stripped from raw"
+    # Tokens live in the dedicated (encrypted) columns.
+    assert_equal "acc-tok", identity.access_token
+    assert_equal "ref-tok", identity.refresh_token
+    assert_equal Time.at(1_900_000_000), identity.token_expires_at
+    user = identity.user
     assert_equal "lin@example.com", user.email
     assert_equal "Lin Kedin", user.name
     assert_equal "https://x/p.jpg", user.avatar_url
     assert user.member?
 
-    assert_no_difference -> { User.count } do
+    assert_no_difference [ -> { User.count }, -> { Identity.count } ] do
       User.from_linkedin(auth)
     end
   end
@@ -87,7 +98,56 @@ class UserTest < ActiveSupport::TestCase
       info: { email: "nn@example.com", first_name: "No", last_name: "Name", picture_url: nil }
     )
     User.from_linkedin(auth)
-    assert_equal "No Name", User.find_by(provider: "linkedin", uid: "li-noname").name
+    assert_equal "No Name", Identity.find_by(provider: "linkedin", uid: "li-noname").user.name
+  end
+
+  test "from_linkedin links an identity onto an existing account with the same email, preserving password login" do
+    existing = User.create!(email: "merge@example.com", password: "password123", name: "Merge Me")
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-merge",
+      info: { email: "merge@example.com", first_name: "Merge", last_name: "Me", picture_url: "https://x/m.jpg" },
+      extra: { "raw_info" => { "name" => "Merge Me", "email_verified" => true } }
+    )
+
+    assert_no_difference -> { User.count } do
+      assert_difference -> { Identity.count }, 1 do
+        User.from_linkedin(auth)
+      end
+    end
+
+    existing.reload
+    assert_equal existing, Identity.find_by(provider: "linkedin", uid: "li-merge").user
+    assert existing.valid_password?("password123"), "password login should be preserved after linking"
+  end
+
+  test "a user can link multiple providers" do
+    user = User.create!(email: "multi@example.com", password: "password123", name: "Multi Link")
+    User.from_google(provider: "google_oauth2", uid: "g-1", email: "multi@example.com", name: "Multi Link", email_verified: true)
+    User.from_linkedin(OmniAuth::AuthHash.new(
+      provider: "linkedin", uid: "li-multi",
+      info: { email: "multi@example.com", first_name: "Multi", last_name: "Link" },
+      extra: { "raw_info" => { "name" => "Multi Link", "email_verified" => true } }
+    ))
+
+    assert_equal %w[google_oauth2 linkedin], user.identities.order(:provider).pluck(:provider)
+  end
+
+  test "from_linkedin does not link onto an existing email when LinkedIn reports it unverified" do
+    User.create!(email: "unverified@example.com", password: "password123", name: "Real Owner")
+    auth = OmniAuth::AuthHash.new(
+      provider: "linkedin",
+      uid: "li-unverified",
+      info: { email: "unverified@example.com", first_name: "Imp", last_name: "Oster" },
+      extra: { "raw_info" => { "name" => "Imp Oster", "email_verified" => false } }
+    )
+
+    result = nil
+    assert_no_difference [ -> { User.count }, -> { Identity.count } ] do
+      result = User.from_linkedin(auth)
+    end
+    refute result.persisted?, "must not link/create when the LinkedIn email is unverified"
+    assert_nil Identity.find_by(provider: "linkedin", uid: "li-unverified")
   end
 
   test "admin does not require name or postal_code" do

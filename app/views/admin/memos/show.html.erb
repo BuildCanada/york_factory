@@ -2,7 +2,7 @@
   <h1><%= @memo.title_en || "Untitled" %></h1>
   <div class="btn-group">
     <% if !@memo.published? %>
-      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/memos/<%= @memo.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+      <a href="<%= preview_url("/memos/#{@memo.slug}") %>" target="_blank" class="btn btn-sm">Preview</a>
     <% end %>
     <a href="<%= edit_admin_memo_path(@memo) %>" class="btn btn-sm">Edit</a>
     <%= link_to "Delete", admin_memo_path(@memo), data: { turbo_method: :delete, turbo_confirm: "Delete this memo?" }, class: "btn btn-sm btn-danger" %>

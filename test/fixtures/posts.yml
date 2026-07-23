@@ -12,3 +12,10 @@ hidden_post:
   title_en: Hidden Post
   hidden: true
   published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft_post:
+  slug: draft-post
+  title_en: Draft Post
+  title_fr: Article brouillon
+  hidden: false
+  published_at: null

@@ -62,6 +62,7 @@ module Api
           title: builder.title,
           byline: builder.byline,
           quote: builder.quote,
+          published_at: builder.published_at,
           image_url: image_url(builder.image)
         }
         if full

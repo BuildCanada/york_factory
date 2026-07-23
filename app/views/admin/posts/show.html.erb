@@ -2,7 +2,7 @@
   <h1><%= @post.title_en || "Untitled" %></h1>
   <div class="btn-group">
     <% if !@post.published? %>
-      <a href="<%= ENV['NEXTJS_URL'] %>/api/draft?secret=<%= ENV['DRAFT_MODE_SECRET'] %>&slug=/posts/<%= @post.slug %>" target="_blank" class="btn btn-sm">Preview</a>
+      <a href="<%= preview_url("/posts/#{@post.slug}") %>" target="_blank" class="btn btn-sm">Preview</a>
     <% end %>
     <a href="<%= edit_admin_post_path(@post) %>" class="btn btn-sm">Edit</a>
     <%= link_to "Delete", admin_post_path(@post), data: { turbo_method: :delete, turbo_confirm: "Delete this post?" }, class: "btn btn-sm btn-danger" %>

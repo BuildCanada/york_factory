@@ -18,6 +18,14 @@ class Api::V1::SubscribersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Subscribed", data["message"]
   end
 
+  test "create enqueues a HubSpot form submission for the new subscriber" do
+    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob) do
+      post api_v1_subscribers_url, params: {
+        subscriber: { email: "syncme@example.com" }
+      }, as: :json
+    end
+  end
+
   test "create with duplicate email returns 422" do
     assert_no_difference "Subscriber.count" do
       post api_v1_subscribers_url, params: {

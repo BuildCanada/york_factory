@@ -44,6 +44,13 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "create enqueues a HubSpot form submission for the pledging subscriber" do
+    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob) do
+      post api_v1_election_pledges_url("toronto-2026"),
+        params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5" }
+    end
+  end
+
   test "create reuses an existing subscriber without overwriting their name or postal code" do
     existing = Subscriber.create!(
       email: "voter@example.com", first_name: "Jane", last_name: "Voter", postal_code: "M4B 1B3"

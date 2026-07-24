@@ -33,6 +33,19 @@ module Api
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
         end
 
+        # Only City of Toronto residents can pledge in this election. Every
+        # Toronto postal code — and only Toronto's — falls in the "M" forward
+        # sortation area, so the first letter is a reliable boundary check.
+        # We still keep the subscriber (newsletter signup) but record no
+        # pledge, and signal the client to redirect them to explore instead.
+        unless toronto_postal_code?
+          return render json: {
+            outside_toronto: true,
+            subscribed: true,
+            name: display_name(subscriber)
+          }, status: :ok
+        end
+
         pledge = @election.pledges_to_vote.find_or_initialize_by(subscriber: subscriber)
         newly_pledged = pledge.new_record?
         pledge.assign_attributes(region: params[:region], pledged_at: Time.current)
@@ -74,6 +87,17 @@ module Api
         postal_code = params[:postal_code].to_s.strip.upcase
         subscriber.postal_code = postal_code if subscriber.postal_code.blank? && postal_code.present?
         subscriber
+      end
+
+      # True when the submitted postal code is inside the City of Toronto (an
+      # "M" forward sortation area). A blank/absent postal code takes the
+      # legacy path (e.g. ward-scoped pledges that never collected one) and is
+      # allowed through — the public pledge form always supplies one.
+      def toronto_postal_code?
+        postal = params[:postal_code].to_s.strip
+        return true if postal.blank?
+
+        postal.upcase.start_with?("M")
       end
 
       def split_name(raw)

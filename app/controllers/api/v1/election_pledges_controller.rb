@@ -89,6 +89,11 @@ module Api
 
         postal_code = params[:postal_code].to_s.strip.upcase
         subscriber.postal_code = postal_code if subscriber.postal_code.blank? && postal_code.present?
+
+        subscriber.source ||= "pledge"
+        %i[placement page_uri page_name hubspot_utk ip_address].each do |attr|
+          subscriber[attr] = params[attr] if subscriber[attr].blank? && params[attr].present?
+        end
         subscriber
       end
 

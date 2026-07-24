@@ -2,7 +2,8 @@ class Subscriber < ApplicationRecord
   performs :submit_to_hubspot_form
   performs :sync_to_hubspot
 
-  # Every column except timestamps feeds the HubSpot contact.
+  # Contact fields whose changes trigger a HubSpot form submission. Context
+  # columns (source, placement, page_uri, ...) ride along but don't retrigger.
   HUBSPOT_SYNCED_FIELDS = %w[email first_name last_name postal_code].freeze
 
   # Vote pledges from the election tracker (rows cascade with the subscriber

@@ -13,7 +13,7 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
     def body = "response body"
   end
 
-  test "submit_subscriber posts the subscriber's fields to the form endpoint" do
+  test "submit_subscriber posts the subscriber's fields and tracking context to the form endpoint" do
     captured_url = captured_payload = nil
     HTTP.define_singleton_method(:post) do |url, json:|
       captured_url = url
@@ -21,22 +21,36 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
       FakeResponse.new(success: true)
     end
 
+    subscriber = Subscriber.new(
+      email: "voter@example.com", first_name: "Jane", last_name: "Voter", postal_code: "M5V 1A1",
+      source: "pledge", hubspot_utk: "utk-cookie", ip_address: "203.0.113.7",
+      page_uri: "https://buildcanada.com/elections/toronto-2026", page_name: "Toronto 2026"
+    )
+
     service = HubspotFormsService.new(portal_id: "123456", form_guid: "form-guid")
-    assert service.submit_subscriber(subscribers(:existing_subscriber))
+    assert service.submit_subscriber(subscriber)
 
     assert_equal "#{HubspotFormsService::SUBMIT_URL}/123456/form-guid", captured_url
     expected_fields = [
-      { objectTypeId: "0-1", name: "email", value: "test@example.com" },
-      { objectTypeId: "0-1", name: "firstname", value: "Test" },
-      { objectTypeId: "0-1", name: "lastname", value: "User" },
-      { objectTypeId: "0-1", name: "zip", value: "K1A 0A6" }
+      { objectTypeId: "0-1", name: "email", value: "voter@example.com" },
+      { objectTypeId: "0-1", name: "firstname", value: "Jane" },
+      { objectTypeId: "0-1", name: "lastname", value: "Voter" },
+      { objectTypeId: "0-1", name: "zip", value: "M5V 1A1" },
+      { objectTypeId: "0-1", name: "member_source", value: "pledge" }
     ]
     assert_equal expected_fields, captured_payload[:fields]
+    expected_context = {
+      hutk: "utk-cookie",
+      pageUri: "https://buildcanada.com/elections/toronto-2026",
+      pageName: "Toronto 2026",
+      ipAddress: "203.0.113.7"
+    }
+    assert_equal expected_context, captured_payload[:context]
   ensure
     HTTP.singleton_class.remove_method(:post)
   end
 
-  test "submit_subscriber omits blank fields" do
+  test "submit_subscriber omits blank fields and skips the context block when empty" do
     captured_payload = nil
     HTTP.define_singleton_method(:post) do |_url, json:|
       captured_payload = json
@@ -48,6 +62,7 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
 
     assert_equal [ { objectTypeId: "0-1", name: "email", value: "bare@example.com" } ],
       captured_payload[:fields]
+    assert_not captured_payload.key?(:context)
   ensure
     HTTP.singleton_class.remove_method(:post)
   end

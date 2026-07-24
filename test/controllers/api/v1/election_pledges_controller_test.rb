@@ -51,6 +51,23 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "create stores the pledge source and tracking context on the subscriber" do
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: {
+        email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1",
+        page_uri: "https://buildcanada.com/elections/toronto-2026",
+        page_name: "Toronto 2026", hubspot_utk: "utk-cookie", ip_address: "203.0.113.7"
+      }
+
+    assert_response :created
+    subscriber = Subscriber.find_by!(email: "voter@example.com")
+    assert_equal "pledge", subscriber.source
+    assert_equal "https://buildcanada.com/elections/toronto-2026", subscriber.page_uri
+    assert_equal "Toronto 2026", subscriber.page_name
+    assert_equal "utk-cookie", subscriber.hubspot_utk
+    assert_equal "203.0.113.7", subscriber.ip_address
+  end
+
   test "create rejects a missing name, single-word name, or missing postal code" do
     post api_v1_election_pledges_url("toronto-2026"),
       params: { email: "voter@example.com", region: "ward-5", postal_code: "M5V 1A1" }

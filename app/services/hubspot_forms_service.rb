@@ -28,10 +28,23 @@ class HubspotFormsService
       "email" => subscriber.email,
       "firstname" => subscriber.first_name,
       "lastname" => subscriber.last_name,
-      "zip" => subscriber.postal_code
+      "zip" => subscriber.postal_code,
+      "member_source" => subscriber.source
     }.compact_blank.map { |name, value| { objectTypeId: CONTACT_OBJECT_TYPE_ID, name: name, value: value } }
 
-    response = HTTP.post("#{SUBMIT_URL}/#{@portal_id}/#{@form_guid}", json: { fields: fields })
+    # HubSpot attributes the submission to a page and visitor when given the
+    # tracking context captured at signup.
+    context = {
+      hutk: subscriber.hubspot_utk,
+      pageUri: subscriber.page_uri,
+      pageName: subscriber.page_name,
+      ipAddress: subscriber.ip_address
+    }.compact_blank
+
+    payload = { fields: fields }
+    payload[:context] = context if context.any?
+
+    response = HTTP.post("#{SUBMIT_URL}/#{@portal_id}/#{@form_guid}", json: payload)
 
     unless response.status.success?
       raise SubmissionError,

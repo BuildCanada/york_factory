@@ -64,11 +64,15 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
     HTTP.singleton_class.remove_method(:post)
   end
 
-  test "submit_subscriber raises when no form GUID is configured" do
-    service = HubspotFormsService.new(portal_id: "123456", form_guid: nil)
+  test "submit_subscriber raises when the form GUID or portal ID is not configured" do
+    assert_raises(HubspotFormsService::ConfigurationError) do
+      HubspotFormsService.new(portal_id: "123456", form_guid: nil)
+        .submit_subscriber(subscribers(:existing_subscriber))
+    end
 
     assert_raises(HubspotFormsService::ConfigurationError) do
-      service.submit_subscriber(subscribers(:existing_subscriber))
+      HubspotFormsService.new(portal_id: nil, form_guid: "form-guid")
+        .submit_subscriber(subscribers(:existing_subscriber))
     end
   end
 end

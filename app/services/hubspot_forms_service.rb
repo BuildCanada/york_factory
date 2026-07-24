@@ -5,7 +5,6 @@
 class HubspotFormsService
   SUBMIT_URL = "https://api.hsforms.com/submissions/v3/integration/submit"
   CONTACT_OBJECT_TYPE_ID = "0-1"
-  DEFAULT_PORTAL_ID = "342054223"
 
   class ConfigurationError < StandardError; end
   class SubmissionError < StandardError; end
@@ -20,8 +19,9 @@ class HubspotFormsService
   end
 
   def submit_subscriber(subscriber)
-    if @form_guid.blank?
-      raise ConfigurationError, "Set hubspot.subscriber_form_guid in Rails credentials to submit subscriber forms"
+    if @portal_id.blank? || @form_guid.blank?
+      raise ConfigurationError,
+        "Set hubspot.portal_id and hubspot.subscriber_form_guid in Rails credentials to submit subscriber forms"
     end
 
     fields = {
@@ -45,7 +45,7 @@ class HubspotFormsService
   private
 
   def default_portal_id
-    Rails.application.credentials.dig(:hubspot, :portal_id) || DEFAULT_PORTAL_ID
+    Rails.application.credentials.dig(:hubspot, :portal_id)
   end
 
   def default_form_guid

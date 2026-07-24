@@ -28,6 +28,13 @@ module Api
       end
 
       def create
+        # A pledge must carry everything the HubSpot member-join form requires
+        # (first + last name, email, postal code), so the subscriber's form
+        # submission can never be rejected for missing required fields.
+        if (errors = missing_field_errors).any?
+          return render json: { errors: errors }, status: :unprocessable_entity
+        end
+
         subscriber = find_or_build_subscriber
         unless subscriber.save
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
@@ -56,6 +63,15 @@ module Api
         @election = ::Warehouse::Election.find_by!(slug: params[:election_slug])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
+      end
+
+      def missing_field_errors
+        errors = []
+        errors << "Email is required" if params[:email].blank?
+        first, last = split_name(params[:name])
+        errors << "Full name (first and last) is required" if first.blank? || last.blank?
+        errors << "Postal code is required" if params[:postal_code].blank?
+        errors
       end
 
       # Reuses an existing subscriber row for the email (case-insensitive)

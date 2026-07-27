@@ -94,7 +94,7 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_difference "Subscriber.count" do
       post api_v1_election_pledges_url("toronto-2026"),
-        params: { email: "Voter@Example.COM", name: "Different Name", region: "toronto", postal_code: "H0H 0H0" }
+        params: { email: "Voter@Example.COM", name: "Different Name", region: "toronto", postal_code: "M6H 2K2" }
     end
 
     assert_response :created
@@ -125,6 +125,32 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
 
     pledge = Warehouse::PledgeToVote.where(election: @election).sole
     assert_equal "toronto", pledge.region
+  end
+
+  test "create signs up an out-of-Toronto pledger as a subscriber but records no pledge" do
+    assert_difference "Subscriber.count", 1 do
+      post api_v1_election_pledges_url("toronto-2026"),
+        params: { email: "outsider@example.com", name: "Otto Outsider", region: "toronto", postal_code: "L5B 1M2" }
+    end
+
+    assert_response :ok
+    body = JSON.parse(response.body)
+    assert_equal true, body["outside_toronto"]
+    assert_equal true, body["subscribed"]
+    assert_equal "Otto Outsider", body["name"]
+    assert_nil body["share_token"]
+
+    subscriber = Subscriber.find_by!(email: "outsider@example.com")
+    assert_equal "L5B 1M2", subscriber.postal_code
+    assert_equal 0, Warehouse::PledgeToVote.where(election: @election).count
+  end
+
+  test "create treats a lowercase Toronto postal code as inside the city" do
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", region: "toronto", postal_code: "m4b 1b3" }
+
+    assert_response :created
+    assert_equal 1, Warehouse::PledgeToVote.where(election: @election).count
   end
 
   test "create rejects a missing or invalid email" do

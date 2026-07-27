@@ -147,7 +147,7 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
 
   test "create treats a lowercase Toronto postal code as inside the city" do
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "voter@example.com", region: "toronto", postal_code: "m4b 1b3" }
+      params: { email: "voter@example.com", name: "Jane Voter", region: "toronto", postal_code: "m4b 1b3" }
 
     assert_response :created
     assert_equal 1, Warehouse::PledgeToVote.where(election: @election).count

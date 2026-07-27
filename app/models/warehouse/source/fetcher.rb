@@ -50,11 +50,23 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     when "statcan_json"
       with_retries { Warehouse::Source::Fetcher::StatcanVectors.new(source.url).call }
     when "toronto_candidates_json"
-      # The election year comes from the source name suffix (election_toronto_2026).
-      with_retries { Warehouse::Source::Fetcher::TorontoCandidateList.new(source.url, year: source.name[/(\d{4})\z/, 1]).call }
+      with_retries { Warehouse::Source::Fetcher::TorontoCandidateList.new(source.url, year: election_year).call }
+    when "brampton_candidates_html"
+      # Brampton and Hamilton have no feed: their candidate pages are scraped
+      # and normalized to JSON here.
+      with_retries { Warehouse::Source::Fetcher::BramptonCandidateList.new(source.url, year: election_year).call }
+    when "hamilton_candidates_html"
+      with_retries { Warehouse::Source::Fetcher::HamiltonCandidateList.new(source.url, year: election_year).call }
     else
       download_with_retries
     end
+  end
+
+  # Candidate-list sources take their election year from the source name
+  # suffix (election_hamilton_2026 → "2026"), which is also how the loaders
+  # find the election to load into.
+  def election_year
+    source.name[/(\d{4})\z/, 1]
   end
 
   def download_with_retries
@@ -124,6 +136,10 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.owid_econ_loader.load(csv_content: body)
     when /^election_toronto/
       ingestion.toronto_candidates_loader.load(json_content: body)
+    when /^election_brampton/
+      ingestion.brampton_candidates_loader.load(json_content: body)
+    when /^election_hamilton/
+      ingestion.hamilton_candidates_loader.load(json_content: body)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

@@ -14,6 +14,22 @@ module Api
         render json: { data: { total: counts.values.sum, by_region: counts } }
       end
 
+      # Lets the pledge form check a postal code before asking for an email, so
+      # someone outside the region is told up front instead of after signing up.
+      def eligibility
+        result = @election.pledge_eligibility.check(params[:postal_code])
+
+        render json: {
+          eligible: result.eligible?,
+          reason: result.reason,
+          unverified_postal_code: result.indeterminate?,
+          gated: @election.pledge_eligibility.gated?,
+          region_name: @election.pledge_eligibility.region_name,
+          postal_code: result.postal_code,
+          city: result.city
+        }
+      end
+
       # Public lookup for a pledge's shareable page, by unguessable share
       # token. Exposes the pledger's display name but never their email.
       def show
@@ -33,14 +49,20 @@ module Api
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
         end
 
-        # Only City of Toronto residents can pledge in this election. Every
-        # Toronto postal code — and only Toronto's — falls in the "M" forward
-        # sortation area, so the first letter is a reliable boundary check.
-        # We still keep the subscriber (newsletter signup) but record no
-        # pledge, and signal the client to redirect them to explore instead.
-        unless toronto_postal_code?
+        # Only residents of the jurisdiction holding this election can pledge in
+        # it, judged from the submitted postal code
+        # (Election::PledgeEligibility). We still keep the subscriber
+        # (newsletter signup) but record no pledge, and signal the client to
+        # redirect them to explore instead.
+        eligibility = @election.pledge_eligibility.check(params[:postal_code])
+        unless eligibility.eligible?
           return render json: {
-            outside_toronto: true,
+            outside_region: true,
+            # Retained for the Toronto pledge form, which shipped against it.
+            outside_toronto: @election.jurisdiction.slug == "toronto",
+            region_name: @election.pledge_eligibility.region_name,
+            reason: eligibility.reason,
+            unverified_postal_code: eligibility.indeterminate?,
             subscribed: true,
             name: display_name(subscriber)
           }, status: :ok
@@ -87,17 +109,6 @@ module Api
         postal_code = params[:postal_code].to_s.strip.upcase
         subscriber.postal_code = postal_code if subscriber.postal_code.blank? && postal_code.present?
         subscriber
-      end
-
-      # True when the submitted postal code is inside the City of Toronto (an
-      # "M" forward sortation area). A blank/absent postal code takes the
-      # legacy path (e.g. ward-scoped pledges that never collected one) and is
-      # allowed through — the public pledge form always supplies one.
-      def toronto_postal_code?
-        postal = params[:postal_code].to_s.strip
-        return true if postal.blank?
-
-        postal.upcase.start_with?("M")
       end
 
       def split_name(raw)

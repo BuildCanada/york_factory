@@ -64,7 +64,9 @@ Rails.application.routes.draw do
       resources :uploads, only: [ :create ]
 
       resources :elections, only: [ :index, :show ], param: :slug do
-        resources :pledges, only: [ :index, :create, :show ], controller: "election_pledges"
+        resources :pledges, only: [ :index, :create, :show ], controller: "election_pledges" do
+          get :eligibility, on: :collection
+        end
       end
 
       namespace :geo do
@@ -198,10 +200,16 @@ Rails.application.routes.draw do
     resources :subscribers, only: [ :index ]
     resources :users, only: %i[index new create edit update destroy]
 
-    resources :elections, only: [ :index, :show ] do
+    # Elections are fully editable in admin so a region whose candidate list
+    # can't be scraped (Ottawa) can be entered and maintained by hand.
+    resources :elections do
       post :fetch_photo_suggestions, on: :member
+      resources :races, only: %i[new create edit update destroy], controller: "election_races"
     end
-    resources :election_candidates, only: [ :update ] do
+    resources :election_races, only: [], path: "races" do
+      resources :candidates, only: %i[new create], controller: "election_candidates"
+    end
+    resources :election_candidates, only: %i[edit update destroy] do
       post :apply_photo_suggestion, on: :member
     end
 

@@ -79,6 +79,25 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
     HTTP.singleton_class.remove_method(:post)
   end
 
+  test "submit_subscriber is a no-op in development unless ENABLE_HUBSPOT_SUBMISSIONS is set" do
+    posted = false
+    HTTP.define_singleton_method(:post) { |*, **| posted = true; FakeResponse.new(success: true) }
+    original_env = Rails.method(:env)
+    Rails.define_singleton_method(:env) { ActiveSupport::StringInquirer.new("development") }
+
+    service = HubspotFormsService.new(portal_id: "123456", form_guid: "form-guid")
+    assert_equal false, service.submit_subscriber(subscribers(:existing_subscriber))
+    assert_not posted
+
+    ENV["ENABLE_HUBSPOT_SUBMISSIONS"] = "1"
+    assert service.submit_subscriber(subscribers(:existing_subscriber))
+    assert posted
+  ensure
+    ENV.delete("ENABLE_HUBSPOT_SUBMISSIONS")
+    Rails.define_singleton_method(:env, original_env) if original_env
+    HTTP.singleton_class.remove_method(:post)
+  end
+
   test "submit_subscriber raises when the form GUID or portal ID is not configured" do
     assert_raises(HubspotFormsService::ConfigurationError) do
       HubspotFormsService.new(portal_id: "123456", form_guid: nil)

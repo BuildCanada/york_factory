@@ -19,6 +19,12 @@ class HubspotFormsService
   end
 
   def submit_subscriber(subscriber)
+    if skip_submission?
+      Rails.logger.info "Skipping HubSpot form submission for #{subscriber.email} " \
+        "(development without ENABLE_HUBSPOT_SUBMISSIONS)"
+      return false
+    end
+
     if @portal_id.blank? || @form_guid.blank?
       raise ConfigurationError,
         "Set hubspot.portal_id and hubspot.subscriber_form_guid in Rails credentials to submit subscriber forms"
@@ -56,6 +62,12 @@ class HubspotFormsService
   end
 
   private
+
+  # Local development must not write to the production HubSpot portal by
+  # default; opt in with ENABLE_HUBSPOT_SUBMISSIONS=1.
+  def skip_submission?
+    Rails.env.development? && ENV["ENABLE_HUBSPOT_SUBMISSIONS"].blank?
+  end
 
   def default_portal_id
     Rails.application.credentials.dig(:hubspot, :portal_id)

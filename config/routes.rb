@@ -196,6 +196,7 @@ Rails.application.routes.draw do
       end
     end
     resources :subscribers, only: [ :index ]
+    resources :uploads, only: [ :create ]
     resources :users, only: %i[index new create edit update destroy]
 
     resources :elections, only: [ :index, :show ] do

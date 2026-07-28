@@ -7,10 +7,10 @@
     <button type="button" class="tab-btn" data-tabs-target="tab" data-action="tabs#select">FR</button>
   </div>
   <div class="tab-panel" data-tabs-target="panel">
-    <%= form.marksmith :"#{field}_en", enable_file_uploads: true %>
+    <%= form.marksmith :"#{field}_en", enable_file_uploads: true, upload_url: admin_uploads_path %>
   </div>
   <div class="tab-panel" data-tabs-target="panel" style="display:none">
-    <%= form.marksmith :"#{field}_fr", enable_file_uploads: true %>
+    <%= form.marksmith :"#{field}_fr", enable_file_uploads: true, upload_url: admin_uploads_path %>
     <% if retranslate_url.present? && form.object.persisted? %>
       <div class="mt-1" data-controller="retranslate">
         <button type="button" class="btn btn-sm"

@@ -113,7 +113,10 @@ someone outside is told up front. No side effects, no subscriber created.
 
 ### `POST /api/v1/elections/:slug/pledges`
 
-Params: `email` (required), `postal_code`, `region` (required), `name`.
+Params, **all required** — a missing one is a `422` with `{"errors": [...]}`:
+`email`, `name` (must be a full name, first *and* last), `postal_code`, `region`.
+Optional signup-provenance params (`placement`, `page_uri`, `page_name`,
+`hubspot_utk`, `ip_address`) are recorded on the subscriber.
 
 `region` is free text scoping the pledge — a ward key like `"ward-5"` /
 `"wards-1-5"`, or the jurisdiction slug for a city-wide pledge. It's what
@@ -165,10 +168,10 @@ Oakville `L6H` code cannot pledge in Brampton.
 
 Two behaviours worth knowing before you build the form:
 
-- **A blank `postal_code` is still accepted** (`no_postal_code`) — carried over
-  from the Toronto flow, where ward-scoped pledge links never collected one. If
-  the form always sends one this never fires, but it does mean the gate can be
-  skipped by omitting the field. Say the word and we'll close it.
+- **`no_postal_code` can't be reached through `POST`** — that endpoint rejects a
+  blank `postal_code` with a `422` before residency is considered, so the gate
+  can't be skipped by omitting the field. The reason only appears on the
+  eligibility endpoint when you call it with no postal code.
 - **Someone can pledge in a region they don't live in only if we can't verify
   them** — `unknown_postal_code` and `malformed_postal_code` are rejections, but
   `postal_data_unavailable` fails open by design (rejecting every real resident

@@ -217,6 +217,7 @@ class HubspotSyncService
 
     # Allowlist of writable HubSpot properties
     # country_code latitude longitude
+    # (notes_last_updated is HubSpot-calculated and read-only — writing it 400s)
     writable_properties = %w[
       email
       firstname lastname
@@ -245,7 +246,7 @@ class HubspotSyncService
       message interests skillsets skills profession the_basics time_commitment
       work_interest about_accomplishments house_rules non_partisan_agreement
       hs_marketable_status hs_latest_source associatedcompanyid
-      notes_last_updated hs_content_membership_email_confirmed
+      hs_content_membership_email_confirmed
     ]
 
     # Use the mapping from the model constant, only for writable properties

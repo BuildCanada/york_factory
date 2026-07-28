@@ -3,6 +3,7 @@ module Api
     class SubscribersController < CmsBaseController
       def create
         subscriber = Subscriber.new(subscriber_params)
+        subscriber.source = "hubspot_form"
         if subscriber.save
           render json: { message: "Subscribed" }, status: :created
         else
@@ -13,7 +14,10 @@ module Api
       private
 
       def subscriber_params
-        params.require(:subscriber).permit(:first_name, :last_name, :email, :postal_code)
+        params.require(:subscriber).permit(
+          :first_name, :last_name, :email, :postal_code,
+          :placement, :page_uri, :page_name, :hubspot_utk, :ip_address
+        )
       end
     end
   end

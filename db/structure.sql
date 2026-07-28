@@ -1095,7 +1095,13 @@ CREATE TABLE public.subscribers (
     first_name character varying,
     last_name character varying,
     postal_code character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    source character varying,
+    placement character varying,
+    page_uri character varying,
+    page_name character varying,
+    hubspot_utk character varying,
+    ip_address character varying
 );
 
 
@@ -7474,6 +7480,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724000001'),
 ('20260723000002'),
 ('20260723000001'),
 ('20260722160000'),

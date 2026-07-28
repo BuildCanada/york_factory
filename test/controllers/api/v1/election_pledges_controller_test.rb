@@ -44,6 +44,49 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "create enqueues a HubSpot form submission for the pledging subscriber" do
+    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob) do
+      post api_v1_election_pledges_url("toronto-2026"),
+        params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
+    end
+  end
+
+  test "create stores the pledge source and tracking context on the subscriber" do
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: {
+        email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1",
+        page_uri: "https://buildcanada.com/elections/toronto-2026",
+        page_name: "Toronto 2026", hubspot_utk: "utk-cookie", ip_address: "203.0.113.7"
+      }
+
+    assert_response :created
+    subscriber = Subscriber.find_by!(email: "voter@example.com")
+    assert_equal "pledge", subscriber.source
+    assert_equal "https://buildcanada.com/elections/toronto-2026", subscriber.page_uri
+    assert_equal "Toronto 2026", subscriber.page_name
+    assert_equal "utk-cookie", subscriber.hubspot_utk
+    assert_equal "203.0.113.7", subscriber.ip_address
+  end
+
+  test "create rejects a missing name, single-word name, or missing postal code" do
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", region: "ward-5", postal_code: "M5V 1A1" }
+    assert_response :unprocessable_entity
+    assert_includes JSON.parse(response.body)["errors"], "Full name (first and last) is required"
+
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", name: "Cher", region: "ward-5", postal_code: "M5V 1A1" }
+    assert_response :unprocessable_entity
+
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5" }
+    assert_response :unprocessable_entity
+    assert_includes JSON.parse(response.body)["errors"], "Postal code is required"
+
+    assert_equal 0, Warehouse::PledgeToVote.where(election: @election).count
+    assert_nil Subscriber.find_by(email: "voter@example.com")
+  end
+
   test "create reuses an existing subscriber without overwriting their name or postal code" do
     existing = Subscriber.create!(
       email: "voter@example.com", first_name: "Jane", last_name: "Voter", postal_code: "M4B 1B3"
@@ -65,7 +108,7 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     existing = Subscriber.create!(email: "voter@example.com", first_name: "Jane", last_name: "Voter")
 
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "voter@example.com", region: "toronto", postal_code: "m5v 1a1" }
+      params: { email: "voter@example.com", name: "Jane Voter", region: "toronto", postal_code: "m5v 1a1" }
 
     assert_response :created
     assert_equal "M5V 1A1", existing.reload.postal_code
@@ -73,11 +116,11 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
 
   test "re-pledging updates the existing pledge instead of duplicating" do
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "voter@example.com", region: "ward-5" }
+      params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
     assert_response :created
 
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "voter@example.com", region: "toronto" }
+      params: { email: "voter@example.com", name: "Jane Voter", region: "toronto", postal_code: "M5V 1A1" }
     assert_response :ok
 
     pledge = Warehouse::PledgeToVote.where(election: @election).sole
@@ -104,25 +147,27 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
 
   test "create treats a lowercase Toronto postal code as inside the city" do
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "voter@example.com", region: "toronto", postal_code: "m4b 1b3" }
+      params: { email: "voter@example.com", name: "Jane Voter", region: "toronto", postal_code: "m4b 1b3" }
 
     assert_response :created
     assert_equal 1, Warehouse::PledgeToVote.where(election: @election).count
   end
 
   test "create rejects a missing or invalid email" do
-    post api_v1_election_pledges_url("toronto-2026"), params: { region: "ward-5" }
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
     assert_response :unprocessable_entity
 
     post api_v1_election_pledges_url("toronto-2026"),
-      params: { email: "not-an-email", region: "ward-5" }
+      params: { email: "not-an-email", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
     assert_response :unprocessable_entity
 
     assert_equal 0, Warehouse::PledgeToVote.where(election: @election).count
   end
 
   test "create rejects a missing region" do
-    post api_v1_election_pledges_url("toronto-2026"), params: { email: "voter@example.com" }
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", name: "Jane Voter", postal_code: "M5V 1A1" }
 
     assert_response :unprocessable_entity
     assert_equal 0, Warehouse::PledgeToVote.where(election: @election).count

@@ -18,6 +18,7 @@ application.register("filter", FilterController)
 import SlugPreviewController from "controllers/slug_preview_controller"
 application.register("slug-preview", SlugPreviewController)
 
-import { MarksmithController, ListContinuationController } from "@avo-hq/marksmith"
+import { ListContinuationController } from "@avo-hq/marksmith"
+import MarksmithController from "controllers/marksmith_controller"
 application.register("marksmith", MarksmithController)
 application.register("list-continuation", ListContinuationController)

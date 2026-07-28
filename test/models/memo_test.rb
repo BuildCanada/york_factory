@@ -157,4 +157,16 @@ class MemoTest < ActiveSupport::TestCase
     I18n.locale = :fr
     assert_equal "Analyse de la crise du logement", memo.title
   end
+
+  test "saving attaches inline markdown blobs referenced by absolute url" do
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("fake image bytes"),
+      filename: "inline.png",
+      content_type: "image/png"
+    )
+    memo = memos(:published_memo)
+    memo.update!(body_en: "Intro\n\n![inline.png](http://api.example.com/rails/active_storage/blobs/redirect/#{blob.signed_id}/inline.png)")
+
+    assert_includes memo.content_images.blobs, blob
+  end
 end

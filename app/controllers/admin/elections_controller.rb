@@ -65,7 +65,7 @@ module Admin
 
     def election_params
       params.require(:warehouse_election)
-        .permit(:name, :slug, :kind, :jurisdiction_id, :election_date, :nomination_close_date)
+        .permit(:name, :slug, :kind, :jurisdiction_id, :election_date, :nomination_close_date, :published_at)
     end
 
     # A new region needs a jurisdiction that may not exist yet, and creating

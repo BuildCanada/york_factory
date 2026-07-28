@@ -16,8 +16,13 @@ not against one city's specifics.
 
 ### `GET /api/v1/elections`
 
-Every tracked election, newest election date first. No races or candidates —
-use it to build a list/switcher.
+Every **published** election, newest election date first. No races or
+candidates — use it to build a list/switcher.
+
+Elections are assembled in admin before they go live, so a draft (or one
+scheduled for a future `published_at`) is absent here and `404`s on show. A
+region being entered by hand simply appears once it's published — there's
+nothing to poll for and no half-built election will ever surface.
 
 ```json
 {
@@ -41,7 +46,7 @@ The full election with every race and candidate. **This is the only call
 `/elections/brampton/2026` needs.**
 
 - Slug for this page: **`brampton-2026`** (`/api/v1/elections/brampton-2026`)
-- `404 {"error":"Not found"}` for an unknown slug
+- `404 {"error":"Not found"}` for an unknown slug — **and for an unpublished one**
 - One response is currently ~21 races / ~71 candidates — a few tens of KB.
   Fetch once and filter client-side; there are no query params for
   filtering by office or ward.
@@ -324,6 +329,9 @@ real-time in copy ("updated daily" is accurate).
 Candidates are never deleted by a scrape. If the city drops someone from the
 page without marking a withdrawal, their row persists with a stale internal
 `last_seen_at` (not currently exposed).
+
+**Draft elections aren't served at all** until published, so a region being
+built by hand appears complete the first time you see it.
 
 **Hand-maintained elections don't follow that cadence at all.** Where a city's
 list can't be scraped (Ottawa — the site is behind a bot challenge), the

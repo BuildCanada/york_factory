@@ -10,6 +10,18 @@
   </div>
 </div>
 
+<p style="margin-bottom: 1rem;">
+  <span class="badge badge-<%= { "published" => "green", "draft" => "yellow", "scheduled" => "blue" }[@election.publish_status] %>">
+    <%= @election.publish_status %>
+  </span>
+  <% unless @election.published? %>
+    <span class="text-muted" style="font-size:0.85rem;">
+      — not visible on buildcanada.com and taking no pledges.
+      <a href="<%= edit_admin_election_path(@election) %>">Publish it</a> when the candidates are in.
+    </span>
+  <% end %>
+</p>
+
 <p class="text-muted" style="margin-bottom: 1rem;">
   <%= @election.jurisdiction&.name || "No jurisdiction" %> ·
   election day <%= @election.election_date.strftime("%b %-d, %Y") %> ·

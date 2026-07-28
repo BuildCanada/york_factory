@@ -43,7 +43,8 @@ Organization::EntityResolver      → shared entity resolution cascade
 API v1: memos, posts, builders, team_members, tools, faqs, feed_items, testimonials, subscribers, uploads, elections
 Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
         elections/races/candidates are fully editable so regions with no scrapable
-        source (Ottawa) can be entered and maintained by hand
+        source (Ottawa) can be entered and maintained by hand; elections are
+        published_at-gated (Publishable) so a half-entered one stays off the API
 ```
 
 ## Geo API

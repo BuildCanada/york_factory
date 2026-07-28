@@ -66,6 +66,12 @@
     <%= f.date_field :nomination_close_date, class: "form-control" %>
   </div>
 
+  <%= render "admin/shared/publish_fields", form: f %>
+  <p class="text-muted" style="font-size:0.8rem; margin-top:-0.5rem;">
+    A draft election is invisible to buildcanada.com and takes no pledges — build its races and
+    candidates first, then publish. Leaving this blank keeps it a draft.
+  </p>
+
   <div class="btn-group mt-1">
     <%= f.submit "Save", class: "btn btn-primary" %>
     <a href="<%= election.persisted? ? admin_election_path(election) : admin_elections_path %>" class="btn">Cancel</a>

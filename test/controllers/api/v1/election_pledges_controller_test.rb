@@ -15,6 +15,7 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
       e.kind = "municipal"
       e.election_date = Date.new(2026, 10, 26)
     end
+    @election.update!(published_at: 1.day.ago)
     Warehouse::PledgeToVote.where(election: @election).delete_all
 
     brampton = Warehouse::Jurisdiction.find_or_create_by!(slug: "brampton") do |j|
@@ -30,6 +31,7 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
       e.kind = "municipal"
       e.election_date = Date.new(2026, 10, 26)
     end
+    @brampton_election.update!(published_at: 1.day.ago)
     Warehouse::PledgeToVote.where(election: @brampton_election).delete_all
 
     # Residency is judged against the postal-code table, so the regions under
@@ -108,6 +110,19 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
   test "eligibility on an unknown election is a 404" do
     get eligibility_api_v1_election_pledges_url("nowhere-2026"), params: { postal_code: "M5V 1A1" }
 
+    assert_response :not_found
+  end
+
+  test "a draft election takes no pledges and reports no eligibility" do
+    @brampton_election.update!(published_at: nil)
+
+    post api_v1_election_pledges_url("brampton-2026"),
+      params: { email: "early@example.com", region: "wards-1-5", postal_code: "L6Y 1A1" }
+    assert_response :not_found
+    assert_equal 0, @brampton_election.pledges_to_vote.count
+    refute Subscriber.exists?(email: "early@example.com")
+
+    get eligibility_api_v1_election_pledges_url("brampton-2026"), params: { postal_code: "L6Y 1A1" }
     assert_response :not_found
   end
 

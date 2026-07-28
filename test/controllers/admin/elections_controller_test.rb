@@ -138,6 +138,62 @@ class Admin::ElectionsControllerTest < ActionDispatch::IntegrationTest
     refute Warehouse::ElectionCandidate.exists?(@candidate.id)
   end
 
+  test "a new election starts as a draft and stays off the public API" do
+    post admin_elections_path, params: {
+      warehouse_election: {
+        name: "Ottawa 2026 General Municipal Election", slug: "ottawa-2026", kind: "municipal",
+        jurisdiction_id: @election.jurisdiction_id, election_date: "2026-10-26"
+      }
+    }
+
+    election = Warehouse::Election.find_by!(slug: "ottawa-2026")
+    assert_equal "draft", election.publish_status
+    refute election.published?
+    refute Warehouse::Election.published.exists?(election.id)
+  end
+
+  test "publishing an election from the form" do
+    @election.update!(published_at: nil)
+
+    patch admin_election_path(@election), params: {
+      warehouse_election: {
+        name: @election.name, slug: @election.slug, kind: @election.kind,
+        jurisdiction_id: @election.jurisdiction_id, election_date: @election.election_date.to_s,
+        published_at: 1.minute.ago.strftime("%Y-%m-%dT%H:%M")
+      }
+    }
+
+    assert_redirected_to admin_election_path(@election)
+    assert @election.reload.published?
+  end
+
+  test "unpublishing an election returns it to a draft" do
+    @election.update!(published_at: 1.day.ago)
+
+    patch admin_election_path(@election), params: {
+      warehouse_election: {
+        name: @election.name, slug: @election.slug, kind: @election.kind,
+        jurisdiction_id: @election.jurisdiction_id, election_date: @election.election_date.to_s,
+        published_at: ""
+      }
+    }
+
+    assert_nil @election.reload.published_at
+    assert @election.draft?
+  end
+
+  test "the index and show pages surface the publish status" do
+    @election.update!(published_at: nil)
+
+    get admin_elections_path
+    assert_response :success
+    assert_select "span.badge", text: /draft/
+
+    get admin_election_path(@election)
+    assert_response :success
+    assert_select "span.badge", text: /draft/
+  end
+
   test "the show page offers the management actions" do
     get admin_election_path(@election)
 

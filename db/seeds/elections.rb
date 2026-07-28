@@ -18,6 +18,8 @@ Warehouse::Election.find_or_create_by!(slug: "toronto-2026") do |e|
   e.kind = "municipal"
   e.election_date = Date.new(2026, 10, 26)
   e.nomination_close_date = Date.new(2026, 9, 18)
+  # Seeded regions are live regions; drafts are for elections built by hand in admin.
+  e.published_at = Time.current
 end
 
 # JSON feeds behind toronto.ca/city-government/elections/candidate-list/.
@@ -45,6 +47,8 @@ Warehouse::Election.find_or_create_by!(slug: "brampton-2026") do |e|
   e.kind = "municipal"
   e.election_date = Date.new(2026, 10, 26)
   e.nomination_close_date = Date.new(2026, 8, 21)
+  # Seeded regions are live regions; drafts are for elections built by hand in admin.
+  e.published_at = Time.current
 end
 
 # Brampton publishes no candidate feed, so the fetcher scrapes the candidate
@@ -70,6 +74,8 @@ Warehouse::Election.find_or_create_by!(slug: "hamilton-2026") do |e|
   e.kind = "municipal"
   e.election_date = Date.new(2026, 10, 26)
   e.nomination_close_date = Date.new(2026, 8, 21)
+  # Seeded regions are live regions; drafts are for elections built by hand in admin.
+  e.published_at = Time.current
 end
 
 # Hamilton publishes no candidate feed either: mayor, 15 councillor wards, and

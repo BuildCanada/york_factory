@@ -87,8 +87,10 @@ module Api
 
       private
 
+      # An unpublished election takes no pledges — it isn't public yet.
       def set_election
-        @election = ::Warehouse::Election.find_by!(slug: params[:election_slug])
+        scope = preview_mode? ? ::Warehouse::Election.all : ::Warehouse::Election.published
+        @election = scope.find_by!(slug: params[:election_slug])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
       end

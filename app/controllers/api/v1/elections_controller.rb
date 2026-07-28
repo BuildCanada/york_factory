@@ -2,12 +2,12 @@ module Api
   module V1
     class ElectionsController < CmsBaseController
       def index
-        elections = ::Warehouse::Election.includes(:jurisdiction).order(election_date: :desc)
+        elections = visible_elections.includes(:jurisdiction).order(election_date: :desc)
         render json: { data: elections.map { |e| serialize_election(e) } }
       end
 
       def show
-        election = ::Warehouse::Election
+        election = visible_elections
           .includes(:jurisdiction, races: :candidates)
           .find_by!(slug: params[:slug])
         render json: serialize_election(election, races: ::Warehouse::ElectionRace.sorted(election.races))
@@ -16,6 +16,13 @@ module Api
       end
 
       private
+
+      # Drafts and scheduled elections are invisible until published — an
+      # election is assembled in admin (races, then candidates) and a
+      # half-entered one shouldn't reach the site. An admin token previews them.
+      def visible_elections
+        preview_mode? ? ::Warehouse::Election.all : ::Warehouse::Election.published
+      end
 
       def serialize_election(election, races: nil)
         base = {

@@ -2214,6 +2214,7 @@ CREATE TABLE warehouse.elections (
     nomination_close_date date,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    published_at timestamp(6) without time zone,
     CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY ((ARRAY['municipal'::character varying, 'provincial'::character varying, 'federal'::character varying, 'by_election'::character varying])::text[])))
 );
 
@@ -7474,6 +7475,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260728000001'),
 ('20260723000002'),
 ('20260723000001'),
 ('20260722160000'),

@@ -1,4 +1,9 @@
 class Warehouse::Election < Warehouse::Record
+  # published_at gates public visibility: an election is built up in admin
+  # (races, then candidates) and only reaches the API once published. Regions
+  # whose candidates are entered by hand need that runway.
+  include Publishable
+
   belongs_to :jurisdiction
 
   # Postal-code residency check for "I pledge to vote" submissions.

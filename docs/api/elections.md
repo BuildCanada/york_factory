@@ -150,8 +150,10 @@ against it, and is `true` only for Toronto. **New clients should read
 
 | `reason` | Eligible | Meaning |
 | --- | --- | --- |
-| `city_match` / `inside_boundary` | yes | Postal code resolves inside the region |
-| `city_mismatch` / `outside_boundary` | no | Resolves to somewhere else — genuinely outside |
+| `inside_boundary` | yes | The postal code's centroid falls inside the city's boundary |
+| `city_match` | yes | Outside the boundary (or none loaded), but the postal city is one of the city's own names |
+| `outside_boundary` | no | Outside the boundary and the city name doesn't place them inside either |
+| `city_mismatch` | no | No boundary loaded, and the city name isn't one of the region's |
 | `fsa_match` | yes | Unknown code, but the region owns the whole FSA (Toronto's `M`) |
 | `unknown_postal_code` | no | Well-formed but not in our postal table — **unverified** |
 | `malformed_postal_code` | no | Not a Canadian postal code — **unverified** |
@@ -159,12 +161,24 @@ against it, and is `true` only for Toronto. **New clients should read
 | `no_rule` | yes | Region has no residency rule configured |
 | `postal_data_unavailable` | yes | No postal data loaded in this environment |
 
-Residency is judged from the postal code's city (province-scoped), upgrading
-automatically to a point-in-polygon test against the census-subdivision
-boundary once those are loaded. Amalgamated communities count as their city — a
-Dundas or Binbrook address is a Hamilton address; Scarborough and Etobicoke are
-Toronto. Neighbours that share a postal range are correctly excluded: an
-Oakville `L6H` code cannot pledge in Brampton.
+Practically, `inside_boundary` is what you'll see for eligible pledgers and
+`outside_boundary` for ineligible ones; the `city_*` reasons appear only for
+edge-of-boundary codes or in an environment with no boundaries loaded.
+
+Residency is decided **geometrically**: the postal code is mapped to its
+centroid and tested against the city's census-subdivision boundary, because a
+census subdivision *is* the municipality. That handles the cases names can't —
+a postal code Canada Post labels "Woodbridge" or "Milton" that actually sits
+inside Toronto or Hamilton — and needs no per-city upkeep. Neighbours sharing a
+postal range are excluded correctly: an Oakville `L6H` code cannot pledge in
+Brampton, even though `L6` is mostly Brampton.
+
+The city-name list is a safety net that can only *add* eligibility. A postal
+code's centroid is the average of its delivery points, so within about 0.1% of
+cases (0.9% for Brampton) it lands just outside the line it belongs to;
+`city_match` catches those rather than turning a resident away. Amalgamated
+communities are named in that list — a Dundas or Binbrook address is a
+Hamilton address; Scarborough and Etobicoke are Toronto.
 
 Two behaviours worth knowing before you build the form:
 

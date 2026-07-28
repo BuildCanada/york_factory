@@ -137,34 +137,66 @@ class Warehouse::Election::PledgeEligibilityTest < ActiveSupport::TestCase
     assert_equal :postal_data_unavailable, result.reason
   end
 
-  test "a loaded CSD boundary takes precedence over the city list" do
-    # A square around downtown Hamilton, and a postal code inside it whose city
-    # name is one the fallback list would reject.
+  # Hamilton's CSD, the one the rule names. Ontario has a second CSD called
+  # "Hamilton" (a township in Northumberland), which is why rules key on UID.
+  HAMILTON_CSD_UID = "3525005".freeze
+
+  def hamilton_boundary
     Warehouse::GeoBoundary.create!(
-      boundary_type: "csd", geo_uid: "3525005-test", name_en: "Hamilton",
+      boundary_type: "csd", geo_uid: HAMILTON_CSD_UID, name_en: "Hamilton",
       province_code: "ON", census_year: 2021,
       geometry: square(centre_lat: 43.25, centre_lon: -79.87, size: 0.2)
     )
-    postal("L8P 1A1", city: "SOMEWHERE ELSE", lat: 43.25, lon: -79.87)
+  end
 
-    result = @hamilton.pledge_eligibility.check("L8P 1A1")
+  test "geometry admits a postal code the city list would have rejected" do
+    hamilton_boundary
+    # Canada Post labels plenty of addresses with a neighbour's city name.
+    postal("L9T 1A1", city: "MILTON", lat: 43.25, lon: -79.87)
+
+    result = @hamilton.pledge_eligibility.check("L9T 1A1")
 
     assert result.eligible?
     assert_equal :inside_boundary, result.reason
   end
 
-  test "a point outside the CSD boundary is rejected even if the city name matches" do
-    Warehouse::GeoBoundary.create!(
-      boundary_type: "csd", geo_uid: "3525005-test", name_en: "Hamilton",
-      province_code: "ON", census_year: 2021,
-      geometry: square(centre_lat: 43.25, centre_lon: -79.87, size: 0.2)
-    )
-    postal("L8P 1A1", city: "HAMILTON", lat: 45.42, lon: -75.69) # Ottawa's coordinates
+  test "a point outside the boundary with an unrelated city name is rejected" do
+    hamilton_boundary
+    postal("L9T 1A1", city: "MILTON", lat: 45.42, lon: -75.69) # Ottawa's coordinates
 
-    result = @hamilton.pledge_eligibility.check("L8P 1A1")
+    result = @hamilton.pledge_eligibility.check("L9T 1A1")
 
     refute result.eligible?
     assert_equal :outside_boundary, result.reason
+  end
+
+  # A postal code's centroid is the average of its delivery points, so near a
+  # municipal line it can land on the wrong side of it. The city's own name for
+  # the place rescues those rather than turning a resident away.
+  test "a point just outside the boundary is rescued by the city name" do
+    hamilton_boundary
+    postal("L8P 1A1", city: "DUNDAS", lat: 45.42, lon: -75.69)
+
+    result = @hamilton.pledge_eligibility.check("L8P 1A1")
+
+    assert result.eligible?
+    assert_equal :city_match, result.reason
+  end
+
+  test "the wrong Hamilton's boundary is not used" do
+    # Hamilton Township, Northumberland — same name, different CSD.
+    Warehouse::GeoBoundary.create!(
+      boundary_type: "csd", geo_uid: "3514019", name_en: "Hamilton",
+      province_code: "ON", census_year: 2021,
+      geometry: square(centre_lat: 44.0, centre_lon: -78.2, size: 0.2)
+    )
+    postal("K9A 1A1", city: "COBOURG", lat: 44.0, lon: -78.2)
+
+    result = @hamilton.pledge_eligibility.check("K9A 1A1")
+
+    refute result.eligible?
+    # Judged by name, because the city's own CSD is not loaded.
+    assert_equal :city_mismatch, result.reason
   end
 
   private

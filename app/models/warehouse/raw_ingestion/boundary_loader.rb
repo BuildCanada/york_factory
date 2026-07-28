@@ -93,6 +93,16 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
   }.freeze
 
   WGS84_SRID = 4326
+  # Every boundary file loaded here is from the 2021 Census.
+  CENSUS_YEAR = 2021
+
+  # StatCan ships its boundary files in NAD83 / Statistics Canada Lambert
+  # (EPSG:3347, metres) rather than lat/long — see the .prj in any of the
+  # archives — so they need the same reprojection to WGS84 that the federal
+  # riding file declares for itself. Without it the coordinates are metres
+  # stored as degrees and every polygon is nonsense.
+  STATCAN_LAMBERT_SRID = 3347
+  STATCAN_SOURCE_PREFIX = "statcan_boundary_".freeze
 
   def load(file_content:)
     boundary_type = detect_boundary_type
@@ -138,7 +148,8 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
     name_en_field = custom&.[](:name_en) || NAME_FIELD_MAP[boundary_type]
     name_fr_field = custom&.[](:name_fr)
     fixed_province = custom&.[](:province_code)
-    source_srid = custom&.[](:source_srid)
+    source_srid = custom&.[](:source_srid) ||
+      (STATCAN_LAMBERT_SRID if source_name.start_with?(STATCAN_SOURCE_PREFIX))
     factory = if source_srid
       RGeo::Geos.factory(srid: source_srid, proj4: "EPSG:#{source_srid}")
     else
@@ -189,9 +200,13 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
           name_en: name_en,
           name_fr: name_fr,
           province_code: province_code,
+          # upsert_all writes straight to the table, so GeoBoundary's
+          # default_code_system callback never runs and the NOT NULL column
+          # has to be filled here. Same derivation as the model's.
+          code_system: "#{boundary_type}_#{CENSUS_YEAR}",
           geometry: geometry,
           area_sq_km: record["LANDAREA"]&.to_f,
-          census_year: 2021,
+          census_year: CENSUS_YEAR,
           raw_ingestion_id: raw_ingestion.id
         }
       end

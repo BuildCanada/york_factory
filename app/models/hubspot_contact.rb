@@ -54,6 +54,7 @@ class HubspotContact < ApplicationRecord
     role: "role",
     provincial_constituency: "provincial_constituency",
     federal_constituency: "federal_constituency",
+    pledged_to_vote_at: "pledged_to_vote_at",
 
     # Discord
     discord_join_date: "discord_join_date",
@@ -214,7 +215,7 @@ class HubspotContact < ApplicationRecord
 
       # Handle special data type conversions
       case local_attr
-      when :create_date, :last_activity_date, :joined_at, :member_join_date, :discord_join_date, :hs_createdate
+      when :create_date, :last_activity_date, :joined_at, :member_join_date, :discord_join_date, :hs_createdate, :pledged_to_vote_at
         attributes[local_attr] = parse_hubspot_timestamp(value)
       when :email_confirmed, :is_member, :role, :house_rules, :non_partisan_agreement, :newsletter_subscription
         attributes[local_attr] = value == "true"

@@ -17,6 +17,12 @@ class Subscriber < ApplicationRecord
   # until the subscriber row is committed and visible to the worker.
   after_commit :submit_to_hubspot_form_later, on: [ :create, :update ], if: :hubspot_fields_saved?
 
+  # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
+  # That reaches HubSpot through the direct CRM sync — the subscriber form has
+  # no such field, so the Forms API submission can't carry it.
+  after_commit :sync_to_hubspot_later, on: [ :create, :update ],
+    if: -> { saved_change_to_pledged_to_vote_at? }
+
   # Enqueue a direct CRM sync for every subscriber, spread out to stay under
   # HubSpot's search API rate limit. Used by `rake hubspot:backfill_subscribers`.
   def self.backfill_hubspot_sync(per_minute: 60)
@@ -31,7 +37,8 @@ class Subscriber < ApplicationRecord
     HubspotFormsService.submit_subscriber(self)
   end
 
-  # Direct CRM upsert, bypassing form workflows. Only for backfills.
+  # Direct CRM upsert, bypassing form workflows. Used for backfills and for
+  # fields the subscriber form doesn't define (pledged_to_vote_at).
   def sync_to_hubspot
     HubspotContact.upsert_hubspot_user(
       email: email,
@@ -39,7 +46,8 @@ class Subscriber < ApplicationRecord
         firstname: first_name,
         lastname: last_name,
         postal_code: postal_code,
-        newsletter_subscription: true
+        newsletter_subscription: true,
+        pledged_to_vote_at: pledged_to_vote_at
       }.compact_blank
     )
   end

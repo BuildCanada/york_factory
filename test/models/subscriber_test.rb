@@ -39,6 +39,29 @@ class SubscriberTest < ActiveSupport::TestCase
     HubspotFormsService.singleton_class.remove_method(:submit_subscriber)
   end
 
+  test "stamping pledged_to_vote_at enqueues a direct CRM sync, not a form submission" do
+    subscriber = subscribers(:existing_subscriber)
+
+    assert_no_enqueued_jobs(only: Subscriber::SubmitToHubspotFormJob) do
+      assert_enqueued_with(job: Subscriber::SyncToHubspotJob) do
+        subscriber.update!(pledged_to_vote_at: Time.current)
+      end
+    end
+  end
+
+  test "sync_to_hubspot includes pledged_to_vote_at when the subscriber has pledged" do
+    received = nil
+    HubspotContact.define_singleton_method(:upsert_hubspot_user) { |**kwargs| received = kwargs }
+
+    subscriber = subscribers(:existing_subscriber)
+    subscriber.update!(pledged_to_vote_at: Time.utc(2026, 7, 29, 12, 0))
+    subscriber.sync_to_hubspot
+
+    assert_equal Time.utc(2026, 7, 29, 12, 0), received[:properties][:pledged_to_vote_at]
+  ensure
+    HubspotContact.singleton_class.remove_method(:upsert_hubspot_user)
+  end
+
   test "sync_to_hubspot upserts the HubSpot contact with the subscriber's details" do
     received = nil
     HubspotContact.define_singleton_method(:upsert_hubspot_user) { |**kwargs| received = kwargs }

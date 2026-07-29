@@ -152,6 +152,17 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "create stamps the subscriber's pledged_to_vote_at" do
+    freeze_time do
+      post api_v1_election_pledges_url("toronto-2026"),
+        params: { email: "voter@example.com", name: "Jane Q Voter", region: "ward-5", postal_code: "M5V 1A1" }
+
+      assert_response :created
+      subscriber = Subscriber.find_by!(email: "voter@example.com")
+      assert_equal Time.current, subscriber.pledged_to_vote_at
+    end
+  end
+
   test "create enqueues a HubSpot form submission for the pledging subscriber" do
     assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob) do
       post api_v1_election_pledges_url("toronto-2026"),

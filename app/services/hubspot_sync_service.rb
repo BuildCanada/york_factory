@@ -234,6 +234,7 @@ class HubspotSyncService
       member_source
       member_join_date
       joined_at
+      pledged_to_vote_at
       is_member
       role
       provincial_constituency
@@ -264,6 +265,9 @@ class HubspotSyncService
       when :joined_at, :discord_join_date, :last_activity_date, :member_join_date
         # Convert datetime to ISO 8601 string for Hubspot
         properties[hubspot_prop] = value.beginning_of_day.utc.iso8601 if value.respond_to?(:iso8601)
+      when :pledged_to_vote_at
+        # Full timestamp — the HubSpot property is a date-time, not a date picker
+        properties[hubspot_prop] = value.utc.iso8601 if value.respond_to?(:iso8601)
       when :latitude, :longitude
         properties[hubspot_prop] = value.to_s if value.present?
       else

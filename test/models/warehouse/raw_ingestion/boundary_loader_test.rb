@@ -47,6 +47,60 @@ class Warehouse::RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
     assert_match(/No .shp file/, @ingestion.error_message)
   end
 
+  # The bug this guards against: a shapefile loaded without reprojecting from
+  # its source SRID yields coordinates in metres, which the geography column
+  # silently wraps into valid-looking degrees. Row counts and column types look
+  # perfectly healthy while every polygon is in the wrong place.
+  test "verify_extent! rejects geometry that falls outside Canada" do
+    Warehouse::GeoBoundary.create!(
+      boundary_type: "fsa", geo_uid: "GARBAGE-#{SecureRandom.hex(4)}", name_en: "Wrapped",
+      province_code: "35", census_year: 2021, raw_ingestion: @ingestion,
+      geometry: "SRID=4326;MULTIPOLYGON(((-179 -89, 179 -89, 179 89, -179 89, -179 -89)))"
+    )
+
+    error = assert_raises(RuntimeError) do
+      @ingestion.boundary_loader.send(:verify_extent!, "fsa")
+    end
+    assert_match(/outside Canada/, error.message)
+    assert_match(/not reprojected/, error.message)
+  end
+
+  # StatCan draws Arctic boundaries to the pole, so a latitude ceiling below 90
+  # would reject every correctly-projected file covering the north.
+  test "verify_extent! accepts Arctic geometry reaching the pole" do
+    Warehouse::GeoBoundary.create!(
+      boundary_type: "fsa", geo_uid: "X0A-#{SecureRandom.hex(4)}", name_en: "Nunavut-ish",
+      province_code: "62", census_year: 2021, raw_ingestion: @ingestion,
+      geometry: "SRID=4326;MULTIPOLYGON(((-128.9 51.1, -59.9 51.1, -59.9 89.999, -128.9 89.999, -128.9 51.1)))"
+    )
+
+    assert_nothing_raised { @ingestion.boundary_loader.send(:verify_extent!, "fsa") }
+  end
+
+  test "verify_extent! passes for geometry inside Canada" do
+    Warehouse::GeoBoundary.create!(
+      boundary_type: "fsa", geo_uid: "OK-#{SecureRandom.hex(4)}", name_en: "Toronto-ish",
+      province_code: "35", census_year: 2021, raw_ingestion: @ingestion,
+      geometry: "SRID=4326;MULTIPOLYGON(((-79.6 43.5, -79.1 43.5, -79.1 43.9, -79.6 43.9, -79.6 43.5)))"
+    )
+
+    assert_nothing_raised { @ingestion.boundary_loader.send(:verify_extent!, "fsa") }
+  end
+
+  test "verify_extent! is a no-op when the ingestion wrote nothing" do
+    assert_nothing_raised { @ingestion.boundary_loader.send(:verify_extent!, "fsa") }
+  end
+
+  test "StatCan sources are reprojected from Statistics Canada Lambert" do
+    loader = @ingestion.boundary_loader
+    assert_equal 3347, Warehouse::RawIngestion::BoundaryLoader::STATCAN_LAMBERT_SRID
+    # statcan_boundary_fsa declares no custom source_srid, so the default has to
+    # supply one or its coordinates are metres stored as degrees.
+    assert @source.name.start_with?(Warehouse::RawIngestion::BoundaryLoader::STATCAN_SOURCE_PREFIX)
+    assert_nil Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[@source.name]
+    assert_not_nil loader
+  end
+
   test "normalize_geometry wraps Polygon in MultiPolygon" do
     factory = RGeo::Cartesian.simple_factory(srid: 4326)
     polygon = factory.polygon(

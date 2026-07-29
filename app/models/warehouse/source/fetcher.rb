@@ -4,7 +4,11 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
   MAX_RETRIES = 3
   BACKOFF_BASE = 4 # seconds: 1, 4, 16
 
-  def fetch
+  # force: re-run the loader even when the upstream data is byte-identical to a
+  # previous successful ingestion. Needed when the loader itself changed and the
+  # rows it wrote before are wrong — checksum dedupe is about upstream changes,
+  # and has no idea our parsing improved.
+  def fetch(force: false)
     body = download_body
     checksum = Digest::SHA256.hexdigest(body)
 
@@ -14,7 +18,7 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     # (checksum is unique per source), so a load crash can't wedge the source
     # until its upstream data changes.
     existing = source.raw_ingestions.find_by(checksum: checksum)
-    if existing && !existing.failed?
+    if existing && !existing.failed? && !force
       Rails.logger.info "[Fetcher] Source #{source.name}: data unchanged (checksum match), skipping"
       return
     end

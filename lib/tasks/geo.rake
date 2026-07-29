@@ -1,4 +1,69 @@
 namespace :geo do
+  desc "Report whether each boundary type's geometry actually falls inside Canada"
+  task verify_boundaries: :environment do
+    extent = Warehouse::RawIngestion::BoundaryLoader::CANADA_EXTENT
+    bad = []
+
+    rows = ActiveRecord::Base.connection.select_all(<<~SQL)
+      SELECT boundary_type,
+             COUNT(*) AS n,
+             ST_XMin(ST_Extent(geometry::geometry)) AS min_lon,
+             ST_XMax(ST_Extent(geometry::geometry)) AS max_lon,
+             ST_YMin(ST_Extent(geometry::geometry)) AS min_lat,
+             ST_YMax(ST_Extent(geometry::geometry)) AS max_lat
+      FROM warehouse.geo_boundaries
+      WHERE geometry IS NOT NULL
+      GROUP BY boundary_type ORDER BY boundary_type
+    SQL
+
+    rows.each do |row|
+      inside = row["min_lon"].to_f >= extent[:min_lon] && row["max_lon"].to_f <= extent[:max_lon] &&
+        row["min_lat"].to_f >= extent[:min_lat] && row["max_lat"].to_f <= extent[:max_lat]
+      bad << row["boundary_type"] unless inside
+      puts format("  %-8s %6d rows  lon %9.3f..%9.3f  lat %8.3f..%8.3f  %s",
+        row["boundary_type"], row["n"], row["min_lon"], row["max_lon"],
+        row["min_lat"], row["max_lat"], inside ? "OK" : "OUTSIDE CANADA")
+    end
+
+    if bad.any?
+      puts
+      puts "Unusable geometry: #{bad.join(", ")}."
+      puts "Reload with: bin/rails 'geo:reload_boundaries[<source_name>]'"
+      abort
+    end
+    puts "\nAll boundary geometry is inside Canada."
+  end
+
+  desc "Force a boundary source to re-download and re-load, ignoring checksum dedupe " \
+       "(no argument reloads every boundary source)"
+  task :reload_boundaries, [ :source_name ] => :environment do |_t, args|
+    sources = if args[:source_name]
+      [ Warehouse::Source.find_by!(name: args[:source_name]) ]
+    else
+      Warehouse::Source.where("name LIKE 'statcan_boundary_%' OR name LIKE 'elections_canada_%' " \
+        "OR name LIKE 'ped_%' OR name LIKE 'ward_%' OR name LIKE 'sbw_%'").order(:name).to_a
+    end
+    abort "No boundary sources matched." if sources.empty?
+
+    failed = []
+    sources.each do |source|
+      print "#{source.name}... "
+      started = Time.current
+      begin
+        source.fetcher.fetch(force: true)
+        puts "ok (#{(Time.current - started).round(1)}s)"
+      rescue => e
+        failed << source.name
+        puts "FAILED: #{e.message}"
+      end
+    end
+
+    puts
+    puts "Reloaded #{sources.size - failed.size}/#{sources.size} sources."
+    puts "Failed: #{failed.join(", ")}" if failed.any?
+    puts "Boundary geometry feeds the crosswalks — rerun geo:build_crosswalk after a successful reload."
+  end
+
   desc "Build all crosswalk tables from geo_boundaries, geo_relationships, and spatial joins"
   task build_crosswalk: :environment do
     puts "Building crosswalks..."

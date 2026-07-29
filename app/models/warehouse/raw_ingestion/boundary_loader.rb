@@ -212,13 +212,60 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
       end
     end
 
-    Warehouse::GeoBoundary.upsert_all(
-      records,
-      unique_by: :idx_geo_boundaries_unique,
-      update_only: [ :name_en, :name_fr, :province_code, :geometry, :area_sq_km, :raw_ingestion_id ]
-    ) if records.any?
+    if records.any?
+      # Verified inside the transaction so a bad load rolls back instead of
+      # replacing good geometry with unusable geometry.
+      ActiveRecord::Base.transaction do
+        Warehouse::GeoBoundary.upsert_all(
+          records,
+          unique_by: :idx_geo_boundaries_unique,
+          update_only: [ :name_en, :name_fr, :province_code, :geometry, :area_sq_km, :raw_ingestion_id ]
+        )
+        verify_extent!(boundary_type)
+      end
+    end
 
     Rails.logger.info "[BoundaryLoader] Loaded #{records.size} #{boundary_type} boundaries (#{skipped} skipped due to invalid geometry)"
+  end
+
+  # Canada's extent, with slack. A shapefile loaded without reprojecting from
+  # its source projection produces coordinates in metres (millions) that the
+  # geography type silently wraps into valid-looking degrees, so the row count
+  # and the column types tell you nothing — the polygons just end up in the
+  # wrong place, or spanning the globe. This is the check that catches it.
+  #
+  # Longitude does the real work: wrapped metres spread across the full
+  # -180..180, which no Canadian file does. The northern limit is 90 rather than
+  # Canada's northernmost land (83.1°N at Cape Columbia) because StatCan draws
+  # Arctic boundaries to the pole — FSAs X0E and X0A both reach 89.999, and a
+  # tighter ceiling rejects every correctly-projected file covering the north.
+  # This is an extent check over a whole load, not a per-polygon proof.
+  CANADA_EXTENT = { min_lon: -142.0, max_lon: -52.0, min_lat: 41.0, max_lat: 90.0 }.freeze
+
+  def verify_extent!(boundary_type)
+    extent = Warehouse::GeoBoundary.connection.select_one(
+      Warehouse::GeoBoundary.sanitize_sql_array([ <<~SQL, raw_ingestion.id ])
+        SELECT ST_XMin(ext) AS min_lon, ST_XMax(ext) AS max_lon,
+               ST_YMin(ext) AS min_lat, ST_YMax(ext) AS max_lat
+        FROM (
+          SELECT ST_Extent(geometry::geometry) AS ext
+          FROM warehouse.geo_boundaries
+          WHERE raw_ingestion_id = ?
+        ) e
+      SQL
+    )
+    return if extent.nil? || extent["min_lon"].nil?
+
+    outside = extent["min_lon"].to_f < CANADA_EXTENT[:min_lon] ||
+      extent["max_lon"].to_f > CANADA_EXTENT[:max_lon] ||
+      extent["min_lat"].to_f < CANADA_EXTENT[:min_lat] ||
+      extent["max_lat"].to_f > CANADA_EXTENT[:max_lat]
+    return unless outside
+
+    raise "#{boundary_type} geometry falls outside Canada " \
+      "(lon #{extent["min_lon"].to_f.round(3)}..#{extent["max_lon"].to_f.round(3)}, " \
+      "lat #{extent["min_lat"].to_f.round(3)}..#{extent["max_lat"].to_f.round(3)}) — " \
+      "the shapefile was probably not reprojected from its source SRID. Nothing was written."
   end
 
   def extract_province_code(record, _boundary_type)

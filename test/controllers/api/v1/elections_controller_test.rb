@@ -16,6 +16,8 @@ class Api::V1::ElectionsControllerTest < ActionDispatch::IntegrationTest
       e.election_date = Date.new(2026, 10, 26)
       e.nomination_close_date = Date.new(2026, 9, 18)
     end
+    # The public API only serves published elections.
+    @election.update!(published_at: 1.day.ago)
 
     mayor = @election.races.find_or_create_by!(office_type: "mayor", district_type: "at_large")
     mayor.candidates.find_or_create_by!(full_name: "Chow, Olivia") do |c|
@@ -101,6 +103,40 @@ class Api::V1::ElectionsControllerTest < ActionDispatch::IntegrationTest
     assert with_photo["photo_url"].present?
     assert_equal "Campaign photo", with_photo["photo_attribution"]
     assert_nil without_photo["photo_url"]
+  end
+
+  test "a draft election is hidden from the index and show" do
+    @election.update!(published_at: nil)
+
+    get api_v1_elections_url
+    assert_response :success
+    assert_equal [], JSON.parse(response.body)["data"].map { |e| e["slug"] }
+
+    get api_v1_election_url("toronto-2026")
+    assert_response :not_found
+    assert_equal "Not found", JSON.parse(response.body)["error"]
+  end
+
+  test "an election scheduled for the future is also hidden" do
+    @election.update!(published_at: 1.week.from_now)
+
+    get api_v1_election_url("toronto-2026")
+
+    assert_response :not_found
+  end
+
+  test "an admin token previews a draft election" do
+    @election.update!(published_at: nil)
+    admin = users(:admin)
+    admin.update!(role: "admin") unless admin.admin?
+    application = Doorkeeper::Application.create!(name: "preview-#{SecureRandom.hex(4)}",
+      redirect_uri: "https://example.com/cb")
+    token = Doorkeeper::AccessToken.create!(application: application, resource_owner_id: admin.id)
+
+    get api_v1_election_url("toronto-2026"), headers: { "Authorization" => "Bearer #{token.token}" }
+
+    assert_response :success
+    assert_equal "toronto-2026", JSON.parse(response.body)["slug"]
   end
 
   test "show excludes candidate email and phone" do

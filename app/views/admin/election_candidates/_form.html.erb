@@ -1,0 +1,102 @@
+<%= form_with model: candidate,
+      url: candidate.persisted? ? admin_election_candidate_path(candidate) : admin_election_race_candidates_path(race),
+      scope: :warehouse_election_candidate, multipart: true, class: "card" do |f| %>
+  <% if candidate.errors.any? %>
+    <div class="flash flash-alert">
+      <% candidate.errors.full_messages.each do |msg| %><div><%= msg %></div><% end %>
+    </div>
+  <% end %>
+
+  <p class="text-muted" style="font-size:0.85rem; margin-top:0;">
+    Race: <strong><%= race.label %></strong>
+  </p>
+
+  <div class="form-group">
+    <%= f.label :full_name, "Full name (as published)" %>
+    <%= f.text_field :full_name, class: "form-control", placeholder: "Leiper, Jeff" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      However the city writes it. Must be unique within this race — it's the key reruns and
+      imports match on.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :first_name %>
+    <%= f.text_field :first_name, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :last_name %>
+    <%= f.text_field :last_name, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      The public site shows "First Last" when both are set, otherwise the full name. Candidates
+      are sorted by last name.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :status %>
+    <%= f.select :status, Warehouse::ElectionCandidate.statuses.keys.map { |s| [ s.titleize, s ] }, {}, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :nomination_date, "Nomination filed" %>
+    <%= f.date_field :nomination_date, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :withdrawn_date, "Withdrawn on" %>
+    <%= f.date_field :withdrawn_date, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :website %>
+    <%= f.text_field :website, class: "form-control", placeholder: "https://example.ca" %>
+  </div>
+
+  <div class="form-group">
+    <%= label_tag :social_links, "Social links" %>
+    <%= text_area_tag :social_links,
+          Array(candidate.social_links).map { |link| "#{link["name"]}|#{link["url"]}" }.join("\n"),
+          rows: 5, class: "form-control", placeholder: "facebook|https://facebook.com/...\ninstagram|https://instagram.com/..." %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      One per line, <code>name|url</code>. Names the site already knows how to icon:
+      <code>web</code>, <code>facebook</code>, <code>instagram</code>, <code>twitter</code>,
+      <code>tiktok</code>. A line with no <code>|</code> is treated as a website.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :email %>
+    <%= f.email_field :email, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :phone %>
+    <%= f.text_field :phone, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">Email and phone are stored for reference and never exposed by the public API.</div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :photo %>
+    <% if candidate.photo.attached? %>
+      <div style="margin-bottom:0.5rem;">
+        <%= image_tag url_for(candidate.photo), style: "width:56px;height:70px;object-fit:cover;" %>
+        <label style="font-size:0.75rem; margin-left:0.5rem;">
+          <%= f.check_box :purge_photo, { checked: false }, "1", "0" %> Remove photo
+        </label>
+      </div>
+    <% end %>
+    <%= f.file_field :photo, accept: "image/*", class: "form-control" %>
+    <%= f.text_field :photo_attribution, placeholder: "Attribution (optional)", class: "form-control mt-1" %>
+  </div>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= admin_election_path(race.election) %>" class="btn">Cancel</a>
+    <% if candidate.persisted? %>
+      <%= button_to "Delete candidate", admin_election_candidate_path(candidate), method: :delete, class: "btn btn-danger",
+            data: { turbo_confirm: "Delete #{candidate.display_name}?" } %>
+    <% end %>
+  </div>
+<% end %>

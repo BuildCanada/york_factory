@@ -42,6 +42,7 @@ ISO 8601. `published_at` and similar are dates (`YYYY-MM-DD`); `started_at`, `cr
 ## Sections
 
 - **[KPIs](./kpis/README.md)** — Government performance indicators, source documents, and agent-run audit trail.
+- **[Elections](./elections.md)** — Elections, races, and registered candidates (front-end spec).
 
 ## Other public APIs
 

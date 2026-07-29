@@ -1,92 +1,143 @@
 <div class="page-header">
   <h1><%= @election.name %></h1>
-  <%= button_to "Fetch photo suggestions",
-        fetch_photo_suggestions_admin_election_path(@election),
-        method: :post, class: "btn btn-primary",
-        data: { turbo_confirm: "Queue Wikipedia / campaign-site photo lookups for all active candidates without a photo?" } %>
+  <div class="btn-group">
+    <a href="<%= edit_admin_election_path(@election) %>" class="btn">Edit election</a>
+    <a href="<%= new_admin_election_race_path(@election) %>" class="btn btn-primary">Add race</a>
+    <%= button_to "Fetch photo suggestions",
+          fetch_photo_suggestions_admin_election_path(@election),
+          method: :post, class: "btn",
+          data: { turbo_confirm: "Queue Wikipedia / campaign-site photo lookups for all active candidates without a photo?" } %>
+  </div>
 </div>
 
-<p class="text-muted" style="margin-bottom: 1rem;">
-  Photos shown on buildcanada.com come only from this page — upload one, or accept a
-  fetched suggestion after checking it's really a portrait of the right person.
-  Suggestions from campaign sites are often logos or share cards.
+<p style="margin-bottom: 1rem;">
+  <span class="badge badge-<%= { "published" => "green", "draft" => "yellow", "scheduled" => "blue" }[@election.publish_status] %>">
+    <%= @election.publish_status %>
+  </span>
+  <% unless @election.published? %>
+    <span class="text-muted" style="font-size:0.85rem;">
+      — not visible on buildcanada.com and taking no pledges.
+      <a href="<%= edit_admin_election_path(@election) %>">Publish it</a> when the candidates are in.
+    </span>
+  <% end %>
 </p>
 
-<% @races.each do |race| %>
-  <% race_title = case race.office_type
-     when "mayor" then "Mayor"
-     when "councillor" then "Councillor — Ward #{race.district_number}#{" (#{race.district_name})" if race.district_name}"
-     when "trustee" then "Trustee — #{race.office_body}, Ward #{race.district_number}"
-     else "#{race.office_type.titleize} — #{race.district_name || race.district_number}"
-     end %>
-  <h2 style="margin: 1.5rem 0 0.5rem; font-size: 1rem;"><%= race_title %></h2>
+<p class="text-muted" style="margin-bottom: 1rem;">
+  <%= @election.jurisdiction&.name || "No jurisdiction" %> ·
+  election day <%= @election.election_date.strftime("%b %-d, %Y") %> ·
+  <%= pluralize @election.races.count, "race" %>,
+  <%= pluralize @election.candidates.count, "candidate" %> ·
+  public API: <code>/api/v1/elections/<%= @election.slug %></code>
+</p>
 
-  <table>
-    <thead>
-      <tr>
-        <th style="width:70px">Photo</th>
-        <th>Name</th>
-        <th>Status</th>
-        <th>Suggestions</th>
-        <th style="width:320px">Upload / attribution</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% race.candidates.sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }.each do |candidate| %>
-        <tr id="candidate-<%= candidate.id %>">
-          <td>
-            <% if candidate.photo.attached? %>
-              <%= image_tag url_for(candidate.photo), style: "width:56px;height:70px;object-fit:cover;" %>
-              <div class="text-muted" style="font-size:0.7rem;"><%= candidate.photo_source %></div>
-            <% else %>
-              <span class="text-muted">—</span>
-            <% end %>
-          </td>
-          <td>
-            <%= candidate.display_name %>
-            <% if candidate.website.present? %>
-              <div><a href="<%= candidate.website %>" target="_blank" rel="noopener" class="text-muted" style="font-size:0.75rem;"><%= candidate.website %></a></div>
-            <% end %>
-          </td>
-          <td>
-            <span class="badge badge-<%= candidate.active? ? "green" : "yellow" %>"><%= candidate.status %></span>
-          </td>
-          <td>
-            <% candidate.photo_suggestions.each do |suggestion| %>
-              <div style="display:inline-block; margin: 0 0.75rem 0.5rem 0; text-align:center; vertical-align:top;">
-                <a href="<%= suggestion["page_url"] || suggestion["image_url"] %>" target="_blank" rel="noopener">
-                  <img src="<%= suggestion["image_url"] %>" style="width:56px;height:70px;object-fit:cover;" loading="lazy">
-                </a>
-                <div class="text-muted" style="font-size:0.7rem; max-width:110px;">
-                  <%= suggestion["source"] == "wikipedia" ? "Wikipedia" : "Campaign site" %>
-                  <% if suggestion["source"] == "wikipedia" && suggestion["note"].present? %>
-                    <br><%= truncate(suggestion["note"], length: 40) %>
-                  <% end %>
-                </div>
-                <%= button_to "Use", apply_photo_suggestion_admin_election_candidate_path(candidate, image_url: suggestion["image_url"]),
-                      method: :post, class: "btn btn-sm" %>
-              </div>
-            <% end %>
-            <% if candidate.photo_suggestions.empty? %>
-              <span class="text-muted" style="font-size:0.8rem;">none</span>
-            <% end %>
-          </td>
-          <td>
-            <%= form_with model: candidate, url: admin_election_candidate_path(candidate), scope: :warehouse_election_candidate, method: :patch, multipart: true do |f| %>
-              <%= f.file_field :photo, accept: "image/*", class: "form-control", style: "font-size:0.8rem;" %>
-              <%= f.text_field :photo_attribution, placeholder: "Attribution (optional)", class: "form-control mt-1", style: "font-size:0.8rem;" %>
-              <div class="mt-1" style="display:flex; gap:0.5rem; align-items:center;">
-                <%= f.submit "Save", class: "btn btn-sm" %>
-                <% if candidate.photo.attached? %>
-                  <label style="font-size:0.75rem;">
-                    <%= f.check_box :purge_photo, { checked: false }, "1", "0" %> Remove photo
-                  </label>
+<p class="text-muted" style="margin-bottom: 1.5rem;">
+  Candidates for cities with a machine-readable list are refreshed nightly and hand edits to
+  scraped fields will be overwritten on the next run. Regions entered by hand — anything with no
+  source — are only ever changed here. Photos shown on buildcanada.com come only from this page:
+  upload one, or accept a fetched suggestion after checking it's really a portrait of the right
+  person (campaign-site suggestions are often logos or share cards).
+</p>
+
+<% if @races.empty? %>
+  <div class="card">
+    <p style="margin:0;">
+      No races yet. <a href="<%= new_admin_election_race_path(@election) %>">Add the first race</a> —
+      one per contest (mayor at large, each councillor ward, each trustee district).
+    </p>
+  </div>
+<% end %>
+
+<% @races.each do |race| %>
+  <div style="display:flex; align-items:baseline; gap:0.75rem; margin: 1.5rem 0 0.5rem;">
+    <h2 style="margin:0; font-size:1rem;"><%= race.label %></h2>
+    <span class="text-muted" style="font-size:0.8rem;">
+      <%= pluralize race.candidates.size, "candidate" %>
+      <% if race.metadata["ward_numbers"].present? %>
+        · wards <%= race.metadata["ward_numbers"].join(", ") %>
+      <% end %>
+    </span>
+    <a href="<%= new_admin_election_race_candidate_path(race) %>" class="btn btn-sm">Add candidate</a>
+    <a href="<%= edit_admin_election_race_path(@election, race) %>" class="btn btn-sm">Edit race</a>
+  </div>
+
+  <% if race.candidates.empty? %>
+    <p class="text-muted" style="font-size:0.85rem; margin:0 0 0.5rem;">
+      No candidates in this race.
+    </p>
+  <% else %>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:70px">Photo</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Suggestions</th>
+          <th style="width:320px">Upload / attribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% race.candidates.sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }.each do |candidate| %>
+          <tr id="candidate-<%= candidate.id %>">
+            <td>
+              <% if candidate.photo.attached? %>
+                <%= image_tag url_for(candidate.photo), style: "width:56px;height:70px;object-fit:cover;" %>
+                <div class="text-muted" style="font-size:0.7rem;"><%= candidate.photo_source %></div>
+              <% else %>
+                <span class="text-muted">—</span>
+              <% end %>
+            </td>
+            <td>
+              <a href="<%= edit_admin_election_candidate_path(candidate) %>"><%= candidate.display_name %></a>
+              <% if candidate.website.present? %>
+                <div><a href="<%= candidate.website %>" target="_blank" rel="noopener" class="text-muted" style="font-size:0.75rem;"><%= candidate.website %></a></div>
+              <% end %>
+              <div class="text-muted" style="font-size:0.7rem;">
+                <%= candidate.nomination_date&.strftime("filed %b %-d, %Y") %>
+                <% if candidate.social_links.present? %>
+                  · <%= candidate.social_links.map { |l| l["name"] }.compact.join(", ") %>
                 <% end %>
               </div>
-            <% end %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+            </td>
+            <td>
+              <span class="badge badge-<%= candidate.active? ? "green" : "yellow" %>"><%= candidate.status %></span>
+            </td>
+            <td>
+              <% candidate.photo_suggestions.each do |suggestion| %>
+                <div style="display:inline-block; margin: 0 0.75rem 0.5rem 0; text-align:center; vertical-align:top;">
+                  <a href="<%= suggestion["page_url"] || suggestion["image_url"] %>" target="_blank" rel="noopener">
+                    <img src="<%= suggestion["image_url"] %>" style="width:56px;height:70px;object-fit:cover;" loading="lazy">
+                  </a>
+                  <div class="text-muted" style="font-size:0.7rem; max-width:110px;">
+                    <%= suggestion["source"] == "wikipedia" ? "Wikipedia" : "Campaign site" %>
+                    <% if suggestion["source"] == "wikipedia" && suggestion["note"].present? %>
+                      <br><%= truncate(suggestion["note"], length: 40) %>
+                    <% end %>
+                  </div>
+                  <%= button_to "Use", apply_photo_suggestion_admin_election_candidate_path(candidate, image_url: suggestion["image_url"]),
+                        method: :post, class: "btn btn-sm" %>
+                </div>
+              <% end %>
+              <% if candidate.photo_suggestions.empty? %>
+                <span class="text-muted" style="font-size:0.8rem;">none</span>
+              <% end %>
+            </td>
+            <td>
+              <%= form_with model: candidate, url: admin_election_candidate_path(candidate), scope: :warehouse_election_candidate, method: :patch, multipart: true do |f| %>
+                <%= f.file_field :photo, accept: "image/*", class: "form-control", style: "font-size:0.8rem;" %>
+                <%= f.text_field :photo_attribution, placeholder: "Attribution (optional)", class: "form-control mt-1", style: "font-size:0.8rem;" %>
+                <div class="mt-1" style="display:flex; gap:0.5rem; align-items:center;">
+                  <%= f.submit "Save", class: "btn btn-sm" %>
+                  <% if candidate.photo.attached? %>
+                    <label style="font-size:0.75rem;">
+                      <%= f.check_box :purge_photo, { checked: false }, "1", "0" %> Remove photo
+                    </label>
+                  <% end %>
+                </div>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
 <% end %>

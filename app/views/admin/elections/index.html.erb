@@ -1,11 +1,13 @@
 <div class="page-header">
   <h1>Elections</h1>
+  <a href="<%= new_admin_election_path %>" class="btn btn-primary">New election</a>
 </div>
 
 <table>
   <thead>
     <tr>
       <th>Election</th>
+      <th>Status</th>
       <th>Jurisdiction</th>
       <th>Election day</th>
       <th>Races</th>
@@ -18,6 +20,11 @@
       <% candidates = Warehouse::ElectionCandidate.where(election_race_id: election.races.select(:id)) %>
       <tr>
         <td><a href="<%= admin_election_path(election) %>"><%= election.name %></a></td>
+        <td>
+          <span class="badge badge-<%= { "published" => "green", "draft" => "yellow", "scheduled" => "blue" }[election.publish_status] %>">
+            <%= election.publish_status %>
+          </span>
+        </td>
         <td class="text-muted"><%= election.jurisdiction.name %></td>
         <td><%= election.election_date.strftime("%b %-d, %Y") %></td>
         <td><%= election.races.count %></td>

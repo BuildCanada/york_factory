@@ -71,6 +71,139 @@ class Admin::ElectionsControllerTest < ActionDispatch::IntegrationTest
     assert_nil @candidate.photo_source
   end
 
+  test "creating an election with an existing jurisdiction" do
+    post admin_elections_path, params: {
+      warehouse_election: {
+        name: "Ottawa 2026 General Municipal Election", slug: "ottawa-2026", kind: "municipal",
+        jurisdiction_id: @election.jurisdiction_id,
+        election_date: "2026-10-26", nomination_close_date: "2026-08-21"
+      }
+    }
+
+    election = Warehouse::Election.find_by!(slug: "ottawa-2026")
+    assert_redirected_to admin_election_path(election)
+    assert_equal Date.new(2026, 8, 21), election.nomination_close_date
+  end
+
+  test "creating an election also creates a new jurisdiction when one is named" do
+    assert_difference -> { Warehouse::Jurisdiction.count }, 1 do
+      post admin_elections_path, params: {
+        warehouse_election: {
+          name: "Ottawa 2026 General Municipal Election", slug: "ottawa-2026",
+          kind: "municipal", election_date: "2026-10-26"
+        },
+        new_jurisdiction: { name: "City of Ottawa", slug: "ottawa", code: "OTT-ON", level: "municipal" }
+      }
+    end
+
+    election = Warehouse::Election.find_by!(slug: "ottawa-2026")
+    assert_equal "City of Ottawa", election.jurisdiction.name
+    assert_equal "OTT-ON", election.jurisdiction.code
+  end
+
+  test "a new jurisdiction reuses an existing slug rather than duplicating it" do
+    assert_no_difference -> { Warehouse::Jurisdiction.count } do
+      post admin_elections_path, params: {
+        warehouse_election: { name: "Toronto 2030", slug: "toronto-2030", kind: "municipal", election_date: "2030-10-28" },
+        new_jurisdiction: { name: "City of Toronto", slug: "toronto" }
+      }
+    end
+
+    assert_equal "toronto", Warehouse::Election.find_by!(slug: "toronto-2030").jurisdiction.slug
+  end
+
+  test "an invalid election re-renders the form" do
+    post admin_elections_path, params: { warehouse_election: { name: "", slug: "", kind: "municipal" } }
+
+    assert_response :unprocessable_entity
+    assert_select "div", text: /can't be blank/
+  end
+
+  test "updating an election" do
+    patch admin_election_path(@election), params: {
+      warehouse_election: { name: "Toronto 2026 (revised)", slug: @election.slug,
+                            kind: @election.kind, jurisdiction_id: @election.jurisdiction_id,
+                            election_date: @election.election_date.to_s }
+    }
+
+    assert_redirected_to admin_election_path(@election)
+    assert_equal "Toronto 2026 (revised)", @election.reload.name
+  end
+
+  test "deleting an election removes its races and candidates" do
+    delete admin_election_path(@election)
+
+    assert_redirected_to admin_elections_path
+    refute Warehouse::Election.exists?(@election.id)
+    refute Warehouse::ElectionCandidate.exists?(@candidate.id)
+  end
+
+  test "a new election starts as a draft and stays off the public API" do
+    post admin_elections_path, params: {
+      warehouse_election: {
+        name: "Ottawa 2026 General Municipal Election", slug: "ottawa-2026", kind: "municipal",
+        jurisdiction_id: @election.jurisdiction_id, election_date: "2026-10-26"
+      }
+    }
+
+    election = Warehouse::Election.find_by!(slug: "ottawa-2026")
+    assert_equal "draft", election.publish_status
+    refute election.published?
+    refute Warehouse::Election.published.exists?(election.id)
+  end
+
+  test "publishing an election from the form" do
+    @election.update!(published_at: nil)
+
+    patch admin_election_path(@election), params: {
+      warehouse_election: {
+        name: @election.name, slug: @election.slug, kind: @election.kind,
+        jurisdiction_id: @election.jurisdiction_id, election_date: @election.election_date.to_s,
+        published_at: 1.minute.ago.strftime("%Y-%m-%dT%H:%M")
+      }
+    }
+
+    assert_redirected_to admin_election_path(@election)
+    assert @election.reload.published?
+  end
+
+  test "unpublishing an election returns it to a draft" do
+    @election.update!(published_at: 1.day.ago)
+
+    patch admin_election_path(@election), params: {
+      warehouse_election: {
+        name: @election.name, slug: @election.slug, kind: @election.kind,
+        jurisdiction_id: @election.jurisdiction_id, election_date: @election.election_date.to_s,
+        published_at: ""
+      }
+    }
+
+    assert_nil @election.reload.published_at
+    assert @election.draft?
+  end
+
+  test "the index and show pages surface the publish status" do
+    @election.update!(published_at: nil)
+
+    get admin_elections_path
+    assert_response :success
+    assert_select "span.badge", text: /draft/
+
+    get admin_election_path(@election)
+    assert_response :success
+    assert_select "span.badge", text: /draft/
+  end
+
+  test "the show page offers the management actions" do
+    get admin_election_path(@election)
+
+    assert_response :success
+    assert_select "a[href=?]", new_admin_election_race_path(@election)
+    assert_select "a[href=?]", edit_admin_election_path(@election)
+    assert_select "a[href=?]", edit_admin_election_candidate_path(@candidate)
+    assert_select "a[href=?]", new_admin_election_race_candidate_path(@candidate.race)
+  end
+
   test "fetch_photo_suggestions queues jobs only for active candidates without photos" do
     race = @candidate.race
     race.candidates.find_or_create_by!(full_name: "Gone, Person") do |c|

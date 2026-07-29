@@ -1,0 +1,70 @@
+<%= form_with model: race,
+      url: race.persisted? ? admin_election_race_path(election, race) : admin_election_races_path(election),
+      scope: :warehouse_election_race, class: "card" do |f| %>
+  <% if race.errors.any? %>
+    <div class="flash flash-alert">
+      <% race.errors.full_messages.each do |msg| %><div><%= msg %></div><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :office_type, "Office" %>
+    <%= f.select :office_type, Warehouse::ElectionRace.office_types.keys.map { |o| [ o.titleize, o ] }, {}, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :district_type, "District type" %>
+    <%= f.select :district_type, Warehouse::ElectionRace.district_types.keys.map { |d| [ d.titleize, d ] }, {}, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      <code>at_large</code> for a city-wide race (mayor, a French-language school board).
+      <code>ward</code> for a councillor district, <code>school_board_ward</code> for a trustee district.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :office_body, "Body" %>
+    <%= f.text_field :office_body, class: "form-control", placeholder: "Ottawa-Carleton District School Board" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      The body being elected to — the school board for a trustee race. Leave blank for mayor,
+      and for councillors unless the city elects to more than one council (Brampton does).
+      <strong>Part of the race's identity:</strong> two races can share a district number only if
+      their bodies differ.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :district_number, "District number" %>
+    <%= f.number_field :district_number, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      The ward number, or the <em>lowest</em> ward where a district covers several.
+      Leave blank for at-large races. Used for ordering, not display.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :district_name, "District name" %>
+    <%= f.text_field :district_name, class: "form-control", placeholder: "Orléans East-Cumberland" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      What the public site shows for this district — a ward name, or "Wards 1, 5" for a paired
+      district. Leave blank for at-large races.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= label_tag :ward_numbers, "Ward numbers" %>
+    <%= text_field_tag :ward_numbers, race.metadata["ward_numbers"]&.join(", "), class: "form-control", placeholder: "1, 5" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      Every ward this district covers, for the front end's ward filter. Leave blank for
+      at-large races — they cover the whole city.
+    </div>
+  </div>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= admin_election_path(election) %>" class="btn">Cancel</a>
+    <% if race.persisted? %>
+      <%= button_to "Delete race", admin_election_race_path(election, race), method: :delete, class: "btn btn-danger",
+            data: { turbo_confirm: "Delete #{race.label} and its #{pluralize(race.candidates.count, "candidate")}?" } %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,17 @@
+<div class="page-header">
+  <h1>Edit <%= @election.name %></h1>
+</div>
+
+<%= render "form", election: @election %>
+
+<div class="card mt-1">
+  <h2 style="font-size:0.95rem; margin-top:0;">Danger zone</h2>
+  <p class="text-muted" style="font-size:0.85rem;">
+    Deleting this election also deletes its
+    <%= pluralize @election.races.count, "race" %>,
+    <%= pluralize @election.candidates.count, "candidate" %> (with their photos),
+    and any pledges recorded against it.
+  </p>
+  <%= button_to "Delete election", admin_election_path(@election), method: :delete, class: "btn btn-danger",
+        data: { turbo_confirm: "Delete #{@election.name}, #{pluralize(@election.races.count, "race")} and #{pluralize(@election.candidates.count, "candidate")}? This cannot be undone." } %>
+</div>

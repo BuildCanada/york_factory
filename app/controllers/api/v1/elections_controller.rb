@@ -2,20 +2,27 @@ module Api
   module V1
     class ElectionsController < CmsBaseController
       def index
-        elections = ::Warehouse::Election.includes(:jurisdiction).order(election_date: :desc)
+        elections = visible_elections.includes(:jurisdiction).order(election_date: :desc)
         render json: { data: elections.map { |e| serialize_election(e) } }
       end
 
       def show
-        election = ::Warehouse::Election
+        election = visible_elections
           .includes(:jurisdiction, races: :candidates)
           .find_by!(slug: params[:slug])
-        render json: serialize_election(election, races: sorted_races(election))
+        render json: serialize_election(election, races: ::Warehouse::ElectionRace.sorted(election.races))
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
       end
 
       private
+
+      # Drafts and scheduled elections are invisible until published — an
+      # election is assembled in admin (races, then candidates) and a
+      # half-entered one shouldn't reach the site. An admin token previews them.
+      def visible_elections
+        preview_mode? ? ::Warehouse::Election.all : ::Warehouse::Election.published
+      end
 
       def serialize_election(election, races: nil)
         base = {
@@ -35,20 +42,16 @@ module Api
         base
       end
 
-      # Mayor first, then councillor wards in order, then trustee boards.
-      def sorted_races(election)
-        election.races.sort_by do |race|
-          [ ::Warehouse::ElectionRace.office_types.keys.index(race.office_type),
-            race.office_body.to_s, race.district_number.to_i ]
-        end
-      end
-
       def serialize_race(race)
         {
           office_type: race.office_type,
           district_type: race.district_type,
           district_number: race.district_number,
           district_name: race.district_name,
+          # Brampton's districts pair wards, so district_number (the lowest
+          # ward) doesn't identify them on its own; nil where a district is a
+          # single ward, as in Toronto.
+          ward_numbers: race.metadata["ward_numbers"],
           office_body: race.office_body,
           candidates: race.candidates.sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }
             .map { |c| serialize_candidate(c) }

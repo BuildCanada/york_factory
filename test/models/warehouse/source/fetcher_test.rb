@@ -59,6 +59,30 @@ class Warehouse::Source::FetcherTest < ActiveSupport::TestCase
     assert_not_nil @source.reload.last_fetched_at
   end
 
+  # Checksum dedupe answers "did upstream change", which is the wrong question
+  # when the loader changed and the rows it wrote are wrong.
+  test "force re-runs the loader even when the checksum matches a complete ingestion" do
+    ingestion = create_ingestion(status: "complete")
+
+    run_fetch(force: true)
+
+    assert_equal [ ingestion.id ], @dispatched.map(&:id)
+    ingestion.reload
+    assert_equal "pending", ingestion.status
+    assert_equal 1, @source.raw_ingestions.count, "reuses the row rather than duplicating it"
+    assert_not_nil @source.reload.last_fetched_at
+  end
+
+  test "force still only keeps one ingestion per checksum" do
+    create_ingestion(status: "complete")
+
+    run_fetch(force: true)
+    run_fetch(force: true)
+
+    assert_equal 1, @source.raw_ingestions.count
+    assert_equal 2, @dispatched.size
+  end
+
   private
 
   def create_ingestion(status:, error_message: nil)
@@ -73,10 +97,10 @@ class Warehouse::Source::FetcherTest < ActiveSupport::TestCase
 
   # Stubs the network download and the loader dispatch; everything between
   # (dedupe, archival, ingestion row lifecycle) runs for real.
-  def run_fetch
+  def run_fetch(force: false)
     dispatched = @dispatched
     @fetcher.define_singleton_method(:download_body) { BODY }
     @fetcher.define_singleton_method(:dispatch_loader) { |ingestion, _body| dispatched << ingestion }
-    @fetcher.fetch
+    @fetcher.fetch(force: force)
   end
 end

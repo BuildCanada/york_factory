@@ -163,11 +163,28 @@ class Api::V1::ElectionPledgesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "create enqueues a HubSpot form submission for the pledging subscriber" do
-    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob) do
-      post api_v1_election_pledges_url("toronto-2026"),
-        params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
-    end
+  test "create submits the pledge form once, never the subscriber form" do
+    post api_v1_election_pledges_url("toronto-2026"),
+      params: { email: "voter@example.com", name: "Jane Voter", region: "ward-5", postal_code: "M5V 1A1" }
+
+    assert_response :created
+    subscriber = Subscriber.find_by!(email: "voter@example.com")
+    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob, args: [ subscriber, :pledge ])
+
+    form_jobs = enqueued_jobs.select { |job| job["job_class"] == "Subscriber::SubmitToHubspotFormJob" }
+    assert_equal 1, form_jobs.size
+  end
+
+  test "an out-of-region signup submits the subscriber form, not the pledge form" do
+    post api_v1_election_pledges_url("brampton-2026"),
+      params: { email: "outsider@example.com", name: "Otto Outsider", region: "wards-1-5", postal_code: "M5V 1A1" }
+
+    assert_response :ok
+    subscriber = Subscriber.find_by!(email: "outsider@example.com")
+    assert_enqueued_with(job: Subscriber::SubmitToHubspotFormJob, args: [ subscriber ])
+
+    form_jobs = enqueued_jobs.select { |job| job["job_class"] == "Subscriber::SubmitToHubspotFormJob" }
+    assert_equal 1, form_jobs.size
   end
 
   test "create stores the pledge source and tracking context on the subscriber" do

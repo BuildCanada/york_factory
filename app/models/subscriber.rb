@@ -10,17 +10,25 @@ class Subscriber < ApplicationRecord
   # in the DB).
   has_many :pledges_to_vote, class_name: "Warehouse::PledgeToVote"
 
+  # Set while the pledge endpoint records a pledge for this subscriber: the
+  # pledge stamp submits the HubSpot pledge form (which carries the same
+  # contact fields), so the save that creates or fills in the contact must
+  # not also submit the subscriber form.
+  attr_accessor :pledging
+
   validates :email, presence: true, uniqueness: true,
             format: { with: URI::MailTo::EMAIL_REGEXP }
 
   # Solid Queue runs on a separate database, so the job must not be enqueued
   # until the subscriber row is committed and visible to the worker.
-  after_commit :submit_to_hubspot_form_later, on: [ :create, :update ], if: :hubspot_fields_saved?
+  after_commit :submit_to_hubspot_form_later, on: [ :create, :update ],
+    if: -> { hubspot_fields_saved? && !pledging }
 
   # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
-  # That reaches HubSpot through the direct CRM sync — the subscriber form has
-  # no such field, so the Forms API submission can't carry it.
-  after_commit :sync_to_hubspot_later, on: [ :create, :update ],
+  # Every pledge submits the dedicated HubSpot pledge form so pledge
+  # workflows fire; the timestamp itself goes through the direct CRM sync —
+  # the pledge form (a clone of the subscriber form) has no such field.
+  after_commit :sync_pledge_to_hubspot, on: [ :create, :update ],
     if: -> { saved_change_to_pledged_to_vote_at? }
 
   # Enqueue a direct CRM sync for every subscriber, spread out to stay under
@@ -32,9 +40,9 @@ class Subscriber < ApplicationRecord
   end
 
   # New signups go through the HubSpot form so submission-triggered workflows
-  # fire in HubSpot.
-  def submit_to_hubspot_form
-    HubspotFormsService.submit_subscriber(self)
+  # fire in HubSpot; pledges go through the dedicated pledge form.
+  def submit_to_hubspot_form(form = :subscriber)
+    HubspotFormsService.submit_subscriber(self, form: form)
   end
 
   # Direct CRM upsert, bypassing form workflows. Used for backfills and for
@@ -53,6 +61,11 @@ class Subscriber < ApplicationRecord
   end
 
   private
+
+  def sync_pledge_to_hubspot
+    submit_to_hubspot_form_later(:pledge)
+    sync_to_hubspot_later
+  end
 
   def hubspot_fields_saved?
     saved_changes.keys.intersect?(HUBSPOT_SYNCED_FIELDS)

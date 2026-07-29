@@ -9,13 +9,14 @@ class HubspotFormsService
   class ConfigurationError < StandardError; end
   class SubmissionError < StandardError; end
 
-  def self.submit_subscriber(subscriber)
-    new.submit_subscriber(subscriber)
+  def self.submit_subscriber(subscriber, form: :subscriber)
+    new(form: form).submit_subscriber(subscriber)
   end
 
-  def initialize(portal_id: default_portal_id, form_guid: default_form_guid)
+  def initialize(portal_id: default_portal_id, form: :subscriber, form_guid: nil)
     @portal_id = portal_id
-    @form_guid = form_guid
+    @form = form
+    @form_guid = form_guid || default_form_guid
   end
 
   def submit_subscriber(subscriber)
@@ -27,7 +28,7 @@ class HubspotFormsService
 
     if @portal_id.blank? || @form_guid.blank?
       raise ConfigurationError,
-        "Set hubspot.portal_id and hubspot.subscriber_form_guid in Rails credentials to submit subscriber forms"
+        "Set hubspot.portal_id and hubspot.#{@form}_form_guid in Rails credentials to submit subscriber forms"
     end
 
     fields = {
@@ -73,7 +74,9 @@ class HubspotFormsService
     Rails.application.credentials.dig(:hubspot, :portal_id)
   end
 
+  # Each form has its own GUID credential: hubspot.subscriber_form_guid for
+  # newsletter signups, hubspot.pledge_form_guid for vote pledges.
   def default_form_guid
-    Rails.application.credentials.dig(:hubspot, :subscriber_form_guid)
+    Rails.application.credentials.dig(:hubspot, :"#{@form}_form_guid")
   end
 end

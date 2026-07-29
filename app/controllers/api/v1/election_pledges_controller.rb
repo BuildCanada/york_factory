@@ -51,17 +51,23 @@ module Api
           return render json: { errors: errors }, status: :unprocessable_entity
         end
 
+        # Only residents of the jurisdiction holding this election can pledge
+        # in it, judged from the submitted postal code
+        # (Election::PledgeEligibility). Checked before the subscriber saves:
+        # an eligible pledger's stamp submits the HubSpot pledge form, so
+        # their save must not also submit the subscriber form (see
+        # Subscriber#pledging).
+        eligibility = @election.pledge_eligibility.check(params[:postal_code])
+
         subscriber = find_or_build_subscriber
+        subscriber.pledging = eligibility.eligible?
         unless subscriber.save
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
         end
 
-        # Only residents of the jurisdiction holding this election can pledge in
-        # it, judged from the submitted postal code
-        # (Election::PledgeEligibility). We still keep the subscriber
-        # (newsletter signup) but record no pledge, and signal the client to
-        # redirect them to explore instead.
-        eligibility = @election.pledge_eligibility.check(params[:postal_code])
+        # Someone outside the region can't pledge — we still keep the
+        # subscriber (newsletter signup) but record no pledge, and signal the
+        # client to redirect them to explore instead.
         unless eligibility.eligible?
           return render json: {
             outside_region: true,

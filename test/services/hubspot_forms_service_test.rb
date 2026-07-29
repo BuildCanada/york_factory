@@ -98,9 +98,34 @@ class HubspotFormsServiceTest < ActiveSupport::TestCase
     HTTP.singleton_class.remove_method(:post)
   end
 
+  test "resolves each form's GUID from its own credential" do
+    captured_url = nil
+    HTTP.define_singleton_method(:post) do |url, json:|
+      captured_url = url
+      FakeResponse.new(success: true)
+    end
+    credentials = Rails.application.credentials
+    credentials.define_singleton_method(:dig) do |*keys|
+      {
+        [ :hubspot, :portal_id ] => "123456",
+        [ :hubspot, :subscriber_form_guid ] => "subscriber-guid",
+        [ :hubspot, :pledge_form_guid ] => "pledge-guid"
+      }[keys]
+    end
+
+    HubspotFormsService.submit_subscriber(subscribers(:existing_subscriber))
+    assert_equal "#{HubspotFormsService::SUBMIT_URL}/123456/subscriber-guid", captured_url
+
+    HubspotFormsService.submit_subscriber(subscribers(:existing_subscriber), form: :pledge)
+    assert_equal "#{HubspotFormsService::SUBMIT_URL}/123456/pledge-guid", captured_url
+  ensure
+    HTTP.singleton_class.remove_method(:post)
+    Rails.application.credentials.singleton_class.remove_method(:dig)
+  end
+
   test "submit_subscriber raises when the form GUID or portal ID is not configured" do
     assert_raises(HubspotFormsService::ConfigurationError) do
-      HubspotFormsService.new(portal_id: "123456", form_guid: nil)
+      HubspotFormsService.new(portal_id: "123456", form: :unconfigured)
         .submit_subscriber(subscribers(:existing_subscriber))
     end
 

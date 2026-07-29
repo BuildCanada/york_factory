@@ -15,8 +15,16 @@ class Warehouse::PledgeToVote < Warehouse::Record
 
   before_validation { self.pledged_at ||= Time.current }
   before_create :generate_share_token
+  after_save :stamp_subscriber
 
   private
+
+  # The subscriber carries a denormalized pledged_to_vote_at mirroring their
+  # latest pledge — changing it is what pushes the date to HubSpot (see
+  # Subscriber's CRM-sync callback).
+  def stamp_subscriber
+    subscriber.update!(pledged_to_vote_at: pledged_at)
+  end
 
   # Public identifier for the pledge's shareable page — random rather than
   # the sequential id so pledge URLs can't be enumerated.

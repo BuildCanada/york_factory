@@ -452,7 +452,8 @@ CREATE TABLE public.hubspot_contacts (
     member_join_date timestamp(6) without time zone,
     discord_display_name text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    pledged_to_vote_at timestamp(6) without time zone
 );
 
 
@@ -1101,7 +1102,8 @@ CREATE TABLE public.subscribers (
     page_uri character varying,
     page_name character varying,
     hubspot_utk character varying,
-    ip_address character varying
+    ip_address character varying,
+    pledged_to_vote_at timestamp(6) without time zone
 );
 
 
@@ -7481,6 +7483,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729000001'),
 ('20260728000001'),
 ('20260724000001'),
 ('20260723000002'),

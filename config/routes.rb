@@ -73,6 +73,7 @@ Rails.application.routes.draw do
         get "crosswalk", to: "crosswalk#show"
         get "boundaries", to: "boundaries#index"
         get "addresses", to: "addresses#index"
+        get "ward_lookup", to: "ward_lookup#show"
       end
 
       namespace :trade_barriers do

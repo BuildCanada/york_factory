@@ -886,6 +886,86 @@ ALTER SEQUENCE public.metrics_twitter_stats_id_seq OWNED BY public.metrics_twitt
 
 
 --
+-- Name: notification_batches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notification_batches (
+    id bigint NOT NULL,
+    saved_search_id bigint NOT NULL,
+    mode character varying NOT NULL,
+    state character varying DEFAULT 'open'::character varying NOT NULL,
+    scheduled_for timestamp with time zone,
+    closed_at timestamp with time zone,
+    coalesced boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT notification_batches_mode CHECK (((mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
+    CONSTRAINT notification_batches_state CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'closed'::character varying, 'delivering'::character varying, 'delivered'::character varying, 'dead'::character varying])::text[])))
+);
+
+
+--
+-- Name: notification_batches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.notification_batches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: notification_batches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.notification_batches_id_seq OWNED BY public.notification_batches.id;
+
+
+--
+-- Name: notification_deliveries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notification_deliveries (
+    id bigint NOT NULL,
+    notification_batch_id bigint NOT NULL,
+    channel character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    attempt_count integer DEFAULT 0 NOT NULL,
+    idempotency_key character varying NOT NULL,
+    provider_response jsonb DEFAULT '{}'::jsonb NOT NULL,
+    next_attempt_at timestamp with time zone,
+    delivered_at timestamp with time zone,
+    last_error text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT notification_deliveries_channel CHECK (((channel)::text = ANY ((ARRAY['email'::character varying, 'webhook'::character varying])::text[]))),
+    CONSTRAINT notification_deliveries_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'delivering'::character varying, 'delivered'::character varying, 'failed'::character varying, 'dead'::character varying])::text[])))
+);
+
+
+--
+-- Name: notification_deliveries_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.notification_deliveries_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: notification_deliveries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.notification_deliveries_id_seq OWNED BY public.notification_deliveries.id;
+
+
+--
 -- Name: oauth_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1035,12 +1115,287 @@ ALTER SEQUENCE public.posts_id_seq OWNED BY public.posts.id;
 
 
 --
+-- Name: saved_search_matches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.saved_search_matches (
+    id bigint NOT NULL,
+    saved_search_id bigint NOT NULL,
+    searchable_revision integer NOT NULL,
+    searchable_content_hash character varying NOT NULL,
+    match_key character varying NOT NULL,
+    matched_at timestamp with time zone NOT NULL,
+    matched_sequence bigint,
+    match_evidence jsonb DEFAULT '{}'::jsonb NOT NULL,
+    state character varying DEFAULT 'pending'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    searchable_type character varying NOT NULL,
+    searchable_id character varying NOT NULL,
+    notification_batch_id bigint,
+    CONSTRAINT saved_search_matches_state CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'buffered'::character varying, 'dispatching'::character varying, 'delivered'::character varying, 'dead'::character varying])::text[])))
+);
+
+
+--
+-- Name: saved_search_matches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.saved_search_matches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: saved_search_matches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.saved_search_matches_id_seq OWNED BY public.saved_search_matches.id;
+
+
+--
+-- Name: saved_search_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.saved_search_runs (
+    id bigint NOT NULL,
+    saved_search_id bigint NOT NULL,
+    scheduled_for timestamp with time zone NOT NULL,
+    from_sequence bigint DEFAULT 0 NOT NULL,
+    to_sequence bigint DEFAULT 0 NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    query_count integer DEFAULT 0 NOT NULL,
+    matched_count integer DEFAULT 0 NOT NULL,
+    duration_ms integer,
+    billing jsonb DEFAULT '{}'::jsonb NOT NULL,
+    performance jsonb DEFAULT '{}'::jsonb NOT NULL,
+    error text,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT saved_search_runs_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying])::text[])))
+);
+
+
+--
+-- Name: saved_search_runs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.saved_search_runs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: saved_search_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.saved_search_runs_id_seq OWNED BY public.saved_search_runs.id;
+
+
+--
+-- Name: saved_searches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.saved_searches (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    name character varying NOT NULL,
+    realm character varying NOT NULL,
+    definition jsonb DEFAULT '{}'::jsonb NOT NULL,
+    definition_digest character varying NOT NULL,
+    definition_version integer DEFAULT 1 NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    poll_interval_seconds integer DEFAULT 60 NOT NULL,
+    next_run_at timestamp with time zone,
+    cursor_sequence bigint DEFAULT 0 NOT NULL,
+    start_policy character varying DEFAULT 'future_only'::character varying NOT NULL,
+    notify_on_update boolean DEFAULT false NOT NULL,
+    delivery_mode character varying DEFAULT 'instant'::character varying NOT NULL,
+    delivery_configuration jsonb DEFAULT '{}'::jsonb NOT NULL,
+    timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    webhook_secret character varying,
+    CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
+    CONSTRAINT saved_searches_poll_interval CHECK (((poll_interval_seconds >= 60) AND (poll_interval_seconds <= 86400))),
+    CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY ((ARRAY['future_only'::character varying, 'backfill'::character varying])::text[])))
+);
+
+
+--
+-- Name: saved_searches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.saved_searches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: saved_searches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.saved_searches_id_seq OWNED BY public.saved_searches.id;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.schema_migrations (
     version character varying NOT NULL
 );
+
+
+--
+-- Name: search_index_sequence; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.search_index_sequence
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: search_media_articles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.search_media_articles (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    search_source_id bigint,
+    external_key character varying,
+    state character varying DEFAULT 'draft'::character varying NOT NULL,
+    visibility character varying DEFAULT 'public'::character varying NOT NULL,
+    permission_ids uuid[] DEFAULT '{}'::uuid[] NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    canonical_url text,
+    canonical_url_digest character varying,
+    source_url text,
+    title text,
+    summary text,
+    content text,
+    language character varying DEFAULT 'und'::character varying NOT NULL,
+    published_at timestamp with time zone,
+    source_updated_at timestamp with time zone,
+    first_seen_at timestamp with time zone,
+    last_seen_at timestamp with time zone,
+    search_content_hash character varying,
+    ontology jsonb DEFAULT '{}'::jsonb NOT NULL,
+    realm_data jsonb DEFAULT '{}'::jsonb NOT NULL,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer,
+    extraction_metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT search_media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY ((ARRAY['full'::character varying, 'truncated'::character varying])::text[])))),
+    CONSTRAINT search_media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
+    CONSTRAINT search_media_articles_state CHECK (((state)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'withdrawn'::character varying, 'invalid'::character varying])::text[])))
+);
+
+
+--
+-- Name: search_source_fetches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.search_source_fetches (
+    id bigint NOT NULL,
+    search_source_id bigint NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    http_status integer,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    duration_ms integer,
+    items_discovered integer DEFAULT 0 NOT NULL,
+    response_checksum character varying,
+    error text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT search_source_fetches_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'not_modified'::character varying])::text[])))
+);
+
+
+--
+-- Name: search_source_fetches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.search_source_fetches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: search_source_fetches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.search_source_fetches_id_seq OWNED BY public.search_source_fetches.id;
+
+
+--
+-- Name: search_sources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.search_sources (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    realm character varying NOT NULL,
+    strategy character varying NOT NULL,
+    url text,
+    cadence_seconds integer DEFAULT 300 NOT NULL,
+    configuration jsonb DEFAULT '{}'::jsonb NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    next_fetch_at timestamp with time zone,
+    etag character varying,
+    last_modified character varying,
+    last_succeeded_at timestamp with time zone,
+    last_failed_at timestamp with time zone,
+    consecutive_failures integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT search_sources_cadence_minimum CHECK ((cadence_seconds >= 60)),
+    CONSTRAINT search_sources_failures_nonnegative CHECK ((consecutive_failures >= 0))
+);
+
+
+--
+-- Name: search_sources_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.search_sources_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: search_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.search_sources_id_seq OWNED BY public.search_sources.id;
 
 
 --
@@ -1584,86 +1939,6 @@ ALTER SEQUENCE warehouse.agent_runs_id_seq OWNED BY warehouse.agent_runs.id;
 
 
 --
--- Name: alert_events; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.alert_events (
-    id bigint NOT NULL,
-    alert_id bigint NOT NULL,
-    triggered_at timestamp with time zone DEFAULT now() NOT NULL,
-    canonical_observation_id bigint,
-    observed_value numeric,
-    comparison_value numeric,
-    message text,
-    details jsonb,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: alert_events_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.alert_events_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: alert_events_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.alert_events_id_seq OWNED BY warehouse.alert_events.id;
-
-
---
--- Name: alerts; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.alerts (
-    id bigint NOT NULL,
-    name character varying NOT NULL,
-    measure_id bigint,
-    geo_boundary_id bigint,
-    jurisdiction_id bigint,
-    observed_organization_id bigint,
-    condition_type character varying NOT NULL,
-    threshold_value numeric,
-    comparison_period character varying,
-    severity character varying DEFAULT 'medium'::character varying NOT NULL,
-    enabled boolean DEFAULT true NOT NULL,
-    notes text,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT alerts_condition_type_check CHECK (((condition_type)::text = ANY (ARRAY[('above'::character varying)::text, ('below'::character varying)::text, ('percent_change'::character varying)::text, ('absolute_change'::character varying)::text, ('missing_update'::character varying)::text, ('rank_change'::character varying)::text, ('new_definition'::character varying)::text, ('new_component'::character varying)::text, ('conflicting_source'::character varying)::text]))),
-    CONSTRAINT alerts_severity_check CHECK (((severity)::text = ANY (ARRAY[('low'::character varying)::text, ('medium'::character varying)::text, ('high'::character varying)::text, ('critical'::character varying)::text])))
-);
-
-
---
--- Name: alerts_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.alerts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: alerts_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.alerts_id_seq OWNED BY warehouse.alerts.id;
-
-
---
 -- Name: api_tokens; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -1968,6 +2243,14 @@ CREATE TABLE warehouse.measures (
     higher_is_bad boolean,
     frequency character varying,
     category character varying,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    search_content_hash character varying,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer,
     CONSTRAINT measures_aggregation_type_check CHECK (((aggregation_type)::text = ANY (ARRAY[('additive'::character varying)::text, ('semi_additive'::character varying)::text, ('average'::character varying)::text, ('ratio'::character varying)::text, ('median'::character varying)::text, ('index'::character varying)::text, ('rate'::character varying)::text, ('part_of_whole'::character varying)::text, ('non_aggregable'::character varying)::text, ('unknown'::character varying)::text]))),
     CONSTRAINT measures_frequency_check CHECK (((frequency IS NULL) OR ((frequency)::text = ANY (ARRAY[('annual'::character varying)::text, ('fiscal_year'::character varying)::text, ('quarterly'::character varying)::text, ('monthly'::character varying)::text, ('point_in_time'::character varying)::text, ('irregular'::character varying)::text, ('unknown'::character varying)::text])))),
     CONSTRAINT measures_no_self_ratio CHECK ((((numerator_measure_id IS NULL) OR (numerator_measure_id <> id)) AND ((denominator_measure_id IS NULL) OR (denominator_measure_id <> id)))),
@@ -2390,7 +2673,15 @@ CREATE TABLE warehouse.fiscal_expenditures (
     raw_ingestion_id bigint,
     updated_at timestamp(6) without time zone NOT NULL,
     vote_number character varying,
-    vote_type character varying NOT NULL
+    vote_type character varying NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    search_content_hash character varying,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer
 );
 
 
@@ -3483,7 +3774,15 @@ CREATE TABLE warehouse.standard_object_expenditures (
     organization_id bigint NOT NULL,
     raw_ingestion_id bigint,
     standard_object character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    search_content_hash character varying,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer
 );
 
 
@@ -3659,6 +3958,20 @@ ALTER TABLE ONLY public.metrics_twitter_stats ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: notification_batches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_batches ALTER COLUMN id SET DEFAULT nextval('public.notification_batches_id_seq'::regclass);
+
+
+--
+-- Name: notification_deliveries id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_deliveries ALTER COLUMN id SET DEFAULT nextval('public.notification_deliveries_id_seq'::regclass);
+
+
+--
 -- Name: oauth_access_grants id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3684,6 +3997,41 @@ ALTER TABLE ONLY public.oauth_applications ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.posts ALTER COLUMN id SET DEFAULT nextval('public.posts_id_seq'::regclass);
+
+
+--
+-- Name: saved_search_matches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_matches ALTER COLUMN id SET DEFAULT nextval('public.saved_search_matches_id_seq'::regclass);
+
+
+--
+-- Name: saved_search_runs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_runs ALTER COLUMN id SET DEFAULT nextval('public.saved_search_runs_id_seq'::regclass);
+
+
+--
+-- Name: saved_searches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_searches ALTER COLUMN id SET DEFAULT nextval('public.saved_searches_id_seq'::regclass);
+
+
+--
+-- Name: search_source_fetches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_source_fetches ALTER COLUMN id SET DEFAULT nextval('public.search_source_fetches_id_seq'::regclass);
+
+
+--
+-- Name: search_sources id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_sources ALTER COLUMN id SET DEFAULT nextval('public.search_sources_id_seq'::regclass);
 
 
 --
@@ -3782,20 +4130,6 @@ ALTER TABLE ONLY warehouse.addresses ALTER COLUMN id SET DEFAULT nextval('wareho
 --
 
 ALTER TABLE ONLY warehouse.agent_runs ALTER COLUMN id SET DEFAULT nextval('warehouse.agent_runs_id_seq'::regclass);
-
-
---
--- Name: alert_events id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alert_events ALTER COLUMN id SET DEFAULT nextval('warehouse.alert_events_id_seq'::regclass);
-
-
---
--- Name: alerts id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts ALTER COLUMN id SET DEFAULT nextval('warehouse.alerts_id_seq'::regclass);
 
 
 --
@@ -4246,6 +4580,22 @@ ALTER TABLE ONLY public.metrics_twitter_stats
 
 
 --
+-- Name: notification_batches notification_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_batches
+    ADD CONSTRAINT notification_batches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_deliveries notification_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_deliveries
+    ADD CONSTRAINT notification_deliveries_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: oauth_access_grants oauth_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4278,11 +4628,59 @@ ALTER TABLE ONLY public.posts
 
 
 --
+-- Name: saved_search_matches saved_search_matches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_matches
+    ADD CONSTRAINT saved_search_matches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: saved_search_runs saved_search_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_runs
+    ADD CONSTRAINT saved_search_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: saved_searches saved_searches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_searches
+    ADD CONSTRAINT saved_searches_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: search_media_articles search_media_articles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_media_articles
+    ADD CONSTRAINT search_media_articles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: search_source_fetches search_source_fetches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_source_fetches
+    ADD CONSTRAINT search_source_fetches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: search_sources search_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_sources
+    ADD CONSTRAINT search_sources_pkey PRIMARY KEY (id);
 
 
 --
@@ -4395,22 +4793,6 @@ ALTER TABLE ONLY warehouse.addresses
 
 ALTER TABLE ONLY warehouse.agent_runs
     ADD CONSTRAINT agent_runs_pkey PRIMARY KEY (id);
-
-
---
--- Name: alert_events alert_events_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alert_events
-    ADD CONSTRAINT alert_events_pkey PRIMARY KEY (id);
-
-
---
--- Name: alerts alerts_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts
-    ADD CONSTRAINT alerts_pkey PRIMARY KEY (id);
 
 
 --
@@ -4774,6 +5156,27 @@ ALTER TABLE ONLY warehouse.pledges_to_vote
 
 
 --
+-- Name: idx_notification_batches_due; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notification_batches_due ON public.notification_batches USING btree (state, scheduled_for);
+
+
+--
+-- Name: idx_notification_deliveries_channel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_notification_deliveries_channel ON public.notification_deliveries USING btree (notification_batch_id, channel);
+
+
+--
+-- Name: idx_notification_deliveries_ready; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notification_deliveries_ready ON public.notification_deliveries USING btree (status, next_attempt_at);
+
+
+--
 -- Name: idx_on_jurisdiction_id_cb07659517; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4785,6 +5188,76 @@ CREATE INDEX idx_on_jurisdiction_id_cb07659517 ON public.trade_barriers_agreemen
 --
 
 CREATE INDEX idx_on_memo_id_type_status_created_at_1b33302aff ON public.engagements USING btree (memo_id, type, status, created_at);
+
+
+--
+-- Name: idx_on_searchable_type_searchable_id_c94ce87143; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_searchable_type_searchable_id_c94ce87143 ON public.saved_search_matches USING btree (searchable_type, searchable_id);
+
+
+--
+-- Name: idx_saved_search_matches_buffer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_saved_search_matches_buffer ON public.saved_search_matches USING btree (saved_search_id, state, matched_at);
+
+
+--
+-- Name: idx_saved_search_matches_dedupe; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_saved_search_matches_dedupe ON public.saved_search_matches USING btree (saved_search_id, match_key);
+
+
+--
+-- Name: idx_saved_search_runs_tick; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_saved_search_runs_tick ON public.saved_search_runs USING btree (saved_search_id, scheduled_for);
+
+
+--
+-- Name: idx_saved_searches_due; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_saved_searches_due ON public.saved_searches USING btree (enabled, next_run_at);
+
+
+--
+-- Name: idx_search_media_articles_canonical_url; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_search_media_articles_canonical_url ON public.search_media_articles USING btree (canonical_url_digest) WHERE (canonical_url_digest IS NOT NULL);
+
+
+--
+-- Name: idx_search_media_articles_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_search_media_articles_source_key ON public.search_media_articles USING btree (search_source_id, external_key) WHERE ((search_source_id IS NOT NULL) AND (external_key IS NOT NULL));
+
+
+--
+-- Name: idx_search_media_articles_sync_overlap; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_search_media_articles_sync_overlap ON public.search_media_articles USING btree (search_synced_at, search_index_sequence);
+
+
+--
+-- Name: idx_search_source_fetches_recent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_search_source_fetches_recent ON public.search_source_fetches USING btree (search_source_id, created_at);
+
+
+--
+-- Name: idx_search_sources_due; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_search_sources_due ON public.search_sources USING btree (enabled, next_fetch_at);
 
 
 --
@@ -5138,6 +5611,27 @@ CREATE UNIQUE INDEX index_metrics_twitter_stats_on_account_and_date ON public.me
 
 
 --
+-- Name: index_notification_batches_on_saved_search_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notification_batches_on_saved_search_id ON public.notification_batches USING btree (saved_search_id);
+
+
+--
+-- Name: index_notification_deliveries_on_idempotency_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_notification_deliveries_on_idempotency_key ON public.notification_deliveries USING btree (idempotency_key);
+
+
+--
+-- Name: index_notification_deliveries_on_notification_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notification_deliveries_on_notification_batch_id ON public.notification_deliveries USING btree (notification_batch_id);
+
+
+--
 -- Name: index_oauth_access_grants_on_application_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5198,6 +5692,76 @@ CREATE UNIQUE INDEX index_oauth_applications_on_uid ON public.oauth_applications
 --
 
 CREATE UNIQUE INDEX index_posts_on_slug ON public.posts USING btree (slug);
+
+
+--
+-- Name: index_saved_search_matches_on_notification_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_saved_search_matches_on_notification_batch_id ON public.saved_search_matches USING btree (notification_batch_id);
+
+
+--
+-- Name: index_saved_search_matches_on_saved_search_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_saved_search_matches_on_saved_search_id ON public.saved_search_matches USING btree (saved_search_id);
+
+
+--
+-- Name: index_saved_search_runs_on_saved_search_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_saved_search_runs_on_saved_search_id ON public.saved_search_runs USING btree (saved_search_id);
+
+
+--
+-- Name: index_saved_searches_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_saved_searches_on_user_id ON public.saved_searches USING btree (user_id);
+
+
+--
+-- Name: index_saved_searches_on_user_id_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_saved_searches_on_user_id_and_name ON public.saved_searches USING btree (user_id, name);
+
+
+--
+-- Name: index_search_media_articles_on_search_index_sequence; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_search_media_articles_on_search_index_sequence ON public.search_media_articles USING btree (search_index_sequence);
+
+
+--
+-- Name: index_search_media_articles_on_search_source_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_search_media_articles_on_search_source_id ON public.search_media_articles USING btree (search_source_id);
+
+
+--
+-- Name: index_search_media_articles_on_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_search_media_articles_on_state ON public.search_media_articles USING btree (state);
+
+
+--
+-- Name: index_search_source_fetches_on_search_source_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_search_source_fetches_on_search_source_id ON public.search_source_fetches USING btree (search_source_id);
+
+
+--
+-- Name: index_search_sources_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_search_sources_on_name ON public.search_sources USING btree (name);
 
 
 --
@@ -5401,41 +5965,6 @@ CREATE INDEX idx_addresses_street_name_trgm ON warehouse.addresses USING gin (st
 --
 
 CREATE INDEX idx_agent_runs_agent_started ON warehouse.agent_runs USING btree (agent_name, started_at DESC);
-
-
---
--- Name: idx_alert_events_alert; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_alert_events_alert ON warehouse.alert_events USING btree (alert_id);
-
-
---
--- Name: idx_alert_events_triggered_at; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_alert_events_triggered_at ON warehouse.alert_events USING btree (triggered_at);
-
-
---
--- Name: idx_alerts_enabled; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_alerts_enabled ON warehouse.alerts USING btree (enabled);
-
-
---
--- Name: idx_alerts_measure; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_alerts_measure ON warehouse.alerts USING btree (measure_id);
-
-
---
--- Name: idx_alerts_observed_org; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_alerts_observed_org ON warehouse.alerts USING btree (observed_organization_id);
 
 
 --
@@ -5705,6 +6234,13 @@ CREATE UNIQUE INDEX idx_fiscal_authorities_unique ON warehouse.fiscal_authoritie
 
 
 --
+-- Name: idx_fiscal_expenditures_search_sync; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_fiscal_expenditures_search_sync ON warehouse.fiscal_expenditures USING btree (search_synced_at, search_index_sequence);
+
+
+--
 -- Name: idx_fiscal_expenditures_unique; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -5870,6 +6406,13 @@ CREATE INDEX idx_measures_numerator ON warehouse.measures USING btree (numerator
 --
 
 CREATE UNIQUE INDEX idx_measures_org_slug_unique ON warehouse.measures USING btree (organization_id, slug) WHERE (organization_id IS NOT NULL);
+
+
+--
+-- Name: idx_measures_search_sync; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_measures_search_sync ON warehouse.measures USING btree (search_synced_at, search_index_sequence);
 
 
 --
@@ -6080,6 +6623,13 @@ CREATE INDEX idx_source_footnotes_document ON warehouse.source_footnotes USING b
 --
 
 CREATE INDEX idx_source_footnotes_document_marker ON warehouse.source_footnotes USING btree (document_id, page, marker);
+
+
+--
+-- Name: idx_standard_object_expenditures_search_sync; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_standard_object_expenditures_search_sync ON warehouse.standard_object_expenditures USING btree (search_synced_at, search_index_sequence);
 
 
 --
@@ -6461,6 +7011,30 @@ ALTER TABLE ONLY public.trade_barriers_agreement_histories
 
 
 --
+-- Name: saved_search_runs fk_rails_3ed18251cf; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_runs
+    ADD CONSTRAINT fk_rails_3ed18251cf FOREIGN KEY (saved_search_id) REFERENCES public.saved_searches(id);
+
+
+--
+-- Name: saved_search_matches fk_rails_4bb6ccb533; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_matches
+    ADD CONSTRAINT fk_rails_4bb6ccb533 FOREIGN KEY (notification_batch_id) REFERENCES public.notification_batches(id);
+
+
+--
+-- Name: saved_search_matches fk_rails_4d2d65163a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_search_matches
+    ADD CONSTRAINT fk_rails_4d2d65163a FOREIGN KEY (saved_search_id) REFERENCES public.saved_searches(id);
+
+
+--
 -- Name: identities fk_rails_5373344100; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6485,11 +7059,43 @@ ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
 
 
 --
+-- Name: search_media_articles fk_rails_5ebd13ee23; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_media_articles
+    ADD CONSTRAINT fk_rails_5ebd13ee23 FOREIGN KEY (search_source_id) REFERENCES public.search_sources(id);
+
+
+--
+-- Name: saved_searches fk_rails_63c5382842; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_searches
+    ADD CONSTRAINT fk_rails_63c5382842 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: notification_batches fk_rails_6e71670cf3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_batches
+    ADD CONSTRAINT fk_rails_6e71670cf3 FOREIGN KEY (saved_search_id) REFERENCES public.saved_searches(id);
+
+
+--
 -- Name: oauth_access_tokens fk_rails_732cb83ab7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.oauth_access_tokens
     ADD CONSTRAINT fk_rails_732cb83ab7 FOREIGN KEY (application_id) REFERENCES public.oauth_applications(id);
+
+
+--
+-- Name: search_source_fetches fk_rails_75522ea188; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.search_source_fetches
+    ADD CONSTRAINT fk_rails_75522ea188 FOREIGN KEY (search_source_id) REFERENCES public.search_sources(id);
 
 
 --
@@ -6541,6 +7147,14 @@ ALTER TABLE ONLY public.memos
 
 
 --
+-- Name: notification_deliveries fk_rails_ac14fefd12; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_deliveries
+    ADD CONSTRAINT fk_rails_ac14fefd12 FOREIGN KEY (notification_batch_id) REFERENCES public.notification_batches(id);
+
+
+--
 -- Name: oauth_access_grants fk_rails_b4b53e07b8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6578,54 +7192,6 @@ ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories
 
 ALTER TABLE ONLY warehouse.addresses
     ADD CONSTRAINT addresses_raw_ingestion_id_fkey FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
-
-
---
--- Name: alert_events alert_events_alert_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alert_events
-    ADD CONSTRAINT alert_events_alert_id_fkey FOREIGN KEY (alert_id) REFERENCES warehouse.alerts(id) ON DELETE CASCADE;
-
-
---
--- Name: alert_events alert_events_canonical_observation_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alert_events
-    ADD CONSTRAINT alert_events_canonical_observation_id_fkey FOREIGN KEY (canonical_observation_id) REFERENCES warehouse.canonical_observations(id) ON DELETE SET NULL;
-
-
---
--- Name: alerts alerts_geo_boundary_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts
-    ADD CONSTRAINT alerts_geo_boundary_id_fkey FOREIGN KEY (geo_boundary_id) REFERENCES warehouse.geo_boundaries(id);
-
-
---
--- Name: alerts alerts_jurisdiction_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts
-    ADD CONSTRAINT alerts_jurisdiction_id_fkey FOREIGN KEY (jurisdiction_id) REFERENCES warehouse.jurisdictions(id);
-
-
---
--- Name: alerts alerts_measure_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts
-    ADD CONSTRAINT alerts_measure_id_fkey FOREIGN KEY (measure_id) REFERENCES warehouse.measures(id) ON DELETE CASCADE;
-
-
---
--- Name: alerts alerts_observed_organization_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.alerts
-    ADD CONSTRAINT alerts_observed_organization_id_fkey FOREIGN KEY (observed_organization_id) REFERENCES warehouse.organizations(id);
 
 
 --
@@ -7483,6 +8049,16 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260805011000'),
+('20260805010900'),
+('20260805010800'),
+('20260805010700'),
+('20260805010600'),
+('20260805010500'),
+('20260805010400'),
+('20260805010200'),
+('20260805010100'),
+('20260805010000'),
 ('20260729000001'),
 ('20260728000001'),
 ('20260724000001'),
@@ -7584,4 +8160,3 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260323010552'),
 ('20260323010551'),
 ('20260323010543');
-

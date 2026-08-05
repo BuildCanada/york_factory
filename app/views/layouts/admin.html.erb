@@ -179,6 +179,7 @@
           <li><a href="/admin" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'index' %>">Dashboard</a></li>
           <li><a href="/admin/ingestions" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'ingestions' %>">Ingestions</a></li>
           <li><a href="/admin/lineage_review" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'lineage_review' %>">Lineage Review</a></li>
+          <li><a href="<%= admin_search_path %>" class="<%= 'active' if controller_path == 'admin/search' %>">Search</a></li>
           <% if current_user.superadmin? %>
             <li><a href="/admin/jobs">Jobs</a></li>
           <% end %>

@@ -1,4 +1,7 @@
 class Warehouse::Measure < Warehouse::Record
+  include Searchable
+  searchable_in realm: "kpi", record_type: "kpi"
+
   AGGREGATION_TYPES = %w[
     additive semi_additive average ratio median index rate part_of_whole non_aggregable unknown
   ].freeze
@@ -70,6 +73,7 @@ class Warehouse::Measure < Warehouse::Record
   scope :canonical, -> { where(organization_id: nil) }
 
   before_validation :normalize_service_category
+  after_commit :enqueue_search_sync, on: %i[create update]
 
   # Resolve an org-scoped measure to its canonical equivalent via a
   # measure_equivalence alias, if one exists. Returns self otherwise.
@@ -77,6 +81,44 @@ class Warehouse::Measure < Warehouse::Record
     return self if organization_id.nil?
     alias_row = aliases.measure_equivalences.where.not(canonical_measure_id: nil).first
     alias_row&.canonical_measure || self
+  end
+
+  def search_data
+    jurisdiction = organization&.jurisdiction
+    {
+      canonical_url: "/api/v1/kpis/measures/#{id}",
+      title: canonical_name,
+      summary: description,
+      content: [ canonical_name, description, category, service_category,
+        organization&.canonical_name, unit&.symbol, frequency ].compact_blank.join("\n"),
+      language: "und",
+      published_at: created_at,
+      source_updated_at: updated_at,
+      ontology: {
+        "organization_ids" => Array(organization_id),
+        "organization_names" => Array(organization&.canonical_name),
+        "jurisdiction_ids" => Array(jurisdiction&.id),
+        "jurisdiction_codes" => Array(jurisdiction&.code),
+        "jurisdiction_levels" => Array(jurisdiction&.level),
+        "categories" => [ category, service_category ].compact
+      },
+      realm_data: {
+        "kpi_measure_id" => id,
+        "kpi_measure_name" => canonical_name,
+        "kpi_measure_slug" => slug,
+        "kpi_measure_description" => description,
+        "kpi_category" => category,
+        "kpi_service_category" => service_category,
+        "kpi_aggregation_type" => aggregation_type,
+        "kpi_frequency" => frequency,
+        "kpi_higher_is_bad" => higher_is_bad,
+        "kpi_unit_id" => unit_id,
+        "kpi_unit_symbol" => unit&.symbol,
+        "kpi_unit_kind" => unit&.kind,
+        "kpi_currency_code" => unit&.currency_code,
+        "kpi_last_updated_at" => updated_at
+      }.compact
+    }
   end
 
   # Strip trailing parenthetical quality-attribute tags from a service_category
@@ -90,6 +132,10 @@ class Warehouse::Measure < Warehouse::Record
   end
 
   private
+
+  def enqueue_search_sync
+    Search::SyncJob.perform_later(self)
+  end
 
   def normalize_service_category
     self.service_category = self.class.normalize_service_category(service_category)

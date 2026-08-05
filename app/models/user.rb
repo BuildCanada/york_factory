@@ -5,6 +5,7 @@ class User < ApplicationRecord
          omniauth_providers: [ :google_oauth2, :linkedin ]
 
   has_many :identities, dependent: :destroy
+  has_many :saved_searches, dependent: :destroy
 
   enum :role, {
     member: "member",

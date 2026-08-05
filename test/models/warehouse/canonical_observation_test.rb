@@ -35,4 +35,21 @@ class Warehouse::CanonicalObservationTest < ActiveSupport::TestCase
       )
     end
   end
+
+  test "touches the searchable KPI when an observation changes" do
+    extracted = Warehouse::ExtractedObservation.create!(measure: @measure, document: @doc,
+      measurement_year: 2024, value_type: "actual", value_numeric: 42)
+    previous_updated_at = @measure.updated_at
+
+    travel 1.second do
+      Warehouse::CanonicalObservation.create!(extracted_observation: extracted,
+        measure: @measure, document: @doc, measurement_year: 2024,
+        value_type: "actual", value_numeric: 42, period_basis: "full_year")
+    end
+
+    assert_operator @measure.reload.updated_at, :>, previous_updated_at
+    data = @measure.search_data
+    assert_equal @measure.updated_at, data.dig(:realm_data, "kpi_last_updated_at")
+    refute data.fetch(:realm_data).keys.any? { |key| key.match?(/value|year|period|observation/) }
+  end
 end

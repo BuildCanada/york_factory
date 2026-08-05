@@ -47,9 +47,7 @@ production:
     schedule: every day at 12am
   search_dispatch_media_sources:
     class: Search::Media::DispatchDueSourcesJob
-    queue: search_ingest
     schedule: every minute
   search_saved_search_fanout:
     class: Search::SavedSearchFanoutJob
-    queue: search_match
     schedule: every minute

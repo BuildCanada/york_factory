@@ -1,8 +1,6 @@
 module Search
   module Media
     class FetchSourceJob < ApplicationJob
-      queue_as :search_ingest
-
       retry_on FeedFetcher::TransientError, wait: :polynomially_longer, attempts: 5
       discard_on FeedFetcher::PermanentError
 

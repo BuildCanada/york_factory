@@ -1,8 +1,6 @@
 module Search
   module Media
     class ImportArticleJob < ApplicationJob
-      queue_as :search_ingest
-
       retry_on DefuddlerClient::TransientError, wait: :polynomially_longer, attempts: 6
       discard_on ArticleNormalizer::Invalid, SafeUrl::Invalid
 

@@ -2,11 +2,6 @@ require "openssl"
 
 module Search
   class DeliverNotificationJob < ApplicationJob
-    queue_as do
-      NotificationDelivery.where(id: arguments.first).pick(:channel) == "webhook" ?
-        :notifications_webhook : :notifications_email
-    end
-
     MAX_ATTEMPTS = 8
     RETRYABLE_STATUSES = [ 408, 409, 425, 429 ].freeze
     WEBHOOK_HTTP_OPTIONS = {

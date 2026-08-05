@@ -74,6 +74,21 @@ class Search::CoreTest < ActiveSupport::TestCase
     refute document.persisted?
   end
 
+  test "search jobs use the application's default queue" do
+    jobs = [
+      Search::DeliverDigestJob,
+      Search::DeliverNotificationJob,
+      Search::RunSavedSearchJob,
+      Search::SavedSearchFanoutJob,
+      Search::SyncJob,
+      Search::Media::DispatchDueSourcesJob,
+      Search::Media::FetchSourceJob,
+      Search::Media::ImportArticleJob
+    ]
+
+    jobs.each { |job| assert_equal "default", job.new.queue_name }
+  end
+
   private
 
   def build_media_document

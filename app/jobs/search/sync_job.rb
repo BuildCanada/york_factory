@@ -1,7 +1,5 @@
 module Search
   class SyncJob < ApplicationJob
-    queue_as :search_ingest
-
     retry_on Search::Embedding::AzureCohereClient::Error,
       wait: :polynomially_longer,
       attempts: 6

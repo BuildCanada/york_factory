@@ -1,7 +1,5 @@
 module Search
   class RunSavedSearchJob < ApplicationJob
-    queue_as :search_match
-
     retry_on Turbopuffer::Errors::APIError, wait: :polynomially_longer, attempts: 5
     retry_on Search::Embedding::AzureCohereClient::Error, wait: :polynomially_longer, attempts: 5
 

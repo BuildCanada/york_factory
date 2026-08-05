@@ -1,8 +1,6 @@
 module Search
   module Media
     class DispatchDueSourcesJob < ApplicationJob
-      queue_as :search_ingest
-
       BATCH_SIZE = 100
 
       def perform(at: Time.current)

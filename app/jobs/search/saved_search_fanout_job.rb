@@ -1,7 +1,5 @@
 module Search
   class SavedSearchFanoutJob < ApplicationJob
-    queue_as :search_match
-
     BATCH_SIZE = 200
 
     def perform(at: Time.current)

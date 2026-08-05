@@ -1,6 +1,5 @@
 module Search
   class DeliverDigestJob < ApplicationJob
-    queue_as :notifications_email
     retry_on StandardError, wait: :polynomially_longer, attempts: 10
 
     def perform(batch_id)

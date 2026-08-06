@@ -212,12 +212,8 @@
               <%= form.select :digest_interval_seconds, [["Hour", 3600], ["6 hours", 21600], ["Day", 86400]], { selected: @form["digest_interval_seconds"].to_i }, class: "form-control" %>
             </div>
           </div>
-          <label class="search-check"><%= form.check_box :email, { checked: ActiveModel::Type::Boolean.new.cast(@form["email"]) }, "1", "0" %> Email the signed-in admin</label>
+          <div class="search-help">Matches will be emailed to the signed-in admin.</div>
           <label class="search-check"><%= form.check_box :notify_on_update, { checked: ActiveModel::Type::Boolean.new.cast(@form["notify_on_update"]) }, "1", "0" %> Notify when a matched document changes</label>
-          <div class="form-group">
-            <%= form.label :webhook_url, "Webhook URL" %>
-            <%= form.url_field :webhook_url, value: @form["webhook_url"], class: "form-control", placeholder: "https://example.com/search-events" %>
-          </div>
           <%= button_tag "Save alert", type: "submit", name: "operation", value: "save", class: "btn" %>
         </details>
       </section>

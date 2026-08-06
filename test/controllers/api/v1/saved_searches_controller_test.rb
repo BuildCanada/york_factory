@@ -15,10 +15,10 @@ class Api::V1::SavedSearchesControllerTest < ActionDispatch::IntegrationTest
     @article.update_columns(search_index_sequence: 42, search_synced_at: Time.current)
   end
 
-  test "create starts future-only searches at the active checkpoint and reveals a new webhook secret once" do
+  test "create starts future-only searches at the active checkpoint with email delivery" do
     post api_v1_saved_searches_url, params: {
       saved_search: {
-        name: "News hook",
+        name: "News alert",
         realm: "media",
         definition: { version: 1, realm: "media", mode: "filter_only" },
         delivery_configuration: {
@@ -31,11 +31,9 @@ class Api::V1::SavedSearchesControllerTest < ActionDispatch::IntegrationTest
     body = response.parsed_body
     saved_search = SavedSearch.find(body.fetch("id"))
     assert_equal 42, saved_search.cursor_sequence
-    assert body.fetch("webhook_secret").present?
-
-    get api_v1_saved_search_url(saved_search), headers: auth(users(:member))
-    assert_response :success
-    refute response.parsed_body.key?("webhook_secret")
+    assert_equal({ "channels" => [ "email" ] }, saved_search.delivery_configuration)
+    refute body.key?("webhook_secret")
+    refute body.fetch("delivery_configuration").key?("webhook_url")
   end
 
   test "a backfill definition edit resets the cursor and advances its version" do

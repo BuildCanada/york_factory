@@ -1,5 +1,4 @@
 require "json"
-require "uri"
 
 module Admin
   class SearchController < BaseController
@@ -10,7 +9,6 @@ module Admin
       "lexical_match" => "all_tokens",
       "semantic_max_distance" => "0.5",
       "limit" => "25",
-      "email" => "1",
       "start_policy" => "future_only",
       "poll_interval_seconds" => "60",
       "delivery_mode" => "instant",
@@ -72,7 +70,7 @@ module Admin
       params.fetch(:search, {}).permit(
         :name, :realm, :mode, :text, :language, :lexical_match,
         :semantic_max_distance, :limit, :publisher_domain, :content_type,
-        :published_after, :filters_json, :email, :webhook_url, :start_policy,
+        :published_after, :filters_json, :start_policy,
         :poll_interval_seconds, :delivery_mode, :digest_interval_seconds,
         :notify_on_update
       )
@@ -132,14 +130,7 @@ module Admin
     end
 
     def save_search(definition)
-      channels = []
-      channels << "email" if ActiveModel::Type::Boolean.new.cast(@form["email"])
-      channels << "webhook" if @form["webhook_url"].present?
-      raise ArgumentError, "Choose email or enter a webhook URL" if channels.empty?
-
-      validate_webhook_url!(@form["webhook_url"]) if channels.include?("webhook")
-      delivery_configuration = { "channels" => channels }
-      delivery_configuration["webhook_url"] = @form["webhook_url"] if channels.include?("webhook")
+      delivery_configuration = { "channels" => [ "email" ] }
       if @form["delivery_mode"] == "digest"
         delivery_configuration["digest_interval_seconds"] = Integer(@form["digest_interval_seconds"])
       end
@@ -168,13 +159,6 @@ module Admin
       end
     end
 
-    def validate_webhook_url!(value)
-      uri = URI.parse(value)
-      raise ArgumentError, "Webhook URL must use HTTPS" unless uri.is_a?(URI::HTTPS) && uri.host.present?
-    rescue URI::InvalidURIError
-      raise ArgumentError, "Webhook URL is invalid"
-    end
-
     def automatic_name(definition)
       realm = definition.fetch("realm").humanize
       subject = definition["text"].presence || "filtered search"
@@ -195,8 +179,6 @@ module Admin
         "start_policy" => saved_search.start_policy,
         "delivery_mode" => saved_search.delivery_mode,
         "notify_on_update" => saved_search.notify_on_update ? "1" : "0",
-        "email" => Array(saved_search.delivery_configuration["channels"]).include?("email") ? "1" : "0",
-        "webhook_url" => saved_search.delivery_configuration["webhook_url"],
         "digest_interval_seconds" => saved_search.delivery_configuration["digest_interval_seconds"].to_s
       )
       form["filters_json"] = JSON.pretty_generate(definition["filters"]) if definition["filters"]

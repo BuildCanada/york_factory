@@ -119,7 +119,7 @@ class CreateSearchControlPlane < ActiveRecord::Migration[8.1]
       t.string :start_policy, null: false, default: "future_only"
       t.boolean :notify_on_update, null: false, default: false
       t.string :delivery_mode, null: false, default: "instant"
-      t.jsonb :delivery_configuration, null: false, default: {}
+      t.jsonb :delivery_configuration, null: false, default: { "channels" => [ "email" ] }
       t.string :timezone, null: false, default: "UTC"
       t.timestamps
     end
@@ -230,7 +230,7 @@ class CreateSearchControlPlane < ActiveRecord::Migration[8.1]
     add_index :notification_deliveries, [ :status, :next_attempt_at ],
       name: "idx_notification_deliveries_ready"
     add_check_constraint :notification_deliveries,
-      "channel IN ('email','webhook')", name: "notification_deliveries_channel"
+      "channel = 'email'", name: "notification_deliveries_channel"
     add_check_constraint :notification_deliveries,
       "status IN ('pending','delivering','delivered','failed','dead')",
       name: "notification_deliveries_status"

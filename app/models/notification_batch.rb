@@ -19,12 +19,10 @@ class NotificationBatch < ApplicationRecord
 
       self.payload = build_payload if payload.blank?
       update!(state: "closed", closed_at: at)
-      Array(saved_search.delivery_configuration["channels"]).each do |channel|
-        notification_deliveries.create!(
-          channel: channel,
-          idempotency_key: "notification-batch-#{id}-#{channel}"
-        )
-      end
+      notification_deliveries.create!(
+        channel: "email",
+        idempotency_key: "notification-batch-#{id}-email"
+      )
     end
     self
   end

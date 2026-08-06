@@ -1,5 +1,5 @@
 class NotificationDelivery < ApplicationRecord
-  CHANNELS = %w[email webhook].freeze
+  CHANNELS = %w[email].freeze
   STATUSES = %w[pending delivering delivered failed dead].freeze
 
   belongs_to :notification_batch

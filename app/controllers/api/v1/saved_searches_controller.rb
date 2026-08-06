@@ -13,13 +13,15 @@ module Api
       end
 
       def create
-        saved_search = current_user.saved_searches.build(saved_search_attributes)
+        attributes = saved_search_attributes
+        attributes["delivery_configuration"] ||= { "channels" => [ "email" ] }
+        saved_search = current_user.saved_searches.build(attributes)
         checkpoint = Searchable.checkpoint.to_i
         saved_search.cursor_sequence = saved_search.start_policy == "backfill" ? 0 : checkpoint
         saved_search.next_run_at ||= Time.current
 
         if saved_search.save
-          render json: serialize(saved_search, include_webhook_secret: webhook_enabled?(saved_search)), status: :created
+          render json: serialize(saved_search), status: :created
         else
           render json: { errors: saved_search.errors.full_messages }, status: :unprocessable_entity
         end
@@ -27,7 +29,6 @@ module Api
 
       def update
         old_digest = @saved_search.definition_digest
-        old_webhook_secret = @saved_search.webhook_secret
         @saved_search.assign_attributes(saved_search_attributes)
         @saved_search.valid?
         definition_changed = old_digest != @saved_search.definition_digest
@@ -39,8 +40,7 @@ module Api
         @saved_search.next_run_at = Time.current if definition_changed
 
         if @saved_search.save
-          include_secret = old_webhook_secret.blank? && @saved_search.webhook_secret.present?
-          render json: serialize(@saved_search, include_webhook_secret: include_secret)
+          render json: serialize(@saved_search)
         else
           render json: { errors: @saved_search.errors.full_messages }, status: :unprocessable_entity
         end
@@ -75,17 +75,14 @@ module Api
           :notify_on_update, :delivery_mode, :timezone
         ).to_h
         permitted["definition"] = payload[:definition].to_unsafe_h if payload[:definition].respond_to?(:to_unsafe_h)
-        if payload[:delivery_configuration].respond_to?(:to_unsafe_h)
-          permitted["delivery_configuration"] = payload[:delivery_configuration].to_unsafe_h
+        if payload[:delivery_configuration].respond_to?(:permit)
+          configuration = payload[:delivery_configuration].permit(:digest_interval_seconds).to_h
+          permitted["delivery_configuration"] = configuration.merge("channels" => [ "email" ])
         end
         permitted
       end
 
-      def webhook_enabled?(saved_search)
-        Array(saved_search.delivery_configuration["channels"]).include?("webhook")
-      end
-
-      def serialize(saved_search, include_webhook_secret: false)
+      def serialize(saved_search)
         {
           id: saved_search.id,
           name: saved_search.name,
@@ -99,7 +96,6 @@ module Api
           delivery_mode: saved_search.delivery_mode,
           delivery_configuration: saved_search.delivery_configuration,
           timezone: saved_search.timezone,
-          webhook_secret: (saved_search.webhook_secret if include_webhook_secret),
           created_at: saved_search.created_at,
           updated_at: saved_search.updated_at
         }.compact

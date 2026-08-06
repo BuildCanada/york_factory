@@ -31,6 +31,12 @@ Rails.application.routes.draw do
       resources :organizations, only: [ :index, :show ]
       resources :deviations, only: [ :index ]
 
+      namespace :spending do
+        post "search", to: "searches#create"
+        get "awards/:id", to: "awards#show"
+        get "databases/:database/awards/:id", to: "awards#show"
+      end
+
       namespace :auth do
         post "google", to: "sessions#create"
         delete "session", to: "sessions#destroy"

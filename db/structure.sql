@@ -3092,9 +3092,9 @@ CREATE TABLE warehouse.media_articles (
     validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY (ARRAY[('full'::character varying)::text, ('truncated'::character varying)::text])))),
+    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY ((ARRAY['full'::character varying, 'truncated'::character varying])::text[])))),
     CONSTRAINT media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT media_articles_state CHECK (((state)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('withdrawn'::character varying)::text, ('invalid'::character varying)::text])))
+    CONSTRAINT media_articles_state CHECK (((state)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'withdrawn'::character varying, 'invalid'::character varying])::text[])))
 );
 
 
@@ -3116,7 +3116,7 @@ CREATE TABLE warehouse.media_feed_fetches (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text, ('not_modified'::character varying)::text])))
+    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'not_modified'::character varying])::text[])))
 );
 
 
@@ -3742,6 +3742,74 @@ CREATE SEQUENCE warehouse.sources_id_seq
 --
 
 ALTER SEQUENCE warehouse.sources_id_seq OWNED BY warehouse.sources.id;
+
+
+--
+-- Name: spending_awards; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.spending_awards (
+    id bigint NOT NULL,
+    source_id bigint NOT NULL,
+    raw_ingestion_id bigint,
+    payer_organization_id bigint,
+    external_key character varying NOT NULL,
+    award_type character varying NOT NULL,
+    state character varying DEFAULT 'published'::character varying NOT NULL,
+    language character varying DEFAULT 'en'::character varying NOT NULL,
+    title text NOT NULL,
+    description text,
+    payer_name character varying,
+    recipient_name character varying,
+    recipient_type character varying,
+    program_name character varying,
+    program_key character varying,
+    fiscal_year integer,
+    occurred_at timestamp with time zone,
+    amount numeric(20,2),
+    currency character varying DEFAULT 'CAD'::character varying NOT NULL,
+    is_aggregated boolean DEFAULT false NOT NULL,
+    source_url character varying,
+    province_code character varying,
+    country_code character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    first_seen_at timestamp with time zone NOT NULL,
+    last_seen_at timestamp with time zone NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    search_content_hash character varying,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    canonical_key character varying NOT NULL,
+    is_canonical boolean DEFAULT true NOT NULL,
+    CONSTRAINT spending_awards_award_type CHECK (((award_type)::text = ANY ((ARRAY['contract'::character varying, 'grant'::character varying, 'contribution'::character varying, 'transfer_payment'::character varying])::text[]))),
+    CONSTRAINT spending_awards_revision_nonnegative CHECK ((search_revision >= 0)),
+    CONSTRAINT spending_awards_state CHECK (((state)::text = ANY ((ARRAY['published'::character varying, 'withdrawn'::character varying])::text[])))
+);
+
+
+--
+-- Name: spending_awards_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.spending_awards_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: spending_awards_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.spending_awards_id_seq OWNED BY warehouse.spending_awards.id;
 
 
 --
@@ -4406,6 +4474,13 @@ ALTER TABLE ONLY warehouse.source_footnotes ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY warehouse.sources ALTER COLUMN id SET DEFAULT nextval('warehouse.sources_id_seq'::regclass);
+
+
+--
+-- Name: spending_awards id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.spending_awards ALTER COLUMN id SET DEFAULT nextval('warehouse.spending_awards_id_seq'::regclass);
 
 
 --
@@ -5124,6 +5199,14 @@ ALTER TABLE ONLY warehouse.source_footnotes
 
 ALTER TABLE ONLY warehouse.sources
     ADD CONSTRAINT sources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: spending_awards spending_awards_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.spending_awards
+    ADD CONSTRAINT spending_awards_pkey PRIMARY KEY (id);
 
 
 --
@@ -6594,6 +6677,34 @@ CREATE INDEX idx_source_footnotes_document_marker ON warehouse.source_footnotes 
 
 
 --
+-- Name: idx_spending_awards_canonical_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_spending_awards_canonical_key ON warehouse.spending_awards USING btree (source_id, canonical_key);
+
+
+--
+-- Name: idx_spending_awards_search_sync; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_spending_awards_search_sync ON warehouse.spending_awards USING btree (search_synced_at, search_index_sequence);
+
+
+--
+-- Name: idx_spending_awards_searchable; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_spending_awards_searchable ON warehouse.spending_awards USING btree (source_id, is_canonical, state);
+
+
+--
+-- Name: idx_spending_awards_source_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_spending_awards_source_key ON warehouse.spending_awards USING btree (source_id, external_key);
+
+
+--
 -- Name: idx_standard_object_expenditures_search_sync; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6892,6 +7003,48 @@ CREATE UNIQUE INDEX index_raw_ingestions_on_source_id_and_checksum ON warehouse.
 --
 
 CREATE UNIQUE INDEX index_sources_on_name ON warehouse.sources USING btree (name);
+
+
+--
+-- Name: index_spending_awards_on_award_type; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_award_type ON warehouse.spending_awards USING btree (award_type);
+
+
+--
+-- Name: index_spending_awards_on_fiscal_year; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_fiscal_year ON warehouse.spending_awards USING btree (fiscal_year);
+
+
+--
+-- Name: index_spending_awards_on_payer_organization_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_payer_organization_id ON warehouse.spending_awards USING btree (payer_organization_id);
+
+
+--
+-- Name: index_spending_awards_on_raw_ingestion_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_raw_ingestion_id ON warehouse.spending_awards USING btree (raw_ingestion_id);
+
+
+--
+-- Name: index_spending_awards_on_recipient_name; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_recipient_name ON warehouse.spending_awards USING btree (recipient_name);
+
+
+--
+-- Name: index_spending_awards_on_source_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_spending_awards_on_source_id ON warehouse.spending_awards USING btree (source_id);
 
 
 --
@@ -7526,6 +7679,14 @@ ALTER TABLE ONLY warehouse.fiscal_expenditures
 
 
 --
+-- Name: spending_awards fk_rails_245c5b1a24; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.spending_awards
+    ADD CONSTRAINT fk_rails_245c5b1a24 FOREIGN KEY (payer_organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
 -- Name: fiscal_expenditures fk_rails_34d506f249; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -7539,6 +7700,14 @@ ALTER TABLE ONLY warehouse.fiscal_expenditures
 
 ALTER TABLE ONLY warehouse.fiscal_expenditures
     ADD CONSTRAINT fk_rails_3a07710e6e FOREIGN KEY (lineage_entry_id) REFERENCES warehouse.lineage_entries(id);
+
+
+--
+-- Name: spending_awards fk_rails_4b18c39624; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.spending_awards
+    ADD CONSTRAINT fk_rails_4b18c39624 FOREIGN KEY (source_id) REFERENCES warehouse.sources(id);
 
 
 --
@@ -7579,6 +7748,14 @@ ALTER TABLE ONLY warehouse.fiscal_authorities
 
 ALTER TABLE ONLY warehouse.lobbying_activities
     ADD CONSTRAINT fk_rails_8ce58f15fd FOREIGN KEY (lineage_entry_id) REFERENCES warehouse.lineage_entries(id);
+
+
+--
+-- Name: spending_awards fk_rails_90e55d982c; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.spending_awards
+    ADD CONSTRAINT fk_rails_90e55d982c FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
 
 
 --
@@ -8052,6 +8229,9 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260805050000'),
+('20260805040000'),
+('20260805020000'),
 ('20260805011200'),
 ('20260805011100'),
 ('20260805011000'),
@@ -8064,6 +8244,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260805010200'),
 ('20260805010100'),
 ('20260805010000'),
+('20260729000002'),
 ('20260729000001'),
 ('20260728000001'),
 ('20260724000001'),

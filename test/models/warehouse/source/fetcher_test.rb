@@ -1,82 +1,158 @@
 require "test_helper"
 
 class Warehouse::Source::FetcherTest < ActiveSupport::TestCase
-  BODY = %([{"vectorId":65201210,"refPer":"2025-01-01","value":100.0}]).freeze
-  CHECKSUM = Digest::SHA256.hexdigest(BODY)
+  class FakeStrategy
+    def initialize(downloads, error: nil)
+      @downloads = downloads
+      @error = error
+    end
+
+    def each_download
+      @downloads.each { |download| yield download }
+      raise @error if @error
+    end
+  end
 
   setup do
     @source = Warehouse::Source.create!(
-      name: "econ_statcan_test_fetcher",
-      url: "https://example.com/wds/getData?vectors=65201210",
-      format: "statcan_json",
+      name: "test_fetcher_#{SecureRandom.hex(4)}",
+      url: "https://example.com/data.csv",
+      format: "csv",
       fetch_frequency: "weekly"
     )
     @fetcher = @source.fetcher
-    @dispatched = []
+    @archived = {}
+    @loaded = []
+    archived = @archived
+    @fetcher.define_singleton_method(:store_raw_file) do |key, body|
+      archived[key] = body.respond_to?(:read) ? body.read : body
+    end
   end
 
-  test "skips when a complete ingestion already has the checksum" do
-    ingestion = create_ingestion(status: "complete")
+  test "skips an artifact whose complete ingestion already has its checksum" do
+    download = build_download("unchanged")
+    ingestion = create_ingestion(download.checksum, status: "complete")
 
-    run_fetch
+    run_fetch(download)
 
-    assert_empty @dispatched
+    assert_empty @archived
+    assert_empty @loaded
     assert_equal [ ingestion.id ], @source.raw_ingestions.ids
-    assert_nil @source.reload.last_fetched_at
+    assert download.body.closed?
+    assert_not_nil @source.reload.last_fetched_at
   end
 
-  test "skips pending and partial ingestions so in-flight or in-review loads are not double-run" do
+  test "does not double-run pending or partial ingestions" do
     %w[pending partial].each do |status|
-      ingestion = create_ingestion(status: status)
+      download = build_download(status)
+      ingestion = create_ingestion(download.checksum, status:)
 
-      run_fetch
+      run_fetch(download)
 
-      assert_empty @dispatched, "expected no dispatch for #{status} ingestion"
+      assert_empty @loaded, "expected no load for #{status} ingestion"
+      assert download.body.closed?
       ingestion.destroy!
     end
   end
 
-  test "retries a failed ingestion on the same row instead of skipping" do
-    ingestion = create_ingestion(status: "failed", error_message: "boom")
+  test "retries a failed ingestion on the same row" do
+    download = build_download("retry me")
+    ingestion = create_ingestion(download.checksum, status: "failed", error_message: "boom")
 
-    run_fetch
+    run_fetch(download)
 
-    assert_equal [ ingestion.id ], @dispatched.map(&:id)
+    assert_equal [ ingestion.id ], @loaded.map(&:id)
+    assert_equal "retry me", @archived.values.sole
     ingestion.reload
     assert_equal "pending", ingestion.status
     assert_nil ingestion.error_message
     assert_equal 1, @source.raw_ingestions.count
+  end
+
+  test "archives and loads every artifact with its source-owned filename" do
+    first = build_download("first", filename: "first.csv")
+    second = build_download("second", filename: "second.csv")
+
+    run_fetch(first, second)
+
+    assert_equal %w[first second], @archived.values
+    assert_equal 2, @source.raw_ingestions.count
+    assert_equal 2, @loaded.size
+    assert @archived.keys.any? { |key| key.end_with?("/first.csv") }
+    assert @archived.keys.any? { |key| key.end_with?("/second.csv") }
+    assert first.body.closed?
+    assert second.body.closed?
     assert_not_nil @source.reload.last_fetched_at
   end
 
-  test "creates a new ingestion and dispatches the loader for unseen data" do
-    run_fetch
+  test "keeps completed artifacts but does not mark the source fetched when a later artifact fails" do
+    first = build_download("first", filename: "first.csv")
+    strategy = FakeStrategy.new([ first ], error: "second failed")
+    install_strategy(strategy)
+    @fetcher.define_singleton_method(:with_retries) { |&block| block.call }
 
-    assert_equal 1, @dispatched.size
-    ingestion = @source.raw_ingestions.sole
-    assert_equal CHECKSUM, ingestion.checksum
-    assert_equal "pending", ingestion.status
-    assert_not_nil @source.reload.last_fetched_at
+    error = assert_raises(RuntimeError) { @fetcher.fetch }
+
+    assert_equal "second failed", error.message
+    assert_equal 1, @source.raw_ingestions.count
+    assert_nil @source.reload.last_fetched_at
+    assert first.body.closed?
+  end
+
+  test "registry selects specialized download strategies by source format" do
+    expected = {
+      "worldbank_json" => Warehouse::Source::Fetcher::WorldBankDownload,
+      "statcan_json" => Warehouse::Source::Fetcher::StatcanVectors,
+      "toronto_candidates_json" => Warehouse::Source::Fetcher::TorontoCandidateList,
+      "brampton_candidates_html" => Warehouse::Source::Fetcher::BramptonCandidateList,
+      "hamilton_candidates_html" => Warehouse::Source::Fetcher::HamiltonCandidateList,
+      "spending_transfer_payments_csv" => Warehouse::Source::Fetcher::TransferPayments,
+      "spending_nserc_csv" => Warehouse::Source::Fetcher::NsercAwards,
+      "spending_sshrc_csv" => Warehouse::Source::Fetcher::SshrcAwards,
+      "spending_global_affairs_iati" => Warehouse::Source::Fetcher::GlobalAffairsProjects,
+      "spending_cihr_json" => Warehouse::Source::Fetcher::CihrAwards,
+      "spending_proactive_contracts_csv" => Warehouse::Source::Fetcher::HttpFile
+    }
+
+    expected.each do |format, strategy_class|
+      source = Warehouse::Source.new(
+        name: format.include?("candidates") ? "election_test_2026" : "source",
+        url: "https://example.com/data",
+        format:
+      )
+
+      assert_instance_of strategy_class, Warehouse::Source::Fetcher::Registry.for(source), format
+    end
   end
 
   private
 
-  def create_ingestion(status:, error_message: nil)
-    @source.raw_ingestions.create!(
-      fetched_at: 1.week.ago,
-      raw_file_path: "raw/#{@source.name}/old/data.json",
-      checksum: CHECKSUM,
-      status: status,
-      error_message: error_message
-    )
+  def run_fetch(*downloads)
+    install_strategy(FakeStrategy.new(downloads))
+    @fetcher.fetch
   end
 
-  # Stubs the network download and the loader dispatch; everything between
-  # (dedupe, archival, ingestion row lifecycle) runs for real.
-  def run_fetch
-    dispatched = @dispatched
-    @fetcher.define_singleton_method(:download_body) { BODY }
-    @fetcher.define_singleton_method(:dispatch_loader) { |ingestion, _body| dispatched << ingestion }
-    @fetcher.fetch
+  def install_strategy(strategy)
+    @fetcher.define_singleton_method(:strategy) { strategy }
+  end
+
+  def build_download(body, filename: nil)
+    loaded = @loaded
+    io = StringIO.new(body)
+    Warehouse::Source::Fetcher::Download.new(
+      body: io,
+      checksum: Digest::SHA256.hexdigest(body),
+      filename:
+    ) { |ingestion, _content| loaded << ingestion }
+  end
+
+  def create_ingestion(checksum, status:, error_message: nil)
+    @source.raw_ingestions.create!(
+      fetched_at: 1.week.ago,
+      raw_file_path: "raw/#{@source.name}/old/data.csv",
+      checksum:,
+      status:,
+      error_message:
+    )
   end
 end

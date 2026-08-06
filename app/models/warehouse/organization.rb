@@ -11,6 +11,7 @@ class Warehouse::Organization < Warehouse::Record
   has_many :fiscal_authorities, dependent: :destroy
   has_many :fiscal_expenditures, dependent: :destroy
   has_many :standard_object_expenditures, dependent: :destroy
+  has_many :spending_awards, foreign_key: :payer_organization_id, dependent: :nullify
   has_many :lobbying_activities, dependent: :nullify
   has_many :measures, dependent: :restrict_with_error
   has_many :kpi_documents, dependent: :nullify

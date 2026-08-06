@@ -5,9 +5,10 @@ module Search
 
     INCLUDE_ATTRIBUTES = %w[
       realm record_type search_revision search_content_hash index_sequence title summary
-      canonical_url source_name source_domain published_at language publisher_name
+      canonical_url source_url source_name source_domain published_at language publisher_name
       publisher_domain content_type authors section word_count amount currency award_type
-      payer_names recipient_name program_name fiscal_year occurred_at dataset_key
+      external_key payer_names recipient_name program_name fiscal_year occurred_at dataset_key
+      province_codes country_codes is_aggregated
       kpi_measure_name kpi_measure_slug kpi_measure_description kpi_category
       kpi_service_category kpi_aggregation_type kpi_frequency kpi_unit_symbol
       kpi_last_updated_at

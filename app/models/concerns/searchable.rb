@@ -3,6 +3,7 @@ module Searchable
 
   MODEL_NAMES = %w[
     Warehouse::MediaArticle
+    Warehouse::SpendingAward
     Warehouse::FiscalExpenditure
     Warehouse::StandardObjectExpenditure
     Warehouse::Measure

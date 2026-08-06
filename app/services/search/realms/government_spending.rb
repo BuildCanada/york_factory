@@ -26,6 +26,7 @@ module Search
       FILTER_FIELDS = {
         "award_type" => %w[eq in],
         "payer_organization_ids" => %w[contains_any contains_all],
+        "payer_names" => %w[contains_any contains_all],
         "recipient_name" => %w[eq in],
         "program_name" => %w[eq in],
         "program_key" => %w[eq in],
@@ -37,14 +38,14 @@ module Search
         "dataset_key" => %w[eq in]
       }.freeze
       FACET_FIELDS = %w[
-        award_type payer_organization_ids recipient_name program_name fiscal_year
-        currency dataset_key
+        award_type payer_organization_ids payer_names recipient_name program_name fiscal_year
+        currency dataset_key province_codes country_codes
       ].freeze
       TURBOPUFFER_SCHEMA = {
         external_key: { type: "string", filterable: false },
         award_type: { type: "string", filterable: true },
         payer_organization_ids: { type: "[]uint", filterable: true },
-        payer_names: { type: "[]string", filterable: false },
+        payer_names: { type: "[]string", filterable: true },
         recipient_name: { type: "string", filterable: true },
         recipient_entity_id: { type: "uuid", filterable: true },
         program_name: { type: "string", filterable: true, full_text_search: true },

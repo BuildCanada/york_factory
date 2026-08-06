@@ -3,11 +3,138 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
 
   MAX_RETRIES = 3
   BACKOFF_BASE = 4 # seconds: 1, 4, 16
+  STREAMING_FORMATS = %w[
+    spending_proactive_contracts_csv
+    spending_aggregated_contracts_csv
+    spending_proactive_grants_csv
+  ].freeze
 
   def fetch
-    body = download_body
-    checksum = Digest::SHA256.hexdigest(body)
+    return fetch_transfer_payment_years if source.format == "spending_transfer_payments_csv"
+    return fetch_nserc_years if source.format == "spending_nserc_csv"
+    return fetch_sshrc_years if source.format == "spending_sshrc_csv"
+    return fetch_global_affairs if source.format == "spending_global_affairs_iati"
+    return fetch_cihr if source.format == "spending_cihr_json"
+    return fetch_streaming if STREAMING_FORMATS.include?(source.format)
 
+    body = download_body
+    process_download(body, checksum: Digest::SHA256.hexdigest(body))
+  end
+
+  private
+
+  def fetch_transfer_payment_years
+    collector = transfer_payments_collector
+    with_retries do
+      collector.each_year do |download|
+        begin
+          process_download(
+            download.io,
+            checksum: download.checksum,
+            filename: "transfer-payments-#{download.year}-#{download.checksum.first(12)}.csv",
+            update_last_fetched: false,
+            loader_options: { withdrawal_scope: { fiscal_year: download.fiscal_year } }
+          )
+        ensure
+          close_download(download.io)
+        end
+      end
+    end
+    source.update!(last_fetched_at: Time.current)
+  end
+
+  def fetch_streaming
+    download = with_retries do
+      Warehouse::Source::Fetcher::StreamingDownload.new(source.url).call
+    end
+    process_download(download.io, checksum: download.checksum)
+  ensure
+    close_download(download&.io)
+  end
+
+  def fetch_nserc_years
+    collector = nserc_collector
+    with_retries do
+      collector.each_year do |download|
+        begin
+          process_download(
+            download.io,
+            checksum: download.checksum,
+            filename: "nserc-awards-#{download.year}-#{download.checksum.first(12)}.csv",
+            update_last_fetched: false,
+            loader_options: { withdrawal_scope: { fiscal_year: download.year } }
+          )
+        ensure
+          close_download(download.io)
+        end
+      end
+    end
+    source.update!(last_fetched_at: Time.current)
+  end
+
+  def fetch_sshrc_years
+    collector = sshrc_collector
+    with_retries do
+      collector.each_year do |download|
+        begin
+          process_download(
+            download.io,
+            checksum: download.checksum,
+            filename: "sshrc-awards-#{download.year}-#{download.checksum.first(12)}.csv",
+            update_last_fetched: false,
+            loader_options: { withdrawal_scope: { fiscal_year: download.year } }
+          )
+        ensure
+          close_download(download.io)
+        end
+      end
+    end
+    source.update!(last_fetched_at: Time.current)
+  end
+
+  def fetch_global_affairs
+    download = with_retries { global_affairs_collector.call }
+    process_download(
+      download.io,
+      checksum: download.checksum,
+      filename: "global-affairs-projects-#{download.checksum.first(12)}.csv"
+    )
+  ensure
+    close_download(download&.io)
+  end
+
+  def fetch_cihr
+    download = with_retries { cihr_collector.call }
+    process_download(
+      download.io,
+      checksum: download.checksum,
+      filename: "cihr-awards-#{download.checksum.first(12)}.ndjson"
+    )
+  ensure
+    close_download(download&.io)
+  end
+
+  def nserc_collector
+    Warehouse::Source::Fetcher::NsercAwards.new(source.url)
+  end
+
+  def transfer_payments_collector
+    Warehouse::Source::Fetcher::TransferPayments.new(source.url)
+  end
+
+  def sshrc_collector
+    Warehouse::Source::Fetcher::SshrcAwards.new(source.url)
+  end
+
+  def global_affairs_collector
+    Warehouse::Source::Fetcher::GlobalAffairsProjects.new(source.url)
+  end
+
+  def cihr_collector
+    Warehouse::Source::Fetcher::CihrAwards.new(source.url)
+  end
+
+  def process_download(body, checksum:, filename: nil, update_last_fetched: true, loader_options: {})
     # A checksum match only skips when the prior load got somewhere: pending
     # and partial may be in flight or awaiting review, and re-dispatching
     # could double-run them. A failed ingestion is retried on the same row
@@ -16,12 +143,14 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     existing = source.raw_ingestions.find_by(checksum: checksum)
     if existing && !existing.failed?
       Rails.logger.info "[Fetcher] Source #{source.name}: data unchanged (checksum match), skipping"
+      source.update!(last_fetched_at: Time.current) if update_last_fetched
       return
     end
 
-    filename = File.basename(URI.parse(source.url).path).presence || "data.#{source.format}"
+    filename ||= File.basename(URI.parse(source.url).path).presence || "data.#{source.format}"
     r2_key = "raw/#{source.name}/#{Date.current.iso8601}/#{filename}"
     store_raw_file(r2_key, body)
+    rewind_body(body)
 
     ingestion = existing || source.raw_ingestions.new(checksum: checksum)
     ingestion.update!(
@@ -31,14 +160,12 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       error_message: nil
     )
 
-    source.update!(last_fetched_at: Time.current)
+    source.update!(last_fetched_at: Time.current) if update_last_fetched
 
-    dispatch_loader(ingestion, body)
+    dispatch_loader(ingestion, body, **loader_options)
 
     Rails.logger.info "[Fetcher] Source #{source.name}: ingestion #{ingestion.id} #{existing ? "retried" : "created"}"
   end
-
-  private
 
   # API-style sources (paginated JSON, multi-step downloads) normalize their
   # payload to a single canonical body at fetch time, so checksum dedupe and
@@ -97,9 +224,31 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     else
       local_path = Rails.root.join("storage", "raw", key)
       FileUtils.mkdir_p(File.dirname(local_path))
-      File.binwrite(local_path, body)
+      if body.respond_to?(:read)
+        File.open(local_path, "wb") { |file| IO.copy_stream(body, file) }
+      else
+        File.binwrite(local_path, body)
+      end
       Rails.logger.info "[Fetcher] Stored locally: #{local_path}"
     end
+  end
+
+  def rewind_body(body)
+    return unless body.respond_to?(:rewind)
+
+    body.rewind
+    return unless body.respond_to?(:set_encoding) && body.respond_to?(:read)
+
+    prefix = body.read(3)
+    body.rewind
+    body.pos = 3 if prefix&.b == "\xEF\xBB\xBF".b && body.respond_to?(:pos=)
+    body.set_encoding(Encoding::UTF_8)
+  end
+
+  def close_download(io)
+    return unless io
+
+    io.respond_to?(:close!) ? io.close! : io.close
   end
 
   def r2_configured?
@@ -108,7 +257,7 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
     false
   end
 
-  def dispatch_loader(ingestion, body)
+  def dispatch_loader(ingestion, body, **loader_options)
     case source.name
     when /^infobase/
       ingestion.infobase_loader.load(csv_content: body)
@@ -140,6 +289,8 @@ class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
       ingestion.brampton_candidates_loader.load(json_content: body)
     when /^election_hamilton/
       ingestion.hamilton_candidates_loader.load(json_content: body)
+    when /^spending_/
+      ingestion.spending_loader.load(body: body, **loader_options)
     else
       Rails.logger.warn "[Fetcher] No loader configured for source: #{source.name}"
     end

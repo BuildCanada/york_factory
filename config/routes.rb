@@ -22,6 +22,13 @@ Rails.application.routes.draw do
 
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Wire-compatible endpoints for the existing CanadaSpends Typesense client
+  # and Datasette-style detail pages.
+  post "multi_search", to: "typesense/multi_searches#create"
+  get "collections/:collection/documents/search", to: "typesense/documents#index"
+  get "canada-spends/:database/:id(.:format)", to: "canada_spends#show",
+    constraints: { format: /json/ }
+
   namespace :webhooks, constraints: { format: "json" } do
     resources :hubspot, only: [ :create ]
   end
@@ -30,6 +37,12 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :organizations, only: [ :index, :show ]
       resources :deviations, only: [ :index ]
+
+      namespace :spending do
+        match "search", to: "searches#index", via: %i[get post]
+        get "awards/:id", to: "awards#show"
+        get "databases/:database/awards/:id", to: "awards#show"
+      end
 
       namespace :auth do
         post "google", to: "sessions#create"

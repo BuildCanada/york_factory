@@ -2,6 +2,7 @@ class Warehouse::RawIngestion < Warehouse::Record
   belongs_to :source
   has_many :lineage_entries, dependent: :destroy
   has_many :kpi_documents, dependent: :nullify
+  has_many :spending_awards, dependent: :nullify
 
   enum :status, { pending: "pending", complete: "complete", partial: "partial", failed: "failed" }
 
@@ -22,6 +23,7 @@ class Warehouse::RawIngestion < Warehouse::Record
   has_object :statcan_econ_loader
   has_object :owid_econ_loader
   has_object :ircc_admissions_loader
+  has_object :spending_loader
   has_object :toronto_candidates_loader
   has_object :brampton_candidates_loader
   has_object :hamilton_candidates_loader

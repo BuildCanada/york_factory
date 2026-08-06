@@ -24,6 +24,9 @@ production:
     # only when its own fetch_frequency interval has elapsed.
     class: Warehouse::FetchEconomySourcesJob
     schedule: every day at 7am
+  fetch_spending_sources:
+    class: Warehouse::FetchSpendingSourcesJob
+    schedule: every day at 7:30am
   hubspot_bulk_sync_recent:
     # command form: recurring args: hashes arrive with string keys, which the
     # job's **options kwargs would silently drop.
@@ -45,3 +48,9 @@ production:
     # no-op. Runs at midnight so each day starts on the prior day's filings.
     class: Warehouse::FetchElectionSourcesJob
     schedule: every day at 12am
+  search_dispatch_media_feeds:
+    class: Search::Media::DispatchDueFeedsJob
+    schedule: every minute
+  search_saved_search_fanout:
+    class: Search::SavedSearchFanoutJob
+    schedule: every minute

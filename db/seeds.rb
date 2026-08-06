@@ -199,6 +199,8 @@ end
 end
 
 load Rails.root.join("db/seeds/economy_sources.rb")
+load Rails.root.join("db/seeds/media_feeds.rb")
+load Rails.root.join("db/seeds/spending_sources.rb")
 
 puts "Seeded #{Warehouse::Source.count} sources"
 

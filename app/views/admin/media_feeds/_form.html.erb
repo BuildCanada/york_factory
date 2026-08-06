@@ -1,0 +1,69 @@
+<%= form_with model: feed,
+  scope: :media_feed,
+  url: feed.persisted? ? admin_media_feed_path(feed) : admin_media_feeds_path,
+  class: "card" do |form| %>
+  <% if feed.errors.any? %>
+    <div class="flash flash-alert">
+      <% feed.errors.full_messages.each do |message| %><p><%= message %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :name, "Feed name" %>
+    <%= form.text_field :name, class: "form-control", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :url, "Feed URL" %>
+    <%= form.url_field :url, class: "form-control", required: true %>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <%= form.label :publisher_name %>
+      <%= form.text_field :publisher_name, class: "form-control", required: true %>
+    </div>
+    <div class="form-group">
+      <%= form.label :publisher_domain %>
+      <%= form.text_field :publisher_domain, class: "form-control", required: true, placeholder: "example.com" %>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <%= form.label :strategy, "Feed format" %>
+      <%= form.select :strategy, Warehouse::MediaFeed::STRATEGIES.map { |strategy| [strategy.upcase, strategy] }, {}, class: "form-control" %>
+    </div>
+    <div class="form-group">
+      <%= form.label :language %>
+      <%= form.select :language, Warehouse::MediaFeed::LANGUAGES.map { |language| [language.upcase, language] }, {}, class: "form-control" %>
+    </div>
+    <div class="form-group">
+      <%= form.label :cadence_seconds, "Fetch every (seconds)" %>
+      <%= form.number_field :cadence_seconds, class: "form-control", min: 60, step: 60, required: true %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :fallback_url, "Fallback feed URL (optional)" %>
+    <%= form.url_field :fallback_url, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label><%= form.check_box :enabled %> Enabled</label>
+    <div class="text-muted">Disabled feeds are excluded from scheduled fetching.</div>
+  </div>
+
+  <div class="form-group">
+    <label><%= form.check_box :allow_http %> Allow insecure HTTP</label>
+    <div class="text-muted">Leave off unless this publisher cannot serve its feed over HTTPS.</div>
+  </div>
+
+  <div class="btn-group mt-1">
+    <%= form.submit "Save Media Feed", class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_media_feeds_path, class: "btn" %>
+    <% if feed.persisted? %>
+      <%= link_to "Delete", admin_media_feed_path(feed), class: "btn btn-danger", data: { turbo_method: :delete, turbo_confirm: "Delete this media feed?" } %>
+    <% end %>
+  </div>
+<% end %>

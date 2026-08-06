@@ -56,6 +56,9 @@ gem "rss"
 # HTTP client for fetching CSVs
 gem "httpx"
 
+# Search index for document retrieval and saved-search alerting
+gem "turbopuffer", "~> 2.3"
+
 # HubSpot CRM sync (contacts + marketing events)
 gem "hubspot-api-client", "~> 20.0"
 

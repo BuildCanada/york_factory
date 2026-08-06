@@ -1,0 +1,9 @@
+<h1><%= @payload.dig(:saved_search, :name) %></h1>
+
+<% @payload.fetch(:matches).each do |match| %>
+  <article>
+    <h2><%= match[:title] %></h2>
+    <% if match[:summary].present? %><p><%= match[:summary] %></p><% end %>
+    <% if match[:url].present? %><p><%= link_to "View source", match[:url] %></p><% end %>
+  </article>
+<% end %>

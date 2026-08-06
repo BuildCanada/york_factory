@@ -31,6 +31,12 @@ Rails.application.routes.draw do
       resources :organizations, only: [ :index, :show ]
       resources :deviations, only: [ :index ]
 
+      namespace :spending do
+        post "search", to: "searches#create"
+        get "awards/:id", to: "awards#show"
+        get "databases/:database/awards/:id", to: "awards#show"
+      end
+
       namespace :auth do
         post "google", to: "sessions#create"
         delete "session", to: "sessions#destroy"
@@ -38,6 +44,14 @@ Rails.application.routes.draw do
 
       # OAuth userinfo / profile — the user behind the presented Doorkeeper token.
       resource :me, only: [ :show, :update ], controller: "me"
+
+      post "search/preview", to: "search#preview"
+      get "search/realms/:realm", to: "search#realm", as: :search_realm
+      resources :saved_searches do
+        post :test, on: :member
+        resources :runs, only: :index, controller: "saved_search_runs"
+        resources :matches, only: :index, controller: "saved_search_matches"
+      end
 
       resources :memos, param: :slug do
         resources :endorsements, only: [ :index, :create ]
@@ -156,6 +170,13 @@ Rails.application.routes.draw do
 
     get "ingestions", to: "dashboard#ingestions"
     get "lineage_review", to: "dashboard#lineage_review"
+    get "search", to: "search#index", as: :search
+    post "search", to: "search#execute"
+    post "search/saved_searches/:id/test", to: "search#test_saved_search", as: :test_saved_search
+    delete "search/saved_searches/:id", to: "search#destroy_saved_search", as: :search_saved_search
+    resources :media_feeds, except: :show do
+      patch :toggle, on: :member
+    end
 
     namespace :kpis do
       resources :agent_runs, only: [ :index, :show ]

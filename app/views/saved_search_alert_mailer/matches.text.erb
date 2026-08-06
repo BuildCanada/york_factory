@@ -1,0 +1,8 @@
+<%= @payload.dig(:saved_search, :name) %>
+
+<% @payload.fetch(:matches).each do |match| %>
+<%= match[:title] %>
+<%= match[:summary] %>
+<%= match[:url] %>
+
+<% end %>

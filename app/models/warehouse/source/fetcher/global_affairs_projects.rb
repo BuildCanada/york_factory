@@ -59,6 +59,17 @@ class Warehouse::Source::Fetcher::GlobalAffairsProjects
     raise
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    result = call
+    yield Warehouse::Source::Fetcher::Download.new(
+      body: result.io,
+      checksum: result.checksum,
+      filename: "global-affairs-projects-#{result.checksum.first(12)}.csv"
+    ) { |ingestion, content| ingestion.spending_loader.load(body: content) }
+  end
+
   private
 
   def normalized_urls(url, urls)

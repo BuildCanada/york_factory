@@ -31,6 +31,16 @@ class Warehouse::Source::Fetcher::TorontoCandidateList
     )
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    body = call
+    yield Warehouse::Source::Fetcher::Download.new(
+      body:,
+      checksum: Digest::SHA256.hexdigest(body)
+    ) { |ingestion, content| ingestion.toronto_candidates_loader.load(json_content: content) }
+  end
+
   private
 
   def fetch_feed(filename, payload_key, optional: false)

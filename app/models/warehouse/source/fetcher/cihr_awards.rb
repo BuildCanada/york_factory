@@ -76,6 +76,17 @@ class Warehouse::Source::Fetcher::CihrAwards
     raise
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    result = call
+    yield Warehouse::Source::Fetcher::Download.new(
+      body: result.io,
+      checksum: result.checksum,
+      filename: "cihr-awards-#{result.checksum.first(12)}.ndjson"
+    ) { |ingestion, content| ingestion.spending_loader.load(body: content) }
+  end
+
   private
 
   def fetch_page(start:)

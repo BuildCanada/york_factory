@@ -30,6 +30,22 @@ class Warehouse::Source::Fetcher::SshrcAwards
     end
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    each_year do |result|
+      year = result.year
+      download = Warehouse::Source::Fetcher::Download.new(
+        body: result.io,
+        checksum: result.checksum,
+        filename: "sshrc-awards-#{year}-#{result.checksum.first(12)}.csv"
+      ) do |ingestion, content|
+        ingestion.spending_loader.load(body: content, withdrawal_scope: { fiscal_year: year })
+      end
+      yield download
+    end
+  end
+
   private
 
   def catalogue_resources

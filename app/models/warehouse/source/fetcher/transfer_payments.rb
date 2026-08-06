@@ -25,6 +25,22 @@ class Warehouse::Source::Fetcher::TransferPayments
     end
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    each_year do |result|
+      fiscal_year = result.fiscal_year
+      download = Warehouse::Source::Fetcher::Download.new(
+        body: result.io,
+        checksum: result.checksum,
+        filename: "transfer-payments-#{result.year}-#{result.checksum.first(12)}.csv"
+      ) do |ingestion, content|
+        ingestion.spending_loader.load(body: content, withdrawal_scope: { fiscal_year: })
+      end
+      yield download
+    end
+  end
+
   private
 
   def catalogue_resources

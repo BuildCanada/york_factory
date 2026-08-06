@@ -52,4 +52,21 @@ class Warehouse::Source::Fetcher::StreamingDownloadTest < ActiveSupport::TestCas
 
     assert_match(/Empty response/, error.message)
   end
+
+  test "exposes streamed files as complete ingestion artifacts" do
+    http = FakeHttp.new([ "recipient,amount\r\nExample,100\r\n" ])
+    loaded = nil
+    strategy = Warehouse::Source::Fetcher::HttpFile.new(
+      "https://example.test/data.csv", streaming: true, http: http
+    ) { |ingestion, body| loaded = [ ingestion, body.read ] }
+
+    download = strategy.each_download.to_a.sole
+    ingestion = Object.new
+    download.load(ingestion)
+
+    assert_equal Digest::SHA256.hexdigest("recipient,amount\nExample,100\n"), download.checksum
+    assert_equal [ ingestion, "recipient,amount\nExample,100\n" ], loaded
+  ensure
+    download&.close
+  end
 end

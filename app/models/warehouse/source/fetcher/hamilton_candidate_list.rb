@@ -44,6 +44,16 @@ class Warehouse::Source::Fetcher::HamiltonCandidateList
     JSON.generate("year" => @year, "offices" => offices(document))
   end
 
+  def each_download
+    return enum_for(__method__) unless block_given?
+
+    body = call
+    yield Warehouse::Source::Fetcher::Download.new(
+      body:,
+      checksum: Digest::SHA256.hexdigest(body)
+    ) { |ingestion, content| ingestion.hamilton_candidates_loader.load(json_content: content) }
+  end
+
   private
 
   def document

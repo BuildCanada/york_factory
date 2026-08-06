@@ -6684,13 +6684,6 @@ CREATE INDEX idx_spending_awards_canonical_key ON warehouse.spending_awards USIN
 
 
 --
--- Name: idx_spending_awards_search_document; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_spending_awards_search_document ON warehouse.spending_awards USING gin (to_tsvector('simple'::regconfig, (((((((COALESCE(recipient_name, ''::character varying))::text || ' '::text) || (COALESCE(program_name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(title, ''::text))));
-
-
---
 -- Name: idx_spending_awards_search_sync; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6709,34 +6702,6 @@ CREATE INDEX idx_spending_awards_searchable ON warehouse.spending_awards USING b
 --
 
 CREATE UNIQUE INDEX idx_spending_awards_source_key ON warehouse.spending_awards USING btree (source_id, external_key);
-
-
---
--- Name: idx_spending_awards_state_country; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_spending_awards_state_country ON warehouse.spending_awards USING btree (state, country_code);
-
-
---
--- Name: idx_spending_awards_state_payer; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_spending_awards_state_payer ON warehouse.spending_awards USING btree (state, payer_name);
-
-
---
--- Name: idx_spending_awards_state_program; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_spending_awards_state_program ON warehouse.spending_awards USING btree (state, program_name);
-
-
---
--- Name: idx_spending_awards_state_province; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_spending_awards_state_province ON warehouse.spending_awards USING btree (state, province_code);
 
 
 --
@@ -8266,7 +8231,6 @@ SET search_path TO public,warehouse;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260805050000'),
 ('20260805040000'),
-('20260805030000'),
 ('20260805020000'),
 ('20260805011200'),
 ('20260805011100'),

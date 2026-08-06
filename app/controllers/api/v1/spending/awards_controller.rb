@@ -14,8 +14,7 @@ module Api
         def find_award
           scope = ::Warehouse::SpendingAward.published.includes(:source)
           if params[:database].present?
-            source_name = ::Warehouse::Spending::Datasets.source_name_for(params[:database])
-            scope.joins(:source).merge(::Warehouse::Source.where(name: source_name))
+            scope.joins(:source).merge(::Warehouse::Source.where(name: params[:database]))
               .find_by(external_key: params[:id])
           elsif params[:id].to_s.include?(":")
             award = ::Warehouse::SpendingAward.find_by_search_id(params[:id])
@@ -23,8 +22,6 @@ module Api
           else
             scope.find_by(id: params[:id]) || scope.find_by(external_key: params[:id])
           end
-        rescue KeyError
-          nil
         end
       end
     end

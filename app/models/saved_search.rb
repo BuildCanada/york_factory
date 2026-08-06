@@ -3,13 +3,11 @@ class SavedSearch < ApplicationRecord
   DELIVERY_MODES = %w[instant digest].freeze
 
   belongs_to :user
-  encrypts :webhook_secret
   has_many :runs, class_name: "SavedSearchRun", dependent: :destroy
   has_many :matches, class_name: "SavedSearchMatch", dependent: :destroy
   has_many :notification_batches, dependent: :destroy
 
   before_validation :normalize_definition
-  before_validation :populate_webhook_secret
   before_validation :reset_run_schedule
 
   validates :name, presence: true
@@ -42,13 +40,6 @@ class SavedSearch < ApplicationRecord
     will_save_change_to_definition_digest? && persisted?
   end
 
-  def ensure_webhook_secret!
-    return unless Array(delivery_configuration["channels"]).include?("webhook")
-    return if webhook_secret.present?
-
-    update!(webhook_secret: SecureRandom.hex(32))
-  end
-
   private
 
   def reset_run_schedule
@@ -57,11 +48,6 @@ class SavedSearch < ApplicationRecord
       will_save_change_to_poll_interval_seconds? || will_save_change_to_definition_digest?
 
     self.next_run_at = Time.current
-  end
-
-  def populate_webhook_secret
-    channels = Array(delivery_configuration.to_h["channels"] || delivery_configuration.to_h[:channels])
-    self.webhook_secret ||= SecureRandom.hex(32) if channels.include?("webhook")
   end
 
   def normalize_definition
@@ -89,13 +75,9 @@ class SavedSearch < ApplicationRecord
     end
 
     channels = Array(delivery_configuration["channels"] || delivery_configuration[:channels])
-    errors.add(:delivery_configuration, "must include email or webhook") if channels.empty?
-    if (channels - %w[email webhook]).any?
+    errors.add(:delivery_configuration, "must include email") unless channels.include?("email")
+    if (channels - %w[email]).any?
       errors.add(:delivery_configuration, "contains an unsupported channel")
-    end
-    if channels.include?("webhook")
-      webhook_url = delivery_configuration["webhook_url"] || delivery_configuration[:webhook_url]
-      errors.add(:delivery_configuration, "must include webhook_url") if webhook_url.blank?
     end
   end
 

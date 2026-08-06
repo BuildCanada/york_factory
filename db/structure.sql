@@ -941,7 +941,7 @@ CREATE TABLE public.notification_deliveries (
     last_error text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT notification_deliveries_channel CHECK (((channel)::text = ANY ((ARRAY['email'::character varying, 'webhook'::character varying])::text[]))),
+    CONSTRAINT notification_deliveries_channel CHECK (((channel)::text = 'email'::text)),
     CONSTRAINT notification_deliveries_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'delivering'::character varying, 'delivered'::character varying, 'failed'::character varying, 'dead'::character varying])::text[])))
 );
 
@@ -1219,11 +1219,10 @@ CREATE TABLE public.saved_searches (
     start_policy character varying DEFAULT 'future_only'::character varying NOT NULL,
     notify_on_update boolean DEFAULT false NOT NULL,
     delivery_mode character varying DEFAULT 'instant'::character varying NOT NULL,
-    delivery_configuration jsonb DEFAULT '{}'::jsonb NOT NULL,
+    delivery_configuration jsonb DEFAULT '{"channels": ["email"]}'::jsonb NOT NULL,
     timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    webhook_secret character varying,
     CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
     CONSTRAINT saved_searches_poll_interval CHECK (((poll_interval_seconds >= 60) AND (poll_interval_seconds <= 86400))),
     CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY ((ARRAY['future_only'::character varying, 'backfill'::character varying])::text[])))

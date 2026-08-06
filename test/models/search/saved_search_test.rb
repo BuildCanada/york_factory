@@ -56,10 +56,7 @@ class Search::SavedSearchTest < ActiveSupport::TestCase
       name: "News",
       realm: "media",
       definition: { version: 1, realm: "media", mode: "filter_only" },
-      delivery_configuration: {
-        channels: [ "email", "webhook" ],
-        webhook_url: "https://example.com/hooks/search"
-      }
+      delivery_configuration: { channels: [ "email" ] }
     )
     feed = Warehouse::MediaFeed.create!(name: "Batch feed #{SecureRandom.hex(3)}",
       strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300,
@@ -76,8 +73,22 @@ class Search::SavedSearchTest < ActiveSupport::TestCase
     batch.close!
 
     assert_equal "closed", batch.state
-    assert_equal %w[email webhook], batch.notification_deliveries.order(:channel).pluck(:channel)
+    assert_equal %w[email], batch.notification_deliveries.order(:channel).pluck(:channel)
     assert_not match.update(notification_batch: nil)
+  end
+
+  test "rejects webhook delivery" do
+    saved_search = SavedSearch.new(
+      user: users(:member),
+      name: "Unsupported delivery",
+      realm: "media",
+      definition: { version: 1, realm: "media", mode: "filter_only" },
+      delivery_configuration: { channels: [ "webhook" ], webhook_url: "https://example.com/hook" }
+    )
+
+    refute saved_search.valid?
+    assert_includes saved_search.errors[:delivery_configuration], "must include email"
+    assert_includes saved_search.errors[:delivery_configuration], "contains an unsupported channel"
   end
 
   test "KPI matches snapshot the measure without observation values" do

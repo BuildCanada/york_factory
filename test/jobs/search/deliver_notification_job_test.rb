@@ -1,29 +1,9 @@
 require "test_helper"
 
 class Search::DeliverNotificationJobTest < ActiveJob::TestCase
-  FakeResponse = Struct.new(:status, :headers) do
-    def [](name)
-      headers[name]
-    end
-  end
-
-  class FakeHttp
-    attr_reader :requests
-
-    def initialize(response)
-      @response = response
-      @requests = []
-    end
-
-    def post(url, **options)
-      requests << { url: url, **options }
-      @response
-    end
-  end
-
   setup do
     feed = Warehouse::MediaFeed.create!(
-      name: "Webhook feed #{SecureRandom.hex(4)}",
+      name: "Email feed #{SecureRandom.hex(4)}",
       strategy: "rss",
       url: "https://nationalpost.com/feed/",
       cadence_seconds: 300,
@@ -34,7 +14,7 @@ class Search::DeliverNotificationJobTest < ActiveJob::TestCase
     article = Warehouse::MediaArticle.new(
       feed:,
       external_key: SecureRandom.uuid,
-      title: "Webhook article",
+      title: "Email article",
       content: "Body",
       language: "en",
       realm_data: {
@@ -48,14 +28,11 @@ class Search::DeliverNotificationJobTest < ActiveJob::TestCase
     article.publish!
     @saved_search = SavedSearch.create!(
       user: users(:member),
-      name: "Webhook alerts #{SecureRandom.hex(4)}",
+      name: "Email alerts #{SecureRandom.hex(4)}",
       realm: "media",
       definition: { version: 1, realm: "media", mode: "filter_only" },
       delivery_mode: "instant",
-      delivery_configuration: {
-        channels: [ "webhook" ],
-        webhook_url: "https://hooks.example.com/search"
-      }
+      delivery_configuration: { channels: [ "email" ] }
     )
     match = @saved_search.matches.create!(searchable: article, state: "buffered")
     @batch = @saved_search.notification_batches.create!(
@@ -64,67 +41,47 @@ class Search::DeliverNotificationJobTest < ActiveJob::TestCase
     )
     match.update!(notification_batch: @batch)
     @batch.close!
-    @delivery = @batch.notification_deliveries.find_by!(channel: "webhook")
+    @delivery = @batch.notification_deliveries.find_by!(channel: "email")
     clear_enqueued_jobs
   end
 
-  test "posts a signed JSON payload through HTTPX" do
-    response = FakeResponse.new(202, { "x-request-id" => "request-123" })
-    http = FakeHttp.new(response)
+  test "delivers an email" do
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      Search::DeliverNotificationJob.perform_now(@delivery.id)
+    end
 
-    job(http).perform(@delivery.id)
-
-    request = http.requests.fetch(0)
-    assert_equal "https://hooks.example.com/search", request[:url]
-    assert_equal @batch.payload, JSON.parse(request[:body])
-    assert_equal "application/json", request.dig(:headers, "Content-Type")
-    assert_equal @delivery.idempotency_key,
-      request.dig(:headers, "X-BuildCanada-Delivery")
-
-    timestamp = request.dig(:headers, "X-BuildCanada-Timestamp")
-    expected_signature = OpenSSL::HMAC.hexdigest(
-      "SHA256",
-      @saved_search.webhook_secret,
-      "#{timestamp}.#{request[:body]}"
-    )
-    assert_equal "v1=#{expected_signature}",
-      request.dig(:headers, "X-BuildCanada-Signature")
     assert_equal "delivered", @delivery.reload.status
-    assert_equal({ "status" => 202, "request_id" => "request-123" }, @delivery.provider_response)
+    assert_equal({ "provider" => "action_mailer" }, @delivery.provider_response)
     assert_equal "delivered", @batch.reload.state
   end
 
-  test "retries a transient HTTP response" do
-    http = FakeHttp.new(FakeResponse.new(503, {}))
-
+  test "retries a delivery error" do
     assert_enqueued_jobs 1, only: Search::DeliverNotificationJob do
-      job(http).perform(@delivery.id)
+      failing_job.perform(@delivery.id)
     end
 
     assert_equal "failed", @delivery.reload.status
-    assert_match "webhook returned HTTP 503", @delivery.last_error
+    assert_match "SMTP unavailable", @delivery.last_error
     assert @delivery.next_attempt_at.future?
     assert_equal "delivering", @batch.reload.state
   end
 
-  test "marks a permanent HTTP response dead" do
-    http = FakeHttp.new(FakeResponse.new(400, {}))
+  test "marks a delivery dead after the final attempt" do
+    @delivery.update!(attempt_count: Search::DeliverNotificationJob::MAX_ATTEMPTS - 1)
 
     assert_no_enqueued_jobs only: Search::DeliverNotificationJob do
-      job(http).perform(@delivery.id)
+      failing_job.perform(@delivery.id)
     end
 
     assert_equal "dead", @delivery.reload.status
-    assert_match "webhook returned HTTP 400", @delivery.last_error
     assert_equal "dead", @batch.reload.state
   end
 
   private
 
-  def job(http)
+  def failing_job
     Search::DeliverNotificationJob.new.tap do |job|
-      job.instance_variable_set(:@webhook_http, http)
-      job.define_singleton_method(:validate_webhook_url) { |url| url }
+      job.define_singleton_method(:deliver_email) { |_delivery| raise "SMTP unavailable" }
     end
   end
 end

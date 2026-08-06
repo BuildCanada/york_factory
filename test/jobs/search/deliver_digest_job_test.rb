@@ -32,7 +32,7 @@ class Search::DeliverDigestJobTest < ActiveJob::TestCase
       realm: "media",
       definition: { version: 1, realm: "media", mode: "filter_only" },
       delivery_mode: "digest",
-      delivery_configuration: { channels: [ "email", "webhook" ], webhook_url: "https://example.com/hook" }
+      delivery_configuration: { channels: [ "email" ] }
     )
     match = @saved_search.matches.create!(searchable: article, state: "buffered")
     @batch = @saved_search.notification_batches.create!(
@@ -44,13 +44,13 @@ class Search::DeliverDigestJobTest < ActiveJob::TestCase
   end
 
   test "closes a due digest and directly enqueues its channel deliveries" do
-    assert_enqueued_jobs 2, only: Search::DeliverNotificationJob do
+    assert_enqueued_jobs 1, only: Search::DeliverNotificationJob do
       Search::DeliverDigestJob.perform_now(@batch.id)
     end
 
     assert_equal "closed", @batch.reload.state
     assert @batch.payload.present?
-    assert_equal %w[email webhook], @batch.notification_deliveries.order(:channel).pluck(:channel)
+    assert_equal %w[email], @batch.notification_deliveries.order(:channel).pluck(:channel)
     assert_equal [ "dispatching" ], @batch.saved_search_matches.distinct.pluck(:state)
   end
 
@@ -59,7 +59,7 @@ class Search::DeliverDigestJobTest < ActiveJob::TestCase
     delivery_ids = @batch.notification_deliveries.order(:id).ids
     clear_enqueued_jobs
 
-    assert_enqueued_jobs 2, only: Search::DeliverNotificationJob do
+    assert_enqueued_jobs 1, only: Search::DeliverNotificationJob do
       Search::DeliverDigestJob.perform_now(@batch.id)
     end
 

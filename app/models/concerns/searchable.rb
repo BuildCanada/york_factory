@@ -2,7 +2,7 @@ module Searchable
   extend ActiveSupport::Concern
 
   MODEL_NAMES = %w[
-    Search::MediaArticle
+    Warehouse::MediaArticle
     Warehouse::FiscalExpenditure
     Warehouse::StandardObjectExpenditure
     Warehouse::Measure

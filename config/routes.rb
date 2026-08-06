@@ -168,6 +168,9 @@ Rails.application.routes.draw do
     post "search", to: "search#execute"
     post "search/saved_searches/:id/test", to: "search#test_saved_search", as: :test_saved_search
     delete "search/saved_searches/:id", to: "search#destroy_saved_search", as: :search_saved_search
+    resources :media_feeds, except: :show do
+      patch :toggle, on: :member
+    end
 
     namespace :kpis do
       resources :agent_runs, only: [ :index, :show ]

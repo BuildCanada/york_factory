@@ -199,7 +199,7 @@ end
 end
 
 load Rails.root.join("db/seeds/economy_sources.rb")
-Search::Media::FeedCatalog.provision!
+load Rails.root.join("db/seeds/media_feeds.rb")
 
 puts "Seeded #{Warehouse::Source.count} sources"
 

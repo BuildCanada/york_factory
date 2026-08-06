@@ -211,7 +211,7 @@ module Admin
 
     def load_page
       @saved_searches = current_user.saved_searches.order(created_at: :desc)
-      @publishers = Search::Media::FeedCatalog::PUBLISHERS.values.sort_by { |publisher| publisher.fetch("name") }
+      @publishers = Warehouse::MediaFeed.publishers
       @realm_contracts = Search::Realms.keys.index_with { |realm| Search::Realms.fetch(realm) }
       @search_namespace = Search::ProviderConfig.document_namespace
       @search_checkpoint = Searchable.checkpoint.to_i

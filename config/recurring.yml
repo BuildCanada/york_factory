@@ -45,8 +45,8 @@ production:
     # no-op. Runs at midnight so each day starts on the prior day's filings.
     class: Warehouse::FetchElectionSourcesJob
     schedule: every day at 12am
-  search_dispatch_media_sources:
-    class: Search::Media::DispatchDueSourcesJob
+  search_dispatch_media_feeds:
+    class: Search::Media::DispatchDueFeedsJob
     schedule: every minute
   search_saved_search_fanout:
     class: Search::SavedSearchFanoutJob

@@ -1271,134 +1271,6 @@ CREATE SEQUENCE public.search_index_sequence
 
 
 --
--- Name: search_media_articles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.search_media_articles (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    search_source_id bigint,
-    external_key character varying,
-    state character varying DEFAULT 'draft'::character varying NOT NULL,
-    visibility character varying DEFAULT 'public'::character varying NOT NULL,
-    permission_ids uuid[] DEFAULT '{}'::uuid[] NOT NULL,
-    search_revision integer DEFAULT 0 NOT NULL,
-    search_index_sequence bigint,
-    search_synced_at timestamp with time zone,
-    canonical_url text,
-    canonical_url_digest character varying,
-    source_url text,
-    title text,
-    summary text,
-    content text,
-    language character varying DEFAULT 'und'::character varying NOT NULL,
-    published_at timestamp with time zone,
-    source_updated_at timestamp with time zone,
-    first_seen_at timestamp with time zone,
-    last_seen_at timestamp with time zone,
-    search_content_hash character varying,
-    ontology jsonb DEFAULT '{}'::jsonb NOT NULL,
-    realm_data jsonb DEFAULT '{}'::jsonb NOT NULL,
-    search_embedding_model character varying,
-    search_embedding_input_hash character varying,
-    search_embedding_scope character varying,
-    search_embedding_input_tokens integer,
-    extraction_metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT search_media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY ((ARRAY['full'::character varying, 'truncated'::character varying])::text[])))),
-    CONSTRAINT search_media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT search_media_articles_state CHECK (((state)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'withdrawn'::character varying, 'invalid'::character varying])::text[])))
-);
-
-
---
--- Name: search_source_fetches; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.search_source_fetches (
-    id bigint NOT NULL,
-    search_source_id bigint NOT NULL,
-    status character varying DEFAULT 'pending'::character varying NOT NULL,
-    http_status integer,
-    started_at timestamp with time zone,
-    finished_at timestamp with time zone,
-    duration_ms integer,
-    items_discovered integer DEFAULT 0 NOT NULL,
-    response_checksum character varying,
-    error text,
-    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT search_source_fetches_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'not_modified'::character varying])::text[])))
-);
-
-
---
--- Name: search_source_fetches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.search_source_fetches_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: search_source_fetches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.search_source_fetches_id_seq OWNED BY public.search_source_fetches.id;
-
-
---
--- Name: search_sources; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.search_sources (
-    id bigint NOT NULL,
-    name character varying NOT NULL,
-    realm character varying NOT NULL,
-    strategy character varying NOT NULL,
-    url text,
-    cadence_seconds integer DEFAULT 300 NOT NULL,
-    configuration jsonb DEFAULT '{}'::jsonb NOT NULL,
-    enabled boolean DEFAULT true NOT NULL,
-    next_fetch_at timestamp with time zone,
-    etag character varying,
-    last_modified character varying,
-    last_succeeded_at timestamp with time zone,
-    last_failed_at timestamp with time zone,
-    consecutive_failures integer DEFAULT 0 NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT search_sources_cadence_minimum CHECK ((cadence_seconds >= 60)),
-    CONSTRAINT search_sources_failures_nonnegative CHECK ((consecutive_failures >= 0))
-);
-
-
---
--- Name: search_sources_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.search_sources_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: search_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.search_sources_id_seq OWNED BY public.search_sources.id;
-
-
---
 -- Name: social_posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3185,6 +3057,137 @@ ALTER SEQUENCE warehouse.measures_id_seq OWNED BY warehouse.measures.id;
 
 
 --
+-- Name: media_articles; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_articles (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    media_feed_id bigint,
+    external_key character varying,
+    state character varying DEFAULT 'draft'::character varying NOT NULL,
+    visibility character varying DEFAULT 'public'::character varying NOT NULL,
+    permission_ids uuid[] DEFAULT '{}'::uuid[] NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    canonical_url text,
+    canonical_url_digest character varying,
+    source_url text,
+    title text,
+    summary text,
+    content text,
+    language character varying DEFAULT 'und'::character varying NOT NULL,
+    published_at timestamp with time zone,
+    source_updated_at timestamp with time zone,
+    first_seen_at timestamp with time zone,
+    last_seen_at timestamp with time zone,
+    search_content_hash character varying,
+    ontology jsonb DEFAULT '{}'::jsonb NOT NULL,
+    realm_data jsonb DEFAULT '{}'::jsonb NOT NULL,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer,
+    extraction_metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY (ARRAY[('full'::character varying)::text, ('truncated'::character varying)::text])))),
+    CONSTRAINT media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
+    CONSTRAINT media_articles_state CHECK (((state)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('withdrawn'::character varying)::text, ('invalid'::character varying)::text])))
+);
+
+
+--
+-- Name: media_feed_fetches; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_feed_fetches (
+    id bigint NOT NULL,
+    media_feed_id bigint NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    http_status integer,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    duration_ms integer,
+    items_discovered integer DEFAULT 0 NOT NULL,
+    response_checksum character varying,
+    error text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text, ('not_modified'::character varying)::text])))
+);
+
+
+--
+-- Name: media_feed_fetches_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_feed_fetches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_feed_fetches_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_feed_fetches_id_seq OWNED BY warehouse.media_feed_fetches.id;
+
+
+--
+-- Name: media_feeds; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_feeds (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    strategy character varying NOT NULL,
+    url text,
+    cadence_seconds integer DEFAULT 300 NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    next_fetch_at timestamp with time zone,
+    etag character varying,
+    last_modified character varying,
+    last_succeeded_at timestamp with time zone,
+    last_failed_at timestamp with time zone,
+    consecutive_failures integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    publisher_name character varying NOT NULL,
+    publisher_domain character varying NOT NULL,
+    language character varying DEFAULT 'en'::character varying NOT NULL,
+    fallback_url text,
+    allow_http boolean DEFAULT false NOT NULL,
+    CONSTRAINT media_feeds_cadence_minimum CHECK ((cadence_seconds >= 60)),
+    CONSTRAINT media_feeds_failures_nonnegative CHECK ((consecutive_failures >= 0))
+);
+
+
+--
+-- Name: media_feeds_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_feeds_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_feeds_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_feeds_id_seq OWNED BY warehouse.media_feeds.id;
+
+
+--
 -- Name: metric_aliases; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -4021,20 +4024,6 @@ ALTER TABLE ONLY public.saved_searches ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- Name: search_source_fetches id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_source_fetches ALTER COLUMN id SET DEFAULT nextval('public.search_source_fetches_id_seq'::regclass);
-
-
---
--- Name: search_sources id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_sources ALTER COLUMN id SET DEFAULT nextval('public.search_sources_id_seq'::regclass);
-
-
---
 -- Name: social_posts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -4298,6 +4287,20 @@ ALTER TABLE ONLY warehouse.measure_lineages ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY warehouse.measures ALTER COLUMN id SET DEFAULT nextval('warehouse.measures_id_seq'::regclass);
+
+
+--
+-- Name: media_feed_fetches id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_feed_fetches ALTER COLUMN id SET DEFAULT nextval('warehouse.media_feed_fetches_id_seq'::regclass);
+
+
+--
+-- Name: media_feeds id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_feeds ALTER COLUMN id SET DEFAULT nextval('warehouse.media_feeds_id_seq'::regclass);
 
 
 --
@@ -4660,30 +4663,6 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: search_media_articles search_media_articles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_media_articles
-    ADD CONSTRAINT search_media_articles_pkey PRIMARY KEY (id);
-
-
---
--- Name: search_source_fetches search_source_fetches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_source_fetches
-    ADD CONSTRAINT search_source_fetches_pkey PRIMARY KEY (id);
-
-
---
--- Name: search_sources search_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_sources
-    ADD CONSTRAINT search_sources_pkey PRIMARY KEY (id);
-
-
---
 -- Name: social_posts social_posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4996,6 +4975,30 @@ ALTER TABLE ONLY warehouse.measures
 
 
 --
+-- Name: media_articles media_articles_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_articles
+    ADD CONSTRAINT media_articles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_feed_fetches media_feed_fetches_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_feed_fetches
+    ADD CONSTRAINT media_feed_fetches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_feeds media_feeds_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_feeds
+    ADD CONSTRAINT media_feeds_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: metric_aliases metric_aliases_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -5223,41 +5226,6 @@ CREATE UNIQUE INDEX idx_saved_search_runs_tick ON public.saved_search_runs USING
 --
 
 CREATE INDEX idx_saved_searches_due ON public.saved_searches USING btree (enabled, next_run_at);
-
-
---
--- Name: idx_search_media_articles_canonical_url; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_search_media_articles_canonical_url ON public.search_media_articles USING btree (canonical_url_digest) WHERE (canonical_url_digest IS NOT NULL);
-
-
---
--- Name: idx_search_media_articles_source_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_search_media_articles_source_key ON public.search_media_articles USING btree (search_source_id, external_key) WHERE ((search_source_id IS NOT NULL) AND (external_key IS NOT NULL));
-
-
---
--- Name: idx_search_media_articles_sync_overlap; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_search_media_articles_sync_overlap ON public.search_media_articles USING btree (search_synced_at, search_index_sequence);
-
-
---
--- Name: idx_search_source_fetches_recent; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_search_source_fetches_recent ON public.search_source_fetches USING btree (search_source_id, created_at);
-
-
---
--- Name: idx_search_sources_due; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_search_sources_due ON public.search_sources USING btree (enabled, next_fetch_at);
 
 
 --
@@ -5727,41 +5695,6 @@ CREATE INDEX index_saved_searches_on_user_id ON public.saved_searches USING btre
 --
 
 CREATE INDEX index_saved_searches_on_user_id_and_name ON public.saved_searches USING btree (user_id, name);
-
-
---
--- Name: index_search_media_articles_on_search_index_sequence; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_search_media_articles_on_search_index_sequence ON public.search_media_articles USING btree (search_index_sequence);
-
-
---
--- Name: index_search_media_articles_on_search_source_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_search_media_articles_on_search_source_id ON public.search_media_articles USING btree (search_source_id);
-
-
---
--- Name: index_search_media_articles_on_state; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_search_media_articles_on_state ON public.search_media_articles USING btree (state);
-
-
---
--- Name: index_search_source_fetches_on_search_source_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_search_source_fetches_on_search_source_id ON public.search_source_fetches USING btree (search_source_id);
-
-
---
--- Name: index_search_sources_on_name; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_search_sources_on_name ON public.search_sources USING btree (name);
 
 
 --
@@ -6416,6 +6349,41 @@ CREATE INDEX idx_measures_search_sync ON warehouse.measures USING btree (search_
 
 
 --
+-- Name: idx_media_articles_canonical_url; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_articles_canonical_url ON warehouse.media_articles USING btree (canonical_url_digest) WHERE (canonical_url_digest IS NOT NULL);
+
+
+--
+-- Name: idx_media_articles_media_feed_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_articles_media_feed_key ON warehouse.media_articles USING btree (media_feed_id, external_key) WHERE ((media_feed_id IS NOT NULL) AND (external_key IS NOT NULL));
+
+
+--
+-- Name: idx_media_articles_sync_overlap; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_articles_sync_overlap ON warehouse.media_articles USING btree (search_synced_at, search_index_sequence);
+
+
+--
+-- Name: idx_media_feed_fetches_recent; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_feed_fetches_recent ON warehouse.media_feed_fetches USING btree (media_feed_id, created_at);
+
+
+--
+-- Name: idx_media_feeds_due; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_feeds_due ON warehouse.media_feeds USING btree (enabled, next_fetch_at);
+
+
+--
 -- Name: idx_metric_aliases_canonical_measure; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6822,6 +6790,41 @@ CREATE INDEX index_measures_on_unit_id ON warehouse.measures USING btree (unit_i
 
 
 --
+-- Name: index_media_articles_on_media_feed_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_media_articles_on_media_feed_id ON warehouse.media_articles USING btree (media_feed_id);
+
+
+--
+-- Name: index_media_articles_on_search_index_sequence; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_media_articles_on_search_index_sequence ON warehouse.media_articles USING btree (search_index_sequence);
+
+
+--
+-- Name: index_media_articles_on_state; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_media_articles_on_state ON warehouse.media_articles USING btree (state);
+
+
+--
+-- Name: index_media_feed_fetches_on_media_feed_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_media_feed_fetches_on_media_feed_id ON warehouse.media_feed_fetches USING btree (media_feed_id);
+
+
+--
+-- Name: index_media_feeds_on_name; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_media_feeds_on_name ON warehouse.media_feeds USING btree (name);
+
+
+--
 -- Name: index_organization_aliases_on_alias_name_and_valid_from; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -7059,14 +7062,6 @@ ALTER TABLE ONLY public.trade_barriers_agreement_jurisdictions
 
 
 --
--- Name: search_media_articles fk_rails_5ebd13ee23; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_media_articles
-    ADD CONSTRAINT fk_rails_5ebd13ee23 FOREIGN KEY (search_source_id) REFERENCES public.search_sources(id);
-
-
---
 -- Name: saved_searches fk_rails_63c5382842; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7088,14 +7083,6 @@ ALTER TABLE ONLY public.notification_batches
 
 ALTER TABLE ONLY public.oauth_access_tokens
     ADD CONSTRAINT fk_rails_732cb83ab7 FOREIGN KEY (application_id) REFERENCES public.oauth_applications(id);
-
-
---
--- Name: search_source_fetches fk_rails_75522ea188; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.search_source_fetches
-    ADD CONSTRAINT fk_rails_75522ea188 FOREIGN KEY (search_source_id) REFERENCES public.search_sources(id);
 
 
 --
@@ -7560,6 +7547,22 @@ ALTER TABLE ONLY warehouse.fiscal_expenditures
 
 ALTER TABLE ONLY warehouse.lineage_entries
     ADD CONSTRAINT fk_rails_508c5de983 FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: media_articles fk_rails_5ebd13ee23; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_articles
+    ADD CONSTRAINT fk_rails_5ebd13ee23 FOREIGN KEY (media_feed_id) REFERENCES warehouse.media_feeds(id);
+
+
+--
+-- Name: media_feed_fetches fk_rails_75522ea188; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_feed_fetches
+    ADD CONSTRAINT fk_rails_75522ea188 FOREIGN KEY (media_feed_id) REFERENCES warehouse.media_feeds(id);
 
 
 --
@@ -8049,6 +8052,8 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260805011200'),
+('20260805011100'),
 ('20260805011000'),
 ('20260805010900'),
 ('20260805010800'),

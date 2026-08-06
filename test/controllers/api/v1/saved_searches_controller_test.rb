@@ -4,9 +4,10 @@ class Api::V1::SavedSearchesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @oauth_app = Doorkeeper::Application.create!(name: "Saved search tests",
       redirect_uri: "https://example.com/callback", scopes: "", confidential: true, trusted: true)
-    source = Search::Source.create!(name: "API checkpoint #{SecureRandom.hex(4)}", realm: "media",
-      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300)
-    @article = Search::MediaArticle.new(source: source,
+    feed = Warehouse::MediaFeed.create!(name: "API checkpoint #{SecureRandom.hex(4)}",
+      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300,
+      publisher_name: "National Post", publisher_domain: "nationalpost.com", language: "en")
+    @article = Warehouse::MediaArticle.new(feed:,
       external_key: SecureRandom.uuid, title: "Checkpoint", content: "Body", language: "en",
       realm_data: { "content_type" => "article", "publisher_name" => "National Post",
         "publisher_domain" => "nationalpost.com", "authors" => [], "word_count" => 1 })
@@ -77,7 +78,7 @@ class Api::V1::SavedSearchesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     match = response.parsed_body.fetch("data").sole
-    assert_equal "Search::MediaArticle", match.fetch("searchable_type")
+    assert_equal "Warehouse::MediaArticle", match.fetch("searchable_type")
     assert_equal @article.id, match.fetch("searchable_id")
     assert_equal @article.title, match.fetch("title")
     assert_nil match["url"]

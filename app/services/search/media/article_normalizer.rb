@@ -3,12 +3,12 @@ module Search
     class ArticleNormalizer
       class Invalid < StandardError; end
 
-      def call(feed_entry:, extraction:, source:)
+      def call(feed_entry:, extraction:, feed:)
         feed_entry = feed_entry.to_h.stringify_keys
         extraction = extraction.to_h.stringify_keys
         canonical_url = SafeUrl.canonicalize(extraction["url"].presence || feed_entry.fetch("url"))
         uri = URI.parse(canonical_url)
-        publisher = FeedCatalog.publisher_for(uri.host)
+        publisher = Warehouse::MediaFeed.publisher_for(uri.host, feed:)
         raise Invalid, "unsupported media publisher: #{uri.host}" unless publisher
 
         title = clean_text(extraction["title"].presence || feed_entry["title"])
@@ -17,11 +17,11 @@ module Search
         raise Invalid, "article content is blank" if content.blank?
 
         summary = clean_text(extraction["description"].presence || feed_entry["summary"])
-        language = normalize_language(extraction["language"].presence || source.configuration.to_h["language"])
+        language = normalize_language(extraction["language"].presence || feed.language)
         authors = normalize_authors(extraction["author"].presence || feed_entry["author"])
 
         {
-          search_source_id: source.id,
+          media_feed_id: feed.id,
           external_key: SafeUrl.digest(canonical_url),
           canonical_url: canonical_url,
           source_url: feed_entry["url"],

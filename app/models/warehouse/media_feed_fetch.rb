@@ -1,9 +1,9 @@
-class Search::SourceFetch < ApplicationRecord
+class Warehouse::MediaFeedFetch < Warehouse::Record
   STATUSES = %w[pending running succeeded failed not_modified].freeze
 
-  belongs_to :source,
-    class_name: "Search::Source",
-    foreign_key: :search_source_id,
+  belongs_to :feed,
+    class_name: "Warehouse::MediaFeed",
+    foreign_key: :media_feed_id,
     inverse_of: :fetches
 
   validates :status, inclusion: { in: STATUSES }
@@ -20,11 +20,11 @@ class Search::SourceFetch < ApplicationRecord
     raise ArgumentError, "invalid successful status" unless %w[succeeded not_modified].include?(status)
 
     transaction do
-      update!(attributes.merge(status: status, finished_at: at, duration_ms: elapsed_ms(at)))
-      source.update!(
+      update!(attributes.merge(status:, finished_at: at, duration_ms: elapsed_ms(at)))
+      feed.update!(
         last_succeeded_at: at,
         consecutive_failures: 0,
-        next_fetch_at: at + source.cadence_seconds.seconds
+        next_fetch_at: at + feed.cadence_seconds.seconds
       )
     end
     self
@@ -34,10 +34,10 @@ class Search::SourceFetch < ApplicationRecord
     transaction do
       update!(attributes.merge(status: "failed", error: error.to_s.truncate(2_000),
         finished_at: at, duration_ms: elapsed_ms(at)))
-      source.update!(
+      feed.update!(
         last_failed_at: at,
-        consecutive_failures: source.consecutive_failures + 1,
-        next_fetch_at: at + source.cadence_seconds.seconds
+        consecutive_failures: feed.consecutive_failures + 1,
+        next_fetch_at: at + feed.cadence_seconds.seconds
       )
     end
     self

@@ -93,9 +93,10 @@ class SearchableTest < ActiveSupport::TestCase
   private
 
   def media_article
-    source = Search::Source.create!(name: "Searchable source #{SecureRandom.hex(4)}", realm: "media",
-      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300)
-    Search::MediaArticle.new(source: source, external_key: SecureRandom.uuid,
+    feed = Warehouse::MediaFeed.create!(name: "Searchable feed #{SecureRandom.hex(4)}",
+      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300,
+      publisher_name: "National Post", publisher_domain: "nationalpost.com", language: "en")
+    Warehouse::MediaArticle.new(feed:, external_key: SecureRandom.uuid,
       title: "Article #{SecureRandom.hex(3)}", content: "Whole article body", language: "en",
       realm_data: { "content_type" => "article", "publisher_name" => "National Post",
         "publisher_domain" => "nationalpost.com", "authors" => [], "word_count" => 3 }).tap(&:publish!)

@@ -1,28 +1,28 @@
 module Search
   module Media
-    class FetchSourceJob < ApplicationJob
+    class FetchFeedJob < ApplicationJob
       retry_on FeedFetcher::TransientError, wait: :polynomially_longer, attempts: 5
       discard_on FeedFetcher::PermanentError
 
-      def perform(source_id)
-        source = source_for(source_id)
-        return unless source.enabled? && source.realm == "media" && %w[rss atom].include?(source.strategy)
+      def perform(feed_id)
+        feed = feed_for(feed_id)
+        return unless feed.enabled?
 
         started_at = Time.current
-        fetch = source.fetches.create!
+        fetch = feed.fetches.create!
         fetch.start!(at: started_at)
-        result = fetch_feed(source)
+        result = fetch_feed(feed)
 
         if result.status == 304
-          complete_not_modified!(source:, fetch:, result:, started_at:)
+          complete_not_modified!(fetch:, result:)
           return
         end
 
         result.entries.each do |entry|
-          ImportArticleJob.perform_later(source.id, entry)
+          ImportArticleJob.perform_later(feed.id, entry)
         end
         finished_at = Time.current
-        source.update!(
+        feed.update!(
           etag: result.etag,
           last_modified: result.last_modified
         )
@@ -34,40 +34,40 @@ module Search
           at: finished_at
         )
       rescue => error
-        mark_failed(source, fetch, started_at, error)
+        mark_failed(feed, fetch, error)
         raise
       end
 
       private
 
-      def source_for(source_id)
-        Search::Source.find(source_id)
+      def feed_for(feed_id)
+        Warehouse::MediaFeed.find(feed_id)
       end
 
       def feed_fetcher
         FeedFetcher.new
       end
 
-      def fetch_feed(source)
+      def fetch_feed(feed)
         feed_fetcher.call(
-          url: source.url,
-          etag: source.etag,
-          last_modified: source.last_modified,
-          allow_http: source.configuration.to_h["allow_http"] == true
+          url: feed.url,
+          etag: feed.etag,
+          last_modified: feed.last_modified,
+          allow_http: feed.allow_http?
         )
       rescue FeedFetcher::InvalidFeed
-        fallback_url = source.configuration.to_h["fallback_url"]
+        fallback_url = feed.fallback_url
         raise if fallback_url.blank?
 
         feed_fetcher.call(
           url: fallback_url,
-          etag: source.etag,
-          last_modified: source.last_modified,
+          etag: feed.etag,
+          last_modified: feed.last_modified,
           allow_http: false
         )
       end
 
-      def complete_not_modified!(source:, fetch:, result:, started_at:)
+      def complete_not_modified!(fetch:, result:)
         finished_at = Time.current
         fetch.succeed!(
           status: "not_modified",
@@ -78,22 +78,22 @@ module Search
         )
       end
 
-      def mark_failed(source, fetch, started_at, error)
-        return unless source&.persisted?
+      def mark_failed(feed, fetch, error)
+        return unless feed&.persisted?
 
         finished_at = Time.current
         if fetch&.persisted?
           fetch.fail!(error: "#{error.class}: #{error.message}", at: finished_at)
         else
-          source.update_columns(
+          feed.update_columns(
             last_failed_at: finished_at,
-            consecutive_failures: source.consecutive_failures.to_i + 1,
-            next_fetch_at: finished_at + source.cadence_seconds.seconds,
+            consecutive_failures: feed.consecutive_failures.to_i + 1,
+            next_fetch_at: finished_at + feed.cadence_seconds.seconds,
             updated_at: finished_at
           )
         end
       rescue => reporting_error
-        Rails.logger.error("[Search::Media::FetchSourceJob] could not persist failure: #{reporting_error.message}")
+        Rails.logger.error("[Search::Media::FetchFeedJob] could not persist failure: #{reporting_error.message}")
       end
     end
   end

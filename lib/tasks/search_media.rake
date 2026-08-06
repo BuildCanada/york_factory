@@ -2,22 +2,21 @@ require "set"
 
 namespace :search do
   namespace :media do
-    desc "Idempotently provision the configured media RSS sources"
+    desc "Idempotently create the initial media feeds"
     task provision_feeds: :environment do
-      sources = Search::Media::FeedCatalog.provision!
-      puts "Provisioned #{sources.size} media feeds"
+      load Rails.root.join("db/seeds/media_feeds.rb")
+      puts "Provisioned #{Warehouse::MediaFeed.count} media feeds"
     end
 
-    desc "Backfill new media articles evenly across configured RSS sources (default: 50)"
+    desc "Backfill new media articles evenly across configured feeds (default: 50)"
     task :backfill, [ :limit ] => :environment do |_task, args|
       limit = Integer(args[:limit].presence || 50)
       raise ArgumentError, "limit must be between 1 and 500" unless limit.between?(1, 500)
 
-      sources = Search::Source.enabled
-        .where(realm: "media", strategy: %w[rss atom])
+      feeds = Warehouse::MediaFeed.enabled
         .order(:id)
         .to_a
-      raise "No enabled media feeds are configured" if sources.empty?
+      raise "No enabled media feeds are configured" if feeds.empty?
 
       fetcher = Search::Media::FeedFetcher.new
       defuddler = Search::Media::DefuddlerClient.new
@@ -25,17 +24,17 @@ namespace :search do
       failures = []
       skipped = 0
 
-      sources.each do |source|
+      feeds.each do |feed|
         result = fetcher.call(
-          url: source.url,
-          allow_http: source.configuration.to_h["allow_http"] == true
+          url: feed.url,
+          allow_http: feed.allow_http?
         )
-        queues[source.id] = result.entries.dup
-        puts "Fetched #{result.entries.length} entries from #{source.name}"
+        queues[feed.id] = result.entries.dup
+        puts "Fetched #{result.entries.length} entries from #{feed.name}"
       rescue => error
-        queues[source.id] = []
-        failures << "#{source.name} feed: #{error.class}: #{error.message}"
-        warn "Could not fetch #{source.name}: #{error.message}"
+        queues[feed.id] = []
+        failures << "#{feed.name} feed: #{error.class}: #{error.message}"
+        warn "Could not fetch #{feed.name}: #{error.message}"
       end
 
       imported_ids = Set.new
@@ -44,17 +43,17 @@ namespace :search do
       while imported_ids.length < limit
         made_progress = false
 
-        sources.each do |source|
+        feeds.each do |feed|
           break if imported_ids.length >= limit
 
-          entry = queues.fetch(source.id).shift
+          entry = queues.fetch(feed.id).shift
           next unless entry
 
           made_progress = true
           canonical_url = SafeUrl.canonicalize(entry.fetch("url"))
           external_key = SafeUrl.digest(canonical_url)
-          existing = Search::MediaArticle.find_by(
-            search_source_id: source.id,
+          existing = Warehouse::MediaArticle.find_by(
+            search_media_feed_id: feed.id,
             external_key:
           )
           if existing
@@ -64,9 +63,9 @@ namespace :search do
 
           extraction = defuddler.convert(
             url: entry.fetch("url"),
-            language: source.configuration.to_h["language"]
+            language: feed.language
           )
-          result = Search::MediaArticle.import!(source:, feed_entry: entry, extraction:)
+          result = Warehouse::MediaArticle.import!(feed:, feed_entry: entry, extraction:)
           result.article.sync_to_search! if result.changed
           unless imported_ids.add?(result.article.id)
             skipped += 1
@@ -77,8 +76,8 @@ namespace :search do
           provider_counts[provider] += 1
           puts "[#{imported_ids.length}/#{limit}] #{provider}: #{result.article.title}"
         rescue => error
-          failures << "#{source.name} article: #{error.class}: #{error.message}"
-          warn "Skipped article from #{source.name}: #{error.message}"
+          failures << "#{feed.name} article: #{error.class}: #{error.message}"
+          warn "Skipped article from #{feed.name}: #{error.message}"
         end
 
         break unless made_progress

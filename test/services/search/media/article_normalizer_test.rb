@@ -1,12 +1,12 @@
 require "test_helper"
 
 class Search::Media::ArticleNormalizerTest < ActiveSupport::TestCase
-  Source = Data.define(:id, :configuration)
+  Feed = Data.define(:id, :publisher_name, :publisher_domain, :language)
 
   test "normalizes Defuddler output into the media document contract" do
-    source = Source.new(id: 42, configuration: { "language" => "en" })
+    feed = Feed.new(id: 42, publisher_name: "National Post", publisher_domain: "nationalpost.com", language: "en")
     attributes = Search::Media::ArticleNormalizer.new.call(
-      source: source,
+      feed:,
       feed_entry: {
         url: "https://www.nationalpost.com/news/story?utm_source=rss",
         guid: "story-1",
@@ -35,11 +35,11 @@ class Search::Media::ArticleNormalizerTest < ActiveSupport::TestCase
   end
 
   test "rejects unsupported publishers" do
-    source = Source.new(id: 42, configuration: {})
+    feed = Feed.new(id: 42, publisher_name: nil, publisher_domain: nil, language: "en")
 
     assert_raises(Search::Media::ArticleNormalizer::Invalid) do
       Search::Media::ArticleNormalizer.new.call(
-        source: source,
+        feed:,
         feed_entry: { url: "https://example.com/story", title: "Story" },
         extraction: { content: "Body" }
       )

@@ -2,13 +2,14 @@ require "test_helper"
 
 class Search::CoreTest < ActiveSupport::TestCase
   setup do
-    @source = Search::Source.create!(
+    @feed = Warehouse::MediaFeed.create!(
       name: "Test National Post #{SecureRandom.hex(4)}",
-      realm: "media",
       strategy: "rss",
       url: "https://nationalpost.com/feed/",
       cadence_seconds: 300,
-      configuration: {}
+      publisher_name: "National Post",
+      publisher_domain: "nationalpost.com",
+      language: "en"
     )
   end
 
@@ -81,8 +82,8 @@ class Search::CoreTest < ActiveSupport::TestCase
       Search::RunSavedSearchJob,
       Search::SavedSearchFanoutJob,
       Search::SyncJob,
-      Search::Media::DispatchDueSourcesJob,
-      Search::Media::FetchSourceJob,
+      Search::Media::DispatchDueFeedsJob,
+      Search::Media::FetchFeedJob,
       Search::Media::ImportArticleJob
     ]
 
@@ -92,8 +93,8 @@ class Search::CoreTest < ActiveSupport::TestCase
   private
 
   def build_media_document
-    Search::MediaArticle.new(
-      source: @source,
+    Warehouse::MediaArticle.new(
+      feed: @feed,
       external_key: SecureRandom.uuid,
       canonical_url: "https://nationalpost.com/news/#{SecureRandom.hex(4)}",
       source_url: "https://nationalpost.com/feed/",

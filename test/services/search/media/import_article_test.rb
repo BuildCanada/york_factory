@@ -1,13 +1,14 @@
 require "test_helper"
 
-class Search::MediaArticleImportTest < ActiveSupport::TestCase
+class Warehouse::MediaArticleImportTest < ActiveSupport::TestCase
   test "publishes a normalized article idempotently" do
-    source = Search::Source.create!(
+    feed = Warehouse::MediaFeed.create!(
       name: "Import test National Post",
-      realm: "media",
       strategy: "rss",
       url: "https://nationalpost.com/feed/",
-      configuration: { "language" => "en" },
+      publisher_name: "National Post",
+      publisher_domain: "nationalpost.com",
+      language: "en",
       cadence_seconds: 300
     )
     feed_entry = {
@@ -22,36 +23,34 @@ class Search::MediaArticleImportTest < ActiveSupport::TestCase
       "author" => "Jane Reporter",
       "language" => "en"
     }
-    assert_difference -> { Search::MediaArticle.count }, 1 do
-      result = Search::MediaArticle.import!(source:, feed_entry:, extraction:)
+    assert_difference -> { Warehouse::MediaArticle.count }, 1 do
+      result = Warehouse::MediaArticle.import!(feed:, feed_entry:, extraction:)
       assert result.changed
       assert_equal 1, result.article.search_revision
       assert_equal "published", result.article.state
       assert_equal "National Post", result.article.realm_data.fetch("publisher_name")
     end
 
-    assert_no_difference -> { Search::MediaArticle.count } do
-      result = Search::MediaArticle.import!(source:, feed_entry:, extraction:)
+    assert_no_difference -> { Warehouse::MediaArticle.count } do
+      result = Warehouse::MediaArticle.import!(feed:, feed_entry:, extraction:)
       assert_not result.changed
       assert_equal 1, result.article.search_revision
     end
   end
 
   test "deduplicates an article discovered through overlapping feeds" do
-    top_stories = Search::Source.create!(
+    top_stories = Warehouse::MediaFeed.create!(
       name: "Toronto Star test top stories",
-      realm: "media",
       strategy: "rss",
       url: "https://www.thestar.com/search/?f=rss&t=article&bl=2827101&l=20",
-      configuration: { "language" => "en" },
+      publisher_name: "Toronto Star", publisher_domain: "thestar.com", language: "en",
       cadence_seconds: 300
     )
-    politics = Search::Source.create!(
+    politics = Warehouse::MediaFeed.create!(
       name: "Toronto Star test politics",
-      realm: "media",
       strategy: "rss",
       url: "https://www.thestar.com/search/?f=rss&t=article&c=politics*",
-      configuration: { "language" => "en" },
+      publisher_name: "Toronto Star", publisher_domain: "thestar.com", language: "en",
       cadence_seconds: 300
     )
     feed_entry = {
@@ -65,12 +64,12 @@ class Search::MediaArticleImportTest < ActiveSupport::TestCase
       "content" => "The same article can appear in multiple Toronto Star feeds.",
       "language" => "en"
     }
-    first = Search::MediaArticle.import!(source: top_stories, feed_entry:, extraction:)
+    first = Warehouse::MediaArticle.import!(feed: top_stories, feed_entry:, extraction:)
 
-    assert_no_difference -> { Search::MediaArticle.count } do
-      second = Search::MediaArticle.import!(source: politics, feed_entry:, extraction:)
+    assert_no_difference -> { Warehouse::MediaArticle.count } do
+      second = Warehouse::MediaArticle.import!(feed: politics, feed_entry:, extraction:)
       assert_equal first.article.id, second.article.id
-      assert_equal top_stories.id, second.article.search_source_id
+      assert_equal top_stories.id, second.article.media_feed_id
       assert_not second.changed
     end
   end

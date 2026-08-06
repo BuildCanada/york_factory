@@ -28,7 +28,7 @@ class Search::SavedSearchRunnerTest < ActiveJob::TestCase
       query_runner: QueryRunner.new([ { id: article.search_id } ])).call
 
     assert_equal [ article ], matches.map(&:searchable)
-    assert_equal [ "Search::MediaArticle" ], matches.map(&:searchable_type)
+    assert_equal [ "Warehouse::MediaArticle" ], matches.map(&:searchable_type)
     assert_equal article.search_id, matches.sole.match_key
     assert_equal "succeeded", run.reload.status
     assert_equal 1, run.matched_count
@@ -38,9 +38,10 @@ class Search::SavedSearchRunnerTest < ActiveJob::TestCase
   private
 
   def media_article
-    source = Search::Source.create!(name: "Runner source #{SecureRandom.hex(4)}", realm: "media",
-      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300)
-    Search::MediaArticle.new(source: source, external_key: SecureRandom.uuid,
+    feed = Warehouse::MediaFeed.create!(name: "Runner feed #{SecureRandom.hex(4)}",
+      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300,
+      publisher_name: "National Post", publisher_domain: "nationalpost.com", language: "en")
+    Warehouse::MediaArticle.new(feed:, external_key: SecureRandom.uuid,
       title: "Matched article", content: "Matched article body", language: "en",
       realm_data: { "content_type" => "article", "publisher_name" => "National Post",
         "publisher_domain" => "nationalpost.com", "authors" => [], "word_count" => 3 }).tap do |article|

@@ -61,9 +61,10 @@ class Search::SavedSearchTest < ActiveSupport::TestCase
         webhook_url: "https://example.com/hooks/search"
       }
     )
-    source = Search::Source.create!(name: "Batch source #{SecureRandom.hex(3)}", realm: "media",
-      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300)
-    article = Search::MediaArticle.new(source: source,
+    feed = Warehouse::MediaFeed.create!(name: "Batch feed #{SecureRandom.hex(3)}",
+      strategy: "rss", url: "https://nationalpost.com/feed/", cadence_seconds: 300,
+      publisher_name: "National Post", publisher_domain: "nationalpost.com", language: "en")
+    article = Warehouse::MediaArticle.new(feed:,
       external_key: SecureRandom.uuid, title: "News", content: "News body", language: "en",
       realm_data: { "content_type" => "article", "publisher_name" => "National Post",
         "publisher_domain" => "nationalpost.com", "authors" => [], "word_count" => 2 })

@@ -38,7 +38,7 @@ class SearchableRegistryTest < ActiveSupport::TestCase
   private
 
   def create_article(publish: true)
-    article = Search::MediaArticle.new(
+    article = Warehouse::MediaArticle.new(
       external_key: SecureRandom.uuid,
       title: "Index state article",
       content: "Index state body",

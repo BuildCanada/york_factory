@@ -4,7 +4,7 @@ class Search::SavedSearchFanoutJobTest < ActiveJob::TestCase
   include ActiveJob::TestHelper
 
   setup do
-    article = Search::MediaArticle.new(
+    article = Warehouse::MediaArticle.new(
       external_key: SecureRandom.uuid,
       title: "Fanout article",
       content: "Fanout body",

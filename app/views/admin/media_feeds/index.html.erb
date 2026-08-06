@@ -1,0 +1,55 @@
+<div class="page-header">
+  <div>
+    <h1>Media Feeds</h1>
+    <div class="text-muted">RSS and Atom feeds used to discover media articles.</div>
+  </div>
+  <%= link_to "New Media Feed", new_admin_media_feed_path, class: "btn btn-primary" %>
+</div>
+
+<% if @feeds.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Feed</th>
+        <th>Publisher</th>
+        <th>Schedule</th>
+        <th>Health</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @feeds.each do |feed| %>
+        <tr>
+          <td>
+            <strong><%= feed.name %></strong>
+            <div class="text-muted mono" style="max-width: 32rem; overflow-wrap: anywhere;"><%= feed.url %></div>
+          </td>
+          <td>
+            <%= feed.publisher_name %>
+            <div class="text-muted"><%= feed.publisher_domain %> · <%= feed.language.upcase %></div>
+          </td>
+          <td>Every <%= distance_of_time_in_words(0, feed.cadence_seconds) %></td>
+          <td>
+            <% if feed.last_succeeded_at %>
+              <span class="badge badge-green">Fetched <%= time_ago_in_words(feed.last_succeeded_at) %> ago</span>
+            <% elsif feed.last_failed_at %>
+              <span class="badge badge-yellow"><%= pluralize(feed.consecutive_failures, "failure") %></span>
+            <% else %>
+              <span class="text-muted">Not fetched yet</span>
+            <% end %>
+          </td>
+          <td><span class="badge badge-<%= feed.enabled? ? 'green' : 'yellow' %>"><%= feed.enabled? ? "Enabled" : "Disabled" %></span></td>
+          <td class="text-right">
+            <div class="btn-group">
+              <%= button_to(feed.enabled? ? "Disable" : "Enable", toggle_admin_media_feed_path(feed), method: :patch, class: "btn btn-sm") %>
+              <%= link_to "Edit", edit_admin_media_feed_path(feed), class: "btn btn-sm" %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="card empty">No media feeds have been configured.</div>
+<% end %>

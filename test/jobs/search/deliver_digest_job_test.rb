@@ -2,15 +2,17 @@ require "test_helper"
 
 class Search::DeliverDigestJobTest < ActiveJob::TestCase
   setup do
-    source = Search::Source.create!(
-      name: "Digest source #{SecureRandom.hex(4)}",
-      realm: "media",
+    feed = Warehouse::MediaFeed.create!(
+      name: "Digest feed #{SecureRandom.hex(4)}",
       strategy: "rss",
       url: "https://nationalpost.com/feed/",
-      cadence_seconds: 300
+      cadence_seconds: 300,
+      publisher_name: "National Post",
+      publisher_domain: "nationalpost.com",
+      language: "en"
     )
-    article = Search::MediaArticle.new(
-      source: source,
+    article = Warehouse::MediaArticle.new(
+      feed:,
       external_key: SecureRandom.uuid,
       title: "Digest article",
       content: "Body",

@@ -81,6 +81,8 @@ Rails.application.routes.draw do
         resources :pledges, only: [ :index, :create, :show ], controller: "election_pledges" do
           get :eligibility, on: :collection
         end
+        resources :survey_responses, only: [ :index, :create ],
+          controller: "election_survey_responses"
       end
 
       namespace :geo do

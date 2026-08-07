@@ -11,6 +11,7 @@ class Warehouse::Election < Warehouse::Record
   has_many :races, class_name: "Warehouse::ElectionRace", dependent: :destroy
   has_many :candidates, through: :races
   has_many :pledges_to_vote, class_name: "Warehouse::PledgeToVote", dependent: :destroy
+  has_many :survey_responses, class_name: "Warehouse::ElectionSurveyResponse", dependent: :destroy
 
   enum :kind, {
     municipal: "municipal",

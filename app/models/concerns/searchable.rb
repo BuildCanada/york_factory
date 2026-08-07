@@ -89,7 +89,7 @@ module Searchable
 
   def perform_search_sync(
     namespace: Search.turbopuffer_namespace,
-    embedding_client: Search::Embedding::AzureCohereClient.new,
+    embedding_client: nil,
     input_builder: Search::Embedding::Input.new
   )
     attributes, sequence, revision, content_hash = prepare_search_sync!
@@ -104,6 +104,7 @@ module Searchable
       return result
     end
 
+    embedding_client ||= Search::Embedding::AzureCohereClient.new
     row = build_search_row(attributes, sequence:, revision:, content_hash:)
     prepared = input_builder.prepare(search_embedding_text(attributes))
     embedding_result = embedding_client.embed_documents([ prepared.text ])

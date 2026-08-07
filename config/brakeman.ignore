@@ -44,8 +44,17 @@
       "file": "app/views/admin/trade_barriers/agreements/show.html.erb",
       "line": 15,
       "note": "Admin-only view gated by trade_barriers_editor role; Agreement#source_url is validated to require http(s):// scheme"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "fingerprint": "18fd6eb9d98db2068af326c831084305b7153a74d2aeadcfbc905453946391d5",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/models/warehouse/spending/scrapers/base.rb",
+      "line": 82,
+      "note": "Canonical ordering clauses are fixed string literals at the only two internal call sites; source_id is adapter-quoted and no request or user input reaches this SQL"
     }
   ],
-  "updated": "2026-05-21",
-  "brakeman_version": "8.0.4"
+  "updated": "2026-08-07",
+  "brakeman_version": "8.0.5"
 }

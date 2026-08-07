@@ -25,9 +25,9 @@
   <h2>Datasets</h2>
   <div class="btn-group mb-2" style="flex-wrap: wrap;">
     <% @datasets.each do |dataset| %>
-      <%= link_to admin_records_path(raw_ingestion_id: @ingestion.id, dataset: dataset.name),
-        class: "btn btn-sm #{'btn-primary' if dataset.name == @dataset}" do %>
-        <%= dataset.name.humanize %> (<%= number_with_delimiter(dataset.count) %>)
+      <%= link_to admin_records_path(raw_ingestion_id: @ingestion.id, dataset:),
+        class: "btn btn-sm #{'btn-primary' if dataset == @dataset}" do %>
+        <%= dataset.humanize %>
       <% end %>
     <% end %>
   </div>
@@ -61,7 +61,7 @@
       <div class="empty">No records from this ingestion in <%= @dataset %>.</div>
     <% end %>
   <% else %>
-    <div class="empty">This ingestion has no linked records.</div>
+    <div class="empty">Choose a dataset to inspect its linked records.</div>
   <% end %>
 <% else %>
   <h2>Recent Ingestions</h2>

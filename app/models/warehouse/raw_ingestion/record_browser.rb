@@ -1,6 +1,5 @@
 class Warehouse::RawIngestion::RecordBrowser
   LIMIT = 100
-  Dataset = Data.define(:name, :count)
   Result = Data.define(:columns, :rows)
 
   def initialize(raw_ingestion, connection: Warehouse::Record.connection)
@@ -9,24 +8,14 @@ class Warehouse::RawIngestion::RecordBrowser
   end
 
   def datasets
-    @datasets ||= dataset_names.map do |name|
-      Dataset.new(name:, count: count_for(name))
-    end
+    dataset_names
   end
 
   def records(dataset_name)
-    name = dataset_name.to_s
-    raise ActiveRecord::RecordNotFound unless dataset_names.include?(name)
+    model = model_for(dataset_name)
+    rows = model.where(raw_ingestion_id: raw_ingestion.id).order(id: :desc).limit(LIMIT)
 
-    result = connection.exec_query(<<~SQL)
-      SELECT *
-      FROM #{qualified_table(name)}
-      WHERE raw_ingestion_id = #{connection.quote(raw_ingestion.id)}
-      ORDER BY id DESC
-      LIMIT #{LIMIT}
-    SQL
-
-    Result.new(columns: result.columns, rows: result.to_a)
+    Result.new(columns: model.column_names, rows: rows.map(&:attributes))
   end
 
   private
@@ -43,15 +32,12 @@ class Warehouse::RawIngestion::RecordBrowser
     SQL
   end
 
-  def count_for(name)
-    connection.select_value(<<~SQL).to_i
-      SELECT COUNT(*)
-      FROM #{qualified_table(name)}
-      WHERE raw_ingestion_id = #{connection.quote(raw_ingestion.id)}
-    SQL
-  end
+  def model_for(dataset_name)
+    name = dataset_name.to_s
+    raise ActiveRecord::RecordNotFound unless dataset_names.include?(name)
 
-  def qualified_table(name)
-    "#{connection.quote_table_name('warehouse')}.#{connection.quote_table_name(name)}"
+    Class.new(Warehouse::Record) do
+      self.table_name = "warehouse.#{name}"
+    end
   end
 end

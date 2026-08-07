@@ -7,7 +7,7 @@ module Admin
       @ingestion = Warehouse::RawIngestion.includes(:source).find(params[:raw_ingestion_id])
       @browser = Warehouse::RawIngestion::RecordBrowser.new(@ingestion)
       @datasets = @browser.datasets
-      @dataset = params[:dataset].presence || @datasets.find { |dataset| dataset.count.positive? }&.name
+      @dataset = params[:dataset].presence
       @result = @browser.records(@dataset) if @dataset
     end
   end

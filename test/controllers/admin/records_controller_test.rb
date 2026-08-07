@@ -47,7 +47,7 @@ class Admin::RecordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", "Lineage entries"
     assert_select "th", "source_value"
     assert_select "td", text: "Acme Corp"
-    assert_select "a", text: /Lineage entries \(1\)/
+    assert_select "a", text: "Lineage entries"
   end
 
   test "rejects datasets without a raw ingestion foreign key" do

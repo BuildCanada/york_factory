@@ -1,5 +1,5 @@
 class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
-  performs :fetch
+  performs :fetch, queue_as: :scraping
 
   MAX_RETRIES = 3
   BACKOFF_BASE = 4 # seconds: 1, 4, 16

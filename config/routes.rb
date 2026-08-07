@@ -166,9 +166,12 @@ Rails.application.routes.draw do
 
     full = %i[index show new create edit update destroy]
 
-    get "/", to: "dashboard#index", as: :root
+    get "/", to: "dashboard#index"
+    get "scraping", to: "dashboard#scraping", as: :root
+    post "scraping/sources/:id/run", to: "dashboard#run_scrape", as: :run_scraping_source
 
     get "ingestions", to: "dashboard#ingestions"
+    get "records", to: "records#index", as: :records
     get "lineage_review", to: "dashboard#lineage_review"
     get "search", to: "search#index", as: :search
     post "search", to: "search#execute"

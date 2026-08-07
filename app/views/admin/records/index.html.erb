@@ -1,0 +1,88 @@
+<div class="page-header">
+  <h1>Record Browser</h1>
+</div>
+
+<p class="text-muted">Read-only PostgreSQL records linked directly to a raw ingestion. Displays at most <%= Warehouse::RawIngestion::RecordBrowser::LIMIT %> rows per dataset.</p>
+
+<%= form_with url: admin_records_path, method: :get, local: true, class: "filter-bar" do %>
+  <%= select_tag :raw_ingestion_id,
+    options_for_select(@ingestions.map { |ingestion|
+      ["##{ingestion.id} — #{ingestion.source.name} — #{ingestion.fetched_at&.strftime('%Y-%m-%d %H:%M')} (#{ingestion.status})", ingestion.id]
+    }, @ingestion&.id),
+    include_blank: "Choose an ingestion…",
+    class: "form-control",
+    style: "max-width: 720px;" %>
+  <%= submit_tag "Browse", class: "btn btn-primary" %>
+<% end %>
+
+<% if @ingestion %>
+  <div class="card mb-2">
+    <div class="label">Raw Ingestion #<%= @ingestion.id %></div>
+    <div><strong><%= @ingestion.source.name %></strong></div>
+    <div class="text-muted"><%= @ingestion.raw_file_path %></div>
+  </div>
+
+  <h2>Datasets</h2>
+  <div class="btn-group mb-2" style="flex-wrap: wrap;">
+    <% @datasets.each do |dataset| %>
+      <%= link_to admin_records_path(raw_ingestion_id: @ingestion.id, dataset: dataset.name),
+        class: "btn btn-sm #{'btn-primary' if dataset.name == @dataset}" do %>
+        <%= dataset.name.humanize %> (<%= number_with_delimiter(dataset.count) %>)
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if @result %>
+    <h2><%= @dataset.humanize %></h2>
+    <% if @result.rows.any? %>
+      <div style="overflow-x: auto;">
+        <table style="white-space: nowrap;">
+          <thead>
+            <tr>
+              <% @result.columns.each do |column| %>
+                <th><%= column %></th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% @result.rows.each do |row| %>
+              <tr>
+                <% @result.columns.each do |column| %>
+                  <% value = row[column] %>
+                  <% formatted = value.is_a?(Hash) || value.is_a?(Array) ? value.to_json : value.to_s %>
+                  <td class="mono"><%= value.nil? ? "NULL" : truncate(formatted, length: 180) %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="empty">No records from this ingestion in <%= @dataset %>.</div>
+    <% end %>
+  <% else %>
+    <div class="empty">This ingestion has no linked records.</div>
+  <% end %>
+<% else %>
+  <h2>Recent Ingestions</h2>
+  <% if @ingestions.any? %>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Source</th><th>Status</th><th>Fetched At</th><th></th></tr>
+      </thead>
+      <tbody>
+        <% @ingestions.each do |ingestion| %>
+          <tr>
+            <td class="mono"><%= ingestion.id %></td>
+            <td><%= ingestion.source.name %></td>
+            <td><%= ingestion.status %></td>
+            <td><%= ingestion.fetched_at&.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="text-right"><%= link_to "Browse", admin_records_path(raw_ingestion_id: ingestion.id), class: "btn btn-sm" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty">No ingestions yet.</div>
+  <% end %>
+<% end %>

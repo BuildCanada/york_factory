@@ -15,7 +15,7 @@ module Yabeda
     class Client
       FLUSH_INTERVAL_SECONDS = 10
       MAX_SERIES_PER_FLUSH = 1_000
-      HISTOGRAM_BOUNDS = [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10_000].freeze
+      HISTOGRAM_BOUNDS = [ 0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10_000 ].freeze
 
       def initialize(api_key:, host:, service_name:, environment:, flush_interval: FLUSH_INTERVAL_SECONDS,
                      max_series: MAX_SERIES_PER_FLUSH, transport: nil)
@@ -91,7 +91,7 @@ module Yabeda
         return unless valid?(type, name, value)
 
         attributes = attributes.transform_keys(&:to_s).transform_values(&:to_s)
-        key = JSON.generate([type, name, unit, attributes.sort])
+        key = JSON.generate([ type, name, unit, attributes.sort ])
 
         @mutex.synchronize do
           if !@series.key?(key) && @series.length >= @max_series
@@ -153,8 +153,8 @@ module Yabeda
         when :histogram
           state[:count] += 1
           state[:sum] += value
-          state[:min] = [state[:min], value].compact.min
-          state[:max] = [state[:max], value].compact.max
+          state[:min] = [ state[:min], value ].compact.min
+          state[:max] = [ state[:max], value ].compact.max
           state[:bucket_counts][histogram_index(value)] += 1
         end
       end
@@ -164,7 +164,7 @@ module Yabeda
           window.each do |key, state|
             current = @series[key]
             if current
-              current[:started_at] = [current[:started_at], state[:started_at]].min
+              current[:started_at] = [ current[:started_at], state[:started_at] ].min
               merge_state(current, state)
             elsif @series.length < @max_series
               @series[key] = state
@@ -180,15 +180,15 @@ module Yabeda
         when :histogram
           current[:count] += previous[:count]
           current[:sum] += previous[:sum]
-          current[:min] = [current[:min], previous[:min]].compact.min
-          current[:max] = [current[:max], previous[:max]].compact.max
+          current[:min] = [ current[:min], previous[:min] ].compact.min
+          current[:max] = [ current[:max], previous[:max] ].compact.max
           current[:bucket_counts].each_index { |index| current[:bucket_counts][index] += previous[:bucket_counts][index] }
         end
       end
 
       def payload(window)
         now = timestamp
-        metrics = window.values.group_by { |state| [state[:type], state[:name], state[:unit]] }.map do |(type, name, unit), states|
+        metrics = window.values.group_by { |state| [ state[:type], state[:name], state[:unit] ] }.map do |(type, name, unit), states|
           metric = { name: name }
           metric[:unit] = unit if unit
           metric[type == :count ? :sum : type] = metric_data(type, states, now)
@@ -196,13 +196,13 @@ module Yabeda
         end
 
         {
-          resourceMetrics: [{
+          resourceMetrics: [ {
             resource: { attributes: otlp_attributes(@resource_attributes) },
-            scopeMetrics: [{
+            scopeMetrics: [ {
               scope: { name: "yabeda-posthog", version: "1.0.0" },
               metrics: metrics
-            }]
-          }]
+            } ]
+          } ]
         }
       end
 
@@ -284,7 +284,7 @@ module Yabeda
       private
 
       def metric_name(metric)
-        [metric.group, metric.name].compact.join(".")
+        [ metric.group, metric.name ].compact.join(".")
       end
     end
 

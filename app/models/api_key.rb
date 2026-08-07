@@ -43,4 +43,8 @@ class ApiKey < ApplicationRecord
   def revoke!
     update!(revoked_at: Time.current)
   end
+
+  def revoked?
+    revoked_at.present?
+  end
 end

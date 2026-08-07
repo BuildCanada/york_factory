@@ -26,12 +26,14 @@
     .topbar-right { display: flex; align-items: center; gap: 1rem; }
     .topbar-right span { font-size: 0.85rem; color: var(--muted); }
     .topbar-right a { font-size: 0.85rem; }
+    .topbar-nav { display: flex; gap: 0.75rem; }
     .main-content { max-width: 600px; margin: 2rem auto; padding: 0 1.5rem; }
     .page-header { margin-bottom: 1.25rem; }
     .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
     .btn:hover { background: var(--border); text-decoration: none; }
     .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     .btn-primary:hover { opacity: 0.9; }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
     .btn-group { display: flex; gap: 0.5rem; align-items: center; }
     .form-group { margin-bottom: 1rem; }
     .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 500; }
@@ -40,12 +42,21 @@
     .flash { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
     .flash-notice { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
     .flash-alert { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .text-muted { color: var(--muted); }
+    .mb-2 { margin-bottom: 1rem; }
+    .mono, .api-key-secret { font-family: "SF Mono", "Fira Code", monospace; }
+    .api-key-secret { margin-top: 0.5rem; padding: 0.5rem; background: var(--bg); overflow-wrap: anywhere; user-select: all; }
+    .api-key-form { margin-bottom: 2rem; }
+    h2 { margin-bottom: 0.75rem; font-size: 1rem; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    th, td { padding: 0.6rem; border: 1px solid var(--border); text-align: left; font-size: 0.8rem; }
   </style>
 </head>
 <body>
   <div class="topbar">
     <a href="/profile" class="topbar-brand">Build Canada</a>
     <div class="topbar-right">
+      <nav class="topbar-nav"><a href="<%= profile_path %>">Profile</a><a href="<%= profile_api_keys_path %>">API Keys</a></nav>
       <span><%= current_user.name || current_user.email %></span>
       <%= button_to "Logout", destroy_user_session_path, method: :delete, style: "background: none; border: none; color: var(--accent); font-size: inherit; cursor: pointer; padding: 0;" %>
     </div>

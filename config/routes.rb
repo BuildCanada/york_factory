@@ -267,4 +267,7 @@ Rails.application.routes.draw do
   # Member profile
   get "profile", to: "profile#show", as: :profile
   patch "profile", to: "profile#update"
+  get "profile/api_keys", to: "api_keys#index", as: :profile_api_keys
+  post "profile/api_keys", to: "api_keys#create"
+  delete "profile/api_keys/:id", to: "api_keys#destroy", as: :profile_api_key
 end

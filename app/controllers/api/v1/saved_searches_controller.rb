@@ -1,7 +1,7 @@
 module Api
   module V1
     class SavedSearchesController < ApplicationController
-      before_action :doorkeeper_authorize!
+      before_action :authenticate_api_user!
       before_action :set_saved_search, only: %i[show update destroy test]
 
       def index
@@ -90,10 +90,6 @@ module Api
       end
 
       private
-
-      def current_user
-        @current_user ||= User.find(doorkeeper_token.resource_owner_id)
-      end
 
       def set_saved_search
         @saved_search = current_user.saved_searches.find(params[:id])

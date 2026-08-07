@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_many :identities, dependent: :destroy
   has_many :saved_searches, dependent: :destroy
+  has_many :api_keys, dependent: :destroy
 
   enum :role, {
     member: "member",

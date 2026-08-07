@@ -2,7 +2,6 @@ module Api
   module V1
     class CmsBaseController < ApplicationController
       include Localizable
-      include Authenticatable
       include Pagy::Method
 
       private
@@ -14,7 +13,7 @@ module Api
       end
 
       def preview_mode?
-        doorkeeper_admin_token_valid?
+        current_api_key&.user&.admin? || doorkeeper_admin_token_valid?
       end
 
       def doorkeeper_admin_token_valid?

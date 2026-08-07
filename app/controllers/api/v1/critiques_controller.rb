@@ -3,7 +3,7 @@ module Api
     class CritiquesController < CmsBaseController
       include EngagementAuthorization
 
-      before_action :doorkeeper_authorize!, only: :create
+      before_action :authenticate_api_user!, only: :create
       before_action :set_memo
       before_action :require_postal_code!, only: :create
 

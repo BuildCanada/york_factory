@@ -1,6 +1,10 @@
 require "test_helper"
 
 class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    _, @admin_api_key = ApiKey.issue!(user: users(:admin), name: "memo-api-#{SecureRandom.hex(3)}")
+  end
+
   test "index returns published memos" do
     get api_v1_memos_url
     assert_response :success
@@ -109,6 +113,107 @@ class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
     assert_response :unauthorized
   end
 
+  test "admin API key creates a Build Toronto memo as a draft and cannot set published_at" do
+    post api_v1_memos_url, params: {
+      memo: {
+        slug: "api-created-toronto-memo",
+        title_en: "API-created Toronto memo",
+        body_en: "## Recommendation\n\nBuild it.",
+        appendix_en: "1. Source",
+        key_messages_en: [ "First", "Second", "Third" ],
+        author_name: "Eric Richmond",
+        author_title: "Country Director & CEO at Coinbase Canada",
+        publication: "build_toronto",
+        published_at: 1.day.ago.iso8601
+      }
+    }, headers: api_key_headers, as: :json
+
+    assert_response :created
+    body = response.parsed_body
+    assert_equal "build_toronto", body["publication"]
+    assert_nil body["published_at"]
+
+    memo = Memo.find_by!(slug: "api-created-toronto-memo", publication: "build_toronto")
+    assert memo.draft?
+    assert_equal [ "First", "Second", "Third" ], memo.key_messages_en
+  end
+
+  test "API key cannot publish a draft through update" do
+    memo = Memo.create!(slug: "api-update-draft", title_en: "API update draft", publication: "build_toronto")
+
+    patch api_v1_memo_url(memo.slug), params: {
+      publication: "build_toronto",
+      memo: { title_en: "Still a draft", published_at: Time.current.iso8601 }
+    }, headers: api_key_headers, as: :json
+
+    assert_response :success
+    assert_nil memo.reload.published_at
+  end
+
+  test "admin Doorkeeper token can set published_at" do
+    application = Doorkeeper::Application.create!(
+      name: "Memo publishing test",
+      redirect_uri: "https://example.com/callback",
+      scopes: "",
+      confidential: true,
+      trusted: true
+    )
+    token = Doorkeeper::AccessToken.create!(
+      application:,
+      resource_owner_id: users(:admin).id,
+      expires_in: 7_200
+    )
+    memo = Memo.create!(slug: "oauth-publish-draft", title_en: "OAuth publish draft", publication: "build_toronto")
+    published_at = 1.minute.ago
+
+    patch api_v1_memo_url(memo.slug), params: {
+      publication: "build_toronto",
+      memo: { published_at: published_at.iso8601 }
+    }, headers: { "Authorization" => "Bearer #{token.token}" }, as: :json
+
+    assert_response :success
+    assert_in_delta published_at, memo.reload.published_at, 1.second
+  end
+
+  test "member API key has member permissions and cannot create a memo" do
+    _, raw = ApiKey.issue!(user: users(:member), name: "member-memo-key")
+
+    post api_v1_memos_url, params: { memo: { title_en: "No access" } },
+      headers: { "Authorization" => "Bearer #{raw}" }, as: :json
+
+    assert_response :forbidden
+  end
+
+  test "admin API key can upload an inline figure" do
+    assert_difference "ActiveStorage::Blob.count", 1 do
+      post api_v1_uploads_url,
+        params: { file: fixture_file_upload("test-image.jpg", "image/jpeg") },
+        headers: api_key_headers
+    end
+
+    assert_response :created
+    assert response.parsed_body["signed_id"].present?
+    assert response.parsed_body["url"].present?
+  end
+
+  test "admin API key can attach banner and SEO images to a draft" do
+    post api_v1_memos_url, params: {
+      memo: {
+        slug: "api-memo-with-images",
+        title_en: "API memo with images",
+        publication: "build_toronto",
+        banner_image: fixture_file_upload("test-image.jpg", "image/jpeg"),
+        seo_image: fixture_file_upload("test-image.jpg", "image/jpeg")
+      }
+    }, headers: api_key_headers
+
+    assert_response :created
+    memo = Memo.find_by!(slug: "api-memo-with-images", publication: "build_toronto")
+    assert memo.banner_image.attached?
+    assert memo.seo_image.attached?
+    assert memo.draft?
+  end
+
   test "destroy without auth returns 401" do
     delete api_v1_memo_url("housing-crisis-memo")
     assert_response :unauthorized
@@ -149,5 +254,11 @@ class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     data = JSON.parse(response.body)
     assert_equal "build_canada", data["publication"]
+  end
+
+  private
+
+  def api_key_headers
+    { "Authorization" => "Bearer #{@admin_api_key}" }
   end
 end

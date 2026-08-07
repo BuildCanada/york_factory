@@ -6,13 +6,7 @@
 class Warehouse::FetchEconomySourcesJob < ApplicationJob
   queue_as :default
 
-  INTERVALS = {
-    "daily" => 1.day,
-    "weekly" => 1.week,
-    "monthly" => 1.month,
-    "quarterly" => 3.months,
-    "annual" => 1.year
-  }.freeze
+  INTERVALS = Warehouse::Source::SCRAPE_INTERVALS
 
   # Grace subtracted from the interval so scheduler drift (the daily run
   # never fires at exactly the same instant) can't push a source's next

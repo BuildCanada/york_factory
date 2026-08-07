@@ -8,9 +8,10 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
   end
 
   # Dashboard
-  test "dashboard index renders" do
+  test "scraping dashboard renders" do
     get admin_root_path
     assert_response :success
+    assert_select "h1", "Scraping"
   end
 
   # Posts

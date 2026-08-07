@@ -125,6 +125,16 @@ class Warehouse::Source::FetcherTest < ActiveSupport::TestCase
     end
   end
 
+  test "atomically discards concurrent fetches for the same source" do
+    job_class = Warehouse::Source::Fetcher::FetchJob
+    job = job_class.new(@fetcher)
+
+    assert_equal 1, job_class.concurrency_limit
+    assert_equal :discard, job_class.concurrency_on_conflict
+    assert_equal 6.hours, job_class.concurrency_duration
+    assert_includes job.concurrency_key, "Warehouse::Source/#{@source.id}"
+  end
+
   private
 
   def run_fetch(*downloads)

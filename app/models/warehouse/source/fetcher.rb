@@ -1,5 +1,12 @@
 class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
-  performs :fetch
+  performs :fetch, queue_as: :default
+
+  class FetchJob
+    limits_concurrency to: 1,
+      key: ->(fetcher) { fetcher.source },
+      duration: 6.hours,
+      on_conflict: :discard
+  end
 
   MAX_RETRIES = 3
   BACKOFF_BASE = 4 # seconds: 1, 4, 16

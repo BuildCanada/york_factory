@@ -1,12 +1,30 @@
 module Admin
   class DashboardController < BaseController
+    class_attribute :scrape_status, instance_accessor: false, default: Warehouse::Source::ScrapeStatus
+
     def index
-      @sources = Warehouse::Source.all.map { |s|
+      redirect_to admin_root_path
+    end
+
+    def scraping
+      @scrape_states = self.class.scrape_status.active
+      scrape_schedule = Warehouse::Source::ScrapeSchedule.new
+      schedule_from = Time.current
+      @scrape_batch_state = if @scrape_states.value?("running")
+        "running"
+      elsif @scrape_states.value?("queued")
+        "queued"
+      else
+        "idle"
+      end
+
+      @sources = Warehouse::Source.order(:name).map { |s|
         latest = s.raw_ingestions.order(fetched_at: :desc).first
         {
-          name: s.name,
-          url: s.url,
-          last_fetched_at: s.last_fetched_at,
+          source: s,
+          scrape_state: @scrape_states[s.id],
+          next_scrape_at: scrape_schedule.next_run_at(s, from: schedule_from),
+          scrape_schedule: scrape_schedule.schedule_for(s),
           latest_ingestion: latest ? { status: latest.status, id: latest.id } : nil
         }
       }
@@ -34,6 +52,17 @@ module Admin
       rescue
         []
       end
+    end
+
+    def run_scrape
+      source = Warehouse::Source.find(params[:id])
+      if self.class.scrape_status.active.key?(source.id)
+        return redirect_to admin_root_path, alert: "#{source.name} is already queued or running."
+      end
+
+      source.fetcher.fetch_later
+
+      redirect_to admin_root_path, notice: "#{source.name} scrape queued."
     end
 
     def ingestions

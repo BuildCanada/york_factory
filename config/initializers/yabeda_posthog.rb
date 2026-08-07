@@ -4,7 +4,7 @@
 # local Yabeda adapter. Metrics are production-only and intentionally contain
 # no user or request identifiers; every attribute combination is a series.
 if Rails.env.production?
-  token = ENV.fetch("POSTHOG_PROJECT_TOKEN", nil)
+  token = Rails.application.credentials.dig(:posthog, :api_key)
 
   if token.present?
     require Rails.root.join("lib/yabeda/post_hog")
@@ -14,13 +14,13 @@ if Rails.env.production?
 
     Yabeda::PostHog.install!(
       api_key: token,
-      host: ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com"),
+      host: Rails.application.credentials.dig(:posthog, :host).presence || "https://us.i.posthog.com",
       service_name: "york-factory",
       environment: Rails.env
     )
 
     Yabeda::ActiveJob.install!
   else
-    warn "[PostHog] POSTHOG_PROJECT_TOKEN is missing; metrics export is disabled."
+    warn "[PostHog] posthog.api_key credential is missing; metrics export is disabled."
   end
 end

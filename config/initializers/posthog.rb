@@ -4,17 +4,16 @@
 #   - Rails.error subscriber integration
 #   - Automatic current_user context on error events
 #
-# Keys are read from the environment so the app boots safely with no
-# PostHog config. In development, a missing token is logged loudly so
-# events are never silently missed.
+# The project key is stored in encrypted Rails credentials, so Kamal needs
+# only RAILS_MASTER_KEY to make it available in every deploy environment.
 
-token = ENV.fetch("POSTHOG_PROJECT_TOKEN", nil)
-host  = ENV.fetch("POSTHOG_HOST", "https://us.i.posthog.com")
+token = Rails.application.credentials.dig(:posthog, :api_key)
+host  = Rails.application.credentials.dig(:posthog, :host).presence || "https://us.i.posthog.com"
 
 if token.blank? && Rails.env.development?
-  warn "[PostHog] POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or " \
+  warn "[PostHog] posthog.api_key credential required by PostHog is missing or " \
        "un-configured, this causes events to be silently missed. " \
-       "This error stops appearing once POSTHOG_PROJECT_TOKEN is configured."
+       "This error stops appearing once posthog.api_key is configured."
 end
 
 # Always initialize so PostHog.capture/identify calls are safe even without a

@@ -43,12 +43,13 @@ ISO 8601. `published_at` and similar are dates (`YYYY-MM-DD`); `started_at`, `cr
 
 - **[KPIs](./kpis/README.md)** — Government performance indicators, source documents, and agent-run audit trail.
 - **[Elections](./elections.md)** — Elections, races, and registered candidates (front-end spec).
+- **[Ward lookup](./ward_lookup.md)** — Postal code → municipal ward, for "find your ward" inputs (front-end spec).
 
 ## Other public APIs
 
 These live in the codebase but are documented elsewhere:
 
 - `/api/v1/{posts,memos,builders,team,tools,faqs,feed,testimonials}` — CMS content.
-- `/api/v1/geo/{boundaries,addresses,crosswalk}` — geographic boundaries and address lookup.
+- `/api/v1/geo/{boundaries,addresses,crosswalk}` — geographic boundaries and address lookup. (`geo/ward_lookup` is documented above.)
 - `/api/v1/trade_barriers/{agreements,themes}` — Trade barriers tracker.
 - `/api/v1/warehouse/jurisdictions` — Legacy list endpoint kept for trade-barriers backward compat. Prefer `/api/v1/kpis/jurisdictions` going forward.

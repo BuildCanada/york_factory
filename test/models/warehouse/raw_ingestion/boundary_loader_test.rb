@@ -97,6 +97,36 @@ class Warehouse::RawIngestion::BoundaryLoaderTest < ActiveSupport::TestCase
     end
   end
 
+  # import_shapefile writes the mapped string through upsert_all, so a value the
+  # enum does not define either raises on cast or lands as a type no scope can
+  # ever select. Both ward sources shipped that way ("med", "sbed") and their
+  # boundaries silently never loaded.
+  test "every BOUNDARY_TYPE_MAP value is a boundary type GeoBoundary defines" do
+    Warehouse::RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP.each do |source, type|
+      assert_includes Warehouse::GeoBoundary::BOUNDARY_TYPES, type,
+        "#{source} maps to #{type.inspect}, which is not a GeoBoundary boundary type"
+    end
+  end
+
+  test "municipal and school board ward sources map to the ward types" do
+    map = Warehouse::RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP
+    assert_equal "ward", map["ward_toronto"]
+    %w[sbw_tdsb sbw_tcdsb sbw_viamonde sbw_monavenir].each do |source|
+      assert_equal "school_board_ward", map[source]
+    end
+  end
+
+  # Ward uids come from a bare, zero-padded ward number, so without a
+  # per-municipality prefix the next city's ward 01 upserts over Toronto's.
+  test "municipal ward sources prefix their uid so cities cannot collide" do
+    Warehouse::RawIngestion::BoundaryLoader::BOUNDARY_TYPE_MAP
+      .select { |_source, type| type == "ward" }
+      .each_key do |source|
+        custom = Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP[source]
+        assert custom[:uid_prefix].present?, "#{source} needs a uid_prefix to stay unique across cities"
+      end
+  end
+
   test "CUSTOM_FIELD_MAP entries have required keys" do
     Warehouse::RawIngestion::BoundaryLoader::CUSTOM_FIELD_MAP.each do |source, fields|
       assert fields.key?(:uid), "#{source} missing :uid"

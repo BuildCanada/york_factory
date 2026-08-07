@@ -24,6 +24,28 @@ module Users
         safe_return_to(request.env.dig("omniauth.params", "return_to")) ||
         default_path(user)
 
+      # PostHog: detect new vs returning user, then identify and capture
+      is_new_user = user.sign_in_count == 0
+
+      PostHog.identify(
+        distinct_id: user.posthog_distinct_id,
+        properties: user.posthog_properties
+      )
+
+      if is_new_user
+        PostHog.capture(
+          distinct_id: user.posthog_distinct_id,
+          event: "user_registered",
+          properties: { registration_method: "linkedin" }
+        )
+      else
+        PostHog.capture(
+          distinct_id: user.posthog_distinct_id,
+          event: "user_signed_in_with_linkedin",
+          properties: { login_method: "linkedin" }
+        )
+      end
+
       sign_in(:user, user)
       redirect_to destination, allow_other_host: false
     end

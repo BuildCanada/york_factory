@@ -141,6 +141,24 @@ class User < ApplicationRecord
     postal_code.present?
   end
 
+  # Used by posthog-rails for automatic user association in error reports.
+  # Stable primary key — never PII.
+  def posthog_distinct_id
+    id.to_s
+  end
+
+  # Person properties sent to PostHog on identify() calls.
+  def posthog_properties
+    {
+      email: email,
+      name: name,
+      role: role,
+      postal_code: postal_code,
+      engagement_ready: engagement_ready?,
+      date_joined: created_at&.iso8601
+    }.compact
+  end
+
   private
 
   def normalize_postal_code

@@ -1,5 +1,5 @@
 class Warehouse::Source::Fetcher < ActiveRecord::AssociatedObject
-  performs :fetch, queue_as: :scraping
+  performs :fetch, queue_as: :default
 
   class FetchJob
     limits_concurrency to: 1,

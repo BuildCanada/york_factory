@@ -52,7 +52,7 @@ class Admin::DashboardControllerTest < ActionDispatch::IntegrationTest
   test "queues a source scrape" do
     source = create_source(fetch_frequency: "manual")
 
-    assert_enqueued_with(job: Warehouse::Source::Fetcher::FetchJob, queue: "scraping") do
+    assert_enqueued_with(job: Warehouse::Source::Fetcher::FetchJob, queue: "default") do
       post admin_run_scraping_source_path(source)
     end
 

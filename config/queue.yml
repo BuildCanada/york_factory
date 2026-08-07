@@ -3,9 +3,8 @@ default: &default
     - polling_interval: 1
       batch_size: 500
   workers:
-    - queues:
-        - scraping
-        - default
+    # Keep one worker consuming all queues; do not add dedicated queues or workers for scraping.
+    - queues: "*"
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1

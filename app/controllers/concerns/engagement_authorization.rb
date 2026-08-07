@@ -3,10 +3,9 @@ module EngagementAuthorization
 
   private
 
-  # The User behind the presented Doorkeeper access token. Available only after
-  # doorkeeper_authorize! has run.
+  # The User behind the presented OAuth token or API key.
   def engagement_user
-    @engagement_user ||= User.find_by(id: doorkeeper_token&.resource_owner_id)
+    current_user
   end
 
   # Engaging requires a postal code (so we can attribute engagement

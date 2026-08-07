@@ -60,7 +60,7 @@ module Api
       def memo_params
         params.require(:memo).permit(
           :slug, :author_id, :co_author_id, :author_name, :author_title,
-          :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image, :banner_image,
+          :author_avatar, :category, :publication, :twitter_embed, :featured, :seo_image, :banner_image,
           :title_en, :title_fr,
           :supporters_en, :supporters_fr,
           :body_en, :body_fr, :appendix_en, :appendix_fr,

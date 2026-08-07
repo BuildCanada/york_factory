@@ -53,6 +53,16 @@ class Api::V1::Kpis::Admin::AdminApiTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  test "accepts an admin user's API key" do
+    _, raw = ApiKey.issue!(user: users(:admin), name: "kpi-admin-#{SecureRandom.hex(2)}")
+
+    post "/api/v1/kpis/admin/units",
+      params: { unit: { symbol: "user-key-unit-#{SecureRandom.hex(2)}", kind: "absolute", base_unit: "count", scale: 1 } },
+      headers: { "Authorization" => "Bearer #{raw}" }
+
+    assert_response :created
+  end
+
   test "creates and upserts a document idempotently" do
     url = "https://example.com/admin-doc-#{SecureRandom.hex(4)}.pdf"
     payload = { document: {

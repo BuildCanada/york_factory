@@ -41,6 +41,7 @@ ISO 8601. `published_at` and similar are dates (`YYYY-MM-DD`); `started_at`, `cr
 
 ## Sections
 
+- **[Memo authoring](./memos.md)** — User API keys, draft memo creation, publication selection, and image uploads.
 - **[KPIs](./kpis/README.md)** — Government performance indicators, source documents, and agent-run audit trail.
 - **[Elections](./elections.md)** — Elections, races, and registered candidates (front-end spec).
 - **[Ward lookup](./ward_lookup.md)** — Postal code → municipal ward, for "find your ward" inputs (front-end spec).

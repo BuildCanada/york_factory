@@ -12,6 +12,11 @@ module Users
 
       if user
         user.send_reset_password_instructions
+        # PostHog: track password reset request
+        PostHog.capture(
+          distinct_id: user.posthog_distinct_id,
+          event: "password_reset_requested"
+        )
       end
 
       redirect_to new_user_session_path, notice: "If that email exists, reset instructions have been sent."

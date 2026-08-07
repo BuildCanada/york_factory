@@ -111,6 +111,18 @@ gem "rack-attack"
 # CMS: sanitize HTML input
 gem "rails-html-sanitizer"
 
+# Analytics
+gem "posthog-ruby"
+gem "posthog-rails"
+gem "opentelemetry-sdk", require: false
+gem "opentelemetry-logs-sdk", ">= 0.6.0", require: false
+gem "opentelemetry-exporter-otlp-logs", require: false
+gem "yabeda"
+gem "yabeda-rails"
+gem "yabeda-activerecord"
+gem "yabeda-activejob"
+gem "yabeda-puma-plugin"
+
 # Metrics: Excel file parsing for LinkedIn exports
 gem "roo"
 gem "roo-xls"

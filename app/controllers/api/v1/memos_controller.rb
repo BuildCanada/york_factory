@@ -58,12 +58,17 @@ module Api
       end
 
       def memo_params
-        params.require(:memo).permit(
+        scalar_fields = [
           :slug, :author_id, :co_author_id, :author_name, :author_title,
           :author_avatar, :category, :publication, :twitter_embed, :featured, :seo_image, :banner_image,
           :title_en, :title_fr,
           :supporters_en, :supporters_fr,
-          :body_en, :body_fr, :appendix_en, :appendix_fr,
+          :body_en, :body_fr, :appendix_en, :appendix_fr
+        ]
+        scalar_fields << :published_at unless current_api_key
+
+        params.require(:memo).permit(
+          *scalar_fields,
           key_messages_en: [], key_messages_fr: []
         )
       end

@@ -150,6 +150,31 @@ class Api::V1::MemosControllerTest < ActionDispatch::IntegrationTest
     assert_nil memo.reload.published_at
   end
 
+  test "admin Doorkeeper token can set published_at" do
+    application = Doorkeeper::Application.create!(
+      name: "Memo publishing test",
+      redirect_uri: "https://example.com/callback",
+      scopes: "",
+      confidential: true,
+      trusted: true
+    )
+    token = Doorkeeper::AccessToken.create!(
+      application:,
+      resource_owner_id: users(:admin).id,
+      expires_in: 7_200
+    )
+    memo = Memo.create!(slug: "oauth-publish-draft", title_en: "OAuth publish draft", publication: "build_toronto")
+    published_at = 1.minute.ago
+
+    patch api_v1_memo_url(memo.slug), params: {
+      publication: "build_toronto",
+      memo: { published_at: published_at.iso8601 }
+    }, headers: { "Authorization" => "Bearer #{token.token}" }, as: :json
+
+    assert_response :success
+    assert_in_delta published_at, memo.reload.published_at, 1.second
+  end
+
   test "member API key has member permissions and cannot create a memo" do
     _, raw = ApiKey.issue!(user: users(:member), name: "member-memo-key")
 

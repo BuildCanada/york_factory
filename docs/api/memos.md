@@ -15,9 +15,10 @@ tokens remain supported by KPI admin routes.
 
 ## Create a draft memo
 
-`POST /api/v1/memos` accepts JSON or multipart form data. API memo writes never
-accept `published_at`; a supplied value is ignored, so newly created memos are
-always drafts and an API request cannot publish one.
+`POST /api/v1/memos` accepts JSON or multipart form data. Memo writes made with
+a user API key never accept `published_at`; a supplied value is ignored, so an
+agent using a key cannot publish a memo. Authorized interactive/Doorkeeper
+clients retain the existing ability to set publication dates.
 
 For Build Toronto, send the enum value `build_toronto` (not the display label
 “Build Toronto”):

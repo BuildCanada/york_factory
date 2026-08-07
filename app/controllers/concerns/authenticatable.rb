@@ -28,6 +28,13 @@ module Authenticatable
       return
     end
 
+    if doorkeeper_token&.accessible?
+      @current_user = User.find_by(id: doorkeeper_token.resource_owner_id)
+      return render_forbidden unless @current_user&.admin?
+
+      return
+    end
+
     token = bearer_token
     return render_unauthorized unless token
 

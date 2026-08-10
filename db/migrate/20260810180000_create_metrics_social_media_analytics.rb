@@ -1,6 +1,6 @@
-class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
+class CreateMetricsSocialMediaAnalytics < ActiveRecord::Migration[8.1]
   def change
-    create_table "warehouse.social_media_accounts" do |t|
+    create_table "metrics_social_media_accounts" do |t|
       t.string :zernio_account_id, null: false
       t.string :zernio_profile_id, null: false
       t.string :profile_name, null: false
@@ -14,14 +14,14 @@ class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index "warehouse.social_media_accounts", :zernio_account_id,
+    add_index "metrics_social_media_accounts", :zernio_account_id,
       unique: true, name: "ux_social_media_accounts_zernio_id"
-    add_index "warehouse.social_media_accounts", [ :platform, :account_key ],
+    add_index "metrics_social_media_accounts", [ :platform, :account_key ],
       name: "idx_social_media_accounts_platform_key"
 
-    create_table "warehouse.social_media_account_metric_snapshots" do |t|
+    create_table "metrics_social_media_account_metric_snapshots" do |t|
       t.references :social_media_account, null: false,
-        foreign_key: { to_table: "warehouse.social_media_accounts", on_delete: :cascade },
+        foreign_key: { to_table: "metrics_social_media_accounts", on_delete: :cascade },
         index: false
       t.datetime :observed_at, null: false
       t.datetime :scraped_at, null: false
@@ -29,13 +29,13 @@ class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index "warehouse.social_media_account_metric_snapshots",
+    add_index "metrics_social_media_account_metric_snapshots",
       [ :social_media_account_id, :observed_at ], unique: true,
       name: "ux_social_media_account_snapshots_observed"
 
-    create_table "warehouse.social_media_posts" do |t|
+    create_table "metrics_social_media_posts" do |t|
       t.references :social_media_account, null: false,
-        foreign_key: { to_table: "warehouse.social_media_accounts", on_delete: :cascade },
+        foreign_key: { to_table: "metrics_social_media_accounts", on_delete: :cascade },
         index: false
       t.references :social_post, null: true,
         foreign_key: { to_table: :social_posts, on_delete: :nullify },
@@ -58,18 +58,18 @@ class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index "warehouse.social_media_posts", [ :zernio_post_id, :social_media_account_id ],
+    add_index "metrics_social_media_posts", [ :zernio_post_id, :social_media_account_id ],
       unique: true, name: "ux_social_media_posts_zernio_account"
-    add_index "warehouse.social_media_posts", [ :social_media_account_id, :published_at ],
+    add_index "metrics_social_media_posts", [ :social_media_account_id, :published_at ],
       name: "idx_social_media_posts_account_published"
-    add_index "warehouse.social_media_posts", :social_post_id,
+    add_index "metrics_social_media_posts", :social_post_id,
       name: "idx_social_media_posts_social_post"
-    add_index "warehouse.social_media_posts", [ :platform, :platform_post_id ],
+    add_index "metrics_social_media_posts", [ :platform, :platform_post_id ],
       name: "idx_social_media_posts_platform_post"
 
-    create_table "warehouse.social_media_post_metric_snapshots" do |t|
+    create_table "metrics_social_media_post_metric_snapshots" do |t|
       t.references :social_media_post, null: false,
-        foreign_key: { to_table: "warehouse.social_media_posts", on_delete: :cascade },
+        foreign_key: { to_table: "metrics_social_media_posts", on_delete: :cascade },
         index: false
       t.datetime :observed_at, null: false
       t.datetime :scraped_at, null: false
@@ -90,7 +90,7 @@ class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index "warehouse.social_media_post_metric_snapshots",
+    add_index "metrics_social_media_post_metric_snapshots",
       [ :social_media_post_id, :observed_at ], unique: true,
       name: "ux_social_media_post_snapshots_observed"
 
@@ -99,7 +99,7 @@ class CreateWarehouseSocialMediaAnalytics < ActiveRecord::Migration[8.1]
       metrics_instagram_stats
     ].each do |table|
       add_reference table, :social_media_account, null: true, index: true
-      add_foreign_key table, "warehouse.social_media_accounts",
+      add_foreign_key table, :metrics_social_media_accounts,
         column: :social_media_account_id, on_delete: :nullify
     end
   end

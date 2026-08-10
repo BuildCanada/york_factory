@@ -1,4 +1,4 @@
-module Warehouse::SocialMedia
+module Metrics
   class ZernioClient
     BASE_URL = "https://zernio.com/api/v1"
 

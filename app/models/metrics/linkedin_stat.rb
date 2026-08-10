@@ -1,7 +1,7 @@
 module Metrics
   class LinkedinStat < ApplicationRecord
     belongs_to :social_media_account,
-      class_name: "Warehouse::SocialMediaAccount",
+      class_name: "Metrics::SocialMediaAccount",
       optional: true
 
     METRIC_COLUMNS = %w[

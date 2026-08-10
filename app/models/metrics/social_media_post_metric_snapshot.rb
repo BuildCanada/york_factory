@@ -1,8 +1,8 @@
-class Warehouse::SocialMediaPostMetricSnapshot < Warehouse::Record
-  self.table_name = "warehouse.social_media_post_metric_snapshots"
+class Metrics::SocialMediaPostMetricSnapshot < ApplicationRecord
+  self.table_name = "metrics_social_media_post_metric_snapshots"
 
   belongs_to :post,
-    class_name: "Warehouse::SocialMediaPost",
+    class_name: "Metrics::SocialMediaPost",
     foreign_key: :social_media_post_id,
     inverse_of: :metric_snapshots
 

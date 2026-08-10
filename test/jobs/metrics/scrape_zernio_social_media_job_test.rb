@@ -1,7 +1,7 @@
 require "test_helper"
 
-class Warehouse::ScrapeZernioSocialMediaJobTest < ActiveJob::TestCase
-  class TestJob < Warehouse::ScrapeZernioSocialMediaJob
+class Metrics::ScrapeZernioSocialMediaJobTest < ActiveJob::TestCase
+  class TestJob < Metrics::ScrapeZernioSocialMediaJob
     cattr_accessor :test_scraper
 
     private

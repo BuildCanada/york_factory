@@ -49,6 +49,6 @@ namespace :feed do
 
   desc "Import connected accounts and post analytics from Zernio"
   task scrape_zernio: :environment do
-    Warehouse::ScrapeZernioSocialMediaJob.perform_now
+    Metrics::ScrapeZernioSocialMediaJob.perform_now
   end
 end

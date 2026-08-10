@@ -1,7 +1,7 @@
 module Metrics
   class TiktokStat < ApplicationRecord
     belongs_to :social_media_account,
-      class_name: "Warehouse::SocialMediaAccount",
+      class_name: "Metrics::SocialMediaAccount",
       optional: true
 
     ACCOUNTS = %w[build_canada].freeze

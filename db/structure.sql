@@ -809,6 +809,174 @@ ALTER SEQUENCE public.metrics_linkedin_stats_id_seq OWNED BY public.metrics_link
 
 
 --
+-- Name: metrics_social_media_account_metric_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_account_metric_snapshots (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    scraped_at timestamp(6) without time zone NOT NULL,
+    followers_count bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_account_metric_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_account_metric_snapshots_id_seq OWNED BY public.metrics_social_media_account_metric_snapshots.id;
+
+
+--
+-- Name: metrics_social_media_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_accounts (
+    id bigint NOT NULL,
+    zernio_account_id character varying NOT NULL,
+    zernio_profile_id character varying NOT NULL,
+    profile_name character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    username character varying NOT NULL,
+    display_name character varying,
+    profile_url character varying,
+    enabled boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_accounts_id_seq OWNED BY public.metrics_social_media_accounts.id;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_post_metric_snapshots (
+    id bigint NOT NULL,
+    social_media_post_id bigint NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    scraped_at timestamp(6) without time zone NOT NULL,
+    impressions bigint DEFAULT 0 NOT NULL,
+    reach bigint DEFAULT 0 NOT NULL,
+    likes bigint DEFAULT 0 NOT NULL,
+    comments bigint DEFAULT 0 NOT NULL,
+    shares bigint DEFAULT 0 NOT NULL,
+    saves bigint DEFAULT 0 NOT NULL,
+    clicks bigint DEFAULT 0 NOT NULL,
+    views bigint DEFAULT 0 NOT NULL,
+    follows bigint DEFAULT 0 NOT NULL,
+    reels_average_watch_time bigint DEFAULT 0 NOT NULL,
+    reels_total_watch_time bigint DEFAULT 0 NOT NULL,
+    video_duration_seconds numeric(12,3),
+    engagement_rate numeric(12,6),
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_post_metric_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_post_metric_snapshots_id_seq OWNED BY public.metrics_social_media_post_metric_snapshots.id;
+
+
+--
+-- Name: metrics_social_media_posts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_posts (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    social_post_id bigint,
+    zernio_post_id character varying NOT NULL,
+    late_post_id character varying,
+    platform_post_id character varying,
+    platform character varying NOT NULL,
+    account_username character varying,
+    status character varying NOT NULL,
+    content text,
+    platform_post_url character varying,
+    thumbnail_url character varying,
+    media_type character varying,
+    published_at timestamp(6) without time zone,
+    scheduled_for timestamp(6) without time zone,
+    external boolean DEFAULT false NOT NULL,
+    ad boolean DEFAULT false NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_posts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_posts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_posts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_posts_id_seq OWNED BY public.metrics_social_media_posts.id;
+
+
+--
 -- Name: metrics_substack_stats; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3712,174 +3880,6 @@ ALTER SEQUENCE warehouse.review_decisions_id_seq OWNED BY warehouse.review_decis
 
 
 --
--- Name: social_media_account_metric_snapshots; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_media_account_metric_snapshots (
-    id bigint NOT NULL,
-    social_media_account_id bigint NOT NULL,
-    observed_at timestamp(6) without time zone NOT NULL,
-    scraped_at timestamp(6) without time zone NOT NULL,
-    followers_count bigint,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: social_media_account_metric_snapshots_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.social_media_account_metric_snapshots_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: social_media_account_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.social_media_account_metric_snapshots_id_seq OWNED BY warehouse.social_media_account_metric_snapshots.id;
-
-
---
--- Name: social_media_accounts; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_media_accounts (
-    id bigint NOT NULL,
-    zernio_account_id character varying NOT NULL,
-    zernio_profile_id character varying NOT NULL,
-    profile_name character varying NOT NULL,
-    platform character varying NOT NULL,
-    account_key character varying NOT NULL,
-    username character varying NOT NULL,
-    display_name character varying,
-    profile_url character varying,
-    enabled boolean DEFAULT true NOT NULL,
-    source_updated_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: social_media_accounts_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.social_media_accounts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: social_media_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.social_media_accounts_id_seq OWNED BY warehouse.social_media_accounts.id;
-
-
---
--- Name: social_media_post_metric_snapshots; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_media_post_metric_snapshots (
-    id bigint NOT NULL,
-    social_media_post_id bigint NOT NULL,
-    observed_at timestamp(6) without time zone NOT NULL,
-    scraped_at timestamp(6) without time zone NOT NULL,
-    impressions bigint DEFAULT 0 NOT NULL,
-    reach bigint DEFAULT 0 NOT NULL,
-    likes bigint DEFAULT 0 NOT NULL,
-    comments bigint DEFAULT 0 NOT NULL,
-    shares bigint DEFAULT 0 NOT NULL,
-    saves bigint DEFAULT 0 NOT NULL,
-    clicks bigint DEFAULT 0 NOT NULL,
-    views bigint DEFAULT 0 NOT NULL,
-    follows bigint DEFAULT 0 NOT NULL,
-    reels_average_watch_time bigint DEFAULT 0 NOT NULL,
-    reels_total_watch_time bigint DEFAULT 0 NOT NULL,
-    video_duration_seconds numeric(12,3),
-    engagement_rate numeric(12,6),
-    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: social_media_post_metric_snapshots_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.social_media_post_metric_snapshots_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: social_media_post_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.social_media_post_metric_snapshots_id_seq OWNED BY warehouse.social_media_post_metric_snapshots.id;
-
-
---
--- Name: social_media_posts; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_media_posts (
-    id bigint NOT NULL,
-    social_media_account_id bigint NOT NULL,
-    social_post_id bigint,
-    zernio_post_id character varying NOT NULL,
-    late_post_id character varying,
-    platform_post_id character varying,
-    platform character varying NOT NULL,
-    account_username character varying,
-    status character varying NOT NULL,
-    content text,
-    platform_post_url character varying,
-    thumbnail_url character varying,
-    media_type character varying,
-    published_at timestamp(6) without time zone,
-    scheduled_for timestamp(6) without time zone,
-    external boolean DEFAULT false NOT NULL,
-    ad boolean DEFAULT false NOT NULL,
-    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: social_media_posts_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
---
-
-CREATE SEQUENCE warehouse.social_media_posts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: social_media_posts_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
---
-
-ALTER SEQUENCE warehouse.social_media_posts_id_seq OWNED BY warehouse.social_media_posts.id;
-
-
---
 -- Name: source_footnotes; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -4219,6 +4219,34 @@ ALTER TABLE ONLY public.metrics_instagram_stats ALTER COLUMN id SET DEFAULT next
 --
 
 ALTER TABLE ONLY public.metrics_linkedin_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_linkedin_stats_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_account_metric_snapshots_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_accounts ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_accounts_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_post_metric_snapshots_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_posts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_posts_id_seq'::regclass);
 
 
 --
@@ -4677,34 +4705,6 @@ ALTER TABLE ONLY warehouse.review_decisions ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- Name: social_media_account_metric_snapshots id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_account_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('warehouse.social_media_account_metric_snapshots_id_seq'::regclass);
-
-
---
--- Name: social_media_accounts id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_accounts ALTER COLUMN id SET DEFAULT nextval('warehouse.social_media_accounts_id_seq'::regclass);
-
-
---
--- Name: social_media_post_metric_snapshots id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_post_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('warehouse.social_media_post_metric_snapshots_id_seq'::regclass);
-
-
---
--- Name: social_media_posts id; Type: DEFAULT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_posts ALTER COLUMN id SET DEFAULT nextval('warehouse.social_media_posts_id_seq'::regclass);
-
-
---
 -- Name: source_footnotes id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -4881,6 +4881,38 @@ ALTER TABLE ONLY public.metrics_instagram_stats
 
 ALTER TABLE ONLY public.metrics_linkedin_stats
     ADD CONSTRAINT metrics_linkedin_stats_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots metrics_social_media_account_metric_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots
+    ADD CONSTRAINT metrics_social_media_account_metric_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_accounts metrics_social_media_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_accounts
+    ADD CONSTRAINT metrics_social_media_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots metrics_social_media_post_metric_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
+    ADD CONSTRAINT metrics_social_media_post_metric_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_posts metrics_social_media_posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT metrics_social_media_posts_pkey PRIMARY KEY (id);
 
 
 --
@@ -5436,38 +5468,6 @@ ALTER TABLE ONLY warehouse.review_decisions
 
 
 --
--- Name: social_media_account_metric_snapshots social_media_account_metric_snapshots_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_account_metric_snapshots
-    ADD CONSTRAINT social_media_account_metric_snapshots_pkey PRIMARY KEY (id);
-
-
---
--- Name: social_media_accounts social_media_accounts_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_accounts
-    ADD CONSTRAINT social_media_accounts_pkey PRIMARY KEY (id);
-
-
---
--- Name: social_media_post_metric_snapshots social_media_post_metric_snapshots_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_post_metric_snapshots
-    ADD CONSTRAINT social_media_post_metric_snapshots_pkey PRIMARY KEY (id);
-
-
---
--- Name: social_media_posts social_media_posts_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_posts
-    ADD CONSTRAINT social_media_posts_pkey PRIMARY KEY (id);
-
-
---
 -- Name: source_footnotes source_footnotes_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -5591,6 +5591,34 @@ CREATE UNIQUE INDEX idx_saved_search_runs_tick ON public.saved_search_runs USING
 --
 
 CREATE INDEX idx_saved_searches_due ON public.saved_searches USING btree (enabled, next_run_at);
+
+
+--
+-- Name: idx_social_media_accounts_platform_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_accounts_platform_key ON public.metrics_social_media_accounts USING btree (platform, account_key);
+
+
+--
+-- Name: idx_social_media_posts_account_published; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_account_published ON public.metrics_social_media_posts USING btree (social_media_account_id, published_at);
+
+
+--
+-- Name: idx_social_media_posts_platform_post; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_platform_post ON public.metrics_social_media_posts USING btree (platform, platform_post_id);
+
+
+--
+-- Name: idx_social_media_posts_social_post; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_social_post ON public.metrics_social_media_posts USING btree (social_post_id);
 
 
 --
@@ -6242,6 +6270,34 @@ CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
 --
 
 CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING btree (reset_password_token);
+
+
+--
+-- Name: ux_social_media_account_snapshots_observed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_account_snapshots_observed ON public.metrics_social_media_account_metric_snapshots USING btree (social_media_account_id, observed_at);
+
+
+--
+-- Name: ux_social_media_accounts_zernio_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_accounts_zernio_id ON public.metrics_social_media_accounts USING btree (zernio_account_id);
+
+
+--
+-- Name: ux_social_media_post_snapshots_observed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_post_snapshots_observed ON public.metrics_social_media_post_metric_snapshots USING btree (social_media_post_id, observed_at);
+
+
+--
+-- Name: ux_social_media_posts_zernio_account; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_posts_zernio_account ON public.metrics_social_media_posts USING btree (zernio_post_id, social_media_account_id);
 
 
 --
@@ -6994,34 +7050,6 @@ CREATE INDEX idx_review_decisions_reviewer ON warehouse.review_decisions USING b
 
 
 --
--- Name: idx_social_media_accounts_platform_key; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_media_accounts_platform_key ON warehouse.social_media_accounts USING btree (platform, account_key);
-
-
---
--- Name: idx_social_media_posts_account_published; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_media_posts_account_published ON warehouse.social_media_posts USING btree (social_media_account_id, published_at);
-
-
---
--- Name: idx_social_media_posts_platform_post; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_media_posts_platform_post ON warehouse.social_media_posts USING btree (platform, platform_post_id);
-
-
---
--- Name: idx_social_media_posts_social_post; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_media_posts_social_post ON warehouse.social_media_posts USING btree (social_post_id);
-
-
---
 -- Name: idx_source_footnotes_document; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -7456,34 +7484,6 @@ CREATE UNIQUE INDEX ux_postal_codes_postal_code ON warehouse.postal_codes USING 
 
 
 --
--- Name: ux_social_media_account_snapshots_observed; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE UNIQUE INDEX ux_social_media_account_snapshots_observed ON warehouse.social_media_account_metric_snapshots USING btree (social_media_account_id, observed_at);
-
-
---
--- Name: ux_social_media_accounts_zernio_id; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE UNIQUE INDEX ux_social_media_accounts_zernio_id ON warehouse.social_media_accounts USING btree (zernio_account_id);
-
-
---
--- Name: ux_social_media_post_snapshots_observed; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE UNIQUE INDEX ux_social_media_post_snapshots_observed ON warehouse.social_media_post_metric_snapshots USING btree (social_media_post_id, observed_at);
-
-
---
--- Name: ux_social_media_posts_zernio_account; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE UNIQUE INDEX ux_social_media_posts_zernio_account ON warehouse.social_media_posts USING btree (zernio_post_id, social_media_account_id);
-
-
---
 -- Name: human_review_queue _RETURN; Type: RULE; Schema: warehouse; Owner: -
 --
 
@@ -7550,7 +7550,7 @@ ALTER TABLE ONLY public.memos
 --
 
 ALTER TABLE ONLY public.metrics_tiktok_stats
-    ADD CONSTRAINT fk_rails_0402725fef FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_rails_0402725fef FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
 
 
 --
@@ -7558,7 +7558,7 @@ ALTER TABLE ONLY public.metrics_tiktok_stats
 --
 
 ALTER TABLE ONLY public.metrics_twitter_stats
-    ADD CONSTRAINT fk_rails_0531b4169a FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_rails_0531b4169a FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
 
 
 --
@@ -7634,6 +7634,14 @@ ALTER TABLE ONLY public.saved_searches
 
 
 --
+-- Name: metrics_social_media_posts fk_rails_65e910fc73; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT fk_rails_65e910fc73 FOREIGN KEY (social_post_id) REFERENCES public.social_posts(id) ON DELETE SET NULL;
+
+
+--
 -- Name: notification_batches fk_rails_6e71670cf3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7670,7 +7678,7 @@ ALTER TABLE ONLY public.trade_barriers_agreements
 --
 
 ALTER TABLE ONLY public.metrics_linkedin_stats
-    ADD CONSTRAINT fk_rails_82af9b8cc3 FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_rails_82af9b8cc3 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
 
 
 --
@@ -7690,11 +7698,19 @@ ALTER TABLE ONLY public.engagements
 
 
 --
+-- Name: metrics_social_media_account_metric_snapshots fk_rails_91139009de; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots
+    ADD CONSTRAINT fk_rails_91139009de FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: metrics_instagram_stats fk_rails_91c7fda134; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.metrics_instagram_stats
-    ADD CONSTRAINT fk_rails_91c7fda134 FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_rails_91c7fda134 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
 
 
 --
@@ -7735,6 +7751,22 @@ ALTER TABLE ONLY public.oauth_access_grants
 
 ALTER TABLE ONLY public.active_storage_attachments
     ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: metrics_social_media_posts fk_rails_dbf3dce674; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT fk_rails_dbf3dce674 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots fk_rails_e39476749f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
+    ADD CONSTRAINT fk_rails_e39476749f FOREIGN KEY (social_media_post_id) REFERENCES public.metrics_social_media_posts(id) ON DELETE CASCADE;
 
 
 --
@@ -8130,14 +8162,6 @@ ALTER TABLE ONLY warehouse.fiscal_expenditures
 
 
 --
--- Name: social_media_post_metric_snapshots fk_rails_43b42f078f; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_post_metric_snapshots
-    ADD CONSTRAINT fk_rails_43b42f078f FOREIGN KEY (social_media_post_id) REFERENCES warehouse.social_media_posts(id) ON DELETE CASCADE;
-
-
---
 -- Name: spending_awards fk_rails_4b18c39624; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -8167,14 +8191,6 @@ ALTER TABLE ONLY warehouse.media_articles
 
 ALTER TABLE ONLY warehouse.media_feed_fetches
     ADD CONSTRAINT fk_rails_75522ea188 FOREIGN KEY (media_feed_id) REFERENCES warehouse.media_feeds(id);
-
-
---
--- Name: social_media_posts fk_rails_7770941e4f; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_posts
-    ADD CONSTRAINT fk_rails_7770941e4f FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE CASCADE;
 
 
 --
@@ -8234,27 +8250,11 @@ ALTER TABLE ONLY warehouse.standard_object_expenditures
 
 
 --
--- Name: social_media_account_metric_snapshots fk_rails_cfa900bc7b; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_account_metric_snapshots
-    ADD CONSTRAINT fk_rails_cfa900bc7b FOREIGN KEY (social_media_account_id) REFERENCES warehouse.social_media_accounts(id) ON DELETE CASCADE;
-
-
---
 -- Name: standard_object_expenditures fk_rails_e3fb24df7c; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT fk_rails_e3fb24df7c FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
-
-
---
--- Name: social_media_posts fk_rails_eeff2243e1; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_media_posts
-    ADD CONSTRAINT fk_rails_eeff2243e1 FOREIGN KEY (social_post_id) REFERENCES public.social_posts(id) ON DELETE SET NULL;
 
 
 --

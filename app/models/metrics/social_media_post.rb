@@ -1,13 +1,13 @@
-class Warehouse::SocialMediaPost < Warehouse::Record
-  self.table_name = "warehouse.social_media_posts"
+class Metrics::SocialMediaPost < ApplicationRecord
+  self.table_name = "metrics_social_media_posts"
 
   belongs_to :account,
-    class_name: "Warehouse::SocialMediaAccount",
+    class_name: "Metrics::SocialMediaAccount",
     foreign_key: :social_media_account_id,
     inverse_of: :posts
   belongs_to :social_post, optional: true
   has_many :metric_snapshots,
-    class_name: "Warehouse::SocialMediaPostMetricSnapshot",
+    class_name: "Metrics::SocialMediaPostMetricSnapshot",
     foreign_key: :social_media_post_id,
     inverse_of: :post,
     dependent: :destroy

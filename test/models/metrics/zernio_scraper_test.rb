@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
+class Metrics::ZernioScraperTest < ActiveSupport::TestCase
   FakeClient = Data.define(:responses, :requests) do
     def get(path, params: {})
       requests << [ path, params ]
@@ -55,13 +55,13 @@ class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
     legacy_stat = Metrics::TwitterStat.create!(account: "build_canada", date: Date.new(2026, 8, 10))
     scraper = scraper_for(accounts_response)
 
-    assert_difference -> { Warehouse::SocialMediaAccount.count }, 1 do
-      assert_difference -> { Warehouse::SocialMediaAccountMetricSnapshot.count }, 1 do
+    assert_difference -> { Metrics::SocialMediaAccount.count }, 1 do
+      assert_difference -> { Metrics::SocialMediaAccountMetricSnapshot.count }, 1 do
         scraper.sync_accounts!
       end
     end
 
-    account = Warehouse::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")
     assert_equal "build_canada", account.account_key
     assert_equal 16_578, account.metric_snapshots.sole.followers_count
     assert_equal account, legacy_stat.reload.social_media_account
@@ -74,7 +74,7 @@ class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
       "username" => "buildcanada.com"
     )
 
-    assert_difference -> { Warehouse::SocialMediaAccount.count }, 1 do
+    assert_difference -> { Metrics::SocialMediaAccount.count }, 1 do
       scraper_for(accounts_response).sync_accounts!
     end
   end
@@ -88,7 +88,7 @@ class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
     result = scraper.sync_page!(page: 1)
 
     assert_equal({ processed: 1, total: 101, next_page: 2 }, result)
-    post = Warehouse::SocialMediaPost.find_by!(zernio_post_id: "zernio-post-1")
+    post = Metrics::SocialMediaPost.find_by!(zernio_post_id: "zernio-post-1")
     assert_equal social_posts(:x_post), post.social_post
     assert post.external?
     assert_equal 1_200, post.latest_metric_snapshot.impressions
@@ -99,16 +99,46 @@ class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
     assert_equal "all", client.requests.sole.last[:source]
   end
 
-  test "updates the same observation without duplicating its snapshot" do
+  test "does not touch timestamps when an observation is unchanged" do
     scraper = scraper_for(accounts_response)
     scraper.sync_accounts!
     scraper = scraper_for(analytics_response, path: "/analytics")
+    scraper.sync_page!(page: 1)
 
-    2.times { scraper.sync_page!(page: 1) }
+    post = Metrics::SocialMediaPost.find_by!(zernio_post_id: "zernio-post-1")
+    snapshot = post.metric_snapshots.sole
+    stable_time = 1.day.ago
+    post.update_column(:updated_at, stable_time)
+    snapshot.update_column(:updated_at, stable_time)
 
-    assert_equal 1, Warehouse::SocialMediaPost.where(zernio_post_id: "zernio-post-1").count
-    post = Warehouse::SocialMediaPost.find_by!(zernio_post_id: "zernio-post-1")
+    later_scraper = Metrics::ZernioScraper.new(
+      client: fake_client("/analytics" => analytics_response),
+      now: @now + 1.hour
+    )
+    later_scraper.sync_page!(page: 1)
+
     assert_equal 1, post.metric_snapshots.count
+    assert_equal stable_time.to_i, post.reload.updated_at.to_i
+    assert_equal stable_time.to_i, snapshot.reload.updated_at.to_i
+    assert_equal @now.to_i, snapshot.scraped_at.to_i
+  end
+
+  test "updates the timestamp when metrics change without a new observation time" do
+    scraper = scraper_for(accounts_response)
+    scraper.sync_accounts!
+    scraper_for(analytics_response, path: "/analytics").sync_page!(page: 1)
+    snapshot = Metrics::SocialMediaPost.find_by!(zernio_post_id: "zernio-post-1").metric_snapshots.sole
+    snapshot.update_column(:updated_at, 1.day.ago)
+    @post_payload.dig("platforms", 0, "analytics")["likes"] = 43
+
+    Metrics::ZernioScraper.new(
+      client: fake_client("/analytics" => analytics_response),
+      now: @now + 1.hour
+    ).sync_page!(page: 1)
+
+    assert_equal 43, snapshot.reload.likes
+    assert_equal (@now + 1.hour).to_i, snapshot.scraped_at.to_i
+    assert snapshot.updated_at > 1.minute.ago
   end
 
   private
@@ -129,7 +159,7 @@ class Warehouse::SocialMedia::ZernioScraperTest < ActiveSupport::TestCase
   end
 
   def described_scraper(client)
-    Warehouse::SocialMedia::ZernioScraper.new(client: client, now: @now)
+    Metrics::ZernioScraper.new(client: client, now: @now)
   end
 
   def fake_client(responses)

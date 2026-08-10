@@ -1,9 +1,9 @@
-class Warehouse::ScrapeZernioSocialMediaJob < ApplicationJob
+class Metrics::ScrapeZernioSocialMediaJob < ApplicationJob
   include ActiveJob::Continuable
 
   queue_as :default
 
-  retry_on Warehouse::SocialMedia::ZernioClient::Error,
+  retry_on Metrics::ZernioClient::Error,
     wait: :polynomially_longer, attempts: 5
 
   def perform
@@ -29,8 +29,8 @@ class Warehouse::ScrapeZernioSocialMediaJob < ApplicationJob
   private
 
   def scraper
-    Warehouse::SocialMedia::ZernioScraper.new(
-      client: Warehouse::SocialMedia::ZernioClient.new(api_key: api_key)
+    Metrics::ZernioScraper.new(
+      client: Metrics::ZernioClient.new(api_key: api_key)
     )
   end
 

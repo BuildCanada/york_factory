@@ -1,4 +1,4 @@
-module Warehouse::SocialMedia
+module Metrics
   class ZernioScraper
     PAGE_SIZE = 100
     HISTORY_DAYS = 365
@@ -66,7 +66,7 @@ module Warehouse::SocialMedia
       profile = payload.fetch("profileId")
       profile_id = profile.is_a?(Hash) ? profile.fetch("_id") : profile
       profile_name = profile.is_a?(Hash) ? profile.fetch("name") : payload["displayName"]
-      account = Warehouse::SocialMediaAccount.find_or_initialize_by(
+      account = Metrics::SocialMediaAccount.find_or_initialize_by(
         zernio_account_id: payload.fetch("_id")
       )
       account.assign_attributes(
@@ -91,16 +91,13 @@ module Warehouse::SocialMedia
 
       observed_at = parse_time(payload["followersLastUpdated"]) || @scraped_at
       snapshot = account.metric_snapshots.find_or_initialize_by(observed_at: observed_at)
-      snapshot.assign_attributes(
-        scraped_at: @scraped_at,
-        followers_count: payload["followersCount"]
-      )
-      snapshot.save!
+      snapshot.assign_attributes(followers_count: payload["followersCount"])
+      save_changed_snapshot!(snapshot)
     end
 
     def sync_post!(payload)
       platform_entries(payload).each do |platform_payload|
-        account = Warehouse::SocialMediaAccount.find_by!(
+        account = Metrics::SocialMediaAccount.find_by!(
           zernio_account_id: platform_payload.fetch("accountId")
         )
         post = account.posts.find_or_initialize_by(zernio_post_id: payload.fetch("_id"))
@@ -153,11 +150,8 @@ module Warehouse::SocialMedia
         value = 0 if value.nil? && !column.in?(%i[video_duration_seconds engagement_rate])
         [ column, value ]
       end
-      snapshot.assign_attributes(attributes.merge(
-        scraped_at: @scraped_at,
-        source_payload: analytics
-      ))
-      snapshot.save!
+      snapshot.assign_attributes(attributes.merge(source_payload: analytics))
+      save_changed_snapshot!(snapshot)
     end
 
     def matching_social_post(post)
@@ -170,6 +164,16 @@ module Warehouse::SocialMedia
 
     def parse_time(value)
       Time.zone.parse(value.to_s) if value.present?
+    end
+
+    # Keep updated_at usable as an incremental-sync cursor. A successful scrape
+    # of identical source data is a no-op; scraped_at advances only when the
+    # snapshot is first seen or its values actually change.
+    def save_changed_snapshot!(snapshot)
+      return unless snapshot.new_record? || snapshot.changed?
+
+      snapshot.scraped_at = @scraped_at
+      snapshot.save!
     end
   end
 end

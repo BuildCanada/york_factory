@@ -154,7 +154,7 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
       allow_http?: false,
       fetches: Fetches.new(fetch)
     )
-    error = Search::Media::FeedFetcher::RateLimited.new(
+    error = TransientError.new(
       "feed returned HTTP 429",
       retry_after: 120
     )
@@ -167,7 +167,7 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
       job.perform(feed.id)
     end
 
-    assert_equal "Search::Media::FeedFetcher::RateLimited: feed returned HTTP 429", fetch.failed.fetch(:error)
+    assert_equal "TransientError: feed returned HTTP 429", fetch.failed.fetch(:error)
   end
 
   test "stops retrying a rate limit after the final attempt without raising" do
@@ -181,9 +181,9 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
       allow_http?: false,
       fetches: Fetches.new(fetch)
     )
-    error = Search::Media::FeedFetcher::RateLimited.new("feed returned HTTP 429", retry_after: 120)
+    error = TransientError.new("feed returned HTTP 429", retry_after: 120)
     job = Search::Media::FetchFeedJob.new(feed.id)
-    job.executions = Search::Media::FetchFeedJob::MAX_RATE_LIMIT_ATTEMPTS
+    job.executions = Search::Media::FetchFeedJob::MAX_TRANSIENT_ATTEMPTS
     job.define_singleton_method(:feed_for) { |_id| feed }
     job.define_singleton_method(:feed_fetcher) { ErrorFetcher.new(error) }
 

@@ -1,5 +1,4 @@
 require "rss"
-require "time"
 
 module Search
   module Media
@@ -16,15 +15,6 @@ module Search
       }.freeze
 
       class Error < StandardError; end
-      class TransientError < Error; end
-      class RateLimited < TransientError
-        attr_reader :retry_after
-
-        def initialize(message, retry_after: nil)
-          @retry_after = retry_after
-          super(message)
-        end
-      end
       class PermanentError < Error; end
       class InvalidFeed < PermanentError; end
 
@@ -45,14 +35,18 @@ module Search
         unless response.fetch(:status).between?(200, 299)
           status = response.fetch(:status)
           if status == 429
-            raise RateLimited.new(
+            raise TransientError.new(
               "feed returned HTTP 429",
-              retry_after: retry_after_seconds(response.fetch(:headers)["retry-after"])
+              retry_after: TransientError.retry_after_seconds(response.fetch(:headers)["retry-after"]),
+              status: status
             )
           end
 
-          error_class = status == 408 || status >= 500 ? TransientError : PermanentError
-          raise error_class, "feed returned HTTP #{status}"
+          if status == 408 || status >= 500
+            raise TransientError.new("feed returned HTTP #{status}", status: status)
+          end
+
+          raise PermanentError, "feed returned HTTP #{status}"
         end
 
         entries = parse_entries(response.fetch(:body))
@@ -157,18 +151,6 @@ module Search
           headers["If-Modified-Since"] = last_modified if last_modified.present?
           headers["Accept"] = "application/atom+xml, application/rss+xml, application/xml, text/xml"
         end
-      end
-
-      def retry_after_seconds(value)
-        return if value.blank?
-
-        seconds = Integer(value, exception: false)
-        return seconds if seconds && seconds >= 0
-
-        delay = Time.httpdate(value) - Time.current
-        delay.ceil if delay.positive?
-      rescue ArgumentError
-        nil
       end
 
       def result(response, entries:)

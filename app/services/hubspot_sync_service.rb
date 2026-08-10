@@ -1,18 +1,8 @@
-require "time"
 require "hubspot/codegen/crm/contacts/api_error"
 
 class HubspotSyncService
   MAX_ATTEMPTS = 5
   RETRYABLE_STATUSES = [ 408, 429 ].freeze
-
-  class TransientError < StandardError
-    attr_reader :retry_after
-
-    def initialize(message, retry_after: nil)
-      @retry_after = retry_after
-      super(message)
-    end
-  end
 
   def self.sync_contact_to_hubspot(hubspot_contact)
     new.sync_contact_to_hubspot(hubspot_contact)
@@ -238,20 +228,15 @@ class HubspotSyncService
   end
 
   def transient_error(error)
-    TransientError.new(error.message, retry_after: retry_after_seconds(error.response_headers))
-  end
-
-  def retry_after_seconds(headers)
-    value = headers.to_h.find { |key, _value| key.to_s.casecmp?("retry-after") }&.last
-    return if value.blank?
-
-    seconds = Integer(value, exception: false)
-    return seconds if seconds && seconds >= 0
-
-    delay = Time.httpdate(value.to_s) - Time.current
-    delay.ceil if delay.positive?
-  rescue ArgumentError
-    nil
+    status = Integer(error.code, exception: false)
+    retry_after = error.response_headers.to_h.find do |key, _value|
+      key.to_s.casecmp?("retry-after")
+    end&.last
+    TransientError.new(
+      error.message,
+      retry_after: TransientError.retry_after_seconds(retry_after),
+      status: status
+    )
   end
 
   def build_hubspot_properties(hubspot_contact)

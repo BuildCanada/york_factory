@@ -83,7 +83,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
     assert_raises(Search::Media::FeedFetcher::PermanentError) do
       fetcher(FakeHttp.new(not_found)).call(url: "https://example.com/feed")
     end
-    assert_raises(Search::Media::FeedFetcher::TransientError) do
+    assert_raises(TransientError) do
       fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
     end
   end
@@ -91,7 +91,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
   test "preserves a rate limit retry delay in seconds" do
     throttled = FakeResponse.new(status: 429, headers: { "Retry-After" => "120" }, body: "slow down")
 
-    error = assert_raises(Search::Media::FeedFetcher::RateLimited) do
+    error = assert_raises(TransientError) do
       fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
     end
 
@@ -106,7 +106,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
         body: "slow down"
       )
 
-      error = assert_raises(Search::Media::FeedFetcher::RateLimited) do
+      error = assert_raises(TransientError) do
         fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
       end
 
@@ -115,7 +115,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
   end
 
   test "classifies HTTPX error responses as transient" do
-    error = assert_raises(Search::Media::FeedFetcher::TransientError) do
+    error = assert_raises(TransientError) do
       fetcher(FakeHttp.new(ErrorResponse.new(IOError.new("TLS connection failed")))).call(
         url: "https://example.com/feed"
       )

@@ -1,4 +1,5 @@
 require "test_helper"
+require "hubspot/codegen/crm/contacts/api_error"
 
 class HubspotSyncServiceTest < ActiveSupport::TestCase
   test "sync_contact_to_hubspot never writes the read-only notes_last_updated property" do
@@ -40,7 +41,7 @@ class HubspotSyncServiceTest < ActiveSupport::TestCase
     fake_basic_api.define_singleton_method(:update) { |**| raise api_error }
     stub_hubspot_client(fake_basic_api)
 
-    error = assert_raises(HubspotSyncService::TransientError) do
+    error = assert_raises(TransientError) do
       HubspotSyncService.new.sync_contact_to_hubspot(hubspot_contacts(:one))
     end
 

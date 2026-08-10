@@ -1,6 +1,6 @@
 class HubspotContact < ApplicationRecord
   performs :sync_to_hubspot do
-    rescue_from HubspotSyncService::TransientError do |error|
+    rescue_from TransientError do |error|
       if executions < HubspotSyncService::MAX_ATTEMPTS
         retry_job(wait: error.retry_after || executions**4 + 2, error: error)
       else

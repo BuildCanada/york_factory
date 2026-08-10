@@ -18,6 +18,7 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
       "displayName" => "Build Canada",
       "profileUrl" => "https://x.com/buildcanada",
       "enabled" => true,
+      "adsStatus" => "connected",
       "followersCount" => 16_578,
       "followersLastUpdated" => "2026-08-10T03:53:05Z",
       "updatedAt" => "2026-08-10T16:34:15Z"
@@ -141,6 +142,78 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert snapshot.updated_at > 1.minute.ago
   end
 
+  test "imports ad accounts, campaigns, ads, and every daily analytics payload" do
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")
+
+    described_scraper(fake_client(
+      "/ads/accounts" => { "accounts" => [ ad_account_payload ] }
+    )).sync_ad_account!(account_id: account.id)
+    ad_account = account.ad_accounts.sole
+
+    campaign_result = described_scraper(fake_client(
+      "/ads/campaigns" => ad_campaigns_response
+    )).sync_ad_campaigns_page!(page: 1)
+    ad_result = described_scraper(fake_client(
+      "/ads" => ads_response
+    )).sync_ads_page!(page: 1)
+
+    campaign = account.ad_campaigns.sole
+    ad = account.ads.sole
+    assert_nil campaign_result[:next_page]
+    assert_nil ad_result[:next_page]
+    assert_equal ad_account, campaign.ad_account
+    assert_equal campaign, ad.campaign
+    assert_equal "Website Drive", campaign.name
+    assert_equal({ "headline" => "Build Canada" }, ad.creative_payload)
+    assert_equal({ "platformOnly" => { "value" => 7 } }, ad.source_payload["customData"])
+
+    analytics = { "analytics" => {
+      "summary" => { "spend" => 12.5, "lastSyncedAt" => "2026-08-10T17:00:00Z" },
+      "daily" => [ daily_ad_metric_payload ]
+    } }
+    described_scraper(fake_client(
+      "/ads/timeline" => { "rows" => [ daily_ad_metric_payload ], "backfillPending" => true },
+      "/ads/campaigns/campaign-1/analytics" => analytics,
+      "/ads/zernio-ad-1/analytics" => analytics
+    )).tap do |scraper|
+      scraper.sync_ad_account_analytics!(id: ad_account.id)
+      scraper.sync_ad_campaign_analytics!(id: campaign.id)
+      scraper.sync_ad_analytics!(id: ad.id)
+    end
+
+    [ ad_account.daily_metrics.sole, campaign.daily_metrics.sole, ad.daily_metrics.sole ].each do |metric|
+      assert_equal BigDecimal("12.5"), metric.spend
+      assert_equal 1000, metric.impressions
+      assert_equal BigDecimal("3.4"), metric.conversions
+      assert_equal({ "signup" => 3 }, metric.source_payload["actions"])
+    end
+    assert ad_account.reload.backfill_pending?
+    assert_equal BigDecimal("12.5"), campaign.reload.metrics_payload["spend"]
+    assert_equal Time.zone.parse("2026-08-10T17:00:00Z"), ad.reload.last_synced_at
+  end
+
+  test "does not touch unchanged ad data timestamps" do
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")
+    scraper = described_scraper(fake_client("/ads/accounts" => { "accounts" => [ ad_account_payload ] }))
+    scraper.sync_ad_account!(account_id: account.id)
+    ad_account = account.ad_accounts.sole
+    analytics = { "rows" => [ daily_ad_metric_payload ] }
+    described_scraper(fake_client("/ads/timeline" => analytics)).sync_ad_account_analytics!(id: ad_account.id)
+    metric = ad_account.daily_metrics.sole
+    stable_time = 1.day.ago
+    ad_account.update_column(:updated_at, stable_time)
+    metric.update_column(:updated_at, stable_time)
+
+    Metrics::ZernioScraper.new(
+      client: fake_client("/ads/timeline" => analytics), now: @now + 1.hour
+    ).sync_ad_account_analytics!(id: ad_account.id)
+
+    assert_equal stable_time.to_i, ad_account.reload.updated_at.to_i
+    assert_equal stable_time.to_i, metric.reload.updated_at.to_i
+  end
+
   private
 
   def accounts_response
@@ -151,6 +224,67 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     {
       "posts" => [ @post_payload ],
       "pagination" => { "page" => 1, "limit" => 100, "total" => 101, "pages" => 2 }
+    }
+  end
+
+  def ad_account_payload
+    {
+      "id" => "ad-account-1",
+      "platform" => "google",
+      "name" => "Build Canada Ads",
+      "currency" => "CAD",
+      "timezoneName" => "America/Toronto",
+      "selectable" => true,
+      "customProviderField" => "retained"
+    }
+  end
+
+  def ad_campaigns_response
+    {
+      "campaigns" => [ {
+        "accountId" => "account-twitter-build-canada",
+        "platform" => "google",
+        "platformCampaignId" => "campaign-1",
+        "platformAdAccountId" => "ad-account-1",
+        "campaignName" => "Website Drive",
+        "status" => "active",
+        "currency" => "CAD",
+        "adCount" => 1,
+        "metrics" => { "spend" => 12.5 },
+        "providerCampaignField" => { "retained" => true }
+      } ],
+      "pagination" => { "page" => 1, "total" => 1, "pages" => 1 }
+    }
+  end
+
+  def ads_response
+    {
+      "ads" => [ {
+        "_id" => "zernio-ad-1",
+        "accountId" => "account-twitter-build-canada",
+        "platform" => "google",
+        "platformAdId" => "platform-ad-1",
+        "platformAdAccountId" => "ad-account-1",
+        "platformCampaignId" => "campaign-1",
+        "name" => "Real Photo Group",
+        "status" => "active",
+        "creative" => { "headline" => "Build Canada" },
+        "customData" => { "platformOnly" => { "value" => 7 } }
+      } ],
+      "pagination" => { "page" => 1, "total" => 1, "pages" => 1 }
+    }
+  end
+
+  def daily_ad_metric_payload
+    {
+      "date" => "2026-08-09",
+      "spend" => 12.5,
+      "impressions" => 1000,
+      "clicks" => 50,
+      "conversions" => 3.4,
+      "ctr" => 5.0,
+      "actions" => { "signup" => 3 },
+      "videoMetrics" => { "views25Percent" => 100 }
     }
   end
 

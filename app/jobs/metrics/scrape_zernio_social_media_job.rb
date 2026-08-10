@@ -24,9 +24,47 @@ class Metrics::ScrapeZernioSocialMediaJob < ApplicationJob
         step.advance!
       end
     end
+
+    step :sync_ad_accounts, start: 0 do |step|
+      Metrics::SocialMediaAccount.where(ads_status: "connected").where(id: (step.cursor + 1)..).find_each do |account|
+        @scraper.sync_ad_account!(account_id: account.id)
+        step.advance! from: account.id
+      end
+    end
+
+    step :sync_ad_campaigns, start: 1 do |step|
+      sync_pages(step, :sync_ad_campaigns_page!, "campaigns")
+    end
+
+    step :sync_ads, start: 1 do |step|
+      sync_pages(step, :sync_ads_page!, "ads")
+    end
+
+    sync_records(:sync_ad_account_analytics, Metrics::SocialMediaAdAccount, :sync_ad_account_analytics!)
+    sync_records(:sync_ad_campaign_analytics, Metrics::SocialMediaAdCampaign, :sync_ad_campaign_analytics!)
+    sync_records(:sync_ad_analytics, Metrics::SocialMediaAd, :sync_ad_analytics!)
   end
 
   private
+
+  def sync_pages(step, method, label)
+    loop do
+      result = @scraper.public_send(method, page: step.cursor)
+      Rails.logger.info("[Zernio] processed #{label} page #{step.cursor} (#{result[:processed]} records)")
+      break unless result[:next_page]
+
+      step.advance!
+    end
+  end
+
+  def sync_records(name, model, method)
+    step name, start: 0 do |step|
+      model.where(id: (step.cursor + 1)..).find_each do |record|
+        @scraper.public_send(method, id: record.id)
+        step.advance! from: record.id
+      end
+    end
+  end
 
   def scraper
     Metrics::ZernioScraper.new(

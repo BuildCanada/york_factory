@@ -18,6 +18,12 @@ class Metrics::ScrapeZernioSocialMediaJobTest < ActiveJob::TestCase
       pages << page
       { processed: 1, next_page: page < 10 ? page + 1 : nil }
     end
+    scraper.define_singleton_method(:sync_ad_campaigns_page!) do |page:|
+      { processed: 0, next_page: nil }
+    end
+    scraper.define_singleton_method(:sync_ads_page!) do |page:|
+      { processed: 0, next_page: nil }
+    end
 
     TestJob.test_scraper = scraper
     TestJob.perform_now

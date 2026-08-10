@@ -11,6 +11,21 @@ class Metrics::SocialMediaAccount < ApplicationRecord
     foreign_key: :social_media_account_id,
     inverse_of: :account,
     dependent: :destroy
+  has_many :ad_accounts,
+    class_name: "Metrics::SocialMediaAdAccount",
+    foreign_key: :social_media_account_id,
+    inverse_of: :account,
+    dependent: :destroy
+  has_many :ad_campaigns,
+    class_name: "Metrics::SocialMediaAdCampaign",
+    foreign_key: :social_media_account_id,
+    inverse_of: :account,
+    dependent: :destroy
+  has_many :ads,
+    class_name: "Metrics::SocialMediaAd",
+    foreign_key: :social_media_account_id,
+    inverse_of: :account,
+    dependent: :destroy
 
   validates :zernio_account_id, :zernio_profile_id, :profile_name, :platform,
     :account_key, :username, presence: true

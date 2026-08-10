@@ -3,13 +3,21 @@ require "test_helper"
 class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
   include ActiveJob::TestHelper
 
-  Fetch = Struct.new(:metadata, :started, :succeeded, keyword_init: true) do
+  Fetch = Struct.new(:metadata, :started, :succeeded, :failed, keyword_init: true) do
     def start!(at:)
       self.started = at
     end
 
     def succeed!(**attributes)
       self.succeeded = attributes
+    end
+
+    def fail!(**attributes)
+      self.failed = attributes
+    end
+
+    def persisted?
+      true
     end
   end
 
@@ -25,6 +33,10 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
   ) do
     def update!(**attributes)
       attributes.each { |name, value| public_send("#{name}=", value) }
+    end
+
+    def persisted?
+      true
     end
   end
 
@@ -42,6 +54,12 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
       raise Search::Media::FeedFetcher::InvalidFeed, "HTML directory" if requests.one?
 
       result
+    end
+  end
+
+  ErrorFetcher = Struct.new(:error) do
+    def call(**)
+      raise error
     end
   end
 
@@ -111,5 +129,56 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
     assert_equal 2, fetcher.requests.size
     assert_equal feed.fallback_url, fetcher.requests.last.fetch(:url)
     assert_equal "fallback-checksum", fetch.succeeded.fetch(:response_checksum)
+  end
+
+  test "retries a rate limit using the publisher delay without raising" do
+    fetch = Fetch.new(metadata: {})
+    feed = Feed.new(
+      id: 11,
+      enabled?: true,
+      strategy: "rss",
+      url: "https://example.com/feed",
+      language: "en",
+      allow_http?: false,
+      fetches: Fetches.new(fetch)
+    )
+    error = Search::Media::FeedFetcher::RateLimited.new(
+      "feed returned HTTP 429",
+      retry_after: 120
+    )
+    job = Search::Media::FetchFeedJob.new(feed.id)
+    job.executions = 1
+    job.define_singleton_method(:feed_for) { |_id| feed }
+    job.define_singleton_method(:feed_fetcher) { ErrorFetcher.new(error) }
+
+    assert_enqueued_with(job: Search::Media::FetchFeedJob, args: [ feed.id ], at: 120.seconds.from_now) do
+      job.perform(feed.id)
+    end
+
+    assert_equal "Search::Media::FeedFetcher::RateLimited: feed returned HTTP 429", fetch.failed.fetch(:error)
+  end
+
+  test "stops retrying a rate limit after the final attempt without raising" do
+    fetch = Fetch.new(metadata: {})
+    feed = Feed.new(
+      id: 12,
+      enabled?: true,
+      strategy: "rss",
+      url: "https://example.com/feed",
+      language: "en",
+      allow_http?: false,
+      fetches: Fetches.new(fetch)
+    )
+    error = Search::Media::FeedFetcher::RateLimited.new("feed returned HTTP 429", retry_after: 120)
+    job = Search::Media::FetchFeedJob.new(feed.id)
+    job.executions = Search::Media::FetchFeedJob::MAX_RATE_LIMIT_ATTEMPTS
+    job.define_singleton_method(:feed_for) { |_id| feed }
+    job.define_singleton_method(:feed_fetcher) { ErrorFetcher.new(error) }
+
+    assert_no_enqueued_jobs only: Search::Media::FetchFeedJob do
+      job.perform(feed.id)
+    end
+
+    assert fetch.failed
   end
 end

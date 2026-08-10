@@ -38,6 +38,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
     assert_equal "A story", result.entries.first.fetch("title")
     assert_equal '"v2"', result.etag
     assert_equal '"v1"', http.request.dig(:headers, "If-None-Match")
+    assert_equal Search::Media::FeedFetcher::USER_AGENT, http.request.dig(:headers, "User-Agent")
   end
 
   test "returns no entries for a not modified feed" do
@@ -84,6 +85,32 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
     end
     assert_raises(Search::Media::FeedFetcher::TransientError) do
       fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
+    end
+  end
+
+  test "preserves a rate limit retry delay in seconds" do
+    throttled = FakeResponse.new(status: 429, headers: { "Retry-After" => "120" }, body: "slow down")
+
+    error = assert_raises(Search::Media::FeedFetcher::RateLimited) do
+      fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
+    end
+
+    assert_equal 120, error.retry_after
+  end
+
+  test "parses a rate limit retry HTTP date" do
+    travel_to Time.utc(2026, 8, 10, 12) do
+      throttled = FakeResponse.new(
+        status: 429,
+        headers: { "retry-after" => 90.seconds.from_now.httpdate },
+        body: "slow down"
+      )
+
+      error = assert_raises(Search::Media::FeedFetcher::RateLimited) do
+        fetcher(FakeHttp.new(throttled)).call(url: "https://example.com/feed")
+      end
+
+      assert_equal 90, error.retry_after
     end
   end
 

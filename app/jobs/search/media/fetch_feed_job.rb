@@ -1,6 +1,8 @@
 module Search
   module Media
     class FetchFeedJob < ApplicationJob
+      MAX_RATE_LIMIT_ATTEMPTS = 5
+
       retry_on FeedFetcher::TransientError, wait: :polynomially_longer, attempts: 5
       discard_on FeedFetcher::PermanentError
 
@@ -33,6 +35,9 @@ module Search
           metadata: fetch.metadata.to_h.merge("resolved_feed_url" => result.url),
           at: finished_at
         )
+      rescue FeedFetcher::RateLimited => error
+        mark_failed(feed, fetch, error)
+        retry_job(wait: rate_limit_retry_wait(error), error: error) if executions < MAX_RATE_LIMIT_ATTEMPTS
       rescue => error
         mark_failed(feed, fetch, error)
         raise
@@ -76,6 +81,10 @@ module Search
           metadata: fetch.metadata.to_h.merge("resolved_feed_url" => result.url),
           at: finished_at
         )
+      end
+
+      def rate_limit_retry_wait(error)
+        error.retry_after || executions**4 + 2
       end
 
       def mark_failed(feed, fetch, error)

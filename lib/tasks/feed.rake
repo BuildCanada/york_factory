@@ -46,4 +46,9 @@ namespace :feed do
     Rake::Task["feed:backfill_substack"].invoke
     puts "All backfills complete. #{FeedEntry.count} total feed entries."
   end
+
+  desc "Import connected accounts and post analytics from Zernio"
+  task scrape_zernio: :environment do
+    Warehouse::ScrapeZernioSocialMediaJob.perform_now
+  end
 end

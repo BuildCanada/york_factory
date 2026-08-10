@@ -1,5 +1,9 @@
 module Metrics
   class TwitterStat < ApplicationRecord
+    belongs_to :social_media_account,
+      class_name: "Warehouse::SocialMediaAccount",
+      optional: true
+
     ACCOUNTS = %w[build_canada canada_spends].freeze
     METRIC_COLUMNS = %w[
       impressions likes engagements bookmarks shares new_follows unfollows

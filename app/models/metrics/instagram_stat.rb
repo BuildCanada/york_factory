@@ -1,5 +1,9 @@
 module Metrics
   class InstagramStat < ApplicationRecord
+    belongs_to :social_media_account,
+      class_name: "Warehouse::SocialMediaAccount",
+      optional: true
+
     ACCOUNTS = %w[build_canada].freeze
 
     METRIC_COLUMNS = %w[views interactions new_followers].freeze

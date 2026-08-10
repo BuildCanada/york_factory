@@ -4,6 +4,13 @@ class SocialPost < ApplicationRecord
   has_one_attached :image
   has_one_attached :avatar
 
+  has_many :warehouse_social_media_posts,
+    class_name: "Warehouse::SocialMediaPost",
+    dependent: :nullify
+  has_many :analytics_snapshots,
+    through: :warehouse_social_media_posts,
+    source: :metric_snapshots
+
   validates :external_id, presence: true, uniqueness: { scope: :type }
   validates :url, presence: true
   validates :account_handle, presence: true

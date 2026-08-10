@@ -1,5 +1,9 @@
 module Metrics
   class LinkedinStat < ApplicationRecord
+    belongs_to :social_media_account,
+      class_name: "Warehouse::SocialMediaAccount",
+      optional: true
+
     METRIC_COLUMNS = %w[
       impressions_organic impressions_sponsored impressions_total
       unique_impressions_organic

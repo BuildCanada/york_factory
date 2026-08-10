@@ -21,6 +21,8 @@ end
 PostHog.init do |config|
   config.api_key = token
   config.host    = host
+  # Keep captures available for assertions without ever starting a sender in tests.
+  config.test_mode = Rails.env.test?
 end
 
 PostHog::Rails.configure do |config|

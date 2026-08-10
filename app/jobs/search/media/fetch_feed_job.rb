@@ -3,6 +3,10 @@ module Search
     class FetchFeedJob < ApplicationJob
       MAX_RATE_LIMIT_ATTEMPTS = 5
 
+      limits_concurrency(
+        key: ->(feed_id) { Warehouse::MediaFeed.find_by(id: feed_id)&.publisher_domain },
+        duration: 5.minutes
+      )
       retry_on FeedFetcher::TransientError, wait: :polynomially_longer, attempts: 5
       discard_on FeedFetcher::PermanentError
 

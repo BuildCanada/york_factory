@@ -63,6 +63,18 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
     end
   end
 
+  test "limits concurrent fetches by publisher across feeds" do
+    first = create_feed(name: "Publisher feed one", url: "https://news.example.com/one", domain: "example.com")
+    second = create_feed(name: "Publisher feed two", url: "https://feeds.example.com/two", domain: "example.com")
+    other = create_feed(name: "Other publisher", url: "https://other.example/feed", domain: "other.example")
+
+    first_key = Search::Media::FetchFeedJob.new(first.id).concurrency_key
+    assert_equal first_key, Search::Media::FetchFeedJob.new(second.id).concurrency_key
+    assert_not_equal first_key, Search::Media::FetchFeedJob.new(other.id).concurrency_key
+    assert_equal 1, Search::Media::FetchFeedJob.concurrency_limit
+    assert_equal 5.minutes, Search::Media::FetchFeedJob.concurrency_duration
+  end
+
   test "records feed success and enqueues each article independently" do
     fetch = Fetch.new(metadata: {})
     feed = Feed.new(
@@ -180,5 +192,20 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
     end
 
     assert fetch.failed
+  end
+
+  private
+
+  def create_feed(name:, url:, domain:)
+    Warehouse::MediaFeed.create!(
+      name: name,
+      strategy: "rss",
+      url: url,
+      publisher_name: name,
+      publisher_domain: domain,
+      language: "en",
+      cadence_seconds: 300,
+      next_fetch_at: 1.minute.ago
+    )
   end
 end

@@ -8,7 +8,7 @@ module Search
 
       MAX_RESPONSE_BYTES = 5.megabytes
       MAX_REDIRECTS = 3
-      USER_AGENT = "YorkFactory/1.0 (+https://buildcanada.com)"
+      USER_AGENT = "BuildCanadaBot"
       REDIRECT_STATUSES = [ 301, 302, 303, 307, 308 ].freeze
       DEFAULT_HTTP_OPTIONS = {
         ssl: { alpn_protocols: [ "http/1.1" ] },

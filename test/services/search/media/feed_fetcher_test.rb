@@ -38,7 +38,7 @@ class Search::Media::FeedFetcherTest < ActiveSupport::TestCase
     assert_equal "A story", result.entries.first.fetch("title")
     assert_equal '"v2"', result.etag
     assert_equal '"v1"', http.request.dig(:headers, "If-None-Match")
-    assert_equal Search::Media::FeedFetcher::USER_AGENT, http.request.dig(:headers, "User-Agent")
+    assert_equal "BuildCanadaBot", http.request.dig(:headers, "User-Agent")
   end
 
   test "returns no entries for a not modified feed" do

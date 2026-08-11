@@ -137,6 +137,30 @@ class Api::V1::ElectionSurveyResponsesControllerTest < ActionDispatch::Integrati
     assert_response :not_found
   end
 
+  test "the response never echoes back a name we already had on file" do
+    submit(email: "known@example.com", name: "Nell Known", survey_slug: SURVEY, answers: @answers)
+    assert_equal "Nell", Subscriber.find_by(email: "known@example.com").first_name
+
+    # Someone who doesn't own the address submits it without a name. The reply
+    # must not tell them whose address it is.
+    submit(email: "known@example.com", survey_slug: SURVEY, answers: @answers)
+
+    assert_response :ok
+    assert_nil JSON.parse(response.body)["name"]
+  end
+
+  test "the tallied question list is capped" do
+    submit(email: "capped@example.com", name: "Cap Ped", survey_slug: SURVEY, answers: @answers)
+
+    over_cap = Array.new(Api::V1::ElectionSurveyResponsesController::MAX_TALLY_QUESTIONS + 20) { |i| "q#{i}" }
+    get api_v1_election_survey_responses_url("toronto-2026"),
+      params: { survey_slug: SURVEY, question_ids: over_cap.join(",") }
+
+    assert_response :success
+    tallies = JSON.parse(response.body)["data"]["tallies"]
+    assert_equal Api::V1::ElectionSurveyResponsesController::MAX_TALLY_QUESTIONS, tallies.size
+  end
+
   test "index tallies the requested questions and can narrow to a ward" do
     submit(email: "a@example.com", name: "A One", survey_slug: SURVEY,
            region: "ward-10", answers: @answers)

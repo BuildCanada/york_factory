@@ -1,13 +1,7 @@
 class Warehouse::FetchSpendingSourcesJob < ApplicationJob
   queue_as :default
 
-  INTERVALS = {
-    "daily" => 1.day,
-    "weekly" => 1.week,
-    "monthly" => 1.month,
-    "quarterly" => 3.months,
-    "annual" => 1.year
-  }.freeze
+  INTERVALS = Warehouse::Source::SCRAPE_INTERVALS
   GRACE = 12.hours
 
   def perform

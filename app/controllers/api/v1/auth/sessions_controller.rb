@@ -11,6 +11,17 @@ module Api
 
           user = User.from_google(user_info)
 
+          # PostHog: identify and capture Google auth event
+          PostHog.identify(
+            distinct_id: user.posthog_distinct_id,
+            properties: user.posthog_properties
+          )
+          PostHog.capture(
+            distinct_id: user.posthog_distinct_id,
+            event: "google_auth_token_exchanged",
+            properties: { login_method: "google" }
+          )
+
           token = Warden::JWTAuth::UserEncoder.new.call(user, :user, nil).first
           render json: {
             token: token,

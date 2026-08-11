@@ -1,0 +1,129 @@
+<div class="page-header">
+  <h1>Scraping</h1>
+</div>
+
+<div class="card" aria-label="Scrape batch status" style="margin-bottom: 2rem;">
+  <div class="label">Scrape Batch</div>
+  <div class="value" style="color: var(--<%= @scrape_batch_state == 'running' ? 'accent' : @scrape_batch_state == 'queued' ? 'yellow' : 'green' %>);"><%= @scrape_batch_state.titleize %></div>
+  <div class="text-muted">
+    <% if @scrape_states.any? %>
+      <%= pluralize(@scrape_states.size, "source") %> active
+    <% else %>
+      No scrapes queued or running
+    <% end %>
+  </div>
+</div>
+
+<h2>Data Sources</h2>
+<% if @sources.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>Frequency</th>
+        <th>Last Run</th>
+        <th>Next Due</th>
+        <th>Run Status</th>
+        <th>Latest Ingestion</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sources.each do |entry| %>
+        <% source = entry[:source] %>
+        <tr>
+          <td>
+            <strong><%= source.name %></strong>
+            <div class="mono text-muted"><%= truncate(source.url, length: 60) %></div>
+          </td>
+          <td><%= source.fetch_frequency.presence&.titleize || "Manual" %></td>
+          <td>
+            <% if source.last_fetched_at %>
+              <time datetime="<%= source.last_fetched_at.iso8601 %>"><%= source.last_fetched_at.strftime("%Y-%m-%d %H:%M %Z") %></time>
+              <div class="text-muted"><%= time_ago_in_words(source.last_fetched_at) %> ago</div>
+            <% else %>
+              <span class="text-muted">Never</span>
+            <% end %>
+          </td>
+          <td>
+            <% if entry[:next_scrape_at] %>
+              <time datetime="<%= entry[:next_scrape_at].iso8601 %>"><%= entry[:next_scrape_at].strftime("%Y-%m-%d %H:%M %Z") %></time>
+              <div class="text-muted">in <%= time_ago_in_words(entry[:next_scrape_at]) %></div>
+              <div class="text-muted"><%= entry[:scrape_schedule] %></div>
+            <% else %>
+              <span class="text-muted">Manual</span>
+            <% end %>
+          </td>
+          <td>
+            <% if entry[:scrape_state] %>
+              <span class="badge badge-<%= entry[:scrape_state] == 'running' ? 'blue' : 'yellow' %>"><%= entry[:scrape_state].titleize %></span>
+            <% else %>
+              <span class="text-muted">Idle</span>
+            <% end %>
+          </td>
+          <td>
+            <% if entry[:latest_ingestion] %>
+              <span class="badge badge-<%= entry[:latest_ingestion][:status] == 'complete' ? 'green' : entry[:latest_ingestion][:status] == 'failed' ? 'red' : 'yellow' %>">
+                <%= entry[:latest_ingestion][:status] %>
+              </span>
+            <% else %>
+              <span class="text-muted">None</span>
+            <% end %>
+          </td>
+          <td class="text-right">
+            <% if entry[:scrape_state] %>
+              <button type="button" class="btn btn-sm" disabled>Run now</button>
+            <% else %>
+              <%= button_to "Run now", admin_run_scraping_source_path(source), method: :post, class: "btn btn-sm", form: { style: "margin: 0;" } %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No sources configured.</div>
+<% end %>
+
+<h2>Record Counts</h2>
+<div class="grid">
+  <% @counts.each do |label, count| %>
+    <div class="card">
+      <div class="label"><%= label.to_s.titleize %></div>
+      <div class="value"><%= number_with_delimiter(count) %></div>
+    </div>
+  <% end %>
+</div>
+
+<% if @low_confidence_count > 0 %>
+  <h2>Attention Required</h2>
+  <div class="card" style="border-color: var(--yellow); margin-bottom: 2rem;">
+    <div class="label">Low Confidence Matches</div>
+    <div class="value" style="color: var(--yellow);"><%= @low_confidence_count %></div>
+    <a href="/admin/lineage_review" style="font-size: 0.85rem;">Review &rarr;</a>
+  </div>
+<% end %>
+
+<% if @anomalies.any? %>
+  <h2>Recent Anomalies</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Organization</th>
+        <th>Fiscal Year</th>
+        <th class="text-right">Variance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @anomalies.each do |a| %>
+        <tr>
+          <td><%= a[:organization] %></td>
+          <td class="mono"><%= a[:fiscal_year] %></td>
+          <td class="text-right">
+            <span class="badge badge-red"><%= a[:variance_pct] %>%</span>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

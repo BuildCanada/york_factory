@@ -22,11 +22,11 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
     "ped_new_brunswick" => "ped",
     "ped_yukon" => "ped",
     "ped_nwt" => "ped",
-    "ward_toronto" => "med",
-    "sbw_tdsb" => "sbed",
-    "sbw_tcdsb" => "sbed",
-    "sbw_viamonde" => "sbed",
-    "sbw_monavenir" => "sbed"
+    "ward_toronto" => "ward",
+    "sbw_tdsb" => "school_board_ward",
+    "sbw_tcdsb" => "school_board_ward",
+    "sbw_viamonde" => "school_board_ward",
+    "sbw_monavenir" => "school_board_ward"
   }.freeze
 
   # StatsCan standard field maps (used when no CUSTOM_FIELD_MAP entry exists)
@@ -81,7 +81,14 @@ class Warehouse::RawIngestion::BoundaryLoader < ActiveRecord::AssociatedObject
                       province_code: "60", source_srid: 3578 },
     "ped_nwt" => { uid: "ED", name_en: "ED", name_fr: nil,
                     province_code: "61", source_srid: 3580 },
-    "ward_toronto" => { uid: "AREA_S_CD", name_en: "AREA_NAME", name_fr: nil, province_code: "35" },
+    # AREA_S_CD is only the zero-padded ward number, "01"–"25", and the unique
+    # index is (boundary_type, geo_uid, census_year) — so the next city's ward
+    # layer would collide on "01" and upsert over Toronto's ward 1. Prefixing
+    # with the municipality's CSD uid keeps ward uids unique per city and
+    # readable ("3520005-19"); Warehouse::BoundaryLookup reads the ward number
+    # back off the last segment.
+    "ward_toronto" => { uid: "AREA_S_CD", name_en: "AREA_NAME", name_fr: nil, province_code: "35",
+                         uid_prefix: "3520005-" },
     "sbw_tdsb" => { uid: "AREA_NAME", name_en: "AREA_NAME", name_fr: nil, province_code: "35",
                      uid_prefix: "TDSB-", name_prefix: "TDSB Ward " },
     "sbw_tcdsb" => { uid: "AREA_NAME", name_en: "AREA_NAME", name_fr: nil, province_code: "35",

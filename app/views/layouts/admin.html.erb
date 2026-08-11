@@ -75,6 +75,7 @@
     .btn-primary:hover { opacity: 0.9; }
     .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
     .btn-danger:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
     .btn-group { display: flex; gap: 0.5rem; align-items: center; }
 
@@ -168,7 +169,7 @@
   <div class="admin-layout">
     <nav class="sidebar" data-controller="sidebar">
       <div class="sidebar-brand">
-        <a href="/admin" style="color: inherit; text-decoration: none;">York Factory</a>
+        <a href="<%= admin_root_path %>" style="color: inherit; text-decoration: none;">York Factory</a>
       </div>
 
       <% if current_user %>
@@ -176,8 +177,9 @@
           Pipeline <span class="chevron open">&#9654;</span>
         </div>
         <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="pipeline">
-          <li><a href="/admin" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'index' %>">Dashboard</a></li>
+          <li><a href="<%= admin_root_path %>" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'scraping' %>">Scraping</a></li>
           <li><a href="/admin/ingestions" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'ingestions' %>">Ingestions</a></li>
+          <li><a href="<%= admin_records_path %>" class="<%= 'active' if controller_name == 'records' %>">Records</a></li>
           <li><a href="/admin/lineage_review" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'lineage_review' %>">Lineage Review</a></li>
           <li><a href="<%= admin_search_path %>" class="<%= 'active' if controller_path == 'admin/search' %>">Search</a></li>
           <li><a href="<%= admin_media_feeds_path %>" class="<%= 'active' if controller_path == 'admin/media_feeds' %>">Media Feeds</a></li>
@@ -257,6 +259,7 @@
         </div>
         <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="settings">
           <li><a href="/admin/users" class="<%= 'active' if controller_name == 'users' %>">Users</a></li>
+          <li><a href="<%= profile_api_keys_path %>">My API Keys</a></li>
         </ul>
 
         <div class="sidebar-bottom">

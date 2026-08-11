@@ -12,6 +12,18 @@ module Users
       if user&.valid_password?(params.dig(:user, :password) || params[:password])
         reset_session
         sign_in(:user, user)
+
+        # PostHog: identify user and capture login event
+        PostHog.identify(
+          distinct_id: user.posthog_distinct_id,
+          properties: user.posthog_properties
+        )
+        PostHog.capture(
+          distinct_id: user.posthog_distinct_id,
+          event: "user_signed_in",
+          properties: { login_method: "email" }
+        )
+
         redirect_to after_sign_in_path, notice: "Signed in."
       else
         flash.now[:alert] = "Invalid email or password."

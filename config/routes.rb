@@ -93,6 +93,7 @@ Rails.application.routes.draw do
         get "crosswalk", to: "crosswalk#show"
         get "boundaries", to: "boundaries#index"
         get "addresses", to: "addresses#index"
+        get "ward_lookup", to: "ward_lookup#show"
       end
 
       namespace :trade_barriers do
@@ -172,9 +173,12 @@ Rails.application.routes.draw do
 
     full = %i[index show new create edit update destroy]
 
-    get "/", to: "dashboard#index", as: :root
+    get "/", to: "dashboard#index"
+    get "scraping", to: "dashboard#scraping", as: :root
+    post "scraping/sources/:id/run", to: "dashboard#run_scrape", as: :run_scraping_source
 
     get "ingestions", to: "dashboard#ingestions"
+    get "records", to: "records#index", as: :records
     get "lineage_review", to: "dashboard#lineage_review"
     get "search", to: "search#index", as: :search
     post "search", to: "search#execute"
@@ -275,4 +279,7 @@ Rails.application.routes.draw do
   # Member profile
   get "profile", to: "profile#show", as: :profile
   patch "profile", to: "profile#update"
+  get "profile/api_keys", to: "api_keys#index", as: :profile_api_keys
+  post "profile/api_keys", to: "api_keys#create"
+  delete "profile/api_keys/:id", to: "api_keys#destroy", as: :profile_api_key
 end

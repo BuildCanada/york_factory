@@ -22,6 +22,13 @@ module Api
       # script can't stuff the sample.
       rate_limit to: 20, within: 1.hour, only: :create
 
+      # Each requested question costs one grouped count query, and the tally
+      # endpoint is a public unauthenticated read, so the list is capped rather
+      # than trusted: an arbitrarily long one would hold a connection across
+      # arbitrarily many sequential queries. Well above any survey we'd
+      # actually publish, so a real client never meets this.
+      MAX_TALLY_QUESTIONS = 50
+
       # Answer tallies for publishing results: {question_id => {answer => count}}.
       # Optionally narrowed to one ward via ?region=ward-12, which reads the
       # respondent's own answer, not the derived column, since that is the one
@@ -31,6 +38,7 @@ module Api
         scope = scope.where(region: params[:region]) if params[:region].present?
 
         question_ids = Array(params[:question_ids].presence&.split(","))
+          .map(&:strip).compact_blank.uniq.take(MAX_TALLY_QUESTIONS)
         tallies = question_ids.index_with { |id| scope.tally_answers(id) }
 
         render json: { data: { total: scope.count, tallies: tallies } }
@@ -66,7 +74,7 @@ module Api
             region: response_record.region,
             derived_region: response_record.derived_region,
             submitted_at: response_record.submitted_at,
-            name: display_name(subscriber)
+            name: submitted_display_name
           }, status: newly_answered ? :created : :ok
         else
           render json: { errors: response_record.errors.full_messages }, status: :unprocessable_entity
@@ -85,6 +93,18 @@ module Api
 
       def survey_slug
         params[:survey_slug].to_s.strip.presence || "default"
+      end
+
+      # The name echoed back for the confirmation greeting is the one submitted
+      # with *this* request, never SubscriberUpsertable#display_name.
+      # find_or_build_subscriber deliberately keeps a subscriber's stored name
+      # over a blank form field, so serializing the subscriber here would
+      # answer "do you know this address, and under what name?" for anyone who
+      # posts an email they don't own — and this form asks for nothing but an
+      # email, which makes that a very cheap lookup. Nil when the form didn't
+      # collect a name, which the tracker already handles.
+      def submitted_display_name
+        split_name(params[:name]).compact_blank.join(" ").presence
       end
 
       # Answers arrive as a free-form bag keyed by the question ids the tracker
@@ -119,14 +139,12 @@ module Api
       # Best-guess ward from the postal code, stored alongside what the
       # respondent picked so the two can be compared.
       #
-      # Warehouse::BoundaryLookup lives on the region-boundaries branch and is
-      # not merged yet. Until it is, this returns nil and `derived_region`
-      # stays null — the response is still recorded with the self-reported
-      # ward. Once that branch lands this starts populating with no change
-      # here, and the null rows can be backfilled from `postal_code`.
+      # A miss is never fatal: no postal code, an unknown one, or no ward layer
+      # loaded for the city all leave `derived_region` null and the response is
+      # still recorded with the self-reported ward. Null rows stay backfillable
+      # from `postal_code` once a city's wards land.
       def derive_region(postal_code)
         return nil if postal_code.blank?
-        return nil unless defined?(::Warehouse::BoundaryLookup)
 
         result = ::Warehouse::BoundaryLookup.new.check(postal_code)
         return nil unless result.found?

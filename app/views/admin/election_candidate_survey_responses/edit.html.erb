@@ -68,18 +68,23 @@
 
         <% options = question[:options] %>
         <% if options.present? %>
-          <%# A free-text row alongside the options: staff transcribe what the %>
-          <%# candidate actually said, which is not always one of the choices. %>
+          <% stored = @response.answers[qid] %>
+          <% choices = options.map { |o| [ [ o["label"], o["detail"] ].compact.join(" — "), o["value"] ] } %>
+          <%# Staff transcribe what the candidate actually said, which is not
+              always one of the offered choices. A stored answer that isn't among
+              them is added to the list as its own selected choice, so saving the
+              form round-trips it instead of posting a blank that would delete an
+              attributed statement. Clearing it is still possible — and still
+              deliberate — by picking "no response". %>
+          <% custom = stored.present? && options.none? { |o| o["value"] == stored } %>
+          <% choices += [ [ "#{stored} (as transcribed)", stored ] ] if custom %>
           <%= select_tag "answers[#{qid}]",
-                options_for_select(
-                  options.map { |o| [ [ o["label"], o["detail"] ].compact.join(" — "), o["value"] ] },
-                  @response.answers[qid]
-                ),
+                options_for_select(choices, stored),
                 include_blank: "— no response —", class: "form-control" %>
-          <% unless options.any? { |o| o["value"] == @response.answers[qid] } || @response.answers[qid].blank? %>
+          <% if custom %>
             <div class="text-muted" style="font-size:0.8rem;">
-              Stored answer is not one of the options: <strong><%= @response.answers[qid] %></strong>.
-              Leaving the select blank keeps it.
+              This answer was transcribed rather than picked from the options. It stays
+              as it is unless you choose another option or “no response”.
             </div>
           <% end %>
         <% elsif question[:type] == "textarea" %>

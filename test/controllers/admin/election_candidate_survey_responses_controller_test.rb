@@ -145,4 +145,69 @@ class Admin::ElectionCandidateSurveyResponsesControllerTest < ActionDispatch::In
     get edit_admin_election_candidate_survey_response_path(@candidate)
     assert_response :redirect
   end
+
+  test "a stored custom answer survives an unrelated edit" do
+    # A transcribed answer outside the offered options is a published statement.
+    # Editing a different question must not delete it.
+    patch admin_election_candidate_survey_response_path(@candidate), params: {
+      warehouse_election_candidate_survey_response: { status: "published", source: "phone" },
+      answers: { housing: "supports with caveats" }
+    }
+    assert_equal "supports with caveats", response_record.answers["housing"]
+
+    # Re-open the form and save it back the way a staff member would: the browser
+    # posts whatever the rendered form contains.
+    get edit_admin_election_candidate_survey_response_path(@candidate)
+    assert_response :success
+    posted = form_answers_from_response
+
+    patch admin_election_candidate_survey_response_path(@candidate), params: {
+      warehouse_election_candidate_survey_response: { status: "published", source: "phone" },
+      answers: posted.merge("transit" => "Added later.")
+    }
+
+    assert_equal "supports with caveats", response_record.answers["housing"],
+      "the transcribed answer was lost by an ordinary re-save"
+  end
+
+
+  test "a transcribed answer can still be cleared deliberately" do
+    patch admin_election_candidate_survey_response_path(@candidate), params: {
+      warehouse_election_candidate_survey_response: { status: "draft", source: "phone" },
+      answers: { housing: "supports with caveats" }
+    }
+    assert_equal "supports with caveats", response_record.answers["housing"]
+
+    # Picking "— no response —" posts a blank, which must still clear it: the
+    # round-trip fix must not make a transcribed answer permanent.
+    patch admin_election_candidate_survey_response_path(@candidate), params: {
+      warehouse_election_candidate_survey_response: { status: "draft", source: "phone" },
+      answers: { housing: "" }
+    }
+
+    assert_nil response_record.answers["housing"]
+  end
+
+  test "the form offers a transcribed answer as its own selected choice" do
+    patch admin_election_candidate_survey_response_path(@candidate), params: {
+      warehouse_election_candidate_survey_response: { status: "draft", source: "phone" },
+      answers: { housing: "supports with caveats" }
+    }
+
+    get edit_admin_election_candidate_survey_response_path(@candidate)
+    assert_select "select[name='answers[housing]'] option[selected][value=?]", "supports with caveats"
+  end
+
+  # What the rendered form would actually submit for each answer field.
+  def form_answers_from_response
+    doc = Nokogiri::HTML(response.body)
+    doc.css("[name^='answers[']").each_with_object({}) do |field, acc|
+      qid = field["name"][/answers\[(.+)\]/, 1]
+      acc[qid] = if field.name == "select"
+        field.at_css("option[selected]")&.[]("value").to_s
+      else
+        field["value"].to_s
+      end
+    end
+  end
 end

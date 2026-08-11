@@ -2278,6 +2278,50 @@ ALTER SEQUENCE warehouse.derived_observations_id_seq OWNED BY warehouse.derived_
 
 
 --
+-- Name: election_candidate_survey_responses; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.election_candidate_survey_responses (
+    id bigint NOT NULL,
+    election_survey_id bigint NOT NULL,
+    election_candidate_id bigint NOT NULL,
+    survey_version character varying,
+    answers jsonb DEFAULT '{}'::jsonb NOT NULL,
+    explanations jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    source character varying DEFAULT 'admin'::character varying NOT NULL,
+    entered_by character varying,
+    notes text,
+    submitted_at timestamp with time zone,
+    published_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT election_candidate_survey_responses_published_at CHECK ((((status)::text <> 'published'::text) OR (published_at IS NOT NULL))),
+    CONSTRAINT election_candidate_survey_responses_source_check CHECK (((source)::text = ANY ((ARRAY['admin'::character varying, 'email'::character varying, 'form'::character varying, 'phone'::character varying, 'other'::character varying])::text[]))),
+    CONSTRAINT election_candidate_survey_responses_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying, 'published'::character varying])::text[])))
+);
+
+
+--
+-- Name: election_candidate_survey_responses_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.election_candidate_survey_responses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: election_candidate_survey_responses_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.election_candidate_survey_responses_id_seq OWNED BY warehouse.election_candidate_survey_responses.id;
+
+
+--
 -- Name: election_candidates; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -2363,6 +2407,53 @@ ALTER SEQUENCE warehouse.election_races_id_seq OWNED BY warehouse.election_races
 
 
 --
+-- Name: election_survey_questions; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.election_survey_questions (
+    id bigint NOT NULL,
+    election_survey_id bigint NOT NULL,
+    question_id character varying NOT NULL,
+    step_id character varying NOT NULL,
+    step_title character varying NOT NULL,
+    step_intro text,
+    step_position integer DEFAULT 0 NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    question_type character varying NOT NULL,
+    label text NOT NULL,
+    help text,
+    topic character varying,
+    placeholder character varying,
+    required boolean DEFAULT false NOT NULL,
+    rows integer,
+    options jsonb DEFAULT '[]'::jsonb NOT NULL,
+    options_source character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT election_survey_questions_type_check CHECK (((question_type)::text = ANY ((ARRAY['text'::character varying, 'email'::character varying, 'textarea'::character varying, 'select'::character varying, 'radio'::character varying, 'yesno'::character varying])::text[])))
+);
+
+
+--
+-- Name: election_survey_questions_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.election_survey_questions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: election_survey_questions_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.election_survey_questions_id_seq OWNED BY warehouse.election_survey_questions.id;
+
+
+--
 -- Name: election_survey_responses; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -2399,6 +2490,43 @@ CREATE SEQUENCE warehouse.election_survey_responses_id_seq
 --
 
 ALTER SEQUENCE warehouse.election_survey_responses_id_seq OWNED BY warehouse.election_survey_responses.id;
+
+
+--
+-- Name: election_surveys; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.election_surveys (
+    id bigint NOT NULL,
+    election_id bigint NOT NULL,
+    slug character varying NOT NULL,
+    audience character varying DEFAULT 'resident'::character varying NOT NULL,
+    version character varying DEFAULT '1'::character varying NOT NULL,
+    meta jsonb DEFAULT '{}'::jsonb NOT NULL,
+    published_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT election_surveys_audience_check CHECK (((audience)::text = ANY ((ARRAY['resident'::character varying, 'candidate'::character varying])::text[])))
+);
+
+
+--
+-- Name: election_surveys_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.election_surveys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: election_surveys_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.election_surveys_id_seq OWNED BY warehouse.election_surveys.id;
 
 
 --
@@ -4263,6 +4391,13 @@ ALTER TABLE ONLY warehouse.derived_observations ALTER COLUMN id SET DEFAULT next
 
 
 --
+-- Name: election_candidate_survey_responses id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidate_survey_responses ALTER COLUMN id SET DEFAULT nextval('warehouse.election_candidate_survey_responses_id_seq'::regclass);
+
+
+--
 -- Name: election_candidates id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -4277,10 +4412,24 @@ ALTER TABLE ONLY warehouse.election_races ALTER COLUMN id SET DEFAULT nextval('w
 
 
 --
+-- Name: election_survey_questions id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_survey_questions ALTER COLUMN id SET DEFAULT nextval('warehouse.election_survey_questions_id_seq'::regclass);
+
+
+--
 -- Name: election_survey_responses id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.election_survey_responses ALTER COLUMN id SET DEFAULT nextval('warehouse.election_survey_responses_id_seq'::regclass);
+
+
+--
+-- Name: election_surveys id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_surveys ALTER COLUMN id SET DEFAULT nextval('warehouse.election_surveys_id_seq'::regclass);
 
 
 --
@@ -4935,6 +5084,14 @@ ALTER TABLE ONLY warehouse.derived_observations
 
 
 --
+-- Name: election_candidate_survey_responses election_candidate_survey_responses_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidate_survey_responses
+    ADD CONSTRAINT election_candidate_survey_responses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: election_candidates election_candidates_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -4951,11 +5108,27 @@ ALTER TABLE ONLY warehouse.election_races
 
 
 --
+-- Name: election_survey_questions election_survey_questions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_survey_questions
+    ADD CONSTRAINT election_survey_questions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: election_survey_responses election_survey_responses_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.election_survey_responses
     ADD CONSTRAINT election_survey_responses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: election_surveys election_surveys_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_surveys
+    ADD CONSTRAINT election_surveys_pkey PRIMARY KEY (id);
 
 
 --
@@ -5287,11 +5460,35 @@ ALTER TABLE ONLY warehouse.units
 
 
 --
+-- Name: election_candidate_survey_responses ux_election_candidate_survey_responses; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidate_survey_responses
+    ADD CONSTRAINT ux_election_candidate_survey_responses UNIQUE (election_survey_id, election_candidate_id);
+
+
+--
+-- Name: election_survey_questions ux_election_survey_questions_qid; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_survey_questions
+    ADD CONSTRAINT ux_election_survey_questions_qid UNIQUE (election_survey_id, question_id);
+
+
+--
 -- Name: election_survey_responses ux_election_survey_responses_subscriber; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.election_survey_responses
     ADD CONSTRAINT ux_election_survey_responses_subscriber UNIQUE (election_id, subscriber_id, survey_slug);
+
+
+--
+-- Name: election_surveys ux_election_surveys_slug; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_surveys
+    ADD CONSTRAINT ux_election_surveys_slug UNIQUE (election_id, slug);
 
 
 --
@@ -6045,6 +6242,27 @@ CREATE INDEX idx_agent_runs_agent_started ON warehouse.agent_runs USING btree (a
 
 
 --
+-- Name: idx_candidate_survey_responses_answers; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_candidate_survey_responses_answers ON warehouse.election_candidate_survey_responses USING gin (answers);
+
+
+--
+-- Name: idx_candidate_survey_responses_candidate; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_candidate_survey_responses_candidate ON warehouse.election_candidate_survey_responses USING btree (election_candidate_id);
+
+
+--
+-- Name: idx_candidate_survey_responses_survey_status; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_candidate_survey_responses_survey_status ON warehouse.election_candidate_survey_responses USING btree (election_survey_id, status);
+
+
+--
 -- Name: idx_canonical_observations_component; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6199,6 +6417,13 @@ CREATE INDEX idx_election_candidates_status ON warehouse.election_candidates USI
 
 
 --
+-- Name: idx_election_survey_questions_order; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_election_survey_questions_order ON warehouse.election_survey_questions USING btree (election_survey_id, step_position, "position");
+
+
+--
 -- Name: idx_election_survey_responses_answers; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -6231,6 +6456,13 @@ CREATE INDEX idx_election_survey_responses_submitted_at ON warehouse.election_su
 --
 
 CREATE INDEX idx_election_survey_responses_subscriber ON warehouse.election_survey_responses USING btree (subscriber_id);
+
+
+--
+-- Name: idx_election_surveys_election_audience; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_election_surveys_election_audience ON warehouse.election_surveys USING btree (election_id, audience);
 
 
 --
@@ -7623,6 +7855,22 @@ ALTER TABLE ONLY warehouse.derived_observations
 
 
 --
+-- Name: election_candidate_survey_responses election_candidate_survey_responses_election_candidate_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidate_survey_responses
+    ADD CONSTRAINT election_candidate_survey_responses_election_candidate_id_fkey FOREIGN KEY (election_candidate_id) REFERENCES warehouse.election_candidates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: election_candidate_survey_responses election_candidate_survey_responses_election_survey_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_candidate_survey_responses
+    ADD CONSTRAINT election_candidate_survey_responses_election_survey_id_fkey FOREIGN KEY (election_survey_id) REFERENCES warehouse.election_surveys(id) ON DELETE CASCADE;
+
+
+--
 -- Name: election_candidates election_candidates_election_race_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -7639,6 +7887,14 @@ ALTER TABLE ONLY warehouse.election_races
 
 
 --
+-- Name: election_survey_questions election_survey_questions_election_survey_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_survey_questions
+    ADD CONSTRAINT election_survey_questions_election_survey_id_fkey FOREIGN KEY (election_survey_id) REFERENCES warehouse.election_surveys(id) ON DELETE CASCADE;
+
+
+--
 -- Name: election_survey_responses election_survey_responses_election_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -7652,6 +7908,14 @@ ALTER TABLE ONLY warehouse.election_survey_responses
 
 ALTER TABLE ONLY warehouse.election_survey_responses
     ADD CONSTRAINT election_survey_responses_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.subscribers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: election_surveys election_surveys_election_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.election_surveys
+    ADD CONSTRAINT election_surveys_election_id_fkey FOREIGN KEY (election_id) REFERENCES warehouse.elections(id) ON DELETE CASCADE;
 
 
 --
@@ -8341,6 +8605,8 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260811000002'),
+('20260811000001'),
 ('20260807000001'),
 ('20260805050000'),
 ('20260805040000'),

@@ -83,6 +83,10 @@ Rails.application.routes.draw do
         end
         resources :survey_responses, only: [ :index, :create ],
           controller: "election_survey_responses"
+        # The question sets. Read-only: resident answers are written through
+        # survey_responses above, and candidate answers only in the CMS.
+        resources :surveys, only: [ :index, :show ], param: :slug,
+          controller: "election_surveys"
       end
 
       namespace :geo do
@@ -235,6 +239,12 @@ Rails.application.routes.draw do
     end
     resources :election_candidates, only: %i[edit update destroy] do
       post :apply_photo_suggestion, on: :member
+      # Questionnaire answers. Singular: one response per candidate per survey,
+      # with the survey picked by ?survey_slug= (defaulting to the election's
+      # candidate questionnaire). This is the only write path for candidate
+      # answers — see the controller.
+      resource :survey_response, only: %i[edit update destroy],
+        controller: "election_candidate_survey_responses"
     end
 
     namespace :metrics do

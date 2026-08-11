@@ -1,0 +1,112 @@
+<div class="page-header">
+  <h1><%= @candidate.display_name %> — questionnaire</h1>
+  <p class="text-muted" style="font-size:0.85rem;">
+    <%= @survey.meta["title"].presence || @survey.slug %> ·
+    <%= @candidate.race.label %> ·
+    v<%= @survey.version %>
+  </p>
+</div>
+
+<% if @survey.questions.empty? %>
+  <div class="flash flash-alert">
+    This questionnaire has no questions yet. Add them before entering answers.
+  </div>
+<% end %>
+
+<%= form_with model: @response,
+      url: admin_election_candidate_survey_response_path(@candidate, survey_slug: @survey.slug),
+      scope: :warehouse_election_candidate_survey_response,
+      method: :patch, class: "card" do |f| %>
+  <% if @response.errors.any? %>
+    <div class="flash flash-alert">
+      <% @response.errors.full_messages.each do |msg| %><div><%= msg %></div><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :status %>
+    <%= f.select :status,
+          Warehouse::ElectionCandidateSurveyResponse.statuses.keys.map { |s| [ s.titleize, s ] },
+          {}, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      Only <strong>published</strong> answers appear on the public site. Draft and submitted stay
+      internal, so a partial transcription can be saved and finished later.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :source, "How did the answers reach us?" %>
+    <%= f.select :source,
+          Warehouse::ElectionCandidateSurveyResponse.sources.keys.map { |s| [ s.titleize, s ] },
+          {}, class: "form-control" %>
+    <div class="text-muted" style="font-size:0.8rem;">
+      Recorded so a published position is always traceable to how it was obtained.
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :notes, "Staff notes (internal)" %>
+    <%= f.text_area :notes, rows: 3, class: "form-control",
+          placeholder: "Caveats, what was chased, anything the candidate qualified." %>
+  </div>
+
+  <hr>
+
+  <% @survey.steps(ward_options: @election.ward_options).each do |step| %>
+    <h3 style="margin-bottom:0.25rem;"><%= step[:title] %></h3>
+    <% if step[:intro].present? %>
+      <p class="text-muted" style="font-size:0.85rem; margin-top:0;"><%= step[:intro] %></p>
+    <% end %>
+
+    <% step[:questions].each do |question| %>
+      <% qid = question[:id] %>
+      <div class="form-group" style="border-left:3px solid #eee; padding-left:0.75rem;">
+        <%= label_tag "answers_#{qid}", question[:label] %>
+        <% if question[:help].present? %>
+          <div class="text-muted" style="font-size:0.8rem;"><%= question[:help] %></div>
+        <% end %>
+
+        <% options = question[:options] %>
+        <% if options.present? %>
+          <%# A free-text row alongside the options: staff transcribe what the %>
+          <%# candidate actually said, which is not always one of the choices. %>
+          <%= select_tag "answers[#{qid}]",
+                options_for_select(
+                  options.map { |o| [ [ o["label"], o["detail"] ].compact.join(" — "), o["value"] ] },
+                  @response.answers[qid]
+                ),
+                include_blank: "— no response —", class: "form-control" %>
+          <% unless options.any? { |o| o["value"] == @response.answers[qid] } || @response.answers[qid].blank? %>
+            <div class="text-muted" style="font-size:0.8rem;">
+              Stored answer is not one of the options: <strong><%= @response.answers[qid] %></strong>.
+              Leaving the select blank keeps it.
+            </div>
+          <% end %>
+        <% elsif question[:type] == "textarea" %>
+          <%= text_area_tag "answers[#{qid}]", @response.answers[qid],
+                rows: question[:rows] || 4, class: "form-control" %>
+        <% else %>
+          <%= text_field_tag "answers[#{qid}]", @response.answers[qid], class: "form-control" %>
+        <% end %>
+
+        <%= label_tag "explanations_#{qid}", "In their words (published verbatim)",
+              style: "font-size:0.8rem; margin-top:0.4rem;" %>
+        <%= text_area_tag "explanations[#{qid}]", @response.explanations[qid],
+              rows: 2, class: "form-control",
+              placeholder: "Optional. Shown next to the answer on the public site." %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <div class="form-actions" style="margin-top:1rem;">
+    <%= f.submit "Save questionnaire", class: "btn btn-primary" %>
+    <%= link_to "Cancel",
+          admin_election_path(@election, anchor: "candidate-#{@candidate.id}"), class: "btn" %>
+    <% if @response.persisted? %>
+      <%= button_to "Clear answers",
+            admin_election_candidate_survey_response_path(@candidate, survey_slug: @survey.slug),
+            method: :delete, class: "btn btn-danger",
+            form: { style: "display:inline", data: { turbo_confirm: "Delete #{@candidate.display_name}'s answers?" } } %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,1006 @@
+{
+  "election_slug": "toronto-2026",
+  "slug": "city-priorities",
+  "audience": "resident",
+  "published": true,
+  "version": "1",
+  "meta": {
+    "eyebrow": "Municipal election 2026",
+    "kicker": "City of Toronto · resident survey",
+    "title": "Toronto priorities survey",
+    "intro": "Where should the next council put its money, its powers and its attention? Your answers shape what we push candidates on before Toronto votes on October 26.",
+    "submitLabel": "Submit survey",
+    "thankYou": {
+      "title": "Thank you. Your answers are in.",
+      "body": "We read every response. Results will be published ward by ward before the campaign period opens.",
+      "restartLabel": "Start again"
+    }
+  },
+  "questions": [
+    {
+      "question_id": "postal_code",
+      "step_id": "about-you",
+      "step_title": "About you",
+      "step_intro": null,
+      "step_position": 0,
+      "position": 0,
+      "question_type": "text",
+      "label": "Postal code",
+      "help": null,
+      "topic": null,
+      "placeholder": "M5V 2T6",
+      "required": true,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    },
+    {
+      "question_id": "ward",
+      "step_id": "about-you",
+      "step_title": "About you",
+      "step_intro": null,
+      "step_position": 0,
+      "position": 1,
+      "question_type": "select",
+      "label": "Which ward do you live in?",
+      "help": null,
+      "topic": null,
+      "placeholder": "Select your ward",
+      "required": true,
+      "rows": null,
+      "options": [],
+      "options_source": "wards"
+    },
+    {
+      "question_id": "tenure",
+      "step_id": "about-you",
+      "step_title": "About you",
+      "step_intro": null,
+      "step_position": 0,
+      "position": 2,
+      "question_type": "radio",
+      "label": "How long have you lived here?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "lt2",
+          "label": "Less than two years"
+        },
+        {
+          "value": "2to10",
+          "label": "Two to ten years"
+        },
+        {
+          "value": "10plus",
+          "label": "More than ten years"
+        },
+        {
+          "value": "life",
+          "label": "My whole life"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "housing_intervention",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
+      "step_intro": null,
+      "step_position": 1,
+      "position": 0,
+      "question_type": "radio",
+      "label": "If Toronto could make one major housing intervention this term, which should receive the greatest emphasis?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "permission",
+          "label": "Permission",
+          "detail": "Permit substantially more housing as-of-right"
+        },
+        {
+          "value": "cost_and_speed",
+          "label": "Cost and speed",
+          "detail": "Reduce approval times, development charges and other city-imposed costs"
+        },
+        {
+          "value": "public_delivery",
+          "label": "Public delivery",
+          "detail": "Build or finance substantially more affordable and supportive housing"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "housing_city_role",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
+      "step_intro": null,
+      "step_position": 1,
+      "position": 1,
+      "question_type": "radio",
+      "label": "What should be Toronto's primary role in delivering affordable and supportive housing?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "direct_provider",
+          "label": "Direct provider",
+          "detail": "Build, acquire and own significantly more housing"
+        },
+        {
+          "value": "partner_financier",
+          "label": "Partner and financier",
+          "detail": "Supply land, funding and incentives to non-profit and private providers"
+        },
+        {
+          "value": "regulator_enabler",
+          "label": "Regulator and enabler",
+          "detail": "Focus primarily on permitting enough housing and reducing barriers to construction"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "housing_density_location",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
+      "step_intro": null,
+      "step_position": 1,
+      "position": 2,
+      "question_type": "radio",
+      "label": "Where should Toronto permit the greatest increase in housing density?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "citywide",
+          "label": "Across the city",
+          "detail": "Permit more apartments and multiplexes in nearly every neighbourhood"
+        },
+        {
+          "value": "corridors_transit",
+          "label": "Along corridors and transit",
+          "detail": "Concentrate growth on major streets and near rapid transit"
+        },
+        {
+          "value": "designated_centres",
+          "label": "In designated centres",
+          "detail": "Concentrate most growth downtown and in existing growth centres"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "transit_funding_priority",
+      "step_id": "transit",
+      "step_title": "Transit and transportation",
+      "step_intro": null,
+      "step_position": 2,
+      "position": 0,
+      "question_type": "radio",
+      "label": "What should receive the greatest share of the next available transit funding?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "service",
+          "label": "Service",
+          "detail": "More frequent and reliable service on existing routes"
+        },
+        {
+          "value": "maintenance",
+          "label": "Maintenance",
+          "detail": "Vehicles, stations, signals and other state-of-good-repair work"
+        },
+        {
+          "value": "expansion",
+          "label": "Expansion",
+          "detail": "New rapid-transit lines and extensions"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "street_space_priority",
+      "step_id": "transit",
+      "step_title": "Transit and transportation",
+      "step_intro": null,
+      "step_position": 2,
+      "position": 1,
+      "question_type": "radio",
+      "label": "When there is not enough street space for every use, which should generally receive priority?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "passenger_capacity",
+          "label": "Passenger capacity",
+          "detail": "Transit, walking and cycling"
+        },
+        {
+          "value": "goods_access",
+          "label": "Goods and essential access",
+          "detail": "Deliveries, trades, emergency vehicles and accessibility"
+        },
+        {
+          "value": "general_traffic",
+          "label": "General traffic and parking",
+          "detail": "Automobile capacity and curbside parking"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "av_regulation_priority",
+      "step_id": "transit",
+      "step_title": "Transit and transportation",
+      "step_intro": null,
+      "step_position": 2,
+      "position": 2,
+      "question_type": "radio",
+      "label": "If large-scale autonomous taxi service is introduced in Toronto, what should the city regulate most aggressively?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "safety",
+          "label": "Safety",
+          "detail": "Collision standards and interaction with pedestrians, cyclists and other road users"
+        },
+        {
+          "value": "street_use",
+          "label": "Street use",
+          "detail": "Congestion, empty vehicles, pickups and curb access"
+        },
+        {
+          "value": "public_obligations",
+          "label": "Public obligations",
+          "detail": "Accessibility, geographic coverage and service standards"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "safety_investment",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
+      "step_intro": null,
+      "step_position": 3,
+      "position": 0,
+      "question_type": "radio",
+      "label": "Which approach should receive the greatest additional investment to improve public safety?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "enforcement",
+          "label": "Enforcement",
+          "detail": "Police, bylaw enforcement and a more visible official presence"
+        },
+        {
+          "value": "crisis_prevention",
+          "label": "Crisis and prevention services",
+          "detail": "Mental-health response, addiction treatment and youth intervention"
+        },
+        {
+          "value": "public_space_management",
+          "label": "Public-space management",
+          "detail": "Lighting, maintenance, sanitation and active use of streets and parks"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "police_budget",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
+      "step_intro": null,
+      "step_position": 3,
+      "position": 1,
+      "question_type": "radio",
+      "label": "Over the next council term, the Toronto Police Service budget should:",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "increase",
+          "label": "Increase above inflation to expand police staffing or services"
+        },
+        {
+          "value": "constant",
+          "label": "Remain approximately constant after inflation"
+        },
+        {
+          "value": "decrease",
+          "label": "Decrease after inflation, with some responsibilities and funding transferred to civilian services"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "surveillance_tech",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
+      "step_intro": null,
+      "step_position": 3,
+      "position": 2,
+      "question_type": "radio",
+      "label": "How should Toronto govern automated licence-plate readers and similar surveillance technology used on public streets?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "permit_broad",
+          "label": "Permit broad use",
+          "detail": "Allow police and approved organizations to deploy them under existing privacy law"
+        },
+        {
+          "value": "permit_strict",
+          "label": "Permit under strict rules",
+          "detail": "Establish citywide limits on access, retention, auditing and data sharing"
+        },
+        {
+          "value": "prohibit",
+          "label": "Prohibit broad automated collection",
+          "detail": "Restrict their use to narrowly authorized investigations"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "housing_cost_reduction",
+      "step_id": "government",
+      "step_title": "City government and service delivery",
+      "step_intro": null,
+      "step_position": 4,
+      "position": 0,
+      "question_type": "radio",
+      "label": "Which change would do the most to reduce the cost of building housing in Toronto?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "lower_charges",
+          "label": "Lower municipal charges",
+          "detail": "Reduce development charges, parkland payments and related levies"
+        },
+        {
+          "value": "faster_approvals",
+          "label": "Faster approvals",
+          "detail": "Expand as-of-right zoning and automate routine permits"
+        },
+        {
+          "value": "simpler_standards",
+          "label": "Simpler standards",
+          "detail": "Reduce parking, design and other construction requirements"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "capital_project_delays",
+      "step_id": "government",
+      "step_title": "City government and service delivery",
+      "step_intro": null,
+      "step_position": 4,
+      "position": 1,
+      "question_type": "radio",
+      "label": "What is the most important change Toronto should make to reduce capital-project delays and cost overruns?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "project_delivery",
+          "label": "Improve project delivery",
+          "detail": "Strengthen professional project management, procurement and contracting"
+        },
+        {
+          "value": "political_changes",
+          "label": "Control political changes",
+          "detail": "Prevent councillors from altering scope after approval without identifying funding"
+        },
+        {
+          "value": "limit_pipeline",
+          "label": "Limit the project pipeline",
+          "detail": "Start fewer projects and fully fund them before construction begins"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "service_delivery_model",
+      "step_id": "government",
+      "step_title": "City government and service delivery",
+      "step_intro": null,
+      "step_position": 4,
+      "position": 2,
+      "question_type": "radio",
+      "label": "Which service-delivery model should Toronto use more often?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "direct",
+          "label": "Direct delivery",
+          "detail": "Expand permanent city staff and internal operational capacity"
+        },
+        {
+          "value": "external",
+          "label": "External delivery",
+          "detail": "Use competitive contracts and outside providers where they can deliver better value"
+        },
+        {
+          "value": "agencies",
+          "label": "Specialized agencies",
+          "detail": "Move major functions to arm's-length organizations with clear performance mandates"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "property_tax_growth",
+      "step_id": "fiscal",
+      "step_title": "Taxes, spending and fiscal sustainability",
+      "step_intro": null,
+      "step_position": 5,
+      "position": 0,
+      "question_type": "radio",
+      "label": "Over the next council term, residential property-tax revenues should generally:",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "above_inflation",
+          "label": "Grow faster than inflation to improve or expand services"
+        },
+        {
+          "value": "with_inflation",
+          "label": "Grow approximately with inflation and population"
+        },
+        {
+          "value": "below_inflation",
+          "label": "Grow more slowly than inflation, requiring service restraint or alternative revenues"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "revenue_source",
+      "step_id": "fiscal",
+      "step_title": "Taxes, spending and fiscal sustainability",
+      "step_intro": null,
+      "step_position": 5,
+      "position": 1,
+      "question_type": "radio",
+      "label": "Which type of additional revenue should Toronto rely on most heavily?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "broad_recurring",
+          "label": "Broad recurring revenue",
+          "detail": "Property taxes or new municipal income or sales taxes, if authorized"
+        },
+        {
+          "value": "growth_transaction",
+          "label": "Growth and transaction revenue",
+          "detail": "Land-transfer taxes, development charges and taxes on real-estate activity"
+        },
+        {
+          "value": "user_road",
+          "label": "User and road charges",
+          "detail": "Congestion charges, tolls, parking levies and service fees"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "infrastructure_backlog",
+      "step_id": "fiscal",
+      "step_title": "Taxes, spending and fiscal sustainability",
+      "step_intro": null,
+      "step_position": 5,
+      "position": 2,
+      "question_type": "radio",
+      "label": "What should Toronto do first to address its infrastructure repair backlog?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "dedicated_revenue",
+          "label": "Raise dedicated revenue",
+          "detail": "Introduce a levy or other recurring source reserved for maintenance"
+        },
+        {
+          "value": "delay_expansion",
+          "label": "Delay expansion",
+          "detail": "Redirect money from new facilities and projects toward existing assets"
+        },
+        {
+          "value": "reduce_assets",
+          "label": "Reduce the asset base",
+          "detail": "Sell, consolidate or close facilities the city cannot sustainably maintain"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "provincial_approach",
+      "step_id": "governance",
+      "step_title": "Governance and representation",
+      "step_intro": null,
+      "step_position": 6,
+      "position": 0,
+      "question_type": "radio",
+      "label": "What should be Toronto's primary approach to the provincial government?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": true,
+      "rows": null,
+      "options": [
+        {
+          "value": "partnership",
+          "label": "Partnership",
+          "detail": "Align with provincial priorities where doing so secures funding or approvals"
+        },
+        {
+          "value": "advocacy",
+          "label": "Advocacy",
+          "detail": "Publicly press for greater authority, revenue and a different fiscal arrangement"
+        },
+        {
+          "value": "self_reliance",
+          "label": "Self-reliance",
+          "detail": "Plan budgets and services on the assumption that substantial new provincial support will not arrive"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "cycling_network",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 0,
+      "question_type": "radio",
+      "label": "Over the next council term, Toronto should:",
+      "help": null,
+      "topic": "Cycling",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "detail": "Expand the protected cycling network, including projects that remove traffic lanes or parking"
+        },
+        {
+          "value": "complete_commitments",
+          "label": "Complete existing commitments",
+          "detail": "Finish approved projects but undertake few additional road reallocations"
+        },
+        {
+          "value": "review_reverse",
+          "label": "Review and reverse",
+          "detail": "Remove or redesign lanes that fail defined safety, ridership or congestion standards"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "protest_access",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 1,
+      "question_type": "radio",
+      "label": "When demonstrations substantially block transportation or access to essential institutions, the city should prioritize:",
+      "help": null,
+      "topic": "Protest and access",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "maintain_access",
+          "label": "Maintaining access",
+          "detail": "Keep major roads, transit, hospitals and essential facilities operating"
+        },
+        {
+          "value": "protect_protest",
+          "label": "Protecting protest",
+          "detail": "Accept significant disruption unless there is an immediate safety threat"
+        },
+        {
+          "value": "predetermined_limits",
+          "label": "Predetermined limits",
+          "detail": "Protect protest subject to clear rules for locations, access routes and duration"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "technology_investment",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 2,
+      "question_type": "radio",
+      "label": "Where should Toronto direct its next major technology investment?",
+      "help": null,
+      "topic": "Technology",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "resident_services",
+          "label": "Resident services",
+          "detail": "Permits, licences, payments and service requests"
+        },
+        {
+          "value": "internal_operations",
+          "label": "Internal operations",
+          "detail": "Procurement, finance, staffing and administrative efficiency"
+        },
+        {
+          "value": "performance_management",
+          "label": "Performance management",
+          "detail": "Public data and systems that measure outcomes and hold departments accountable"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "budget_gap_first",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 3,
+      "question_type": "radio",
+      "label": "When Toronto faces a structural operating-budget gap, what should it do first?",
+      "help": null,
+      "topic": "Budget decisions",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "reduce_services",
+          "label": "Reduce or redesign lower-priority services"
+        },
+        {
+          "value": "reduce_admin",
+          "label": "Reduce internal administration, staffing or contract costs"
+        },
+        {
+          "value": "raise_revenue",
+          "label": "Raise taxes, fees or other revenue"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "business_climate",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 4,
+      "question_type": "radio",
+      "label": "What is the most important municipal intervention for improving Toronto's business climate?",
+      "help": null,
+      "topic": "Business and employment",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "lower_costs",
+          "label": "Lower costs",
+          "detail": "Reduce commercial taxes, fees and licensing expenses"
+        },
+        {
+          "value": "reduce_delay",
+          "label": "Reduce delay",
+          "detail": "Accelerate permits, inspections and approvals"
+        },
+        {
+          "value": "improve_fundamentals",
+          "label": "Improve fundamentals",
+          "detail": "Expand housing, transportation, public safety and infrastructure"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "business_attraction",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 5,
+      "question_type": "radio",
+      "label": "How should Toronto attract major employers, investment and events?",
+      "help": null,
+      "topic": "Business and employment",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "targeted_incentives",
+          "label": "Targeted incentives",
+          "detail": "Direct financial bids, tax measures or customized agreements"
+        },
+        {
+          "value": "citywide_fundamentals",
+          "label": "Citywide fundamentals",
+          "detail": "Housing affordability, transportation, safety and quality of life"
+        },
+        {
+          "value": "sector_strategy",
+          "label": "Sector strategy",
+          "detail": "Concentrate resources on a small number of industries where Toronto has an existing advantage"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "construction_capacity",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 6,
+      "question_type": "radio",
+      "label": "What should Toronto prioritize to increase construction capacity?",
+      "help": null,
+      "topic": "Construction capacity",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "predictable_demand",
+          "label": "Predictable demand",
+          "detail": "Maintain a stable, long-term pipeline of public projects"
+        },
+        {
+          "value": "workforce_supply",
+          "label": "Workforce supply",
+          "detail": "Expand apprenticeships, training and recognition of international credentials"
+        },
+        {
+          "value": "productivity",
+          "label": "Productivity",
+          "detail": "Encourage modular construction, prefabrication and more efficient building methods"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "public_realm_priority",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 7,
+      "question_type": "radio",
+      "label": "What should receive the greatest priority in Toronto's public-realm budget?",
+      "help": null,
+      "topic": "Public realm",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "basic_maintenance",
+          "label": "Basic maintenance",
+          "detail": "Cleanliness, roads, sidewalks, snow clearing, washrooms and routine park care"
+        },
+        {
+          "value": "major_improvements",
+          "label": "Major improvements",
+          "detail": "A smaller number of transformative parks, streets and public spaces"
+        },
+        {
+          "value": "programming",
+          "label": "Programming and activity",
+          "detail": "Markets, events, patios, recreation and cultural programming"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "arts_culture_support",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 8,
+      "question_type": "radio",
+      "label": "What should be Toronto's primary tool for supporting arts, culture and nightlife?",
+      "help": null,
+      "topic": "Arts, culture and nightlife",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "regulatory_reform",
+          "label": "Regulatory reform",
+          "detail": "Simpler permits, flexible operating rules and later hours"
+        },
+        {
+          "value": "public_funding",
+          "label": "Public funding",
+          "detail": "Grants, city facilities and affordable cultural space"
+        },
+        {
+          "value": "displacement_protection",
+          "label": "Protection from displacement",
+          "detail": "Planning and property measures that preserve existing venues and workspaces"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "av_conditions",
+      "step_id": "more-topics",
+      "step_title": "A few more, if you have time",
+      "step_intro": "All optional. Skip any you don't have a view on.",
+      "step_position": 7,
+      "position": 9,
+      "question_type": "radio",
+      "label": "If autonomous taxi services operate in Toronto, which condition should the city prioritize?",
+      "help": null,
+      "topic": "Autonomous vehicles",
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [
+        {
+          "value": "data_disclosure",
+          "label": "Data disclosure",
+          "detail": "Mandatory reporting on trips, collisions, congestion and curb use"
+        },
+        {
+          "value": "service_obligations",
+          "label": "Service obligations",
+          "detail": "Accessibility, geographic coverage and minimum service standards"
+        },
+        {
+          "value": "limited_conditions",
+          "label": "Limited municipal conditions",
+          "detail": "Avoid additional requirements beyond provincial regulation"
+        }
+      ],
+      "options_source": null
+    },
+    {
+      "question_id": "name",
+      "step_id": "stay-in-touch",
+      "step_title": "Stay in touch",
+      "step_intro": null,
+      "step_position": 8,
+      "position": 0,
+      "question_type": "text",
+      "label": "Name",
+      "help": null,
+      "topic": null,
+      "placeholder": "First and last name",
+      "required": false,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    },
+    {
+      "question_id": "email",
+      "step_id": "stay-in-touch",
+      "step_title": "Stay in touch",
+      "step_intro": null,
+      "step_position": 8,
+      "position": 1,
+      "question_type": "email",
+      "label": "Email",
+      "help": "We'll send you the results for your ward. Nothing else.",
+      "topic": null,
+      "placeholder": "you@example.com",
+      "required": true,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    },
+    {
+      "question_id": "volunteer",
+      "step_id": "stay-in-touch",
+      "step_title": "Stay in touch",
+      "step_intro": null,
+      "step_position": 8,
+      "position": 2,
+      "question_type": "yesno",
+      "label": "Would you like to help get out the vote in your ward?",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    },
+    {
+      "question_id": "updates",
+      "step_id": "stay-in-touch",
+      "step_title": "Stay in touch",
+      "step_intro": null,
+      "step_position": 8,
+      "position": 3,
+      "question_type": "yesno",
+      "label": "Send me monthly Toronto updates",
+      "help": null,
+      "topic": null,
+      "placeholder": null,
+      "required": false,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    }
+  ]
+}

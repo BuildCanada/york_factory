@@ -1,0 +1,54 @@
+<div class="page-header">
+  <h1>API Keys</h1>
+  <a href="<%= profile_path %>" class="btn">Back to profile</a>
+</div>
+
+<p class="text-muted mb-2">
+  API keys act as you and always use your current permissions. Keep them secret and revoke keys you no longer use.
+</p>
+
+<% if @raw_api_key.present? %>
+  <div class="flash flash-notice">
+    <strong>Copy this key now. It will not be shown again.</strong>
+    <div class="api-key-secret"><%= @raw_api_key %></div>
+  </div>
+<% end %>
+
+<%= form_with model: @api_key, url: profile_api_keys_path, class: "api-key-form" do |form| %>
+  <% if @api_key.errors.any? %>
+    <div class="flash flash-alert">
+      <% @api_key.errors.full_messages.each do |message| %><div><%= message %></div><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :name, "Key name" %>
+    <%= form.text_field :name, class: "form-control", required: true, placeholder: "Toronto memo agent" %>
+  </div>
+  <%= form.submit "Create API key", class: "btn btn-primary" %>
+<% end %>
+
+<h2>Your keys</h2>
+<% if @api_keys.empty? %>
+  <p class="text-muted">No API keys yet.</p>
+<% else %>
+  <table>
+    <thead><tr><th>Name</th><th>Key</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      <% @api_keys.each do |api_key| %>
+        <tr>
+          <td><%= api_key.name %></td>
+          <td class="mono"><%= api_key.token_prefix %>&hellip;</td>
+          <td><%= api_key.last_used_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
+          <td><%= api_key.revoked_at? ? "Revoked" : "Active" %></td>
+          <td>
+            <% unless api_key.revoked_at? %>
+              <%= button_to "Revoke", profile_api_key_path(api_key), method: :delete,
+                    class: "btn btn-danger", form: { data: { turbo_confirm: "Revoke this API key?" } } %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

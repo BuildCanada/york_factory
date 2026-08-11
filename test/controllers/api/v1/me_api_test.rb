@@ -46,4 +46,13 @@ class MeApiTest < ActionDispatch::IntegrationTest
     patch "/api/v1/me", params: { user: { postal_code: "K1A 0A6" } }
     assert_response :unauthorized
   end
+
+  test "user API key is accepted anywhere OAuth authentication is accepted" do
+    _, raw = ApiKey.issue!(user: users(:member), name: "me endpoint")
+
+    get "/api/v1/me", headers: { "Authorization" => "Bearer #{raw}" }
+
+    assert_response :success
+    assert_equal users(:member).email, response.parsed_body["email"]
+  end
 end

@@ -22,6 +22,10 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
 
+  # Keep Solid Queue records in the same dedicated database used by the
+  # development and production environments.
+  config.solid_queue.connects_to = { database: { writing: :queue } }
+
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
 

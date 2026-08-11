@@ -177,6 +177,42 @@ ALTER SEQUENCE public.active_storage_variant_records_id_seq OWNED BY public.acti
 
 
 --
+-- Name: api_keys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.api_keys (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    name character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    token_prefix character varying NOT NULL,
+    last_used_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: api_keys_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.api_keys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: api_keys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.api_keys_id_seq OWNED BY public.api_keys.id;
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -696,7 +732,8 @@ CREATE TABLE public.metrics_instagram_stats (
     interactions integer,
     new_followers integer,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    social_media_account_id bigint
 );
 
 
@@ -747,7 +784,8 @@ CREATE TABLE public.metrics_linkedin_stats (
     engagement_rate_total numeric(8,6),
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    account character varying DEFAULT 'build_canada'::character varying NOT NULL
+    account character varying DEFAULT 'build_canada'::character varying NOT NULL,
+    social_media_account_id bigint
 );
 
 
@@ -768,6 +806,456 @@ CREATE SEQUENCE public.metrics_linkedin_stats_id_seq
 --
 
 ALTER SEQUENCE public.metrics_linkedin_stats_id_seq OWNED BY public.metrics_linkedin_stats.id;
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_account_metric_snapshots (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    scraped_at timestamp(6) without time zone NOT NULL,
+    followers_count bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_account_metric_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_account_metric_snapshots_id_seq OWNED BY public.metrics_social_media_account_metric_snapshots.id;
+
+
+--
+-- Name: metrics_social_media_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_accounts (
+    id bigint NOT NULL,
+    zernio_account_id character varying NOT NULL,
+    zernio_profile_id character varying NOT NULL,
+    profile_name character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    username character varying NOT NULL,
+    display_name character varying,
+    profile_url character varying,
+    enabled boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    ads_status character varying
+);
+
+
+--
+-- Name: metrics_social_media_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_accounts_id_seq OWNED BY public.metrics_social_media_accounts.id;
+
+
+--
+-- Name: metrics_social_media_ad_account_daily_metrics; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ad_account_daily_metrics (
+    id bigint NOT NULL,
+    ad_account_id bigint NOT NULL,
+    date date NOT NULL,
+    spend numeric(18,6),
+    impressions bigint,
+    reach bigint,
+    clicks bigint,
+    engagements bigint,
+    conversions numeric(18,6),
+    conversion_value numeric(18,6),
+    ctr numeric(18,8),
+    cpc numeric(18,8),
+    cpm numeric(18,8),
+    cost_per_conversion numeric(18,8),
+    roas numeric(18,8),
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ad_account_daily_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ad_account_daily_metrics_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ad_account_daily_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ad_account_daily_metrics_id_seq OWNED BY public.metrics_social_media_ad_account_daily_metrics.id;
+
+
+--
+-- Name: metrics_social_media_ad_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ad_accounts (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    platform_ad_account_id character varying NOT NULL,
+    platform character varying NOT NULL,
+    name character varying,
+    business_name character varying,
+    status character varying,
+    currency character varying,
+    timezone_name character varying,
+    timezone_offset_hours numeric(8,2),
+    minimum_daily_budget numeric(18,6),
+    selectable boolean,
+    unusable_reason character varying,
+    backfill_pending boolean DEFAULT false NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    analytics_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ad_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ad_accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ad_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ad_accounts_id_seq OWNED BY public.metrics_social_media_ad_accounts.id;
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ad_campaign_daily_metrics (
+    id bigint NOT NULL,
+    campaign_id bigint NOT NULL,
+    date date NOT NULL,
+    spend numeric(18,6),
+    impressions bigint,
+    reach bigint,
+    clicks bigint,
+    engagements bigint,
+    conversions numeric(18,6),
+    conversion_value numeric(18,6),
+    ctr numeric(18,8),
+    cpc numeric(18,8),
+    cpm numeric(18,8),
+    cost_per_conversion numeric(18,8),
+    roas numeric(18,8),
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ad_campaign_daily_metrics_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ad_campaign_daily_metrics_id_seq OWNED BY public.metrics_social_media_ad_campaign_daily_metrics.id;
+
+
+--
+-- Name: metrics_social_media_ad_campaigns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ad_campaigns (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    ad_account_id bigint,
+    platform_campaign_id character varying NOT NULL,
+    platform_ad_account_id character varying,
+    platform character varying NOT NULL,
+    name character varying,
+    status character varying,
+    currency character varying,
+    channel_type character varying,
+    ad_count integer,
+    external boolean DEFAULT false NOT NULL,
+    platform_created_at timestamp(6) without time zone,
+    earliest_ad_at timestamp(6) without time zone,
+    latest_ad_at timestamp(6) without time zone,
+    backfill_pending boolean DEFAULT false NOT NULL,
+    budget_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metrics_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ad_campaigns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ad_campaigns_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ad_campaigns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ad_campaigns_id_seq OWNED BY public.metrics_social_media_ad_campaigns.id;
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ad_daily_metrics (
+    id bigint NOT NULL,
+    ad_id bigint NOT NULL,
+    date date NOT NULL,
+    spend numeric(18,6),
+    impressions bigint,
+    reach bigint,
+    clicks bigint,
+    engagements bigint,
+    conversions numeric(18,6),
+    conversion_value numeric(18,6),
+    ctr numeric(18,8),
+    cpc numeric(18,8),
+    cpm numeric(18,8),
+    cost_per_conversion numeric(18,8),
+    roas numeric(18,8),
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ad_daily_metrics_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ad_daily_metrics_id_seq OWNED BY public.metrics_social_media_ad_daily_metrics.id;
+
+
+--
+-- Name: metrics_social_media_ads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_ads (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    ad_account_id bigint,
+    campaign_id bigint,
+    zernio_ad_id character varying NOT NULL,
+    platform_ad_id character varying,
+    platform_ad_account_id character varying,
+    platform_campaign_id character varying,
+    platform_ad_set_id character varying,
+    platform character varying NOT NULL,
+    name character varying,
+    ad_set_name character varying,
+    status character varying,
+    goal character varying,
+    ad_type character varying,
+    currency character varying,
+    external boolean DEFAULT false NOT NULL,
+    platform_created_at timestamp(6) without time zone,
+    source_updated_at timestamp(6) without time zone,
+    last_synced_at timestamp(6) without time zone,
+    backfill_pending boolean DEFAULT false NOT NULL,
+    creative_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metrics_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_ads_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_ads_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_ads_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_ads_id_seq OWNED BY public.metrics_social_media_ads.id;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_post_metric_snapshots (
+    id bigint NOT NULL,
+    social_media_post_id bigint NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    scraped_at timestamp(6) without time zone NOT NULL,
+    impressions bigint DEFAULT 0 NOT NULL,
+    reach bigint DEFAULT 0 NOT NULL,
+    likes bigint DEFAULT 0 NOT NULL,
+    comments bigint DEFAULT 0 NOT NULL,
+    shares bigint DEFAULT 0 NOT NULL,
+    saves bigint DEFAULT 0 NOT NULL,
+    clicks bigint DEFAULT 0 NOT NULL,
+    views bigint DEFAULT 0 NOT NULL,
+    follows bigint DEFAULT 0 NOT NULL,
+    reels_average_watch_time bigint DEFAULT 0 NOT NULL,
+    reels_total_watch_time bigint DEFAULT 0 NOT NULL,
+    video_duration_seconds numeric(12,3),
+    engagement_rate numeric(12,6),
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_post_metric_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_post_metric_snapshots_id_seq OWNED BY public.metrics_social_media_post_metric_snapshots.id;
+
+
+--
+-- Name: metrics_social_media_posts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_posts (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    social_post_id bigint,
+    zernio_post_id character varying NOT NULL,
+    late_post_id character varying,
+    platform_post_id character varying,
+    platform character varying NOT NULL,
+    account_username character varying,
+    status character varying NOT NULL,
+    content text,
+    platform_post_url character varying,
+    thumbnail_url character varying,
+    media_type character varying,
+    published_at timestamp(6) without time zone,
+    scheduled_for timestamp(6) without time zone,
+    external boolean DEFAULT false NOT NULL,
+    ad boolean DEFAULT false NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_posts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_posts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_posts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_posts_id_seq OWNED BY public.metrics_social_media_posts.id;
 
 
 --
@@ -817,7 +1305,8 @@ CREATE TABLE public.metrics_tiktok_stats (
     comments integer DEFAULT 0 NOT NULL,
     shares integer DEFAULT 0 NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    social_media_account_id bigint
 );
 
 
@@ -862,7 +1351,8 @@ CREATE TABLE public.metrics_twitter_stats (
     video_views integer DEFAULT 0 NOT NULL,
     media_views integer DEFAULT 0 NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    social_media_account_id bigint
 );
 
 
@@ -3955,6 +4445,13 @@ ALTER TABLE ONLY public.active_storage_variant_records ALTER COLUMN id SET DEFAU
 
 
 --
+-- Name: api_keys id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_keys ALTER COLUMN id SET DEFAULT nextval('public.api_keys_id_seq'::regclass);
+
+
+--
 -- Name: builders id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -4043,6 +4540,76 @@ ALTER TABLE ONLY public.metrics_instagram_stats ALTER COLUMN id SET DEFAULT next
 --
 
 ALTER TABLE ONLY public.metrics_linkedin_stats ALTER COLUMN id SET DEFAULT nextval('public.metrics_linkedin_stats_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_account_metric_snapshots_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_accounts ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_accounts_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ad_account_daily_metrics id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_account_daily_metrics ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ad_account_daily_metrics_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ad_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_accounts ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ad_accounts_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaign_daily_metrics ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ad_campaign_daily_metrics_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ad_campaigns id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaigns ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ad_campaigns_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_daily_metrics ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ad_daily_metrics_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_ads id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ads ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_ads_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_post_metric_snapshots_id_seq'::regclass);
+
+
+--
+-- Name: metrics_social_media_posts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_posts_id_seq'::regclass);
 
 
 --
@@ -4567,6 +5134,14 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: api_keys api_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_keys
+    ADD CONSTRAINT api_keys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4676,6 +5251,86 @@ ALTER TABLE ONLY public.metrics_instagram_stats
 
 ALTER TABLE ONLY public.metrics_linkedin_stats
     ADD CONSTRAINT metrics_linkedin_stats_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_account_metric_snapshots metrics_social_media_account_metric_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots
+    ADD CONSTRAINT metrics_social_media_account_metric_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_accounts metrics_social_media_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_accounts
+    ADD CONSTRAINT metrics_social_media_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ad_account_daily_metrics metrics_social_media_ad_account_daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_account_daily_metrics
+    ADD CONSTRAINT metrics_social_media_ad_account_daily_metrics_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ad_accounts metrics_social_media_ad_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_accounts
+    ADD CONSTRAINT metrics_social_media_ad_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics metrics_social_media_ad_campaign_daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaign_daily_metrics
+    ADD CONSTRAINT metrics_social_media_ad_campaign_daily_metrics_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ad_campaigns metrics_social_media_ad_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
+    ADD CONSTRAINT metrics_social_media_ad_campaigns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics metrics_social_media_ad_daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_daily_metrics
+    ADD CONSTRAINT metrics_social_media_ad_daily_metrics_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_ads metrics_social_media_ads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ads
+    ADD CONSTRAINT metrics_social_media_ads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots metrics_social_media_post_metric_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
+    ADD CONSTRAINT metrics_social_media_post_metric_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_posts metrics_social_media_posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT metrics_social_media_posts_pkey PRIMARY KEY (id);
 
 
 --
@@ -5303,6 +5958,27 @@ ALTER TABLE ONLY warehouse.pledges_to_vote
 
 
 --
+-- Name: idx_metrics_ad_campaigns_account; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_metrics_ad_campaigns_account ON public.metrics_social_media_ad_campaigns USING btree (ad_account_id);
+
+
+--
+-- Name: idx_metrics_ads_account; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_metrics_ads_account ON public.metrics_social_media_ads USING btree (ad_account_id);
+
+
+--
+-- Name: idx_metrics_ads_campaign; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_metrics_ads_campaign ON public.metrics_social_media_ads USING btree (campaign_id);
+
+
+--
 -- Name: idx_notification_batches_due; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5373,6 +6049,34 @@ CREATE INDEX idx_saved_searches_due ON public.saved_searches USING btree (enable
 
 
 --
+-- Name: idx_social_media_accounts_platform_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_accounts_platform_key ON public.metrics_social_media_accounts USING btree (platform, account_key);
+
+
+--
+-- Name: idx_social_media_posts_account_published; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_account_published ON public.metrics_social_media_posts USING btree (social_media_account_id, published_at);
+
+
+--
+-- Name: idx_social_media_posts_platform_post; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_platform_post ON public.metrics_social_media_posts USING btree (platform, platform_post_id);
+
+
+--
+-- Name: idx_social_media_posts_social_post; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_media_posts_social_post ON public.metrics_social_media_posts USING btree (social_post_id);
+
+
+--
 -- Name: idx_tb_agreement_jurisdictions_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5412,6 +6116,27 @@ CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_b
 --
 
 CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_api_keys_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_keys_on_token_digest ON public.api_keys USING btree (token_digest);
+
+
+--
+-- Name: index_api_keys_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_keys_on_user_id ON public.api_keys USING btree (user_id);
+
+
+--
+-- Name: index_api_keys_on_user_id_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_keys_on_user_id_and_name ON public.api_keys USING btree (user_id, name);
 
 
 --
@@ -5695,10 +6420,24 @@ CREATE UNIQUE INDEX index_metrics_instagram_stats_on_account_and_date ON public.
 
 
 --
+-- Name: index_metrics_instagram_stats_on_social_media_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metrics_instagram_stats_on_social_media_account_id ON public.metrics_instagram_stats USING btree (social_media_account_id);
+
+
+--
 -- Name: index_metrics_linkedin_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_metrics_linkedin_stats_on_account_and_date ON public.metrics_linkedin_stats USING btree (account, date);
+
+
+--
+-- Name: index_metrics_linkedin_stats_on_social_media_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metrics_linkedin_stats_on_social_media_account_id ON public.metrics_linkedin_stats USING btree (social_media_account_id);
 
 
 --
@@ -5716,10 +6455,24 @@ CREATE UNIQUE INDEX index_metrics_tiktok_stats_on_account_and_date ON public.met
 
 
 --
+-- Name: index_metrics_tiktok_stats_on_social_media_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metrics_tiktok_stats_on_social_media_account_id ON public.metrics_tiktok_stats USING btree (social_media_account_id);
+
+
+--
 -- Name: index_metrics_twitter_stats_on_account_and_date; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_metrics_twitter_stats_on_account_and_date ON public.metrics_twitter_stats USING btree (account, date);
+
+
+--
+-- Name: index_metrics_twitter_stats_on_social_media_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metrics_twitter_stats_on_social_media_account_id ON public.metrics_twitter_stats USING btree (social_media_account_id);
 
 
 --
@@ -5972,6 +6725,76 @@ CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
 --
 
 CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING btree (reset_password_token);
+
+
+--
+-- Name: ux_ad_account_daily_metrics_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_ad_account_daily_metrics_date ON public.metrics_social_media_ad_account_daily_metrics USING btree (ad_account_id, date);
+
+
+--
+-- Name: ux_ad_campaign_daily_metrics_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_ad_campaign_daily_metrics_date ON public.metrics_social_media_ad_campaign_daily_metrics USING btree (campaign_id, date);
+
+
+--
+-- Name: ux_ad_daily_metrics_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_ad_daily_metrics_date ON public.metrics_social_media_ad_daily_metrics USING btree (ad_id, date);
+
+
+--
+-- Name: ux_metrics_ad_accounts_source_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_metrics_ad_accounts_source_id ON public.metrics_social_media_ad_accounts USING btree (social_media_account_id, platform_ad_account_id);
+
+
+--
+-- Name: ux_metrics_ad_campaigns_source_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_metrics_ad_campaigns_source_id ON public.metrics_social_media_ad_campaigns USING btree (social_media_account_id, platform, platform_campaign_id);
+
+
+--
+-- Name: ux_metrics_ads_zernio_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_metrics_ads_zernio_id ON public.metrics_social_media_ads USING btree (zernio_ad_id);
+
+
+--
+-- Name: ux_social_media_account_snapshots_observed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_account_snapshots_observed ON public.metrics_social_media_account_metric_snapshots USING btree (social_media_account_id, observed_at);
+
+
+--
+-- Name: ux_social_media_accounts_zernio_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_accounts_zernio_id ON public.metrics_social_media_accounts USING btree (zernio_account_id);
+
+
+--
+-- Name: ux_social_media_post_snapshots_observed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_post_snapshots_observed ON public.metrics_social_media_post_metric_snapshots USING btree (social_media_post_id, observed_at);
+
+
+--
+-- Name: ux_social_media_posts_zernio_account; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_posts_zernio_account ON public.metrics_social_media_posts USING btree (zernio_post_id, social_media_account_id);
 
 
 --
@@ -7255,11 +8078,59 @@ ALTER TABLE ONLY public.memos
 
 
 --
+-- Name: metrics_tiktok_stats fk_rails_0402725fef; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_tiktok_stats
+    ADD CONSTRAINT fk_rails_0402725fef FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: metrics_twitter_stats fk_rails_0531b4169a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_twitter_stats
+    ADD CONSTRAINT fk_rails_0531b4169a FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: metrics_social_media_ad_daily_metrics fk_rails_0667f054d9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_daily_metrics
+    ADD CONSTRAINT fk_rails_0667f054d9 FOREIGN KEY (ad_id) REFERENCES public.metrics_social_media_ads(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_social_media_ads fk_rails_09d8c3097d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ads
+    ADD CONSTRAINT fk_rails_09d8c3097d FOREIGN KEY (ad_account_id) REFERENCES public.metrics_social_media_ad_accounts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: metrics_social_media_ad_campaigns fk_rails_1a27f2a9a7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
+    ADD CONSTRAINT fk_rails_1a27f2a9a7 FOREIGN KEY (ad_account_id) REFERENCES public.metrics_social_media_ad_accounts(id) ON DELETE SET NULL;
+
+
+--
 -- Name: trade_barriers_agreement_histories fk_rails_2a21dba64b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.trade_barriers_agreement_histories
     ADD CONSTRAINT fk_rails_2a21dba64b FOREIGN KEY (agreement_id) REFERENCES public.trade_barriers_agreements(id);
+
+
+--
+-- Name: api_keys fk_rails_32c28d0dc2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_keys
+    ADD CONSTRAINT fk_rails_32c28d0dc2 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -7319,6 +8190,22 @@ ALTER TABLE ONLY public.saved_searches
 
 
 --
+-- Name: metrics_social_media_posts fk_rails_65e910fc73; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT fk_rails_65e910fc73 FOREIGN KEY (social_post_id) REFERENCES public.social_posts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: metrics_social_media_ad_campaigns fk_rails_6804420186; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
+    ADD CONSTRAINT fk_rails_6804420186 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: notification_batches fk_rails_6e71670cf3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7351,6 +8238,22 @@ ALTER TABLE ONLY public.trade_barriers_agreements
 
 
 --
+-- Name: metrics_social_media_ads fk_rails_827edbbf8d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ads
+    ADD CONSTRAINT fk_rails_827edbbf8d FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_linkedin_stats fk_rails_82af9b8cc3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_linkedin_stats
+    ADD CONSTRAINT fk_rails_82af9b8cc3 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
+
+
+--
 -- Name: luma_event_guests fk_rails_871979e163; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7367,11 +8270,35 @@ ALTER TABLE ONLY public.engagements
 
 
 --
+-- Name: metrics_social_media_account_metric_snapshots fk_rails_91139009de; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots
+    ADD CONSTRAINT fk_rails_91139009de FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_instagram_stats fk_rails_91c7fda134; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_instagram_stats
+    ADD CONSTRAINT fk_rails_91c7fda134 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.active_storage_variant_records
     ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: metrics_social_media_ads fk_rails_a6240524aa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ads
+    ADD CONSTRAINT fk_rails_a6240524aa FOREIGN KEY (campaign_id) REFERENCES public.metrics_social_media_ad_campaigns(id) ON DELETE SET NULL;
 
 
 --
@@ -7391,6 +8318,14 @@ ALTER TABLE ONLY public.notification_deliveries
 
 
 --
+-- Name: metrics_social_media_ad_account_daily_metrics fk_rails_b36fd8ebe4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_account_daily_metrics
+    ADD CONSTRAINT fk_rails_b36fd8ebe4 FOREIGN KEY (ad_account_id) REFERENCES public.metrics_social_media_ad_accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: oauth_access_grants fk_rails_b4b53e07b8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7404,6 +8339,38 @@ ALTER TABLE ONLY public.oauth_access_grants
 
 ALTER TABLE ONLY public.active_storage_attachments
     ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: metrics_social_media_ad_accounts fk_rails_ca905c0cb7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_accounts
+    ADD CONSTRAINT fk_rails_ca905c0cb7 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_social_media_ad_campaign_daily_metrics fk_rails_d8eb9bb290; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_ad_campaign_daily_metrics
+    ADD CONSTRAINT fk_rails_d8eb9bb290 FOREIGN KEY (campaign_id) REFERENCES public.metrics_social_media_ad_campaigns(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_social_media_posts fk_rails_dbf3dce674; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_posts
+    ADD CONSTRAINT fk_rails_dbf3dce674 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metrics_social_media_post_metric_snapshots fk_rails_e39476749f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
+    ADD CONSTRAINT fk_rails_e39476749f FOREIGN KEY (social_media_post_id) REFERENCES public.metrics_social_media_posts(id) ON DELETE CASCADE;
 
 
 --
@@ -8341,6 +9308,9 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260811000000'),
+('20260810181000'),
+('20260810180000'),
 ('20260807000001'),
 ('20260805050000'),
 ('20260805040000'),

@@ -4,7 +4,7 @@ module Api
     # owns the presented Doorkeeper access token, including their admin status so
     # clients can gate admin-only UI (e.g. TradingPost draft preview).
     class MeController < ApplicationController
-      before_action :doorkeeper_authorize!
+      before_action :authenticate_api_user!
 
       def show
         user = current_token_user
@@ -29,7 +29,7 @@ module Api
       private
 
       def current_token_user
-        User.find_by(id: doorkeeper_token.resource_owner_id)
+        current_user
       end
 
       def me_params

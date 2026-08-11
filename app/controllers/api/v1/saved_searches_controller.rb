@@ -1,7 +1,7 @@
 module Api
   module V1
     class SavedSearchesController < ApplicationController
-      before_action :doorkeeper_authorize!
+      before_action :authenticate_api_user!
       before_action :set_saved_search, only: %i[show update destroy test]
 
       def index
@@ -21,6 +21,17 @@ module Api
         saved_search.next_run_at ||= Time.current
 
         if saved_search.save
+          # PostHog: track saved search creation
+          PostHog.capture(
+            distinct_id: current_user.posthog_distinct_id,
+            event: "saved_search_created",
+            properties: {
+              realm: saved_search.realm,
+              start_policy: saved_search.start_policy,
+              delivery_mode: saved_search.delivery_mode,
+              poll_interval_seconds: saved_search.poll_interval_seconds
+            }
+          )
           render json: serialize(saved_search), status: :created
         else
           render json: { errors: saved_search.errors.full_messages }, status: :unprocessable_entity
@@ -40,6 +51,17 @@ module Api
         @saved_search.next_run_at = Time.current if definition_changed
 
         if @saved_search.save
+          # PostHog: track saved search update
+          PostHog.capture(
+            distinct_id: current_user.posthog_distinct_id,
+            event: "saved_search_updated",
+            properties: {
+              saved_search_id: @saved_search.id,
+              realm: @saved_search.realm,
+              definition_changed: definition_changed,
+              enabled: @saved_search.enabled
+            }
+          )
           render json: serialize(@saved_search)
         else
           render json: { errors: @saved_search.errors.full_messages }, status: :unprocessable_entity
@@ -47,6 +69,15 @@ module Api
       end
 
       def destroy
+        # PostHog: track saved search deletion before it's gone
+        PostHog.capture(
+          distinct_id: current_user.posthog_distinct_id,
+          event: "saved_search_deleted",
+          properties: {
+            saved_search_id: @saved_search.id,
+            realm: @saved_search.realm
+          }
+        )
         @saved_search.destroy!
         head :no_content
       end
@@ -59,10 +90,6 @@ module Api
       end
 
       private
-
-      def current_user
-        @current_user ||= User.find(doorkeeper_token.resource_owner_id)
-      end
 
       def set_saved_search
         @saved_search = current_user.saved_searches.find(params[:id])

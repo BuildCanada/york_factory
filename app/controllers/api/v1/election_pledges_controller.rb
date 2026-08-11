@@ -88,6 +88,17 @@ module Api
         pledge.assign_attributes(region: params[:region], pledged_at: Time.current)
 
         if pledge.save
+          if newly_pledged
+            # PostHog: track new pledge to vote (distinct_id is the stable subscriber id, not email)
+            PostHog.capture(
+              distinct_id: "subscriber_#{subscriber.id}",
+              event: "election_pledge_submitted",
+              properties: {
+                election_slug: @election.slug,
+                region: pledge.region
+              }
+            )
+          end
           render json: {
             region: pledge.region,
             pledged_at: pledge.pledged_at,

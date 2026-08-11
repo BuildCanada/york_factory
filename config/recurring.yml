@@ -16,6 +16,9 @@ production:
   backfill_feed:
     class: BackfillFeedJob
     schedule: every hour at minute 0
+  scrape_zernio_social_media:
+    class: Metrics::ScrapeZernioSocialMediaJob
+    schedule: every hour at minute 15
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

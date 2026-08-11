@@ -21,6 +21,16 @@ class Warehouse::GeoBoundary < Warehouse::Record
   scope :in_province, ->(code) { where(province_code: code) }
   scope :search_name, ->(q) { where("name_en ILIKE :q OR name_fr ILIKE :q", q: "%#{sanitize_sql_like(q)}%") }
 
+  # The bare ward number, for clients that route on it (/wards/19). Ward uids
+  # carry a municipality prefix so they stay unique across cities
+  # ("3520005-19"), and the number is the last segment — but callers should not
+  # have to parse a uid whose format we may change. Nil where the last segment
+  # is not numeric, as school board ward uids are named rather than numbered.
+  def ward_number
+    segment = geo_uid.to_s.split("-").last
+    segment&.match?(/\A\d+\z/) ? segment.to_i : nil
+  end
+
   private
 
   def default_code_system

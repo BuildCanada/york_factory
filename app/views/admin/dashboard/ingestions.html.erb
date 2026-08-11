@@ -8,8 +8,8 @@
         <th>Source</th>
         <th>Status</th>
         <th>Fetched At</th>
-        <th>Rows</th>
         <th>Error</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -23,7 +23,6 @@
             </span>
           </td>
           <td><%= ingestion.fetched_at&.strftime("%Y-%m-%d %H:%M") || "—" %></td>
-          <td class="text-right"><%= ingestion.row_count || "—" %></td>
           <td>
             <% if ingestion.error_message.present? %>
               <span class="text-muted" title="<%= ingestion.error_message %>"><%= truncate(ingestion.error_message, length: 50) %></span>
@@ -31,6 +30,7 @@
               <span class="text-muted">—</span>
             <% end %>
           </td>
+          <td class="text-right"><%= link_to "Records", admin_records_path(raw_ingestion_id: ingestion.id), class: "btn btn-sm" %></td>
         </tr>
       <% end %>
     </tbody>

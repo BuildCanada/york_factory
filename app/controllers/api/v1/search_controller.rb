@@ -1,7 +1,7 @@
 module Api
   module V1
     class SearchController < ApplicationController
-      before_action :doorkeeper_authorize!
+      before_action :authenticate_api_user!
 
       rescue_from Search::QueryCompiler::InvalidDefinition, ArgumentError do |error|
         render json: { error: "invalid_search", details: error.message }, status: :unprocessable_entity

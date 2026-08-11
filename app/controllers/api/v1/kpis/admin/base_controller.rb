@@ -36,6 +36,13 @@ module Api
 
           def authenticate_api_token!
             raw = request.headers["Authorization"]&.split(" ", 2)&.last
+            if (user_api_key = ::ApiKey.authenticate(raw))
+              @current_user = user_api_key.user
+              return render_forbidden unless @current_user.admin?
+
+              return
+            end
+
             @api_token = ::Warehouse::ApiToken.authenticate(raw)
             return render_unauthorized unless @api_token
             render_forbidden unless @api_token.has_scope?("kpis:write")

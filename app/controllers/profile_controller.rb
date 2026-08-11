@@ -11,6 +11,18 @@ class ProfileController < ActionController::Base
     attrs = profile_params.reject { |_, v| v.blank? }
 
     if @user.update(attrs)
+      # PostHog: re-identify with updated properties and capture profile update
+      PostHog.identify(
+        distinct_id: @user.posthog_distinct_id,
+        properties: @user.posthog_properties
+      )
+      PostHog.capture(
+        distinct_id: @user.posthog_distinct_id,
+        event: "profile_updated",
+        properties: {
+          fields_updated: attrs.keys
+        }
+      )
       redirect_to profile_path, notice: "Profile updated."
     else
       render :show, status: :unprocessable_entity

@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_many :identities, dependent: :destroy
   has_many :saved_searches, dependent: :destroy
+  has_many :api_keys, dependent: :destroy
 
   enum :role, {
     member: "member",
@@ -139,6 +140,24 @@ class User < ApplicationRecord
   # True once the user has the data required to publicly engage with a memo.
   def engagement_ready?
     postal_code.present?
+  end
+
+  # Used by posthog-rails for automatic user association in error reports.
+  # Stable primary key — never PII.
+  def posthog_distinct_id
+    id.to_s
+  end
+
+  # Person properties sent to PostHog on identify() calls.
+  def posthog_properties
+    {
+      email: email,
+      name: name,
+      role: role,
+      postal_code: postal_code,
+      engagement_ready: engagement_ready?,
+      date_joined: created_at&.iso8601
+    }.compact
   end
 
   private

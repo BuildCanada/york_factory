@@ -6,24 +6,47 @@ and which tables in this repo are authoritative for it.
 This document is the definition of record. If a number in a deck, a donor update, or a
 board paper disagrees with this document, this document is what needs changing first.
 
-- [Headline KPI: unique impressions](#headline-kpi-unique-impressions)
+- [Two metrics, not one](#two-metrics-not-one)
+- [Unique reach](#unique-reach)
 - [Q3 target](#q3-target)
 - [Where the numbers come from](#where-the-numbers-come-from)
 - [Platform primitives reference](#platform-primitives-reference)
 - [Known limitations](#known-limitations)
 - [Operational notes](#operational-notes)
 
-## Headline KPI: unique impressions
+## Two metrics, not one
 
-A **unique impression** is one person seeing our content once, within a single platform,
-inside a single reporting window.
+Reporting needs a volume figure and a distinct-people figure. Treating one as the other is
+where the current confusion comes from, so they are named and defined separately here.
+
+1. **Content Views**, a volume measure. The number of times Build Canada content was placed
+   on a screen, summed across channels, where repeat exposure to the same person counts every
+   time. This is what today's dashboards report and what the [Q3 target](#q3-target) is set
+   against.
+2. **Unique reach**, a distinct-people measure. Defined below, deduplicated by the platform.
+   Nothing computes it yet and no target is set against it.
+
+These are different units and their magnitudes differ substantially: a reach figure for a
+given period is always materially lower than a views figure for the same period. Do not
+compare one to the other, and do not restate a target expressed in one as though it applied
+to the other.
+
+The word "impressions" is avoided as a headline label because it implies a single
+platform-standard unit that does not exist across our channels. See
+[Related](#related) for the full audit of the volume metric, including its per-channel
+thresholds and known defects.
+
+## Unique reach
+
+**Unique reach** is the number of distinct people who saw our content, counted once per
+platform per reporting window.
 
 We measure it with platform-reported *reach* wherever a platform gives us reach, because
 reach is already deduplicated by account. We fall back to gross impressions only where no
 reach figure exists, and we label that fallback wherever the number is published.
 
 ```
-unique_impressions =
+unique_reach =
     SUM(reach)                                  -- per-post reach, deduplicated by the platform
   + linkedin.unique_impressions_organic          -- LinkedIn's own unique figure (organic only)
   + [fallback: gross impressions or views]       -- only where no reach is reported
@@ -41,11 +64,12 @@ Deduplicated:
 Not deduplicated:
 
 1. **The same person on more than one platform.** Someone who follows us on X and LinkedIn
-   counts twice. We have no cross-platform identity graph and are not planning one, so our
-   headline figure overstates distinct humans reached by an unknown margin.
+   counts twice. We have no cross-platform identity graph and are not planning one, so even
+   this figure overstates distinct humans reached by an unmeasured margin.
 2. **The same person across reporting windows.** A weekly reach figure deduplicates within
-   that week; summing 13 weeks counts a loyal weekly reader up to 13 times. Cumulative
-   totals are therefore impression-weighted, not person-weighted.
+   that week; summing 13 weeks counts a loyal weekly reader up to 13 times. A cumulative
+   unique reach total is therefore exposure-weighted, not person-weighted, and "unique" holds
+   only within a single window.
 
 Both limits are structural, not bugs. State them when the number goes in front of funders
 or the board.
@@ -63,13 +87,26 @@ reach, only views, so the fallback clause carries real weight today. See
 
 ## Q3 target
 
-**17,000,000 unique impressions, measured cumulatively from March 1, 2026.**
+**17,000,000 Content Views, measured cumulatively from March 1, 2026.**
 
-The figure is a running total from March 1 rather than a per-quarter reset, so progress
-never resets to zero mid-year. Quarter boundaries follow the standard calendar
-(Q3 = July 1 to September 30); they are not offset to a fiscal year.
+The target is set against Content Views, the volume metric, not against unique reach. This
+matters: restating 17M as a reach target would compare two different units and make the number
+unreachable by construction.
+
+The figure is a running total from March 1 rather than a per-quarter reset, so progress never
+resets to zero mid-year. Quarter boundaries follow the standard calendar (Q3 = July 1 to
+September 30) and are not offset to a fiscal year. A `WHERE date >= '2026-03-01'` floor on a
+tile labelled "Q3" is therefore correct even though the label reads as quarter-only.
 
 Progress is reviewed weekly in the sprint deck against the Cumulative-to-Targets dashboard.
+
+### The target spans channels this repo does not hold
+
+Content Views is assembled across more channels than the tables documented here. Website
+pageviews come from PostHog, and paid social comes from Meta Ads; neither is in York Factory
+Postgres. This document is authoritative for the social and newsletter channel tables and for
+the unique reach definition. It is not a complete accounting of the headline figure, and
+reconciling to 17M requires the out-of-repo channels too.
 
 ## Where the numbers come from
 
@@ -235,6 +272,12 @@ needs a note in [Known limitations](#known-limitations).
 
 ## Related
 
+- **Impressions Ledger**, the companion audit of the Content Views volume metric. It records
+  each channel's per-platform counting threshold, what is exported but deliberately excluded
+  (LinkedIn sponsored impressions, YouTube), and six defects found while verifying the PostHog
+  views, including website history being silently truncated at 30 days and a materialized view
+  whose refresh is failing. Read it before quoting a Content Views figure. Held by Macoy;
+  not yet in this repo.
 - `docs/kpis/architecture.md`, the separate government-KPI platform. Unrelated to this
   document despite the shared word.
 - PostHog holds the dashboards used in the weekly sprint deck (Impressions, and

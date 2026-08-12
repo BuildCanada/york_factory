@@ -24,7 +24,9 @@
         <% end %>
       </div>
 
-      <% if source[:manual_path] %>
+      <% if source[:api_note] %>
+        <span class="text-muted" style="font-size: 0.75rem;"><%= source[:api_note] %></span>
+      <% elsif source[:manual_path] %>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
           <%= link_to "+ New Week", source[:manual_path], class: "btn btn-primary btn-sm" %>
           <% if source[:manage_path] %>

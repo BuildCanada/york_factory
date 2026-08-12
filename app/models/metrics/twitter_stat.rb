@@ -4,7 +4,7 @@ module Metrics
       class_name: "Metrics::SocialMediaAccount",
       optional: true
 
-    ACCOUNTS = %w[build_canada canada_spends].freeze
+    ACCOUNTS = %w[build_canada build_toronto canada_spends lucyhargreaves4].freeze
     METRIC_COLUMNS = %w[
       impressions likes engagements bookmarks shares new_follows unfollows
       replies reposts profile_visits create_post video_views media_views

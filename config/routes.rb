@@ -99,6 +99,12 @@ Rails.application.routes.draw do
         resources :jurisdictions, only: [ :index ]
       end
 
+      namespace :metrics do
+        post "twitter_stats/import", to: "imports#twitter"
+        post "linkedin_stats/import", to: "imports#linkedin"
+        post "tiktok_stats/import", to: "imports#tiktok"
+      end
+
       namespace :kpis do
         get "series", to: "series#index"
         resources :jurisdictions, only: [ :index, :show ], param: :slug do

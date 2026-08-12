@@ -19,6 +19,9 @@ production:
   scrape_zernio_social_media:
     class: Metrics::ScrapeZernioSocialMediaJob
     schedule: every hour at minute 15
+  sync_meta_analytics:
+    class: Metrics::SyncMetaAnalyticsJob
+    schedule: every day at 6:30am
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

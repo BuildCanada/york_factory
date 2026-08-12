@@ -1,6 +1,5 @@
 module Metrics
   class MetaAnalyticsSync
-    MEDIA_LOOKBACK_DAYS = 30
     ACCOUNT_FIELDS = {
       "facebook" => %w[id name username link],
       "instagram" => %w[id name username profile_picture_url]
@@ -42,6 +41,17 @@ module Metrics
     end
 
     def sync!(platform:, account_key:, platform_account_id:, account_metrics: [], media_metrics: [])
+      account = sync_account!(
+        platform: platform,
+        account_key: account_key,
+        platform_account_id: platform_account_id,
+        account_metrics: account_metrics
+      )
+      discover_recent_media!(account)
+      account
+    end
+
+    def sync_account!(platform:, account_key:, platform_account_id:, account_metrics: [])
       validate_account!(platform, account_key)
       profile = @client.get(platform_account_id, params: {
         fields: ACCOUNT_FIELDS.fetch(platform).join(",")
@@ -49,9 +59,57 @@ module Metrics
       account = upsert_account!(platform, account_key, platform_account_id, profile)
       sync_insights!(account.insights, platform_account_id, account_metrics,
         platform: platform, scope: :account)
-      sync_media!(account, platform_account_id, media_metrics)
       account.update!(last_synced_at: @now)
       account
+    end
+
+    def discover_recent_media!(account)
+      after = nil
+      loop do
+        result = discover_media_page!(account, after: after, stop_at_existing: true)
+        break if result[:found_existing] || result[:next_cursor].blank?
+
+        after = result[:next_cursor]
+      end
+    end
+
+    def discover_media_page!(account, after: nil, stop_at_existing: false, backfill: false)
+      params = {
+        fields: MEDIA_FIELDS.fetch(account.platform).join(","),
+        limit: 100
+      }
+      params[:after] = after if after.present?
+      response = @client.get(
+        "#{account.platform_account_id}/#{MEDIA_EDGE.fetch(account.platform)}",
+        params: params
+      )
+      payloads = Array(response["data"])
+      known_ids = account.media.where(platform_media_id: payloads.filter_map { |row| row["id"] }).
+        pluck(:platform_media_id).to_set
+      found_existing = false
+      processed = 0
+
+      payloads.each do |payload|
+        if stop_at_existing && known_ids.include?(payload.fetch("id"))
+          found_existing = true
+          break
+        end
+
+        upsert_medium!(account, payload, initial_sync_at: backfill ? @now : nil)
+        processed += 1
+      end
+
+      {
+        found_existing: found_existing,
+        next_cursor: response.dig("paging", "next").present? ?
+          response.dig("paging", "cursors", "after") : nil,
+        processed: processed
+      }
+    end
+
+    def sync_media_insights!(medium, metric_names:)
+      sync_insights!(medium.insights, medium.platform_media_id, metric_names,
+        platform: medium.account.platform, scope: :media)
     end
 
     private
@@ -76,27 +134,12 @@ module Metrics
       account
     end
 
-    def sync_media!(account, platform_account_id, metric_names)
-      params = {
-        fields: MEDIA_FIELDS.fetch(account.platform).join(","),
-        limit: 100
-      }
-      params[:since] = media_cutoff.iso8601 if account.platform == "facebook"
-
-      each_page("#{platform_account_id}/#{MEDIA_EDGE.fetch(account.platform)}", params: params) do |payload|
-        published_at = media_attributes(account.platform, payload)[:published_at]
-        next :stop if account.platform == "instagram" && published_at && published_at < media_cutoff
-
-        medium = account.media.find_or_initialize_by(platform_media_id: payload.fetch("id"))
-        medium.assign_attributes(media_attributes(account.platform, payload))
-        medium.save!
-        sync_insights!(medium.insights, medium.platform_media_id, metric_names,
-          platform: account.platform, scope: :media)
-      end
-    end
-
-    def media_cutoff
-      @now - MEDIA_LOOKBACK_DAYS.days
+    def upsert_medium!(account, payload, initial_sync_at: nil)
+      medium = account.media.find_or_initialize_by(platform_media_id: payload.fetch("id"))
+      medium.assign_attributes(media_attributes(account.platform, payload))
+      medium.save!
+      medium.schedule_initial_insights!(at: initial_sync_at || medium.published_at || @now)
+      medium
     end
 
     def media_attributes(platform, payload)

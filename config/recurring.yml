@@ -22,6 +22,9 @@ production:
   sync_meta_analytics:
     class: Metrics::SyncMetaAnalyticsJob
     schedule: every day at 6:30am
+  dispatch_meta_media_insights:
+    class: Metrics::DispatchMetaMediaInsightsJob
+    schedule: every hour at minute 35
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

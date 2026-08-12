@@ -55,13 +55,14 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     now = Time.zone.parse("2026-08-12 13:00:00")
     client = FakeClient.new
 
-    account = Metrics::MetaAnalyticsSync.new(client: client, now: now).sync!(
+    sync = Metrics::MetaAnalyticsSync.new(client: client, now: now)
+    account = sync.sync_account!(
       platform: "instagram",
       account_key: "build_toronto",
       platform_account_id: "ig-123",
-      account_metrics: %w[views reach],
-      media_metrics: %w[likes comments]
+      account_metrics: %w[views reach]
     )
+    sync.discover_recent_media!(account)
 
     assert_equal "build_toronto", account.username
     assert_equal now, account.last_synced_at
@@ -72,13 +73,22 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     medium = account.media.sole
     assert_equal "Hello Toronto", medium.caption
     assert_equal "media-456", medium.source_payload["id"]
+    assert_equal Time.zone.parse("2026-08-10T12:00:00+0000"), medium.next_insights_sync_at
+    refute client.requests.any? { |path, _params| path == "media-456/insights" }
+    media_request = client.requests.find { |path, _params| path == "ig-123/media" }
+    refute media_request.last.key?(:since)
+
+    sync.sync_media_insights!(medium, metric_names: %w[likes comments])
     assert_equal 2, medium.insights.count
     assert_equal now, medium.insights.find_by!(metric_name: "likes").observed_at
+
+    sync.sync_media_insights!(medium, metric_names: %w[likes comments])
+    assert_equal 2, medium.insights.count
   end
 
   test "rejects accounts outside the configured allowlist" do
     error = assert_raises(ArgumentError) do
-      Metrics::MetaAnalyticsSync.new(client: FakeClient.new).sync!(
+      Metrics::MetaAnalyticsSync.new(client: FakeClient.new).sync_account!(
         platform: "instagram",
         account_key: "unknown",
         platform_account_id: "ig-123"
@@ -90,7 +100,7 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
 
   test "separates Instagram total-value metrics and normalizes their values" do
     now = Time.zone.parse("2026-08-12 13:00:00")
-    account = Metrics::MetaAnalyticsSync.new(client: TotalValueClient.new, now: now).sync!(
+    account = Metrics::MetaAnalyticsSync.new(client: TotalValueClient.new, now: now).sync_account!(
       platform: "instagram",
       account_key: "build_toronto",
       platform_account_id: "ig-123",
@@ -99,5 +109,21 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
 
     assert_equal 42, account.insights.find_by!(metric_name: "views").value_numeric
     assert_equal 42, account.insights.find_by!(metric_name: "accounts_engaged").value_numeric
+  end
+
+  test "historical discovery schedules a real baseline at the backfill time" do
+    now = Time.zone.parse("2026-08-12 13:00:00")
+    sync = Metrics::MetaAnalyticsSync.new(client: FakeClient.new, now: now)
+    account = sync.sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123"
+    )
+
+    result = sync.discover_media_page!(account, backfill: true)
+
+    assert_equal 1, result[:processed]
+    assert_nil result[:next_cursor]
+    assert_equal now, account.media.sole.next_insights_sync_at
   end
 end

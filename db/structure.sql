@@ -859,7 +859,8 @@ CREATE TABLE public.metrics_meta_accounts (
     last_synced_at timestamp(6) without time zone,
     source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    media_backfilled_at timestamp(6) without time zone
 );
 
 
@@ -896,7 +897,11 @@ CREATE TABLE public.metrics_meta_media (
     published_at timestamp(6) without time zone,
     source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    next_insights_sync_at timestamp(6) without time zone,
+    last_insights_synced_at timestamp(6) without time zone,
+    insights_sync_enqueued_at timestamp(6) without time zone,
+    insights_sync_completed_at timestamp(6) without time zone
 );
 
 
@@ -6125,6 +6130,13 @@ CREATE INDEX idx_metrics_ads_campaign ON public.metrics_social_media_ads USING b
 
 
 --
+-- Name: idx_metrics_meta_media_due_insights; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_metrics_meta_media_due_insights ON public.metrics_meta_media USING btree (next_insights_sync_at) WHERE (insights_sync_completed_at IS NULL);
+
+
+--
 -- Name: idx_notification_batches_due; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9483,6 +9495,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260812000002'),
 ('20260812000001'),
 ('20260810181000'),
 ('20260810180000'),

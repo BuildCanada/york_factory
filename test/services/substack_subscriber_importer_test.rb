@@ -22,12 +22,16 @@ class SubstackSubscriberImporterTest < ActiveSupport::TestCase
       Subscriber.new(email: "two@buildcanada.com")
     ]
 
-    import_id = SubstackSubscriberImporter.new(client: client).import!(subscribers)
+    importer = SubstackSubscriberImporter.new(
+      client: client,
+      now: -> { Time.utc(2026, 8, 12, 21, 57, 1) }
+    )
+    import_id = importer.import!(subscribers)
 
     assert_equal 13_007_494, import_id
     assert_equal "/api/v1/import/prepare", client.multipart_request[:path]
     upload = client.multipart_request.dig(:form, :csv)
-    assert_equal "build-canada-subscribers.csv", upload[:filename]
+    assert_equal "build-canada-website-subscribers-20260812T215701Z-2.csv", upload[:filename]
     assert_equal "text/csv", upload[:content_type]
     assert_equal "email\none@buildcanada.com\ntwo@buildcanada.com\n", upload[:body].read
 

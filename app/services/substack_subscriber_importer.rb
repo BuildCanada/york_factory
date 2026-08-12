@@ -4,8 +4,9 @@ require "stringio"
 class SubstackSubscriberImporter
   class InvalidResponseError < Metrics::SubstackClient::Error; end
 
-  def initialize(client:)
+  def initialize(client:, now: -> { Time.current })
     @client = client
+    @now = now
   end
 
   def import!(subscribers)
@@ -44,8 +45,13 @@ class SubstackSubscriberImporter
 
     {
       body: StringIO.new(body),
-      filename: "build-canada-subscribers.csv",
+      filename: import_filename(subscribers.size),
       content_type: "text/csv"
     }
+  end
+
+  def import_filename(subscriber_count)
+    timestamp = @now.call.utc.strftime("%Y%m%dT%H%M%SZ")
+    "build-canada-website-subscribers-#{timestamp}-#{subscriber_count}.csv"
   end
 end

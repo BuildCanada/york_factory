@@ -31,6 +31,9 @@ production:
   dispatch_substack_post_details:
     class: Metrics::DispatchSubstackPostDetailsJob
     schedule: every hour at minute 50
+  sync_substack_subscribers:
+    class: SyncSubstackSubscribersJob
+    schedule: every 10 minutes
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

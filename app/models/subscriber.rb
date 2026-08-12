@@ -19,6 +19,8 @@ class Subscriber < ApplicationRecord
   validates :email, presence: true, uniqueness: true,
             format: { with: URI::MailTo::EMAIL_REGEXP }
 
+  scope :not_synced_to_substack, -> { where(substack_synced_at: nil) }
+
   # Solid Queue runs on a separate database, so the job must not be enqueued
   # until the subscriber row is committed and visible to the worker.
   after_commit :submit_to_hubspot_form_later, on: [ :create, :update ],

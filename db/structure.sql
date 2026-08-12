@@ -2118,7 +2118,9 @@ CREATE TABLE public.subscribers (
     page_name character varying,
     hubspot_utk character varying,
     ip_address character varying,
-    pledged_to_vote_at timestamp(6) without time zone
+    pledged_to_vote_at timestamp(6) without time zone,
+    substack_synced_at timestamp(6) without time zone,
+    substack_import_id bigint
 );
 
 
@@ -7035,6 +7037,13 @@ CREATE UNIQUE INDEX index_subscribers_on_email ON public.subscribers USING btree
 
 
 --
+-- Name: index_subscribers_on_substack_synced_at_and_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_subscribers_on_substack_synced_at_and_id ON public.subscribers USING btree (substack_synced_at, id);
+
+
+--
 -- Name: index_substack_posts_on_external_url; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9759,6 +9768,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260812000005'),
 ('20260812000004'),
 ('20260812000003'),
 ('20260812000002'),

@@ -15,6 +15,11 @@ class Metrics::SubstackClientTest < ActiveSupport::TestCase
       @requests << { url: url, params: params, headers: headers }
       @response
     end
+
+    def post(url, **options)
+      @requests << { url: url, **options }
+      @response
+    end
   end
 
   test "sends auth cookies and parses JSON" do
@@ -48,5 +53,33 @@ class Metrics::SubstackClientTest < ActiveSupport::TestCase
     assert_raises(ArgumentError) do
       Metrics::SubstackClient.new(base_url: "http://buildcanada.substack.com")
     end
+  end
+
+  test "posts JSON using the authenticated session" do
+    http = FakeHTTP.new(Response.new(200, '{"ok":true}'))
+    client = Metrics::SubstackClient.new(
+      base_url: "https://buildcanada.substack.com",
+      cookies: { "substack.sid" => "secret" },
+      http: http
+    )
+
+    assert_equal({ "ok" => true }, client.post_json("/api/v1/import/finish", sendEmails: false))
+    request = http.requests.sole
+    assert_equal({ sendEmails: false }, request[:json])
+    assert_equal "substack.sid=secret", request[:headers]["Cookie"]
+  end
+
+  test "posts multipart forms using the authenticated session" do
+    http = FakeHTTP.new(Response.new(200, '{"ok":true}'))
+    client = Metrics::SubstackClient.new(
+      base_url: "https://buildcanada.substack.com",
+      cookies: { "substack.sid" => "secret" },
+      http: http
+    )
+    upload = { body: StringIO.new("email\nreader@example.com\n"), filename: "subscribers.csv" }
+
+    client.post_multipart("/api/v1/import/prepare", form: { csv: upload })
+
+    assert_equal({ csv: upload }, http.requests.sole[:form])
   end
 end

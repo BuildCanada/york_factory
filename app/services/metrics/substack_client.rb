@@ -20,6 +20,30 @@ module Metrics
       else
         HTTPX.plugin(:follow_redirects).with(headers: headers).get(url(path), params: params)
       end
+      parse_response(response)
+    end
+
+    def post_json(path, payload)
+      response = if @http
+        @http.post(url(path), json: payload, headers: headers)
+      else
+        HTTPX.plugin(:follow_redirects).with(headers: headers).post(url(path), json: payload)
+      end
+      parse_response(response)
+    end
+
+    def post_multipart(path, form:)
+      response = if @http
+        @http.post(url(path), form: form, headers: headers)
+      else
+        HTTPX.plugin(:follow_redirects).with(headers: headers).post(url(path), form: form)
+      end
+      parse_response(response)
+    end
+
+    private
+
+    def parse_response(response)
       raise Error, "Substack request failed: #{response.error.message}" if response.is_a?(HTTPX::ErrorResponse)
 
       handle_response(response)
@@ -28,8 +52,6 @@ module Metrics
     rescue HTTPX::Error, SocketError, SystemCallError, Timeout::Error => error
       raise Error, "Substack request failed: #{error.message}"
     end
-
-    private
 
     def validate_base_url!
       uri = URI.parse(@base_url)

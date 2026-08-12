@@ -25,6 +25,12 @@ production:
   dispatch_meta_media_insights:
     class: Metrics::DispatchMetaMediaInsightsJob
     schedule: every hour at minute 35
+  sync_substack_analytics:
+    class: Metrics::SyncSubstackAnalyticsJob
+    schedule: every day at 5:30am
+  dispatch_substack_post_details:
+    class: Metrics::DispatchSubstackPostDetailsJob
+    schedule: every hour at minute 50
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

@@ -1,17 +1,17 @@
-class Warehouse::SocialEntity < Warehouse::Record
-  self.table_name = "warehouse.social_entities"
+class Metrics::SocialEntity < ApplicationRecord
+  self.table_name = "metrics_social_entities"
 
   ENTITY_TYPES = %w[account content ad_account campaign ad].freeze
 
   belongs_to :parent,
-    class_name: "Warehouse::SocialEntity",
+    class_name: "Metrics::SocialEntity",
     optional: true
   has_many :children,
-    class_name: "Warehouse::SocialEntity",
+    class_name: "Metrics::SocialEntity",
     foreign_key: :parent_id,
     dependent: :destroy
   has_many :metric_observations,
-    class_name: "Warehouse::SocialMetricObservation",
+    class_name: "Metrics::SocialMetricObservation",
     foreign_key: :social_entity_id,
     dependent: :destroy
 

@@ -1,6 +1,6 @@
 require "digest"
 
-class Metrics::SocialWarehouseRefresh
+class Metrics::SocialAnalyticsRefresh
   AD_METRICS = %w[
     spend impressions reach clicks engagements conversions conversion_value
     ctr cpc cpm cost_per_conversion roas
@@ -134,7 +134,7 @@ class Metrics::SocialWarehouseRefresh
           metric_name: "followers", source_metric_name: "followers_count",
           value: snapshot.followers_count, period_start: snapshot.observed_at,
           period_end: snapshot.observed_at, observed_at: snapshot.observed_at,
-          reporting_source: reporting, cumulative: true
+          reporting_source: true, cumulative: true
         )
       end
 
@@ -366,14 +366,14 @@ class Metrics::SocialWarehouseRefresh
   end
 
   def persist!
-    Warehouse::SocialEntity.transaction do
-      Warehouse::SocialEntity.update_all(active: false, refreshed_at: @now, updated_at: @now)
-      Warehouse::SocialEntity.upsert_all(@entities.values, unique_by: :id) if @entities.any?
-      Warehouse::SocialMetricObservation.update_all(
+    Metrics::SocialEntity.transaction do
+      Metrics::SocialEntity.update_all(active: false, refreshed_at: @now, updated_at: @now)
+      Metrics::SocialEntity.upsert_all(@entities.values, unique_by: :id) if @entities.any?
+      Metrics::SocialMetricObservation.update_all(
         active: false, refreshed_at: @now, updated_at: @now
       )
       if @observations.any?
-        Warehouse::SocialMetricObservation.upsert_all(
+        Metrics::SocialMetricObservation.upsert_all(
           @observations.values, unique_by: :id
         )
       end

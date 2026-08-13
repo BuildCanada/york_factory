@@ -1,13 +1,16 @@
-# Social analytics warehouse
+# Social analytics reporting tables
 
-PostHog reports should sync these physical tables from the `warehouse` schema:
+Social analytics are private operational data. They live in the primary application's `public`
+schema and must never be placed in the public-data-only `warehouse` schema.
 
-- `social_entities`: stable accounts, content, ad accounts, campaigns, and ads.
-- `social_metric_observations`: numeric facts using the same metric names across sources.
+PostHog reports should sync these physical tables:
+
+- `metrics_social_entities`: stable accounts, content, ad accounts, campaigns, and ads.
+- `metrics_social_metric_observations`: numeric facts using the same metric names across sources.
 
 Configure PostHog incremental sync with `id` as the primary key and `updated_at` as the
 cursor. Both tables are rebuilt idempotently every six hours by
-`Metrics::RefreshSocialWarehouseJob`. Rows no longer present upstream remain available with
+`Metrics::RefreshSocialAnalyticsJob`. Rows no longer present upstream remain available with
 `active = false`, so incremental sync does not depend on delete propagation.
 
 For normal reports, filter observations to:
@@ -23,7 +26,9 @@ Also filter `paid` explicitly. Never add paid and organic rows without labelling
 `reporting_source` follows the source-of-truth tiers: X exports, direct Meta Instagram,
 Zernio LinkedIn and TikTok, and Substack daily stats. Other observations are retained as
 cross-checks. This prevents Zernio X or Instagram observations from being added to the direct
-source for the same channel. Direct Meta content snapshots are also cross-checks: Instagram's
+source for the same channel. Follower totals are the exception: Zernio account snapshots are
+reportable for every configured social platform because the direct exports do not consistently
+provide a comparable current follower total. Direct Meta content snapshots are also cross-checks: Instagram's
 account-level daily insights are the reporting grain, so adding its post-level snapshots would
 count the channel twice.
 

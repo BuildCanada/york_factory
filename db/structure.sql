@@ -962,6 +962,33 @@ ALTER SEQUENCE public.metrics_meta_media_insights_id_seq OWNED BY public.metrics
 
 
 --
+-- Name: metrics_social_entities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_entities (
+    id character varying NOT NULL,
+    parent_id character varying,
+    entity_type character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    external_id character varying,
+    name character varying,
+    username character varying,
+    url character varying,
+    media_type character varying,
+    published_at timestamp(6) without time zone,
+    source character varying NOT NULL,
+    source_record_type character varying NOT NULL,
+    source_record_id character varying NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone NOT NULL,
+    refreshed_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: metrics_social_media_account_metric_snapshots; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1409,6 +1436,40 @@ CREATE SEQUENCE public.metrics_social_media_posts_id_seq
 --
 
 ALTER SEQUENCE public.metrics_social_media_posts_id_seq OWNED BY public.metrics_social_media_posts.id;
+
+
+--
+-- Name: metrics_social_metric_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_metric_observations (
+    id character varying NOT NULL,
+    social_entity_id character varying NOT NULL,
+    entity_type character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    source character varying NOT NULL,
+    source_record_type character varying NOT NULL,
+    source_record_id character varying NOT NULL,
+    grain character varying NOT NULL,
+    metric_name character varying NOT NULL,
+    source_metric_name character varying NOT NULL,
+    value numeric(30,8) NOT NULL,
+    unit character varying DEFAULT 'count'::character varying NOT NULL,
+    period_start timestamp(6) without time zone NOT NULL,
+    period_end timestamp(6) without time zone NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    cumulative boolean DEFAULT false NOT NULL,
+    paid boolean DEFAULT false NOT NULL,
+    reporting_source boolean DEFAULT false NOT NULL,
+    fallback_metric boolean DEFAULT false NOT NULL,
+    current_value boolean DEFAULT true NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone NOT NULL,
+    refreshed_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
 
 
 --
@@ -4463,67 +4524,6 @@ ALTER SEQUENCE warehouse.review_decisions_id_seq OWNED BY warehouse.review_decis
 
 
 --
--- Name: social_entities; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_entities (
-    id character varying NOT NULL,
-    parent_id character varying,
-    entity_type character varying NOT NULL,
-    platform character varying NOT NULL,
-    account_key character varying NOT NULL,
-    external_id character varying,
-    name character varying,
-    username character varying,
-    url character varying,
-    media_type character varying,
-    published_at timestamp(6) without time zone,
-    source character varying NOT NULL,
-    source_record_type character varying NOT NULL,
-    source_record_id character varying NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    source_updated_at timestamp(6) without time zone NOT NULL,
-    refreshed_at timestamp(6) without time zone NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: social_metric_observations; Type: TABLE; Schema: warehouse; Owner: -
---
-
-CREATE TABLE warehouse.social_metric_observations (
-    id character varying NOT NULL,
-    social_entity_id character varying NOT NULL,
-    entity_type character varying NOT NULL,
-    platform character varying NOT NULL,
-    account_key character varying NOT NULL,
-    source character varying NOT NULL,
-    source_record_type character varying NOT NULL,
-    source_record_id character varying NOT NULL,
-    grain character varying NOT NULL,
-    metric_name character varying NOT NULL,
-    source_metric_name character varying NOT NULL,
-    value numeric(30,8) NOT NULL,
-    unit character varying DEFAULT 'count'::character varying NOT NULL,
-    period_start timestamp(6) without time zone NOT NULL,
-    period_end timestamp(6) without time zone NOT NULL,
-    observed_at timestamp(6) without time zone NOT NULL,
-    cumulative boolean DEFAULT false NOT NULL,
-    paid boolean DEFAULT false NOT NULL,
-    reporting_source boolean DEFAULT false NOT NULL,
-    fallback_metric boolean DEFAULT false NOT NULL,
-    current_value boolean DEFAULT true NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    source_updated_at timestamp(6) without time zone NOT NULL,
-    refreshed_at timestamp(6) without time zone NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
 -- Name: source_footnotes; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -5651,6 +5651,14 @@ ALTER TABLE ONLY public.metrics_meta_media
 
 
 --
+-- Name: metrics_social_entities metrics_social_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_entities
+    ADD CONSTRAINT metrics_social_entities_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: metrics_social_media_account_metric_snapshots metrics_social_media_account_metric_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5728,6 +5736,14 @@ ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
 
 ALTER TABLE ONLY public.metrics_social_media_posts
     ADD CONSTRAINT metrics_social_media_posts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_metric_observations metrics_social_metric_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_metric_observations
+    ADD CONSTRAINT metrics_social_metric_observations_pkey PRIMARY KEY (id);
 
 
 --
@@ -6307,22 +6323,6 @@ ALTER TABLE ONLY warehouse.review_decisions
 
 
 --
--- Name: social_entities social_entities_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_entities
-    ADD CONSTRAINT social_entities_pkey PRIMARY KEY (id);
-
-
---
--- Name: social_metric_observations social_metric_observations_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_metric_observations
-    ADD CONSTRAINT social_metric_observations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: source_footnotes source_footnotes_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -6491,6 +6491,20 @@ CREATE INDEX idx_saved_searches_due ON public.saved_searches USING btree (enable
 
 
 --
+-- Name: idx_social_entities_platform_account_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_entities_platform_account_type ON public.metrics_social_entities USING btree (platform, account_key, entity_type);
+
+
+--
+-- Name: idx_social_entities_source_record; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_entities_source_record ON public.metrics_social_entities USING btree (source_record_type, source_record_id);
+
+
+--
 -- Name: idx_social_media_accounts_platform_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6516,6 +6530,41 @@ CREATE INDEX idx_social_media_posts_platform_post ON public.metrics_social_media
 --
 
 CREATE INDEX idx_social_media_posts_social_post ON public.metrics_social_media_posts USING btree (social_post_id);
+
+
+--
+-- Name: idx_social_metric_observations_entity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_metric_observations_entity ON public.metrics_social_metric_observations USING btree (social_entity_id);
+
+
+--
+-- Name: idx_social_metrics_reportable; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_reportable ON public.metrics_social_metric_observations USING btree (reporting_source, current_value, paid);
+
+
+--
+-- Name: idx_social_metrics_reporting; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_reporting ON public.metrics_social_metric_observations USING btree (metric_name, period_start, platform, account_key);
+
+
+--
+-- Name: idx_social_metrics_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_source ON public.metrics_social_metric_observations USING btree (source, source_record_type);
+
+
+--
+-- Name: idx_social_metrics_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_updated_at ON public.metrics_social_metric_observations USING btree (updated_at);
 
 
 --
@@ -6908,6 +6957,13 @@ CREATE INDEX index_metrics_meta_media_insights_on_meta_medium_id ON public.metri
 --
 
 CREATE INDEX index_metrics_meta_media_on_meta_account_id ON public.metrics_meta_media USING btree (meta_account_id);
+
+
+--
+-- Name: index_metrics_social_entities_on_parent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metrics_social_entities_on_parent_id ON public.metrics_social_entities USING btree (parent_id);
 
 
 --
@@ -8087,55 +8143,6 @@ CREATE INDEX idx_review_decisions_reviewer ON warehouse.review_decisions USING b
 
 
 --
--- Name: idx_social_entities_platform_account_type; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_entities_platform_account_type ON warehouse.social_entities USING btree (platform, account_key, entity_type);
-
-
---
--- Name: idx_social_entities_source_record; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_entities_source_record ON warehouse.social_entities USING btree (source_record_type, source_record_id);
-
-
---
--- Name: idx_social_metric_observations_entity; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_metric_observations_entity ON warehouse.social_metric_observations USING btree (social_entity_id);
-
-
---
--- Name: idx_social_metrics_reportable; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_metrics_reportable ON warehouse.social_metric_observations USING btree (reporting_source, current_value, paid);
-
-
---
--- Name: idx_social_metrics_reporting; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_metrics_reporting ON warehouse.social_metric_observations USING btree (metric_name, period_start, platform, account_key);
-
-
---
--- Name: idx_social_metrics_source; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_metrics_source ON warehouse.social_metric_observations USING btree (source, source_record_type);
-
-
---
--- Name: idx_social_metrics_updated_at; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX idx_social_metrics_updated_at ON warehouse.social_metric_observations USING btree (updated_at);
-
-
---
 -- Name: idx_source_footnotes_document; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -8472,13 +8479,6 @@ CREATE UNIQUE INDEX index_raw_ingestions_on_source_id_and_checksum ON warehouse.
 
 
 --
--- Name: index_social_entities_on_parent_id; Type: INDEX; Schema: warehouse; Owner: -
---
-
-CREATE INDEX index_social_entities_on_parent_id ON warehouse.social_entities USING btree (parent_id);
-
-
---
 -- Name: index_sources_on_name; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -8679,6 +8679,14 @@ ALTER TABLE ONLY public.metrics_social_media_ads
 
 
 --
+-- Name: metrics_social_entities fk_rails_13254b8ef3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_entities
+    ADD CONSTRAINT fk_rails_13254b8ef3 FOREIGN KEY (parent_id) REFERENCES public.metrics_social_entities(id) ON DELETE CASCADE;
+
+
+--
 -- Name: metrics_social_media_ad_campaigns fk_rails_1a27f2a9a7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8700,6 +8708,14 @@ ALTER TABLE ONLY public.trade_barriers_agreement_histories
 
 ALTER TABLE ONLY public.api_keys
     ADD CONSTRAINT fk_rails_32c28d0dc2 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: metrics_social_metric_observations fk_rails_3b90d71d76; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_metric_observations
+    ADD CONSTRAINT fk_rails_3b90d71d76 FOREIGN KEY (social_entity_id) REFERENCES public.metrics_social_entities(id) ON DELETE CASCADE;
 
 
 --
@@ -9447,14 +9463,6 @@ ALTER TABLE ONLY warehouse.raw_ingestions
 
 
 --
--- Name: social_metric_observations fk_rails_af32a9b371; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_metric_observations
-    ADD CONSTRAINT fk_rails_af32a9b371 FOREIGN KEY (social_entity_id) REFERENCES warehouse.social_entities(id) ON DELETE CASCADE;
-
-
---
 -- Name: organization_aliases fk_rails_b725450d43; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -9476,14 +9484,6 @@ ALTER TABLE ONLY warehouse.standard_object_expenditures
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT fk_rails_e3fb24df7c FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
-
-
---
--- Name: social_entities fk_rails_e635f4c8cf; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
---
-
-ALTER TABLE ONLY warehouse.social_entities
-    ADD CONSTRAINT fk_rails_e635f4c8cf FOREIGN KEY (parent_id) REFERENCES warehouse.social_entities(id) ON DELETE CASCADE;
 
 
 --

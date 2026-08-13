@@ -19,8 +19,8 @@ production:
   scrape_zernio_social_media:
     class: Metrics::ScrapeZernioSocialMediaJob
     schedule: every hour at minute 15
-  refresh_social_warehouse:
-    class: Metrics::RefreshSocialWarehouseJob
+  refresh_social_analytics:
+    class: Metrics::RefreshSocialAnalyticsJob
     schedule: every 6 hours at minute 45
   sync_meta_analytics:
     class: Metrics::SyncMetaAnalyticsJob

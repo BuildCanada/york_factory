@@ -2920,6 +2920,7 @@ CREATE TABLE warehouse.election_survey_questions (
     options_source character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    context text,
     CONSTRAINT election_survey_questions_type_check CHECK (((question_type)::text = ANY ((ARRAY['text'::character varying, 'email'::character varying, 'textarea'::character varying, 'select'::character varying, 'radio'::character varying, 'yesno'::character varying])::text[])))
 );
 
@@ -9572,6 +9573,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260812010000'),
 ('20260811000002'),
 ('20260811000001'),
 ('20260811000000'),

@@ -56,6 +56,7 @@ class Warehouse::ElectionSurveyQuestion < Warehouse::Record
       id: question_id,
       type: question_type,
       label: label,
+      context: context.presence,
       help: help.presence,
       topic: topic.presence,
       placeholder: placeholder.presence,

@@ -8,7 +8,7 @@ class Metrics::SyncMetaAnalyticsJob < Metrics::MetaJob
       Rails.logger.warn(
         "[Meta] #{platform}/#{account_key} failed; retrying separately: #{error.message}"
       )
-      Metrics::SyncMetaAccountJob.perform_later(platform, account_key, settings.to_h)
+      enqueue_account_retry(platform, account_key, settings)
     end
 
     needs_backfill = configured_accounts.any? do |platform, account_key, _settings|
@@ -19,6 +19,18 @@ class Metrics::SyncMetaAnalyticsJob < Metrics::MetaJob
   end
 
   private
+
+  def enqueue_account_retry(platform, account_key, settings)
+    retry_job_class.perform_later(platform, account_key, settings.to_h)
+  rescue ActiveJob::EnqueueError => error
+    Rails.logger.error(
+      "[Meta] could not enqueue retry for #{platform}/#{account_key}: #{error.message}"
+    )
+  end
+
+  def retry_job_class
+    Metrics::SyncMetaAccountJob
+  end
 
   def sync_account(platform, account_key, settings)
     if settings[:id].blank? || access_token_for(settings).blank?

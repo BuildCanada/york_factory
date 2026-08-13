@@ -8,6 +8,15 @@ module Admin
 
     def show
       @races = Warehouse::ElectionRace.sorted(@election.races)
+      # The questionnaire the per-candidate links point at, and which candidates
+      # already have answers — loaded once here rather than per row, since the
+      # candidate table on this page runs to hundreds of rows.
+      @candidate_questionnaire = @election.surveys.where(audience: "candidate").order(:slug).first
+      @candidate_responses = if @candidate_questionnaire
+        @candidate_questionnaire.candidate_responses.index_by(&:election_candidate_id)
+      else
+        {}
+      end
     end
 
     def new

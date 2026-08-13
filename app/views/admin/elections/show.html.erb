@@ -97,6 +97,18 @@
                   · <%= candidate.social_links.map { |l| l["name"] }.compact.join(", ") %>
                 <% end %>
               </div>
+              <%# Questionnaire answers, entered by staff — the only write path
+                  for candidate responses. Hidden entirely until the election has
+                  a candidate questionnaire to answer. %>
+              <% if @candidate_questionnaire %>
+                <% entered = @candidate_responses[candidate.id] %>
+                <div style="font-size:0.7rem; margin-top:0.2rem;">
+                  <%= link_to entered ? "Questionnaire (#{entered.status})" : "Enter questionnaire",
+                        edit_admin_election_candidate_survey_response_path(
+                          candidate, survey_slug: @candidate_questionnaire.slug
+                        ) %>
+                </div>
+              <% end %>
             </td>
             <td>
               <span class="badge badge-<%= candidate.active? ? "green" : "yellow" %>"><%= candidate.status %></span>

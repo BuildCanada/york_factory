@@ -4,7 +4,7 @@ class Metrics::SyncMetaAnalyticsJob < Metrics::MetaJob
 
     configured_accounts.each do |platform, account_key, settings|
       sync_account(platform, account_key, settings)
-    rescue Metrics::MetaGraphClient::Error => error
+    rescue *ACCOUNT_SYNC_ERRORS => error
       Rails.logger.warn(
         "[Meta] #{platform}/#{account_key} failed; retrying separately: #{error.message}"
       )

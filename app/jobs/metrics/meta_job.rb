@@ -1,8 +1,15 @@
 class Metrics::MetaJob < ApplicationJob
   queue_as :default
 
-  retry_on Metrics::MetaGraphClient::Error,
+  ACCOUNT_SYNC_ERRORS = [
+    Metrics::MetaGraphClient::Error,
+    ActiveRecord::ActiveRecordError,
+    KeyError
+  ].freeze
+
+  retry_on(*ACCOUNT_SYNC_ERRORS,
     wait: :polynomially_longer, attempts: 5
+  )
 
   private
 

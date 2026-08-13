@@ -26,7 +26,27 @@ class Metrics::SyncMetaAnalyticsJobTest < ActiveJob::TestCase
     def sync_account(platform, account_key, settings)
       @attempted ||= []
       @attempted << account_key
-      raise Metrics::MetaGraphClient::Error, "failed account" if settings[:id] == "broken"
+      raise account_error if settings[:id] == "broken"
+    end
+
+    def account_error
+      Metrics::MetaGraphClient::Error.new("failed account")
+    end
+  end
+
+  class MalformedPayloadTestJob < TestJob
+    private
+
+    def account_error
+      KeyError.new("media id is missing")
+    end
+  end
+
+  class PersistenceFailureTestJob < TestJob
+    private
+
+    def account_error
+      ActiveRecord::RecordNotSaved.new("write failed")
     end
   end
 
@@ -57,5 +77,14 @@ class Metrics::SyncMetaAnalyticsJobTest < ActiveJob::TestCase
     assert_nothing_raised { job.perform_now }
 
     assert_equal %w[build_canada build_toronto], job.attempted
+  end
+
+  test "isolates malformed payloads and persistence failures by account" do
+    [ MalformedPayloadTestJob, PersistenceFailureTestJob ].each do |job_class|
+      job = job_class.new
+
+      assert_enqueued_with(job: Metrics::SyncMetaAccountJob) { job.perform_now }
+      assert_equal %w[build_canada build_toronto], job.attempted
+    end
   end
 end

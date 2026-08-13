@@ -4,6 +4,11 @@ class Metrics::SyncMetaAnalyticsJob < Metrics::MetaJob
 
     configured_accounts.each do |platform, account_key, settings|
       sync_account(platform, account_key, settings)
+    rescue Metrics::MetaGraphClient::Error => error
+      Rails.logger.warn(
+        "[Meta] #{platform}/#{account_key} failed; retrying separately: #{error.message}"
+      )
+      Metrics::SyncMetaAccountJob.perform_later(platform, account_key, settings.to_h)
     end
 
     needs_backfill = configured_accounts.any? do |platform, account_key, _settings|

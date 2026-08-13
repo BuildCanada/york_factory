@@ -7,9 +7,7 @@
 # The project key is stored in encrypted Rails credentials, so Kamal needs
 # only RAILS_MASTER_KEY to make it available in every deploy environment.
 
-production = Rails.env.production?
-
-if production
+if Rails.env.production?
   PostHog.init do |config|
     config.api_key = Rails.application.credentials.dig(:posthog, :api_key)
     config.host = Rails.application.credentials.dig(:posthog, :host).presence || "https://us.i.posthog.com"
@@ -22,22 +20,22 @@ end
 
 PostHog::Rails.configure do |config|
   # Auto-capture unhandled exceptions in controllers
-  config.auto_capture_exceptions = production
+  config.auto_capture_exceptions = true
 
   # Also capture exceptions that Rails rescues (e.g. ActiveRecord::RecordNotFound)
-  config.report_rescued_exceptions = production
+  config.report_rescued_exceptions = true
 
   # Auto-instrument ActiveJob failures
-  config.auto_instrument_active_job = production
+  config.auto_instrument_active_job = true
 
   # Attach the current user to every captured exception
-  config.capture_user_context    = production
+  config.capture_user_context    = true
   config.current_user_method     = :current_user
   config.user_id_method          = :posthog_distinct_id
 
   # Forward Rails.logger output only from production. The OpenTelemetry gems
   # above are loaded lazily by posthog-rails when this is enabled.
-  config.logs_enabled = production
+  config.logs_enabled = Rails.env.production?
   config.logs_level = :info
 
   # Preserve useful production logs without exporting common PII or secrets.

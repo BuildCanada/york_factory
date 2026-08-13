@@ -4463,6 +4463,67 @@ ALTER SEQUENCE warehouse.review_decisions_id_seq OWNED BY warehouse.review_decis
 
 
 --
+-- Name: social_entities; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.social_entities (
+    id character varying NOT NULL,
+    parent_id character varying,
+    entity_type character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    external_id character varying,
+    name character varying,
+    username character varying,
+    url character varying,
+    media_type character varying,
+    published_at timestamp(6) without time zone,
+    source character varying NOT NULL,
+    source_record_type character varying NOT NULL,
+    source_record_id character varying NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone NOT NULL,
+    refreshed_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: social_metric_observations; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.social_metric_observations (
+    id character varying NOT NULL,
+    social_entity_id character varying NOT NULL,
+    entity_type character varying NOT NULL,
+    platform character varying NOT NULL,
+    account_key character varying NOT NULL,
+    source character varying NOT NULL,
+    source_record_type character varying NOT NULL,
+    source_record_id character varying NOT NULL,
+    grain character varying NOT NULL,
+    metric_name character varying NOT NULL,
+    source_metric_name character varying NOT NULL,
+    value numeric(30,8) NOT NULL,
+    unit character varying DEFAULT 'count'::character varying NOT NULL,
+    period_start timestamp(6) without time zone NOT NULL,
+    period_end timestamp(6) without time zone NOT NULL,
+    observed_at timestamp(6) without time zone NOT NULL,
+    cumulative boolean DEFAULT false NOT NULL,
+    paid boolean DEFAULT false NOT NULL,
+    reporting_source boolean DEFAULT false NOT NULL,
+    fallback_metric boolean DEFAULT false NOT NULL,
+    current_value boolean DEFAULT true NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    source_updated_at timestamp(6) without time zone NOT NULL,
+    refreshed_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: source_footnotes; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -6246,6 +6307,22 @@ ALTER TABLE ONLY warehouse.review_decisions
 
 
 --
+-- Name: social_entities social_entities_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.social_entities
+    ADD CONSTRAINT social_entities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: social_metric_observations social_metric_observations_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.social_metric_observations
+    ADD CONSTRAINT social_metric_observations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: source_footnotes source_footnotes_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -8010,6 +8087,55 @@ CREATE INDEX idx_review_decisions_reviewer ON warehouse.review_decisions USING b
 
 
 --
+-- Name: idx_social_entities_platform_account_type; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_entities_platform_account_type ON warehouse.social_entities USING btree (platform, account_key, entity_type);
+
+
+--
+-- Name: idx_social_entities_source_record; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_entities_source_record ON warehouse.social_entities USING btree (source_record_type, source_record_id);
+
+
+--
+-- Name: idx_social_metric_observations_entity; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_metric_observations_entity ON warehouse.social_metric_observations USING btree (social_entity_id);
+
+
+--
+-- Name: idx_social_metrics_reportable; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_reportable ON warehouse.social_metric_observations USING btree (reporting_source, current_value, paid);
+
+
+--
+-- Name: idx_social_metrics_reporting; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_reporting ON warehouse.social_metric_observations USING btree (metric_name, period_start, platform, account_key);
+
+
+--
+-- Name: idx_social_metrics_source; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_source ON warehouse.social_metric_observations USING btree (source, source_record_type);
+
+
+--
+-- Name: idx_social_metrics_updated_at; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_social_metrics_updated_at ON warehouse.social_metric_observations USING btree (updated_at);
+
+
+--
 -- Name: idx_source_footnotes_document; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -8343,6 +8469,13 @@ CREATE INDEX index_raw_ingestions_on_source_id ON warehouse.raw_ingestions USING
 --
 
 CREATE UNIQUE INDEX index_raw_ingestions_on_source_id_and_checksum ON warehouse.raw_ingestions USING btree (source_id, checksum);
+
+
+--
+-- Name: index_social_entities_on_parent_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_social_entities_on_parent_id ON warehouse.social_entities USING btree (parent_id);
 
 
 --
@@ -9314,6 +9447,14 @@ ALTER TABLE ONLY warehouse.raw_ingestions
 
 
 --
+-- Name: social_metric_observations fk_rails_af32a9b371; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.social_metric_observations
+    ADD CONSTRAINT fk_rails_af32a9b371 FOREIGN KEY (social_entity_id) REFERENCES warehouse.social_entities(id) ON DELETE CASCADE;
+
+
+--
 -- Name: organization_aliases fk_rails_b725450d43; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -9335,6 +9476,14 @@ ALTER TABLE ONLY warehouse.standard_object_expenditures
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT fk_rails_e3fb24df7c FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: social_entities fk_rails_e635f4c8cf; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.social_entities
+    ADD CONSTRAINT fk_rails_e635f4c8cf FOREIGN KEY (parent_id) REFERENCES warehouse.social_entities(id) ON DELETE CASCADE;
 
 
 --
@@ -9768,6 +9917,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260813000001'),
 ('20260812000005'),
 ('20260812000004'),
 ('20260812000003'),

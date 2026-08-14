@@ -1,6 +1,8 @@
 <div class="page-header">
   <h1>Endorsements</h1>
-  <span class="text-muted">Total: <strong><%= @total %></strong></span>
+  <span class="text-muted">
+    <%= @memo_filter.present? ? "On this memo" : "Total" %>: <strong><%= @pagy.count %></strong>
+  </span>
 </div>
 
 <%= form_with url: admin_endorsements_path, method: :get, local: true, class: "filter-bar" do |f| %>

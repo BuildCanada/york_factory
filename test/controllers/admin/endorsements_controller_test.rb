@@ -45,6 +45,16 @@ class Admin::EndorsementsControllerTest < ActionDispatch::IntegrationTest
     assert_select "td", @memo.title_en
   end
 
+  test "index header total follows the memo filter" do
+    Endorsement.create!(memo: @other, user: users(:regular))
+
+    get admin_endorsements_path
+    assert_select ".page-header strong", "2"
+
+    get admin_endorsements_path, params: { memo_id: @memo.id }
+    assert_select ".page-header strong", "1"
+  end
+
   test "index renders an empty state with no endorsements" do
     Endorsement.destroy_all
     get admin_endorsements_path

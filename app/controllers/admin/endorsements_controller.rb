@@ -9,7 +9,8 @@ module Admin
         @memo_filter = params[:memo_id]
       end
       @memo_options = Memo.where(id: Endorsement.select(:memo_id)).order(:title_en)
-      @total = Endorsement.count
+      # pagy already counts the (possibly filtered) scope, so the header total
+      # reads off @pagy rather than issuing a second, unfiltered COUNT.
       @pagy, @endorsements = pagy(scope)
     end
 

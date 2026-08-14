@@ -1,8 +1,10 @@
 module Metrics
   class SubstackStat < ApplicationRecord
     ACCOUNTS = %w[build_canada].freeze
+    SOURCES = %w[manual_import substack_api].freeze
 
     validates :account, presence: true, inclusion: { in: ACCOUNTS }
+    validates :source, inclusion: { in: SOURCES }
     validates :date, presence: true
     validates :date, uniqueness: { scope: :account }
 

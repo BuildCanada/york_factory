@@ -39,7 +39,7 @@ module Metrics
       "Engagement rate (total)" => :engagement_rate_total
     }.freeze
 
-    ACCOUNTS = %w[build_canada].freeze
+    ACCOUNTS = %w[build_canada build_toronto].freeze
 
     validates :account, presence: true, inclusion: { in: ACCOUNTS }
     validates :date, presence: true

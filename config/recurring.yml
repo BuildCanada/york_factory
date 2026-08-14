@@ -19,6 +19,24 @@ production:
   scrape_zernio_social_media:
     class: Metrics::ScrapeZernioSocialMediaJob
     schedule: every hour at minute 15
+  refresh_social_analytics:
+    class: Metrics::RefreshSocialAnalyticsJob
+    schedule: every 6 hours at minute 45
+  sync_meta_analytics:
+    class: Metrics::SyncMetaAnalyticsJob
+    schedule: every day at 6:30am
+  dispatch_meta_media_insights:
+    class: Metrics::DispatchMetaMediaInsightsJob
+    schedule: every hour at minute 35
+  sync_substack_analytics:
+    class: Metrics::SyncSubstackAnalyticsJob
+    schedule: every day at 5:30am
+  dispatch_substack_post_details:
+    class: Metrics::DispatchSubstackPostDetailsJob
+    schedule: every hour at minute 50
+  sync_substack_subscribers:
+    class: SyncSubstackSubscribersJob
+    schedule: every 10 minutes
   create_instagram_weeks:
     class: CreateInstagramWeeksJob
     schedule: at 6am every Monday

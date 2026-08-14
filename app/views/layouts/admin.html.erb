@@ -221,6 +221,7 @@
             <li><a href="/admin/faqs" class="<%= 'active' if controller_name == 'faqs' %>">FAQs</a></li>
             <li><a href="/admin/feed_entries" class="<%= 'active' if controller_name == 'feed_entries' %>">Feed</a></li>
             <li><a href="/admin/testimonials" class="<%= 'active' if controller_name == 'testimonials' %>">Testimonials</a></li>
+            <li><a href="/admin/endorsements" class="<%= 'active' if controller_name == 'endorsements' %>">Endorsements</a></li>
             <li><a href="/admin/critiques" class="<%= 'active' if controller_name == 'critiques' %>">Critiques<% pending = (Critique.pending.count rescue 0); if pending > 0 %> <span class="badge badge-yellow"><%= pending %></span><% end %></a></li>
             <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
           </ul>

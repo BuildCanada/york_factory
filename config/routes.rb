@@ -222,6 +222,8 @@ Rails.application.routes.draw do
       put :reorder, on: :collection
       post :retranslate, on: :member
     end
+    # Endorsements are auto-approved, so admin only lists and removes them.
+    resources :endorsements, only: [ :index, :show, :destroy ]
     resources :critiques, only: [ :index, :show, :destroy ] do
       member do
         post :approve

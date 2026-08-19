@@ -1,4 +1,9 @@
+require "hubspot/codegen/crm/contacts/api_error"
+
 class HubspotSyncService
+  MAX_ATTEMPTS = 5
+  RETRYABLE_STATUSES = [ 408, 429 ].freeze
+
   def self.sync_contact_to_hubspot(hubspot_contact)
     new.sync_contact_to_hubspot(hubspot_contact)
   end
@@ -41,12 +46,17 @@ class HubspotSyncService
 
       hubspot_contact.update!(synced_at: Time.current)
 
-    rescue StandardError => e
-      Rails.logger.error "Hubspot API error for contact #{hubspot_contact.email}: #{e.message}"
-      raise e
-    rescue StandardError => e
-      Rails.logger.error "Error syncing contact #{hubspot_contact.email} to Hubspot: #{e.message}"
-      raise e
+    rescue Hubspot::Crm::Contacts::ApiError => error
+      if retryable?(error)
+        Rails.logger.warn "Retryable Hubspot API error for contact #{hubspot_contact.email}: #{error.message}"
+        raise transient_error(error)
+      end
+
+      Rails.logger.error "Hubspot API error for contact #{hubspot_contact.email}: #{error.message}"
+      raise
+    rescue StandardError => error
+      Rails.logger.error "Error syncing contact #{hubspot_contact.email} to Hubspot: #{error.message}"
+      raise
     end
   end
 
@@ -211,6 +221,23 @@ class HubspotSyncService
   end
 
   private
+
+  def retryable?(error)
+    status = Integer(error.code, exception: false)
+    status && (RETRYABLE_STATUSES.include?(status) || status >= 500)
+  end
+
+  def transient_error(error)
+    status = Integer(error.code, exception: false)
+    retry_after = error.response_headers.to_h.find do |key, _value|
+      key.to_s.casecmp?("retry-after")
+    end&.last
+    TransientError.new(
+      error.message,
+      retry_after: TransientError.retry_after_seconds(retry_after),
+      status: status
+    )
+  end
 
   def build_hubspot_properties(hubspot_contact)
     properties = {}

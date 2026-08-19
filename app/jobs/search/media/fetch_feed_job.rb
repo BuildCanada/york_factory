@@ -1,7 +1,12 @@
 module Search
   module Media
     class FetchFeedJob < ApplicationJob
-      retry_on FeedFetcher::TransientError, wait: :polynomially_longer, attempts: 5
+      MAX_TRANSIENT_ATTEMPTS = 5
+
+      limits_concurrency(
+        key: ->(feed_id) { Warehouse::MediaFeed.find_by(id: feed_id)&.publisher_domain },
+        duration: 5.minutes
+      )
       discard_on FeedFetcher::PermanentError
 
       def perform(feed_id)
@@ -33,6 +38,9 @@ module Search
           metadata: fetch.metadata.to_h.merge("resolved_feed_url" => result.url),
           at: finished_at
         )
+      rescue TransientError => error
+        mark_failed(feed, fetch, error)
+        retry_job(wait: transient_retry_wait(error), error: error) if executions < MAX_TRANSIENT_ATTEMPTS
       rescue => error
         mark_failed(feed, fetch, error)
         raise
@@ -76,6 +84,10 @@ module Search
           metadata: fetch.metadata.to_h.merge("resolved_feed_url" => result.url),
           at: finished_at
         )
+      end
+
+      def transient_retry_wait(error)
+        error.retry_after || executions**4 + 2
       end
 
       def mark_failed(feed, fetch, error)

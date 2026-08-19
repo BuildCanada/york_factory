@@ -7,6 +7,7 @@ module Search
 
       MAX_RESPONSE_BYTES = 5.megabytes
       MAX_REDIRECTS = 3
+      USER_AGENT = "BuildCanadaBot"
       REDIRECT_STATUSES = [ 301, 302, 303, 307, 308 ].freeze
       DEFAULT_HTTP_OPTIONS = {
         ssl: { alpn_protocols: [ "http/1.1" ] },
@@ -14,7 +15,6 @@ module Search
       }.freeze
 
       class Error < StandardError; end
-      class TransientError < Error; end
       class PermanentError < Error; end
       class InvalidFeed < PermanentError; end
 
@@ -34,8 +34,19 @@ module Search
         return result(response, entries: []) if response.fetch(:status) == 304
         unless response.fetch(:status).between?(200, 299)
           status = response.fetch(:status)
-          error_class = status.in?([ 408, 429 ]) || status >= 500 ? TransientError : PermanentError
-          raise error_class, "feed returned HTTP #{status}"
+          if status == 429
+            raise TransientError.new(
+              "feed returned HTTP 429",
+              retry_after: TransientError.retry_after_seconds(response.fetch(:headers)["retry-after"]),
+              status: status
+            )
+          end
+
+          if status == 408 || status >= 500
+            raise TransientError.new("feed returned HTTP #{status}", status: status)
+          end
+
+          raise PermanentError, "feed returned HTTP #{status}"
         end
 
         entries = parse_entries(response.fetch(:body))
@@ -135,7 +146,7 @@ module Search
       end
 
       def conditional_headers(etag:, last_modified:)
-        {}.tap do |headers|
+        { "User-Agent" => USER_AGENT }.tap do |headers|
           headers["If-None-Match"] = etag if etag.present?
           headers["If-Modified-Since"] = last_modified if last_modified.present?
           headers["Accept"] = "application/atom+xml, application/rss+xml, application/xml, text/xml"

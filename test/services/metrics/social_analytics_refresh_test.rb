@@ -122,4 +122,65 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     Metrics::SocialAnalyticsRefresh.new(now: @now + 12.hours).call
     refute Metrics::SocialMetricObservation.find(ids.first).active?
   end
+
+  test "leaves updated_at alone when a rerun changes nothing" do
+    Metrics::TwitterStat.create!(
+      account: "build_canada", date: Date.new(2026, 8, 12), impressions: 100
+    )
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+    before = Metrics::SocialMetricObservation.order(:id).pluck(:id, :updated_at, :created_at)
+
+    later = @now + 6.hours
+    Metrics::SocialAnalyticsRefresh.new(now: later).call
+
+    assert_equal before, Metrics::SocialMetricObservation.order(:id).pluck(:id, :updated_at, :created_at)
+    assert Metrics::SocialMetricObservation.all.all?(&:active?)
+    # refreshed_at still records that the run saw every row.
+    assert_equal [ later ], Metrics::SocialMetricObservation.distinct.pluck(:refreshed_at)
+    assert_equal [ later ], Metrics::SocialEntity.distinct.pluck(:refreshed_at)
+  end
+
+  test "advances updated_at only for rows whose values changed" do
+    changing = Metrics::TwitterStat.create!(
+      account: "build_canada", date: Date.new(2026, 8, 12), impressions: 100
+    )
+    Metrics::TwitterStat.create!(
+      account: "canada_spends", date: Date.new(2026, 8, 12), impressions: 7
+    )
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    untouched = Metrics::SocialMetricObservation.find_by!(
+      platform: "twitter", account_key: "canada_spends", source_metric_name: "impressions"
+    )
+    changing.update!(impressions: 250)
+
+    later = @now + 6.hours
+    Metrics::SocialAnalyticsRefresh.new(now: later).call
+
+    changed = Metrics::SocialMetricObservation.find_by!(
+      platform: "twitter", account_key: "build_canada", source_metric_name: "impressions"
+    )
+    assert_equal 250, changed.value
+    assert_equal later, changed.updated_at
+    assert_equal @now, untouched.reload.updated_at
+  end
+
+  test "deactivating a stale row advances its updated_at" do
+    stat = Metrics::TwitterStat.create!(
+      account: "build_canada", date: Date.new(2026, 8, 12), impressions: 100
+    )
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+    observation = Metrics::SocialMetricObservation.find_by!(
+      source_record_type: "Metrics::TwitterStat", source_record_id: stat.id.to_s,
+      source_metric_name: "impressions"
+    )
+
+    stat.delete
+    later = @now + 6.hours
+    Metrics::SocialAnalyticsRefresh.new(now: later).call
+
+    observation.reload
+    refute observation.active?
+    assert_equal later, observation.updated_at
+  end
 end

@@ -13,6 +13,12 @@ cursor. Both tables are rebuilt idempotently every six hours by
 `Metrics::RefreshSocialAnalyticsJob`. Rows no longer present upstream remain available with
 `active = false`, so incremental sync does not depend on delete propagation.
 
+`updated_at` moves only when a row's values actually change, including the flip to
+`active = false`. `refreshed_at` is the separate "this run saw the row" stamp, and is not
+part of the change comparison. A rebuild that finds nothing new therefore advances no
+cursor and syncs no rows; do not treat `refreshed_at` as the incremental cursor or every
+sync becomes a full table transfer.
+
 For normal reports, filter observations to:
 
 ```sql

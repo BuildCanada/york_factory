@@ -53,9 +53,17 @@ module Api
           # single ward, as in Toronto.
           ward_numbers: race.metadata["ward_numbers"],
           office_body: race.office_body,
-          candidates: race.candidates.sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }
-            .map { |c| serialize_candidate(c) }
+          candidates: visible_candidates(race).map { |c| serialize_candidate(c) }
         }
+      end
+
+      # Withdrawn candidates stay in the database — the City's withdrawn feed
+      # is the only record that they ever ran, and the loaders keep flagging
+      # them — but they're off the ballot, so the public API omits them.
+      # Filtered in Ruby to keep the show action's :candidates preload.
+      def visible_candidates(race)
+        race.candidates.reject(&:withdrawn?)
+          .sort_by { |c| [ c.last_name.to_s.downcase, c.first_name.to_s.downcase ] }
       end
 
       def serialize_candidate(candidate)

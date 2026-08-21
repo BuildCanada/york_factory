@@ -29,7 +29,10 @@
         <td><%= election.election_date.strftime("%b %-d, %Y") %></td>
         <td><%= election.races.count %></td>
         <td><%= candidates.count %></td>
-        <td><%= candidates.joins(:photo_attachment).count %> / <%= candidates.where(status: "active").count %> active</td>
+        <%# Photo coverage counts active candidates only — withdrawn ones are
+            hidden from the public API, so they never need a portrait. %>
+        <% active = candidates.where(status: "active") %>
+        <td><%= active.joins(:photo_attachment).count %> / <%= active.count %> active</td>
       </tr>
     <% end %>
   </tbody>

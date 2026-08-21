@@ -45,6 +45,11 @@ class Api::V1::ElectionsControllerTest < ActionDispatch::IntegrationTest
       c.status = "withdrawn"
       c.withdrawn_date = Date.new(2026, 6, 3)
     end
+    ward4.candidates.find_or_create_by!(full_name: "Perks, Gord") do |c|
+      c.first_name = "Gord"
+      c.last_name = "Perks"
+      c.status = "active"
+    end
   end
 
   test "index lists elections without races" do
@@ -82,9 +87,41 @@ class Api::V1::ElectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "https://oliviachow.ca", chow["website"]
     assert_equal 1, chow["social_links"].size
 
-    withdrawn = races.last["candidates"].sole
-    assert_equal "withdrawn", withdrawn["status"]
-    assert_equal "2026-06-03", withdrawn["withdrawn_date"]
+    ward4 = races.last["candidates"].sole
+    assert_equal "Perks, Gord", ward4["full_name"]
+    assert_equal "active", ward4["status"]
+  end
+
+  test "show omits withdrawn candidates" do
+    get api_v1_election_url("toronto-2026")
+    assert_response :success
+
+    names = JSON.parse(response.body)["races"].flat_map { |r| r["candidates"] }.map { |c| c["full_name"] }
+    refute_includes names, "Nikolaou, Jonathan"
+    assert_includes names, "Perks, Gord"
+  end
+
+  test "a race whose candidates have all withdrawn is still served, empty" do
+    Warehouse::ElectionCandidate.find_by!(full_name: "Perks, Gord").update!(status: "withdrawn")
+
+    get api_v1_election_url("toronto-2026")
+
+    ward4 = JSON.parse(response.body)["races"].find { |r| r["district_number"] == 4 }
+    assert ward4
+    assert_equal [], ward4["candidates"]
+  end
+
+  test "an admin token does not resurrect withdrawn candidates" do
+    admin = users(:admin)
+    admin.update!(role: "admin") unless admin.admin?
+    application = Doorkeeper::Application.create!(name: "preview-#{SecureRandom.hex(4)}",
+      redirect_uri: "https://example.com/cb")
+    token = Doorkeeper::AccessToken.create!(application: application, resource_owner_id: admin.id)
+
+    get api_v1_election_url("toronto-2026"), headers: { "Authorization" => "Bearer #{token.token}" }
+
+    names = JSON.parse(response.body)["races"].flat_map { |r| r["candidates"] }.map { |c| c["full_name"] }
+    refute_includes names, "Nikolaou, Jonathan"
   end
 
   test "show includes photo_url when a photo is attached" do

@@ -80,7 +80,7 @@ class CorrectNewBrunswickAnnualReportIssuers
       next unless target_id
 
       target = by_id.fetch(target_id)
-      corrected = Marshal.load(Marshal.dump(document))
+      corrected = deep_copy_json(document)
       corrected["assets"] = normalize_assets(assets)
       corrected["canonical_id"] = "#{target_id}/documents/annual-report/#{year(document)}/general"
       set_titles!(corrected, target, year(document))
@@ -102,7 +102,7 @@ class CorrectNewBrunswickAnnualReportIssuers
 
   def normalize_assets(assets)
     assets.each_with_index.map do |asset, index|
-      copy = Marshal.load(Marshal.dump(asset))
+      copy = deep_copy_json(asset)
       copy["preferred"] = index.zero?
       copy["part_index"] = nil
       copy["part_count"] = nil
@@ -116,6 +116,10 @@ class CorrectNewBrunswickAnnualReportIssuers
     document["title"] = languages.include?("en") ? "#{name} Annual Report — #{fiscal_year}" : nil
     document["title_fr"] = languages.include?("fr") ? "#{name} Rapport annuel — #{fiscal_year}" : nil
     document["source_languages"] = languages unless languages.empty?
+  end
+
+  def deep_copy_json(value)
+    JSON.parse(JSON.generate(value))
   end
 
   def year(document)

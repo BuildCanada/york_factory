@@ -1180,7 +1180,7 @@ class WesternMunicipalFinancialReportScraper
       end
       next unless raw_row
 
-      recovered = Marshal.load(Marshal.dump(raw_row))
+      recovered = JSON.parse(JSON.generate(raw_row))
       recovered["canonical_id"] = canonical_id
       %w[financial_statements annual_reports].each do |key|
         Array(recovered[key]).each { |report| report["canonical_id"] = canonical_id }

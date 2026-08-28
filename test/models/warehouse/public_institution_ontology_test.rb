@@ -433,7 +433,8 @@ class Warehouse::PublicInstitutionOntologyTest < ActiveSupport::TestCase
     loader = exporter.send(:load_sql)
 
     assert_equal %w[
-      coverage.parquet document_assets.parquet documents.parquet geographies.parquet identifiers.parquet
+      coverage.parquet document_assets.parquet documents.parquet
+      financial_statement_extractions.parquet financial_statement_facts.parquet geographies.parquet identifiers.parquet
       institution_geographies.parquet institutions.parquet relationships.parquet
       releases.parquet sources.parquet
     ], queries.keys.sort
@@ -443,8 +444,8 @@ class Warehouse::PublicInstitutionOntologyTest < ActiveSupport::TestCase
     assert_includes loader, "BEGIN TRANSACTION;"
     assert_includes loader, "document_assets.parquet"
     assert_includes loader, "coverage.parquet"
+    assert_includes loader, "financial_statement_facts.parquet"
     refute_includes loader, "DELETE FROM"
-    refute_includes loader, "financial_line_items"
   end
 
   test "release asset validation accepts source-published DOCX and checks its package type" do

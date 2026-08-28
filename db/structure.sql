@@ -3342,6 +3342,102 @@ ALTER SEQUENCE warehouse.extraction_assertions_id_seq OWNED BY warehouse.extract
 
 
 --
+-- Name: financial_statement_extractions; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.financial_statement_extractions (
+    id bigint NOT NULL,
+    institution_canonical_id character varying NOT NULL,
+    document_canonical_id character varying NOT NULL,
+    asset_sha256 character varying NOT NULL,
+    fiscal_year_end date NOT NULL,
+    statement_basis character varying DEFAULT 'consolidated'::character varying NOT NULL,
+    language character varying,
+    extractor_version character varying NOT NULL,
+    llm_model character varying,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    check_results jsonb DEFAULT '[]'::jsonb NOT NULL,
+    llm_prompt_snapshot jsonb,
+    llm_response_snapshot jsonb,
+    error_message text,
+    reviewed_by character varying,
+    reviewed_at timestamp(6) without time zone,
+    review_notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT financial_statement_extractions_basis CHECK (((statement_basis)::text = ANY ((ARRAY['consolidated'::character varying, 'non_consolidated'::character varying])::text[]))),
+    CONSTRAINT financial_statement_extractions_language CHECK (((language IS NULL) OR ((language)::text = ANY ((ARRAY['en'::character varying, 'fr'::character varying, 'bilingual'::character varying])::text[])))),
+    CONSTRAINT financial_statement_extractions_reviewer_pair CHECK (((reviewed_at IS NULL) = (reviewed_by IS NULL))),
+    CONSTRAINT financial_statement_extractions_sha256 CHECK (((asset_sha256)::text ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT financial_statement_extractions_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'extracting'::character varying, 'extracted'::character varying, 'needs_review'::character varying, 'approved'::character varying, 'rejected'::character varying, 'failed'::character varying])::text[])))
+);
+
+
+--
+-- Name: financial_statement_extractions_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.financial_statement_extractions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: financial_statement_extractions_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.financial_statement_extractions_id_seq OWNED BY warehouse.financial_statement_extractions.id;
+
+
+--
+-- Name: financial_statement_facts; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.financial_statement_facts (
+    id bigint NOT NULL,
+    financial_statement_extraction_id bigint NOT NULL,
+    concept character varying NOT NULL,
+    value numeric(24,2) NOT NULL,
+    raw_text character varying NOT NULL,
+    raw_label character varying NOT NULL,
+    scale integer DEFAULT 1 NOT NULL,
+    statement character varying NOT NULL,
+    source_page integer NOT NULL,
+    column_year character varying NOT NULL,
+    extraction_confidence numeric(5,4),
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT financial_statement_facts_concept CHECK (((concept)::text = ANY ((ARRAY['total_financial_assets'::character varying, 'total_liabilities'::character varying, 'net_financial_assets'::character varying, 'total_non_financial_assets'::character varying, 'accumulated_surplus'::character varying, 'opening_accumulated_surplus'::character varying, 'total_revenue'::character varying, 'total_expenses'::character varying, 'annual_surplus'::character varying])::text[]))),
+    CONSTRAINT financial_statement_facts_confidence CHECK (((extraction_confidence IS NULL) OR ((extraction_confidence >= (0)::numeric) AND (extraction_confidence <= (1)::numeric)))),
+    CONSTRAINT financial_statement_facts_scale CHECK ((scale = ANY (ARRAY[1, 1000, 1000000]))),
+    CONSTRAINT financial_statement_facts_source_page CHECK ((source_page > 0)),
+    CONSTRAINT financial_statement_facts_statement CHECK (((statement)::text = ANY ((ARRAY['financial_position'::character varying, 'operations'::character varying, 'accumulated_surplus'::character varying])::text[])))
+);
+
+
+--
+-- Name: financial_statement_facts_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.financial_statement_facts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: financial_statement_facts_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.financial_statement_facts_id_seq OWNED BY warehouse.financial_statement_facts.id;
+
+
+--
 -- Name: fiscal_authorities; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -5684,6 +5780,20 @@ ALTER TABLE ONLY warehouse.extraction_assertions ALTER COLUMN id SET DEFAULT nex
 
 
 --
+-- Name: financial_statement_extractions id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_extractions ALTER COLUMN id SET DEFAULT nextval('warehouse.financial_statement_extractions_id_seq'::regclass);
+
+
+--
+-- Name: financial_statement_facts id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_facts ALTER COLUMN id SET DEFAULT nextval('warehouse.financial_statement_facts_id_seq'::regclass);
+
+
+--
 -- Name: fiscal_authorities id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -6566,6 +6676,22 @@ ALTER TABLE ONLY warehouse.elections
 
 ALTER TABLE ONLY warehouse.extraction_assertions
     ADD CONSTRAINT extraction_assertions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: financial_statement_extractions financial_statement_extractions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_extractions
+    ADD CONSTRAINT financial_statement_extractions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: financial_statement_facts financial_statement_facts_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_facts
+    ADD CONSTRAINT financial_statement_facts_pkey PRIMARY KEY (id);
 
 
 --
@@ -8950,6 +9076,34 @@ CREATE UNIQUE INDEX index_api_tokens_on_token_hash ON warehouse.api_tokens USING
 
 
 --
+-- Name: index_financial_statement_extractions_institution_year; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_financial_statement_extractions_institution_year ON warehouse.financial_statement_extractions USING btree (institution_canonical_id, fiscal_year_end);
+
+
+--
+-- Name: index_financial_statement_extractions_source_version; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_financial_statement_extractions_source_version ON warehouse.financial_statement_extractions USING btree (asset_sha256, extractor_version);
+
+
+--
+-- Name: index_financial_statement_facts_extraction_concept; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_financial_statement_facts_extraction_concept ON warehouse.financial_statement_facts USING btree (financial_statement_extraction_id, concept);
+
+
+--
+-- Name: index_financial_statement_facts_on_extraction_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_financial_statement_facts_on_extraction_id ON warehouse.financial_statement_facts USING btree (financial_statement_extraction_id);
+
+
+--
 -- Name: index_fiscal_authorities_on_lineage_entry_id; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -10364,6 +10518,14 @@ ALTER TABLE ONLY warehouse.spending_awards
 
 
 --
+-- Name: financial_statement_facts fk_rails_99ce4dda9e; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_facts
+    ADD CONSTRAINT fk_rails_99ce4dda9e FOREIGN KEY (financial_statement_extraction_id) REFERENCES warehouse.financial_statement_extractions(id);
+
+
+--
 -- Name: fiscal_authorities fk_rails_9d49a9edcc; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -10866,6 +11028,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260827000001'),
 ('20260822000001'),
 ('20260821000001'),
 ('20260814000001'),

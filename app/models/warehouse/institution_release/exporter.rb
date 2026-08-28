@@ -240,7 +240,7 @@ class Warehouse::InstitutionRelease::Exporter
         WHERE d.institution_release_id = #{release_id}
         ORDER BY d.canonical_id
       SQL
-      "document_assets.parquet" => <<~SQL
+      "document_assets.parquet" => <<~SQL,
         SELECT
           r.version AS release_version,
           d.canonical_id AS document_id,
@@ -263,6 +263,58 @@ class Warehouse::InstitutionRelease::Exporter
         JOIN warehouse.institution_documents d ON d.id = a.institution_document_id
         WHERE a.institution_release_id = #{release_id}
         ORDER BY d.canonical_id, a.part_index NULLS FIRST, a.content_sha256
+      SQL
+      "financial_statement_extractions.parquet" => <<~SQL,
+        SELECT
+          r.version AS release_version,
+          d.canonical_id || '#' || e.asset_sha256 || '#' || e.extractor_version AS extraction_id,
+          d.canonical_id AS document_id,
+          e.asset_sha256,
+          e.fiscal_year_end,
+          e.statement_basis,
+          e.language,
+          e.extractor_version,
+          e.llm_model,
+          e.status,
+          e.check_results::text AS check_results_json,
+          e.reviewed_by,
+          e.reviewed_at,
+          e.review_notes
+        FROM warehouse.financial_statement_extractions e
+        JOIN warehouse.institution_documents d
+          ON d.institution_release_id = #{release_id}
+          AND d.canonical_id = e.document_canonical_id
+        JOIN warehouse.institution_document_assets a
+          ON a.institution_document_id = d.id
+          AND a.content_sha256 = e.asset_sha256
+        JOIN warehouse.institution_releases r ON r.id = d.institution_release_id
+        WHERE e.status IN ('extracted', 'approved')
+        ORDER BY d.canonical_id, e.asset_sha256, e.extractor_version
+      SQL
+      "financial_statement_facts.parquet" => <<~SQL
+        SELECT
+          r.version AS release_version,
+          d.canonical_id || '#' || e.asset_sha256 || '#' || e.extractor_version AS extraction_id,
+          f.concept,
+          f.value,
+          f.raw_text,
+          f.raw_label,
+          f.scale,
+          f.statement,
+          f.source_page,
+          f.column_year,
+          f.extraction_confidence
+        FROM warehouse.financial_statement_facts f
+        JOIN warehouse.financial_statement_extractions e ON e.id = f.financial_statement_extraction_id
+        JOIN warehouse.institution_documents d
+          ON d.institution_release_id = #{release_id}
+          AND d.canonical_id = e.document_canonical_id
+        JOIN warehouse.institution_document_assets a
+          ON a.institution_document_id = d.id
+          AND a.content_sha256 = e.asset_sha256
+        JOIN warehouse.institution_releases r ON r.id = d.institution_release_id
+        WHERE e.status IN ('extracted', 'approved')
+        ORDER BY d.canonical_id, e.asset_sha256, e.extractor_version, f.concept
       SQL
     }
   end
@@ -596,6 +648,55 @@ class Warehouse::InstitutionRelease::Exporter
       CREATE UNIQUE INDEX IF NOT EXISTS public_institution_document_assets_preferred
         ON public_institutions.document_assets (release_version, document_id)
         WHERE preferred;
+
+      CREATE TABLE IF NOT EXISTS public_institutions.financial_statement_extractions (
+        release_version text NOT NULL,
+        extraction_id text NOT NULL,
+        document_id text NOT NULL,
+        asset_sha256 text NOT NULL,
+        fiscal_year_end date NOT NULL,
+        statement_basis text NOT NULL,
+        language text,
+        extractor_version text NOT NULL,
+        llm_model text,
+        status text NOT NULL,
+        check_results_json text NOT NULL,
+        reviewed_by text,
+        reviewed_at timestamp,
+        review_notes text,
+        PRIMARY KEY (release_version, extraction_id),
+        FOREIGN KEY (release_version, document_id, asset_sha256)
+          REFERENCES public_institutions.document_assets(release_version, document_id, content_sha256),
+        CHECK (statement_basis IN ('consolidated','non_consolidated')),
+        CHECK (language IS NULL OR language IN ('en','fr','bilingual')),
+        CHECK (status IN ('extracted','approved'))
+      );
+
+      CREATE TABLE IF NOT EXISTS public_institutions.financial_statement_facts (
+        release_version text NOT NULL,
+        extraction_id text NOT NULL,
+        concept text NOT NULL,
+        value numeric(24,2) NOT NULL,
+        raw_text text NOT NULL,
+        raw_label text NOT NULL,
+        scale integer NOT NULL,
+        statement text NOT NULL,
+        source_page integer NOT NULL,
+        column_year text NOT NULL,
+        extraction_confidence numeric(5,4),
+        PRIMARY KEY (release_version, extraction_id, concept),
+        FOREIGN KEY (release_version, extraction_id)
+          REFERENCES public_institutions.financial_statement_extractions(release_version, extraction_id),
+        CHECK (concept IN (
+          'total_financial_assets','total_liabilities','net_financial_assets',
+          'total_non_financial_assets','accumulated_surplus','opening_accumulated_surplus',
+          'total_revenue','total_expenses','annual_surplus'
+        )),
+        CHECK (scale IN (1,1000,1000000)),
+        CHECK (statement IN ('financial_position','operations','accumulated_surplus')),
+        CHECK (source_page > 0),
+        CHECK (extraction_confidence IS NULL OR extraction_confidence BETWEEN 0 AND 1)
+      );
     SQL
   end
 
@@ -629,6 +730,10 @@ class Warehouse::InstitutionRelease::Exporter
         SELECT * FROM read_parquet('documents.parquet');
       INSERT INTO target.public_institutions.document_assets
         SELECT * FROM read_parquet('document_assets.parquet');
+      INSERT INTO target.public_institutions.financial_statement_extractions
+        SELECT * FROM read_parquet('financial_statement_extractions.parquet');
+      INSERT INTO target.public_institutions.financial_statement_facts
+        SELECT * FROM read_parquet('financial_statement_facts.parquet');
 
       COMMIT;
     SQL

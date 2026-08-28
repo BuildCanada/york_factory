@@ -186,7 +186,7 @@ flowchart LR
     D --> E{Release validation}
     E -->|valid| F[Atomic PostgreSQL import]
     E -->|invalid| G[Stop and correct source input]
-    F --> H[10 Parquet tables]
+    F --> H[12 Parquet tables]
     F --> I[PostgreSQL schema and loader]
     F --> J[Manifest, notices, and checksums]
     H --> K[Immutable dated bundle]
@@ -242,6 +242,8 @@ public-institutions-YYYY-MM-DD/
   coverage.parquet
   documents.parquet
   document_assets.parquet
+  financial_statement_extractions.parquet
+  financial_statement_facts.parquet
 ```
 
 Parquet uses Zstandard compression. Geometry is WKB with SRID 4326 and loads into PostgreSQL as `bytea`, so PostGIS is optional for consumers. `coverage.parquet` distinguishes complete, partial, not-searched, not-found, unavailable, and failed source coverage; missing documents are therefore not silently presented as proof that none exist. The generated loader is atomic and insert-only: attempting to load an existing version fails instead of silently replacing it.
@@ -260,4 +262,4 @@ The following are intentionally outside version 1:
 - automated institution reconciliation; and
 - an ontology HTTP API.
 
-These can be additive tables or delivery layers without changing the ten-table release contract.
+These can be additive tables or delivery layers without changing the twelve-table release contract.

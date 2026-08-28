@@ -14,7 +14,7 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA IF NOT EXISTS public;
+CREATE SCHEMA public;
 
 
 --
@@ -28,7 +28,7 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 -- Name: warehouse; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA IF NOT EXISTS warehouse;
+CREATE SCHEMA warehouse;
 
 
 --
@@ -1750,8 +1750,8 @@ CREATE TABLE public.notification_batches (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT notification_batches_mode CHECK (((mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
-    CONSTRAINT notification_batches_state CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'closed'::character varying, 'delivering'::character varying, 'delivered'::character varying, 'dead'::character varying])::text[])))
+    CONSTRAINT notification_batches_mode CHECK (((mode)::text = ANY (ARRAY[('instant'::character varying)::text, ('digest'::character varying)::text]))),
+    CONSTRAINT notification_batches_state CHECK (((state)::text = ANY (ARRAY[('open'::character varying)::text, ('closed'::character varying)::text, ('delivering'::character varying)::text, ('delivered'::character varying)::text, ('dead'::character varying)::text])))
 );
 
 
@@ -1792,7 +1792,7 @@ CREATE TABLE public.notification_deliveries (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT notification_deliveries_channel CHECK (((channel)::text = 'email'::text)),
-    CONSTRAINT notification_deliveries_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'delivering'::character varying, 'delivered'::character varying, 'failed'::character varying, 'dead'::character varying])::text[])))
+    CONSTRAINT notification_deliveries_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('delivering'::character varying)::text, ('delivered'::character varying)::text, ('failed'::character varying)::text, ('dead'::character varying)::text])))
 );
 
 
@@ -1983,7 +1983,7 @@ CREATE TABLE public.saved_search_matches (
     searchable_type character varying NOT NULL,
     searchable_id character varying NOT NULL,
     notification_batch_id bigint,
-    CONSTRAINT saved_search_matches_state CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'buffered'::character varying, 'dispatching'::character varying, 'delivered'::character varying, 'dead'::character varying])::text[])))
+    CONSTRAINT saved_search_matches_state CHECK (((state)::text = ANY (ARRAY[('pending'::character varying)::text, ('buffered'::character varying)::text, ('dispatching'::character varying)::text, ('delivered'::character varying)::text, ('dead'::character varying)::text])))
 );
 
 
@@ -2027,7 +2027,7 @@ CREATE TABLE public.saved_search_runs (
     finished_at timestamp with time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT saved_search_runs_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying])::text[])))
+    CONSTRAINT saved_search_runs_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text])))
 );
 
 
@@ -2073,9 +2073,9 @@ CREATE TABLE public.saved_searches (
     timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
+    CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY (ARRAY[('instant'::character varying)::text, ('digest'::character varying)::text]))),
     CONSTRAINT saved_searches_poll_interval CHECK (((poll_interval_seconds >= 60) AND (poll_interval_seconds <= 86400))),
-    CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY ((ARRAY['future_only'::character varying, 'backfill'::character varying])::text[])))
+    CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY (ARRAY[('future_only'::character varying)::text, ('backfill'::character varying)::text])))
 );
 
 
@@ -3152,7 +3152,7 @@ CREATE TABLE warehouse.election_candidates (
     photo_source character varying,
     photo_attribution character varying,
     photo_suggestions jsonb DEFAULT '[]'::jsonb NOT NULL,
-    CONSTRAINT election_candidates_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'withdrawn'::character varying])::text[])))
+    CONSTRAINT election_candidates_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('withdrawn'::character varying)::text])))
 );
 
 
@@ -3190,8 +3190,8 @@ CREATE TABLE warehouse.election_races (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT election_races_district_type_check CHECK (((district_type)::text = ANY ((ARRAY['at_large'::character varying, 'ward'::character varying, 'school_board_ward'::character varying, 'riding'::character varying, 'district'::character varying])::text[]))),
-    CONSTRAINT election_races_office_type_check CHECK (((office_type)::text = ANY ((ARRAY['mayor'::character varying, 'councillor'::character varying, 'trustee'::character varying, 'mp'::character varying, 'mpp'::character varying])::text[])))
+    CONSTRAINT election_races_district_type_check CHECK (((district_type)::text = ANY (ARRAY[('at_large'::character varying)::text, ('ward'::character varying)::text, ('school_board_ward'::character varying)::text, ('riding'::character varying)::text, ('district'::character varying)::text]))),
+    CONSTRAINT election_races_office_type_check CHECK (((office_type)::text = ANY (ARRAY[('mayor'::character varying)::text, ('councillor'::character varying)::text, ('trustee'::character varying)::text, ('mp'::character varying)::text, ('mpp'::character varying)::text])))
 );
 
 
@@ -3229,7 +3229,7 @@ CREATE TABLE warehouse.elections (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     published_at timestamp(6) without time zone,
-    CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY ((ARRAY['municipal'::character varying, 'provincial'::character varying, 'federal'::character varying, 'by_election'::character varying])::text[])))
+    CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY (ARRAY[('municipal'::character varying)::text, ('provincial'::character varying)::text, ('federal'::character varying)::text, ('by_election'::character varying)::text])))
 );
 
 
@@ -3622,6 +3622,453 @@ SELECT
 
 
 --
+-- Name: institution_coverages; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_coverages (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_source_id bigint,
+    scope_id character varying NOT NULL,
+    subject character varying NOT NULL,
+    status character varying NOT NULL,
+    notes text NOT NULL,
+    source_url character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_coverages_status CHECK (((status)::text = ANY (ARRAY[('complete'::character varying)::text, ('partial'::character varying)::text, ('not-searched'::character varying)::text, ('not-found'::character varying)::text, ('unavailable'::character varying)::text, ('failed'::character varying)::text]))),
+    CONSTRAINT institution_coverages_subject CHECK (((subject)::text = ANY ((ARRAY['institutions'::character varying, 'websites'::character varying, 'geographies'::character varying, 'relationships'::character varying, 'financial-statements'::character varying, 'annual-reports'::character varying, 'statement-of-financial-information'::character varying, 'financial-data-return'::character varying, 'document-assets'::character varying, 'csd-inventory'::character varying, 'csd-authority-mapping'::character varying])::text[])))
+);
+
+
+--
+-- Name: institution_coverages_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE warehouse.institution_coverages ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME warehouse.institution_coverages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: institution_document_assets; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_document_assets (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_document_id bigint NOT NULL,
+    content_sha256 character varying NOT NULL,
+    asset_role character varying DEFAULT 'unknown'::character varying NOT NULL,
+    part_index integer,
+    part_count integer,
+    preferred boolean DEFAULT false NOT NULL,
+    download_url text NOT NULL,
+    retrieved_at timestamp(6) without time zone NOT NULL,
+    archive_path character varying NOT NULL,
+    mime_type character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    rights_status character varying DEFAULT 'metadata_only'::character varying NOT NULL,
+    page_locator character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_document_assets_archive_path CHECK ((((archive_path)::text ~~ 'sha256/%'::text) AND (POSITION(('..'::text) IN (archive_path)) = 0))),
+    CONSTRAINT institution_document_assets_byte_size CHECK ((byte_size >= 0)),
+    CONSTRAINT institution_document_assets_part_count CHECK (((part_count IS NULL) OR ((part_count > 0) AND (part_index IS NOT NULL) AND (part_count >= part_index)))),
+    CONSTRAINT institution_document_assets_part_index CHECK (((((asset_role)::text = 'part'::text) AND (part_index > 0)) OR (((asset_role)::text <> 'part'::text) AND (part_index IS NULL)))),
+    CONSTRAINT institution_document_assets_rights_status CHECK (((rights_status)::text = ANY (ARRAY[('redistributable'::character varying)::text, ('metadata_only'::character varying)::text, ('restricted'::character varying)::text, ('unknown'::character varying)::text]))),
+    CONSTRAINT institution_document_assets_role CHECK (((asset_role)::text = ANY (ARRAY[('final'::character varying)::text, ('draft'::character varying)::text, ('amended'::character varying)::text, ('part'::character varying)::text, ('container'::character varying)::text, ('unknown'::character varying)::text]))),
+    CONSTRAINT institution_document_assets_sha256 CHECK (((content_sha256)::text ~ '^[0-9a-f]{64}$'::text))
+);
+
+
+--
+-- Name: institution_document_assets_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_document_assets_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_document_assets_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_document_assets_id_seq OWNED BY warehouse.institution_document_assets.id;
+
+
+--
+-- Name: institution_documents; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_documents (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_id bigint NOT NULL,
+    institution_source_id bigint NOT NULL,
+    canonical_id character varying NOT NULL,
+    document_type character varying NOT NULL,
+    document_variant character varying DEFAULT 'general'::character varying NOT NULL,
+    title_en character varying,
+    title_fr character varying,
+    fiscal_period_start date,
+    fiscal_period_end date,
+    published_on date,
+    source_page_url text,
+    download_url text,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_documents_canonical_id_format CHECK ((((canonical_id)::text = lower((canonical_id)::text)) AND ((canonical_id)::text ~ '^ca/[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$'::text))),
+    CONSTRAINT institution_documents_canonical_id_namespace CHECK ((((canonical_id)::text ~~ 'ca/%/documents/%'::text) AND ((canonical_id)::text !~~ 'ca/sources/%'::text))),
+    CONSTRAINT institution_documents_fiscal_range CHECK (((fiscal_period_end IS NULL) OR (fiscal_period_start IS NULL) OR (fiscal_period_end >= fiscal_period_start))),
+    CONSTRAINT institution_documents_type CHECK (((document_type)::text = ANY (ARRAY[('annual-report'::character varying)::text, ('financial-statements'::character varying)::text, ('statement-of-financial-information'::character varying)::text, ('financial-data-return'::character varying)::text, ('auditor-report'::character varying)::text, ('remuneration-report'::character varying)::text, ('other'::character varying)::text]))),
+    CONSTRAINT institution_documents_variant CHECK (((document_variant)::text ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text))
+);
+
+
+--
+-- Name: institution_documents_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_documents_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_documents_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_documents_id_seq OWNED BY warehouse.institution_documents.id;
+
+
+--
+-- Name: institution_geographies; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_geographies (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_id bigint NOT NULL,
+    institution_geography_snapshot_id bigint NOT NULL,
+    institution_source_id bigint,
+    role character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    match_method character varying DEFAULT 'legacy'::character varying NOT NULL,
+    confidence numeric(5,4),
+    valid_from date,
+    valid_to date,
+    notes text,
+    CONSTRAINT institution_geographies_confidence CHECK (((confidence IS NULL) OR ((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))),
+    CONSTRAINT institution_geographies_match_method CHECK (((match_method)::text = ANY ((ARRAY['legacy'::character varying, 'authoritative_crosswalk'::character varying, 'source_assertion'::character varying, 'exact_identifier'::character varying, 'exact_name'::character varying, 'jurisdictional_fallback'::character varying])::text[]))),
+    CONSTRAINT institution_geographies_role_v2 CHECK (((role)::text = ANY ((ARRAY['governs'::character varying, 'administers'::character varying, 'serves'::character varying, 'headquartered_in'::character varying])::text[]))),
+    CONSTRAINT institution_geographies_valid_range CHECK (((valid_to IS NULL) OR (valid_from IS NULL) OR (valid_to >= valid_from)))
+);
+
+
+--
+-- Name: institution_geographies_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_geographies_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_geographies_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_geographies_id_seq OWNED BY warehouse.institution_geographies.id;
+
+
+--
+-- Name: institution_geography_snapshots; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_geography_snapshots (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    canonical_id character varying NOT NULL,
+    code_system character varying NOT NULL,
+    geo_uid character varying NOT NULL,
+    boundary_type character varying NOT NULL,
+    name_en character varying,
+    name_fr character varying,
+    province_code character varying(2),
+    census_year integer NOT NULL,
+    geometry public.geography(MultiPolygon,4326),
+    population integer,
+    area_sq_km numeric,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    classification_type character varying,
+    authority_status character varying DEFAULT 'legacy'::character varying NOT NULL,
+    CONSTRAINT institution_geo_snapshots_authority_status CHECK (((authority_status)::text = ANY ((ARRAY['legacy'::character varying, 'not_applicable'::character varying, 'verified'::character varying, 'provisional'::character varying, 'unresolved'::character varying])::text[]))),
+    CONSTRAINT institution_geo_snapshots_canonical_id_format CHECK ((((canonical_id)::text = lower((canonical_id)::text)) AND ((canonical_id)::text ~ '^ca/geography/[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$'::text)))
+);
+
+
+--
+-- Name: institution_geography_snapshots_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_geography_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_geography_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_geography_snapshots_id_seq OWNED BY warehouse.institution_geography_snapshots.id;
+
+
+--
+-- Name: institution_identifiers; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_identifiers (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_id bigint NOT NULL,
+    institution_source_id bigint,
+    scheme character varying NOT NULL,
+    value character varying NOT NULL,
+    preferred boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_identifiers_scheme_format CHECK (((scheme)::text ~ '^[a-z0-9]+([._-][a-z0-9]+)*$'::text))
+);
+
+
+--
+-- Name: institution_identifiers_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_identifiers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_identifiers_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_identifiers_id_seq OWNED BY warehouse.institution_identifiers.id;
+
+
+--
+-- Name: institution_relationships; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_relationships (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    source_institution_id bigint NOT NULL,
+    target_institution_id bigint NOT NULL,
+    institution_source_id bigint,
+    relationship_type character varying NOT NULL,
+    "primary" boolean DEFAULT false NOT NULL,
+    ownership_percentage numeric(7,4),
+    ownership_basis character varying,
+    valid_from date,
+    valid_to date,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_relationships_distinct CHECK ((source_institution_id <> target_institution_id)),
+    CONSTRAINT institution_relationships_ownership_basis CHECK (((ownership_basis IS NULL) OR ((ownership_basis)::text = ANY (ARRAY[('equity'::character varying)::text, ('voting'::character varying)::text, ('statutory'::character varying)::text, ('board_appointment'::character varying)::text, ('accounting_control'::character varying)::text, ('other'::character varying)::text])))),
+    CONSTRAINT institution_relationships_ownership_percentage CHECK (((ownership_percentage IS NULL) OR ((ownership_percentage >= (0)::numeric) AND (ownership_percentage <= (100)::numeric)))),
+    CONSTRAINT institution_relationships_primary_type CHECK (((NOT "primary") OR ((relationship_type)::text = 'administrative_parent'::text))),
+    CONSTRAINT institution_relationships_type CHECK (((relationship_type)::text = ANY (ARRAY[('administrative_parent'::character varying)::text, ('reports_to'::character varying)::text, ('owned_by'::character varying)::text, ('controlled_by'::character varying)::text, ('consolidated_into'::character varying)::text, ('governed_by'::character varying)::text, ('operated_by'::character varying)::text, ('member_of'::character varying)::text, ('succeeds'::character varying)::text]))),
+    CONSTRAINT institution_relationships_valid_range CHECK (((valid_to IS NULL) OR (valid_from IS NULL) OR (valid_to >= valid_from)))
+);
+
+
+--
+-- Name: institution_relationships_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_relationships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_relationships_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_relationships_id_seq OWNED BY warehouse.institution_relationships.id;
+
+
+--
+-- Name: institution_releases; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_releases (
+    id bigint NOT NULL,
+    version character varying NOT NULL,
+    effective_on date NOT NULL,
+    schema_version character varying DEFAULT '1.0'::character varying NOT NULL,
+    published_at timestamp(6) without time zone NOT NULL,
+    geography_vintage integer DEFAULT 2021 NOT NULL,
+    attribution text NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_releases_version_format CHECK (((version)::text ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'::text)),
+    CONSTRAINT institution_releases_version_matches_effective_on CHECK ((effective_on = (version)::date))
+);
+
+
+--
+-- Name: institution_releases_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_releases_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_releases_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_releases_id_seq OWNED BY warehouse.institution_releases.id;
+
+
+--
+-- Name: institution_sources; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institution_sources (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    canonical_id character varying NOT NULL,
+    publisher_name character varying NOT NULL,
+    title_en character varying,
+    title_fr character varying,
+    url text NOT NULL,
+    retrieved_at timestamp(6) without time zone NOT NULL,
+    license character varying,
+    attribution text,
+    languages character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institution_sources_canonical_id_format CHECK ((((canonical_id)::text = lower((canonical_id)::text)) AND ((canonical_id)::text ~ '^ca/sources/[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$'::text))),
+    CONSTRAINT institution_sources_url CHECK ((url ~ '^https?://'::text))
+);
+
+
+--
+-- Name: institution_sources_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institution_sources_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institution_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institution_sources_id_seq OWNED BY warehouse.institution_sources.id;
+
+
+--
+-- Name: institutions; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.institutions (
+    id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
+    institution_source_id bigint,
+    canonical_id character varying NOT NULL,
+    name_en character varying,
+    name_fr character varying,
+    website_url text,
+    institution_type character varying NOT NULL,
+    legal_form character varying,
+    government_level character varying NOT NULL,
+    status character varying DEFAULT 'unknown'::character varying NOT NULL,
+    contact_email text,
+    contact_phone text,
+    civic_address text,
+    mailing_address text,
+    active_from date,
+    active_to date,
+    description_en text,
+    description_fr text,
+    fiscal_year_start_month integer,
+    default_currency character varying(3) DEFAULT 'CAD'::character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT institutions_active_range CHECK (((active_to IS NULL) OR (active_from IS NULL) OR (active_to >= active_from))),
+    CONSTRAINT institutions_canonical_id_format CHECK ((((canonical_id)::text = lower((canonical_id)::text)) AND ((canonical_id)::text ~ '^ca/[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$'::text))),
+    CONSTRAINT institutions_fiscal_month CHECK (((fiscal_year_start_month IS NULL) OR ((fiscal_year_start_month >= 1) AND (fiscal_year_start_month <= 12)))),
+    CONSTRAINT institutions_government_level CHECK (((government_level)::text = ANY (ARRAY[('federal'::character varying)::text, ('provincial'::character varying)::text, ('territorial'::character varying)::text, ('regional'::character varying)::text, ('municipal'::character varying)::text, ('first_nation'::character varying)::text, ('inuit'::character varying)::text, ('metis'::character varying)::text, ('joint'::character varying)::text, ('other'::character varying)::text]))),
+    CONSTRAINT institutions_has_name CHECK (((name_en IS NOT NULL) OR (name_fr IS NOT NULL))),
+    CONSTRAINT institutions_reserved_namespaces CHECK ((((canonical_id)::text !~ '^ca/(sources|geography)/'::text) AND ((canonical_id)::text !~ '/documents/'::text))),
+    CONSTRAINT institutions_status CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('inactive'::character varying)::text, ('dissolved'::character varying)::text, ('proposed'::character varying)::text, ('unknown'::character varying)::text]))),
+    CONSTRAINT institutions_type CHECK (((institution_type)::text = ANY (ARRAY[('government'::character varying)::text, ('department'::character varying)::text, ('ministry'::character varying)::text, ('agency'::character varying)::text, ('authority'::character varying)::text, ('board'::character varying)::text, ('commission'::character varying)::text, ('crown_corporation'::character varying)::text, ('government_business_enterprise'::character varying)::text, ('police_service'::character varying)::text, ('fire_service'::character varying)::text, ('public_library'::character varying)::text, ('health_authority'::character varying)::text, ('education_authority'::character varying)::text, ('corporation'::character varying)::text, ('other'::character varying)::text]))),
+    CONSTRAINT institutions_website_url CHECK (((website_url IS NULL) OR (website_url ~ '^https?://'::text)))
+);
+
+
+--
+-- Name: institutions_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.institutions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: institutions_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.institutions_id_seq OWNED BY warehouse.institutions.id;
+
+
+--
 -- Name: jurisdictions_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
 --
 
@@ -3943,9 +4390,9 @@ CREATE TABLE warehouse.media_articles (
     validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY ((ARRAY['full'::character varying, 'truncated'::character varying])::text[])))),
+    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY (ARRAY[('full'::character varying)::text, ('truncated'::character varying)::text])))),
     CONSTRAINT media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT media_articles_state CHECK (((state)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'withdrawn'::character varying, 'invalid'::character varying])::text[])))
+    CONSTRAINT media_articles_state CHECK (((state)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('withdrawn'::character varying)::text, ('invalid'::character varying)::text])))
 );
 
 
@@ -3967,7 +4414,7 @@ CREATE TABLE warehouse.media_feed_fetches (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'not_modified'::character varying])::text[])))
+    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text, ('not_modified'::character varying)::text])))
 );
 
 
@@ -4638,9 +5085,9 @@ CREATE TABLE warehouse.spending_awards (
     updated_at timestamp(6) without time zone NOT NULL,
     canonical_key character varying NOT NULL,
     is_canonical boolean DEFAULT true NOT NULL,
-    CONSTRAINT spending_awards_award_type CHECK (((award_type)::text = ANY ((ARRAY['contract'::character varying, 'grant'::character varying, 'contribution'::character varying, 'transfer_payment'::character varying])::text[]))),
+    CONSTRAINT spending_awards_award_type CHECK (((award_type)::text = ANY (ARRAY[('contract'::character varying)::text, ('grant'::character varying)::text, ('contribution'::character varying)::text, ('transfer_payment'::character varying)::text]))),
     CONSTRAINT spending_awards_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT spending_awards_state CHECK (((state)::text = ANY ((ARRAY['published'::character varying, 'withdrawn'::character varying])::text[])))
+    CONSTRAINT spending_awards_state CHECK (((state)::text = ANY (ARRAY[('published'::character varying)::text, ('withdrawn'::character varying)::text])))
 );
 
 
@@ -5283,6 +5730,69 @@ ALTER TABLE ONLY warehouse.geography_crosswalk_entries ALTER COLUMN id SET DEFAU
 --
 
 ALTER TABLE ONLY warehouse.geography_crosswalk_sets ALTER COLUMN id SET DEFAULT nextval('warehouse.geography_crosswalk_sets_id_seq'::regclass);
+
+
+--
+-- Name: institution_document_assets id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_document_assets ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_document_assets_id_seq'::regclass);
+
+
+--
+-- Name: institution_documents id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_documents ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_documents_id_seq'::regclass);
+
+
+--
+-- Name: institution_geographies id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_geographies_id_seq'::regclass);
+
+
+--
+-- Name: institution_geography_snapshots id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geography_snapshots ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_geography_snapshots_id_seq'::regclass);
+
+
+--
+-- Name: institution_identifiers id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_identifiers ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_identifiers_id_seq'::regclass);
+
+
+--
+-- Name: institution_relationships id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_relationships_id_seq'::regclass);
+
+
+--
+-- Name: institution_releases id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_releases ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_releases_id_seq'::regclass);
+
+
+--
+-- Name: institution_sources id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_sources ALTER COLUMN id SET DEFAULT nextval('warehouse.institution_sources_id_seq'::regclass);
+
+
+--
+-- Name: institutions id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institutions ALTER COLUMN id SET DEFAULT nextval('warehouse.institutions_id_seq'::regclass);
 
 
 --
@@ -6112,6 +6622,86 @@ ALTER TABLE ONLY warehouse.geography_crosswalk_entries
 
 ALTER TABLE ONLY warehouse.geography_crosswalk_sets
     ADD CONSTRAINT geography_crosswalk_sets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_coverages institution_coverages_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_coverages
+    ADD CONSTRAINT institution_coverages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_document_assets institution_document_assets_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_document_assets
+    ADD CONSTRAINT institution_document_assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_documents institution_documents_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_documents
+    ADD CONSTRAINT institution_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_geographies institution_geographies_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies
+    ADD CONSTRAINT institution_geographies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_geography_snapshots institution_geography_snapshots_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geography_snapshots
+    ADD CONSTRAINT institution_geography_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_identifiers institution_identifiers_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_identifiers
+    ADD CONSTRAINT institution_identifiers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_relationships institution_relationships_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships
+    ADD CONSTRAINT institution_relationships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_releases institution_releases_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_releases
+    ADD CONSTRAINT institution_releases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institution_sources institution_sources_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_sources
+    ADD CONSTRAINT institution_sources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: institutions institutions_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institutions
+    ADD CONSTRAINT institutions_pkey PRIMARY KEY (id);
 
 
 --
@@ -7793,6 +8383,146 @@ CREATE UNIQUE INDEX idx_geo_relationships_unique ON warehouse.geo_relationships 
 
 
 --
+-- Name: idx_institution_document_assets_preferred; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_document_assets_preferred ON warehouse.institution_document_assets USING btree (institution_release_id, institution_document_id) WHERE preferred;
+
+
+--
+-- Name: idx_institution_document_assets_sha256; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_institution_document_assets_sha256 ON warehouse.institution_document_assets USING btree (institution_release_id, content_sha256);
+
+
+--
+-- Name: idx_institution_document_assets_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_document_assets_unique ON warehouse.institution_document_assets USING btree (institution_release_id, institution_document_id, content_sha256);
+
+
+--
+-- Name: idx_institution_documents_release_canonical; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_documents_release_canonical ON warehouse.institution_documents USING btree (institution_release_id, canonical_id);
+
+
+--
+-- Name: idx_institution_documents_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_documents_release_id ON warehouse.institution_documents USING btree (institution_release_id, id);
+
+
+--
+-- Name: idx_institution_geo_snapshots_geometry; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_institution_geo_snapshots_geometry ON warehouse.institution_geography_snapshots USING gist (geometry);
+
+
+--
+-- Name: idx_institution_geo_snapshots_release_canonical; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_geo_snapshots_release_canonical ON warehouse.institution_geography_snapshots USING btree (institution_release_id, canonical_id);
+
+
+--
+-- Name: idx_institution_geo_snapshots_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_geo_snapshots_release_id ON warehouse.institution_geography_snapshots USING btree (institution_release_id, id);
+
+
+--
+-- Name: idx_institution_geo_snapshots_release_uid; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_geo_snapshots_release_uid ON warehouse.institution_geography_snapshots USING btree (institution_release_id, boundary_type, geo_uid, census_year);
+
+
+--
+-- Name: idx_institution_geographies_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_geographies_unique ON warehouse.institution_geographies USING btree (institution_release_id, institution_id, institution_geography_snapshot_id, role);
+
+
+--
+-- Name: idx_institution_identifiers_institution_scheme; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_institution_identifiers_institution_scheme ON warehouse.institution_identifiers USING btree (institution_id, scheme);
+
+
+--
+-- Name: idx_institution_identifiers_preferred; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_identifiers_preferred ON warehouse.institution_identifiers USING btree (institution_release_id, institution_id, scheme) WHERE preferred;
+
+
+--
+-- Name: idx_institution_identifiers_release_value; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_identifiers_release_value ON warehouse.institution_identifiers USING btree (institution_release_id, scheme, value);
+
+
+--
+-- Name: idx_institution_relationships_primary_parent; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_relationships_primary_parent ON warehouse.institution_relationships USING btree (institution_release_id, source_institution_id) WHERE "primary";
+
+
+--
+-- Name: idx_institution_relationships_release_type; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_institution_relationships_release_type ON warehouse.institution_relationships USING btree (institution_release_id, relationship_type);
+
+
+--
+-- Name: idx_institution_relationships_unique; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_relationships_unique ON warehouse.institution_relationships USING btree (institution_release_id, source_institution_id, target_institution_id, relationship_type, valid_from) NULLS NOT DISTINCT;
+
+
+--
+-- Name: idx_institution_sources_release_canonical; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_sources_release_canonical ON warehouse.institution_sources USING btree (institution_release_id, canonical_id);
+
+
+--
+-- Name: idx_institution_sources_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institution_sources_release_id ON warehouse.institution_sources USING btree (institution_release_id, id);
+
+
+--
+-- Name: idx_institutions_release_canonical; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institutions_release_canonical ON warehouse.institutions USING btree (institution_release_id, canonical_id);
+
+
+--
+-- Name: idx_institutions_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_institutions_release_id ON warehouse.institutions USING btree (institution_release_id, id);
+
+
+--
 -- Name: idx_kpi_documents_agent_run; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -8294,6 +9024,41 @@ CREATE INDEX index_geo_relationships_on_parent_id ON warehouse.geo_relationships
 --
 
 CREATE INDEX index_geo_relationships_on_raw_ingestion_id ON warehouse.geo_relationships USING btree (raw_ingestion_id);
+
+
+--
+-- Name: index_institution_coverages_on_institution_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_institution_coverages_on_institution_release_id ON warehouse.institution_coverages USING btree (institution_release_id);
+
+
+--
+-- Name: index_institution_coverages_on_institution_source_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_institution_coverages_on_institution_source_id ON warehouse.institution_coverages USING btree (institution_source_id);
+
+
+--
+-- Name: index_institution_coverages_scope_subject; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_institution_coverages_scope_subject ON warehouse.institution_coverages USING btree (institution_release_id, scope_id, subject);
+
+
+--
+-- Name: index_institution_releases_on_version; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX index_institution_releases_on_version ON warehouse.institution_releases USING btree (version);
+
+
+--
+-- Name: index_institution_sources_on_institution_release_id_and_url; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_institution_sources_on_institution_release_id_and_url ON warehouse.institution_sources USING btree (institution_release_id, url);
 
 
 --
@@ -9311,6 +10076,110 @@ ALTER TABLE ONLY warehouse.extraction_assertions
 
 
 --
+-- Name: institution_coverages fk_institution_coverages_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_coverages
+    ADD CONSTRAINT fk_institution_coverages_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
+-- Name: institution_document_assets fk_institution_document_assets_document_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_document_assets
+    ADD CONSTRAINT fk_institution_document_assets_document_release FOREIGN KEY (institution_release_id, institution_document_id) REFERENCES warehouse.institution_documents(institution_release_id, id);
+
+
+--
+-- Name: institution_documents fk_institution_documents_institution_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_documents
+    ADD CONSTRAINT fk_institution_documents_institution_release FOREIGN KEY (institution_release_id, institution_id) REFERENCES warehouse.institutions(institution_release_id, id);
+
+
+--
+-- Name: institution_documents fk_institution_documents_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_documents
+    ADD CONSTRAINT fk_institution_documents_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
+-- Name: institution_geographies fk_institution_geographies_geography_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies
+    ADD CONSTRAINT fk_institution_geographies_geography_release FOREIGN KEY (institution_release_id, institution_geography_snapshot_id) REFERENCES warehouse.institution_geography_snapshots(institution_release_id, id);
+
+
+--
+-- Name: institution_geographies fk_institution_geographies_institution_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies
+    ADD CONSTRAINT fk_institution_geographies_institution_release FOREIGN KEY (institution_release_id, institution_id) REFERENCES warehouse.institutions(institution_release_id, id);
+
+
+--
+-- Name: institution_geographies fk_institution_geographies_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies
+    ADD CONSTRAINT fk_institution_geographies_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
+-- Name: institution_identifiers fk_institution_identifiers_institution_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_identifiers
+    ADD CONSTRAINT fk_institution_identifiers_institution_release FOREIGN KEY (institution_release_id, institution_id) REFERENCES warehouse.institutions(institution_release_id, id);
+
+
+--
+-- Name: institution_identifiers fk_institution_identifiers_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_identifiers
+    ADD CONSTRAINT fk_institution_identifiers_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
+-- Name: institution_relationships fk_institution_relationships_source_institution_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships
+    ADD CONSTRAINT fk_institution_relationships_source_institution_release FOREIGN KEY (institution_release_id, source_institution_id) REFERENCES warehouse.institutions(institution_release_id, id);
+
+
+--
+-- Name: institution_relationships fk_institution_relationships_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships
+    ADD CONSTRAINT fk_institution_relationships_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
+-- Name: institution_relationships fk_institution_relationships_target_institution_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships
+    ADD CONSTRAINT fk_institution_relationships_target_institution_release FOREIGN KEY (institution_release_id, target_institution_id) REFERENCES warehouse.institutions(institution_release_id, id);
+
+
+--
+-- Name: institutions fk_institutions_source_release; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institutions
+    ADD CONSTRAINT fk_institutions_source_release FOREIGN KEY (institution_release_id, institution_source_id) REFERENCES warehouse.institution_sources(institution_release_id, id);
+
+
+--
 -- Name: organization_lineages fk_organization_lineages_acknowledged_doc; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -9351,6 +10220,14 @@ ALTER TABLE ONLY warehouse.fiscal_authorities
 
 
 --
+-- Name: institution_relationships fk_rails_16859baa58; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_relationships
+    ADD CONSTRAINT fk_rails_16859baa58 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
+
+
+--
 -- Name: lobbying_activities fk_rails_1e146f8e23; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -9372,6 +10249,22 @@ ALTER TABLE ONLY warehouse.fiscal_expenditures
 
 ALTER TABLE ONLY warehouse.spending_awards
     ADD CONSTRAINT fk_rails_245c5b1a24 FOREIGN KEY (payer_organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: institution_documents fk_rails_2cbcad85b1; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_documents
+    ADD CONSTRAINT fk_rails_2cbcad85b1 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
+
+
+--
+-- Name: institution_geographies fk_rails_2cd3747963; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geographies
+    ADD CONSTRAINT fk_rails_2cd3747963 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
 
 
 --
@@ -9407,11 +10300,35 @@ ALTER TABLE ONLY warehouse.lineage_entries
 
 
 --
+-- Name: institution_identifiers fk_rails_5700c59222; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_identifiers
+    ADD CONSTRAINT fk_rails_5700c59222 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
+
+
+--
+-- Name: institution_document_assets fk_rails_5bc8ba746c; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_document_assets
+    ADD CONSTRAINT fk_rails_5bc8ba746c FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
+
+
+--
 -- Name: media_articles fk_rails_5ebd13ee23; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.media_articles
     ADD CONSTRAINT fk_rails_5ebd13ee23 FOREIGN KEY (media_feed_id) REFERENCES warehouse.media_feeds(id);
+
+
+--
+-- Name: institutions fk_rails_6e7d3b1c70; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institutions
+    ADD CONSTRAINT fk_rails_6e7d3b1c70 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
 
 
 --
@@ -9476,6 +10393,14 @@ ALTER TABLE ONLY warehouse.organization_aliases
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT fk_rails_c3f430a0df FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: institution_sources fk_rails_d57bd47b07; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_sources
+    ADD CONSTRAINT fk_rails_d57bd47b07 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
 
 
 --
@@ -9572,6 +10497,30 @@ ALTER TABLE ONLY warehouse.geography_crosswalk_entries
 
 ALTER TABLE ONLY warehouse.geography_crosswalk_sets
     ADD CONSTRAINT geography_crosswalk_sets_source_id_fkey FOREIGN KEY (source_id) REFERENCES warehouse.sources(id);
+
+
+--
+-- Name: institution_coverages institution_coverages_institution_release_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_coverages
+    ADD CONSTRAINT institution_coverages_institution_release_id_fkey FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
+
+
+--
+-- Name: institution_coverages institution_coverages_institution_source_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_coverages
+    ADD CONSTRAINT institution_coverages_institution_source_id_fkey FOREIGN KEY (institution_source_id) REFERENCES warehouse.institution_sources(id);
+
+
+--
+-- Name: institution_geography_snapshots institution_geography_snapshots_institution_release_id_fkey; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.institution_geography_snapshots
+    ADD CONSTRAINT institution_geography_snapshots_institution_release_id_fkey FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
 
 
 --
@@ -9917,6 +10866,9 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260822000001'),
+('20260821000001'),
+('20260814000001'),
 ('20260813000001'),
 ('20260812000005'),
 ('20260812000004'),

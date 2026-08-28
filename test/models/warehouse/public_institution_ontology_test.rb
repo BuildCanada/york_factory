@@ -279,6 +279,35 @@ class Warehouse::PublicInstitutionOntologyTest < ActiveSupport::TestCase
     end
   end
 
+  test "municipality geography snapshots use only frozen manifest data" do
+    Warehouse::GeoBoundary.create!(
+      boundary_type: "csd", geo_uid: "1299999", census_year: 2021,
+      name_en: "Mutable warehouse name", population: 999_999
+    )
+
+    Dir.mktmpdir do |directory|
+      asset = create_pdf_asset(directory, "statement")
+      manifest = importer_manifest(asset)
+      manifest.dig(:municipalities, 0, :statcan_geographies, 0).merge!(
+        name: "Frozen release name", population: 123, area_sq_km: 4.5,
+        classification_type: "T"
+      )
+      path = File.join(directory, "manifest.json")
+      File.write(path, JSON.pretty_generate(manifest))
+
+      imported = Warehouse::InstitutionRelease::MunicipalityImporter.new(
+        path: path, asset_root: directory
+      ).import!
+      snapshot = imported.institution_geography_snapshots.find_by!(geo_uid: "1299999")
+
+      assert_equal "Frozen release name", snapshot.name_en
+      assert_equal 123, snapshot.population
+      assert_equal 4.5, snapshot.area_sq_km.to_f
+      assert_equal "T", snapshot.classification_type
+      assert_nil snapshot.geometry
+    end
+  end
+
   test "importer preserves proposed institutions and future activation dates" do
     Dir.mktmpdir do |directory|
       asset = create_pdf_asset(directory, "statement")
@@ -441,10 +470,16 @@ class Warehouse::PublicInstitutionOntologyTest < ActiveSupport::TestCase
     assert_includes queries.fetch("document_assets.parquet"), "a.rights_status = 'redistributable'"
     assert_includes queries.fetch("sources.parquet"), "release_version"
     assert_includes queries.fetch("coverage.parquet"), "c.status"
+    assert_includes queries.fetch("financial_statement_extractions.parquet"), "e.institution_release_id = #{@release.id}"
+    assert_includes queries.fetch("financial_statement_extractions.parquet"), "e.status = 'approved'"
+    assert_includes queries.fetch("financial_statement_extractions.parquet"), "e.reviewed_at <= r.published_at"
     assert_includes loader, "BEGIN TRANSACTION;"
+    assert_includes loader, ".bail on"
     assert_includes loader, "document_assets.parquet"
     assert_includes loader, "coverage.parquet"
     assert_includes loader, "financial_statement_facts.parquet"
+    assert_includes loader, "INSERT INTO target.public_institutions.institutions (release_version, canonical_id"
+    refute_includes loader, "SELECT * FROM read_parquet"
     refute_includes loader, "DELETE FROM"
   end
 

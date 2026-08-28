@@ -196,14 +196,30 @@ flowchart LR
 
 Corrections loop back through the source inputs and produce a new dated release; a published release is never edited in place.
 
-The national assembler imports all jurisdiction manifests and the normalized First Nations manifest in one outer transaction:
+The production path is one checksummed release recipe and one command. Paths may be absolute or
+relative to the recipe; every input requires a SHA-256, so a source-file change stops the build
+before the database is touched.
 
-```sh
-bin/rails 'institution_ontology:import_national[YYYY-MM-DD,semicolon-separated-manifests,normalized-first-nations-manifest,first-nations-asset-inventory,csd-inventory,semicolon-separated-csd-authority-crosswalks]'
-bin/rails 'institution_ontology:export[YYYY-MM-DD,/Volumes/floppy/york_factory/public_institutions/releases/public-institutions-YYYY-MM-DD]'
+```json
+{
+  "release_version": "YYYY-MM-DD",
+  "asset_root": "/path/to/content-addressed-assets",
+  "municipality_manifests": [{"path": "on.json", "sha256": "..."}],
+  "first_nations_manifest": {"path": "first-nations.json", "sha256": "..."},
+  "first_nations_asset_inventory": {"path": "first-nations-assets.json", "sha256": "..."},
+  "csd_inventory": {"path": "csd-inventory.json", "sha256": "..."},
+  "csd_authority_crosswalks": [{"path": "on-crosswalk.json", "sha256": "..."}]
+}
 ```
 
-If a manifest, relationship, identifier, geography, document, or asset fails validation, the complete national import rolls back.
+```sh
+bin/rails 'institution_ontology:build[path/to/release-recipe.json,path/to/public-institutions-YYYY-MM-DD]'
+```
+
+The assembler imports all jurisdiction manifests, the normalized First Nations manifest, and CSD
+authority mappings in one transaction. If a manifest, relationship, identifier, geography,
+document, or asset fails validation, the complete national import rolls back. Export remains
+available as a separate recovery command if bundle creation fails after the atomic import.
 
 Nova Scotia, Alberta, and British Columbia each produce a jurisdiction manifest with the same contract. Alberta uses the provincial Municipal Affairs roster and audited-statement archive. British Columbia uses the CivicInfo directory and follows report links from each official municipal site. Exact report PDFs are retained in the shared content-addressed store; every document work points to its own landing-page or download source rather than merely to a general municipal homepage.
 
@@ -248,11 +264,16 @@ public-institutions-YYYY-MM-DD/
 
 Parquet uses Zstandard compression. Geometry is WKB with SRID 4326 and loads into PostgreSQL as `bytea`, so PostGIS is optional for consumers. `coverage.parquet` distinguishes complete, partial, not-searched, not-found, unavailable, and failed source coverage; missing documents are therefore not silently presented as proof that none exist. The generated loader is atomic and insert-only: attempting to load an existing version fails instead of silently replacing it.
 
+Financial facts are optional and approval-gated. An extraction is pinned to one release and one
+archived asset; only rows explicitly approved by a reviewer on or before `published_at` enter the
+Parquet bundle. Pending, machine-extracted, rejected, and post-publication review results remain
+internal. Empty financial-fact tables are valid.
+
 ## Deferred additions
 
 The following are intentionally outside version 1:
 
-- extracted financial line items and a normalized chart of accounts;
+- a normalized chart of accounts beyond the nine headline financial concepts;
 - many-to-many document/source evidence;
 - canonical-ID redirects and former-ID aliases;
 - identifier and geography-association validity intervals;
@@ -262,4 +283,4 @@ The following are intentionally outside version 1:
 - automated institution reconciliation; and
 - an ontology HTTP API.
 
-These can be additive tables or delivery layers without changing the twelve-table release contract.
+These can be additive tables or delivery layers without changing the release contract.

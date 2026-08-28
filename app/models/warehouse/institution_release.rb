@@ -10,6 +10,7 @@ class Warehouse::InstitutionRelease < Warehouse::Record
   has_many :institution_documents, dependent: :restrict_with_error
   has_many :institution_document_assets, dependent: :restrict_with_error
   has_many :institution_coverages, dependent: :restrict_with_error
+  has_many :financial_statement_extractions, dependent: :restrict_with_error
 
   validates :version,
     presence: true,

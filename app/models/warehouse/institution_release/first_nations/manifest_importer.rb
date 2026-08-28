@@ -149,11 +149,9 @@ module Warehouse::InstitutionRelease::FirstNations
           record.name_fr = geography["name_fr"]
           record.province_code = geography["province_code"]
           record.census_year = 2021
-          if (boundary = Warehouse::GeoBoundary.find_by(boundary_type: "csd", geo_uid: uid, census_year: 2021))
-            record.geometry = boundary.geometry
-            record.population = boundary.population
-            record.area_sq_km = boundary.area_sq_km
-          end
+          record.classification_type = geography["classification_type"]
+          record.population = geography["population"]
+          record.area_sq_km = geography["area_sq_km"]
         end
         Warehouse::InstitutionGeography.create!(
           institution_release: @release, institution: institution,

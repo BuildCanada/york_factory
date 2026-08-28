@@ -1,4 +1,37 @@
 namespace :institution_ontology do
+  desc "Build and export one national release from a checksummed JSON recipe"
+  task :build, [ :recipe_path, :output_directory ] => :environment do |_task, args|
+    recipe_path = args[:recipe_path].presence || abort("recipe_path is required")
+    output = args[:output_directory].presence || abort("output_directory is required")
+    recipe = Warehouse::InstitutionRelease::Recipe.new(recipe_path)
+
+    release = Warehouse::Record.transaction do
+      imported_release = Warehouse::InstitutionRelease::CombinedMunicipalityImporter.new(
+        paths: recipe.municipality_paths,
+        version: recipe.version,
+        asset_root: recipe.asset_root
+      ).import!
+      Warehouse::InstitutionRelease::FirstNations::ManifestImporter.new(
+        release: imported_release,
+        path: recipe.first_nations_path,
+        asset_inventory_path: recipe.first_nations_assets_path,
+        asset_root: recipe.asset_root
+      ).import!
+      Warehouse::InstitutionRelease::CsdAuthorityImporter.new(
+        release: imported_release,
+        inventory_path: recipe.csd_inventory_path,
+        authority_paths: recipe.csd_authority_paths
+      ).import!
+      imported_release.validate_complete!
+      imported_release
+    end
+
+    directory = Warehouse::InstitutionRelease::Exporter.new(
+      release, output_directory: output, asset_root: recipe.asset_root
+    ).export!
+    puts "Built national release #{release.version} from recipe #{recipe.sha256} at #{directory}"
+  end
+
   desc "Import a validated Nova Scotia municipality release manifest"
   task :import_ns_municipalities, [ :version, :input_path ] => :environment do |_task, args|
     version = args[:version].presence || abort("version is required")

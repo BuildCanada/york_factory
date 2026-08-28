@@ -3347,6 +3347,7 @@ ALTER SEQUENCE warehouse.extraction_assertions_id_seq OWNED BY warehouse.extract
 
 CREATE TABLE warehouse.financial_statement_extractions (
     id bigint NOT NULL,
+    institution_release_id bigint NOT NULL,
     institution_canonical_id character varying NOT NULL,
     document_canonical_id character varying NOT NULL,
     asset_sha256 character varying NOT NULL,
@@ -9083,10 +9084,17 @@ CREATE INDEX index_financial_statement_extractions_institution_year ON warehouse
 
 
 --
+-- Name: index_financial_statement_extractions_on_release_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_financial_statement_extractions_on_release_id ON warehouse.financial_statement_extractions USING btree (institution_release_id);
+
+
+--
 -- Name: index_financial_statement_extractions_source_version; Type: INDEX; Schema: warehouse; Owner: -
 --
 
-CREATE UNIQUE INDEX index_financial_statement_extractions_source_version ON warehouse.financial_statement_extractions USING btree (asset_sha256, extractor_version);
+CREATE UNIQUE INDEX index_financial_statement_extractions_source_version ON warehouse.financial_statement_extractions USING btree (institution_release_id, asset_sha256, extractor_version);
 
 
 --
@@ -10515,6 +10523,14 @@ ALTER TABLE ONLY warehouse.lobbying_activities
 
 ALTER TABLE ONLY warehouse.spending_awards
     ADD CONSTRAINT fk_rails_90e55d982c FOREIGN KEY (raw_ingestion_id) REFERENCES warehouse.raw_ingestions(id);
+
+
+--
+-- Name: financial_statement_extractions fk_rails_30abaad519; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.financial_statement_extractions
+    ADD CONSTRAINT fk_rails_30abaad519 FOREIGN KEY (institution_release_id) REFERENCES warehouse.institution_releases(id);
 
 
 --

@@ -13,6 +13,20 @@ class Warehouse::InstitutionRelease::Exporter
     application/vnd.openxmlformats-officedocument.wordprocessingml.document
     application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
   ].freeze
+  LOAD_COLUMNS = {
+    releases: %w[version effective_on schema_version published_at geography_vintage attribution license_statement],
+    sources: %w[release_version source_id publisher_name title_en title_fr url retrieved_at license attribution has_english has_french],
+    institutions: %w[release_version canonical_id name_en name_fr website_url institution_type legal_form government_level status contact_email contact_phone civic_address mailing_address active_from active_to active_at_release description_en description_fr fiscal_year_start_month default_currency source_id],
+    identifiers: %w[release_version institution_id scheme value preferred source_id],
+    relationships: %w[release_version source_institution_id target_institution_id relationship_type is_primary ownership_percentage ownership_basis valid_from valid_to notes source_id],
+    geographies: %w[release_version geography_id code_system geo_uid boundary_type classification_type authority_status name_en name_fr province_code census_year population area_sq_km geometry_wkb geometry_srid],
+    institution_geographies: %w[release_version institution_id geography_id role match_method confidence valid_from valid_to notes source_id],
+    coverage: %w[release_version scope_id subject status notes source_url source_id],
+    documents: %w[release_version canonical_id reporting_institution_id source_id document_type document_variant title_en title_fr fiscal_period_start fiscal_period_end published_on source_page_url download_url notes],
+    document_assets: %w[release_version document_id content_sha256 asset_role part_index part_count preferred download_url retrieved_at archive_path mime_type byte_size rights_status page_locator],
+    financial_statement_extractions: %w[release_version extraction_id document_id asset_sha256 fiscal_year_end statement_basis language extractor_version llm_model status check_results_json reviewed_by reviewed_at review_notes],
+    financial_statement_facts: %w[release_version extraction_id concept value raw_text raw_label scale statement source_page column_year extraction_confidence]
+  }.freeze
 
   attr_reader :release, :output_directory
 
@@ -288,7 +302,9 @@ class Warehouse::InstitutionRelease::Exporter
           ON a.institution_document_id = d.id
           AND a.content_sha256 = e.asset_sha256
         JOIN warehouse.institution_releases r ON r.id = d.institution_release_id
-        WHERE e.status IN ('extracted', 'approved')
+        WHERE e.institution_release_id = #{release_id}
+          AND e.status = 'approved'
+          AND e.reviewed_at <= r.published_at
         ORDER BY d.canonical_id, e.asset_sha256, e.extractor_version
       SQL
       "financial_statement_facts.parquet" => <<~SQL
@@ -313,7 +329,9 @@ class Warehouse::InstitutionRelease::Exporter
           ON a.institution_document_id = d.id
           AND a.content_sha256 = e.asset_sha256
         JOIN warehouse.institution_releases r ON r.id = d.institution_release_id
-        WHERE e.status IN ('extracted', 'approved')
+        WHERE e.institution_release_id = #{release_id}
+          AND e.status = 'approved'
+          AND e.reviewed_at <= r.published_at
         ORDER BY d.canonical_id, e.asset_sha256, e.extractor_version, f.concept
       SQL
     }
@@ -398,7 +416,7 @@ class Warehouse::InstitutionRelease::Exporter
     config = ActiveRecord::Base.connection_db_config.configuration_hash
     values = {
       host: config[:host], port: config[:port], dbname: config[:database],
-      user: config[:username], password: config[:password]
+      user: config[:username], password: config[:password], sslmode: config[:sslmode]
     }.compact
     values.map { |key, value| "#{key}=#{libpq_quote(value.to_s)}" }.join(" ")
   end
@@ -669,7 +687,7 @@ class Warehouse::InstitutionRelease::Exporter
           REFERENCES public_institutions.document_assets(release_version, document_id, content_sha256),
         CHECK (statement_basis IN ('consolidated','non_consolidated')),
         CHECK (language IS NULL OR language IN ('en','fr','bilingual')),
-        CHECK (status IN ('extracted','approved'))
+        CHECK (status = 'approved')
       );
 
       CREATE TABLE IF NOT EXISTS public_institutions.financial_statement_facts (
@@ -701,39 +719,25 @@ class Warehouse::InstitutionRelease::Exporter
   end
 
   def load_sql
+    statements = LOAD_COLUMNS.map do |table, columns|
+      column_list = columns.join(", ")
+      <<~SQL.chomp
+        INSERT INTO target.public_institutions.#{table} (#{column_list})
+          SELECT #{column_list} FROM read_parquet('#{table}.parquet');
+      SQL
+    end.join("\n")
+
     <<~SQL
       -- Run with DuckDB from inside the release directory. This loader is insert-only:
       -- an existing release version is an error, preventing silent recuts.
+      .bail on
       INSTALL postgres;
       LOAD postgres;
       ATTACH 'REPLACE_WITH_POSTGRES_CONNECTION_STRING' AS target (TYPE POSTGRES);
 
       BEGIN TRANSACTION;
 
-      INSERT INTO target.public_institutions.releases
-        SELECT * FROM read_parquet('releases.parquet');
-      INSERT INTO target.public_institutions.sources
-        SELECT * FROM read_parquet('sources.parquet');
-      INSERT INTO target.public_institutions.institutions
-        SELECT * FROM read_parquet('institutions.parquet');
-      INSERT INTO target.public_institutions.identifiers
-        SELECT * FROM read_parquet('identifiers.parquet');
-      INSERT INTO target.public_institutions.relationships
-        SELECT * FROM read_parquet('relationships.parquet');
-      INSERT INTO target.public_institutions.geographies
-        SELECT * FROM read_parquet('geographies.parquet');
-      INSERT INTO target.public_institutions.institution_geographies
-        SELECT * FROM read_parquet('institution_geographies.parquet');
-      INSERT INTO target.public_institutions.coverage
-        SELECT * FROM read_parquet('coverage.parquet');
-      INSERT INTO target.public_institutions.documents
-        SELECT * FROM read_parquet('documents.parquet');
-      INSERT INTO target.public_institutions.document_assets
-        SELECT * FROM read_parquet('document_assets.parquet');
-      INSERT INTO target.public_institutions.financial_statement_extractions
-        SELECT * FROM read_parquet('financial_statement_extractions.parquet');
-      INSERT INTO target.public_institutions.financial_statement_facts
-        SELECT * FROM read_parquet('financial_statement_facts.parquet');
+      #{statements}
 
       COMMIT;
     SQL

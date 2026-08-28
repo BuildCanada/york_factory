@@ -32,6 +32,8 @@ statements commonly present financial assets and non-financial assets rather tha
 5. Schema-invalid model output creates no facts.
 6. Failed accounting identities block auto-acceptance.
 7. Re-extraction is versioned and append-only. Approved facts are never silently mutated.
+8. Every extraction belongs to one dated ontology release and its source asset must exist in that release.
+9. A release exports only approved extractions reviewed no later than its publication timestamp.
 
 ## Why the earlier design was reduced
 
@@ -52,13 +54,14 @@ checks, year-over-year comparisons, and a dedicated review UI are deferred.
 
 ## Data model
 
-The extraction tables live in `warehouse` but are not release-scoped. They refer to ontology
-records using stable document/institution canonical IDs and the immutable asset SHA rather than
-foreign keys into a dated release.
+The extraction tables live in `warehouse` and are release-scoped. They retain stable
+document/institution canonical IDs and the immutable asset SHA, while the release foreign key
+prevents a later recut from silently acquiring facts reviewed against another snapshot.
 
 ### `financial_statement_extractions`
 
 - `institution_canonical_id`
+- `institution_release_id`
 - `document_canonical_id`
 - `asset_sha256`
 - `fiscal_year_end`
@@ -72,7 +75,8 @@ foreign keys into a dated release.
 - prompt and response snapshots
 - error details and timestamps
 
-`(asset_sha256, extractor_version)` is unique.
+`(institution_release_id, asset_sha256, extractor_version)` is unique. The referenced document,
+reporting institution, and archived asset must all belong to that release.
 
 ### `financial_statement_facts`
 

@@ -256,9 +256,13 @@ class Warehouse::InstitutionRelease::NovaScotiaMunicipalityImporter
       geography = create_geography_snapshot!(
         uid: geography_row.fetch("uid").to_s,
         name: geography_row.fetch("name"),
+        name_fr: geography_row["name_fr"],
         boundary_type: boundary_type,
         vintage: geography_row.fetch("vintage", payload.fetch("geography_vintage")),
-        province_code: geography_row["province_code"]
+        province_code: geography_row["province_code"],
+        classification_type: geography_row["classification_type"],
+        population: geography_row["population"],
+        area_sq_km: geography_row["area_sq_km"]
       )
       create_geography_link!(
         institution: institution,
@@ -288,7 +292,8 @@ class Warehouse::InstitutionRelease::NovaScotiaMunicipalityImporter
     raise ImportError, "unsupported geography match method: #{value}"
   end
 
-  def create_geography_snapshot!(uid:, name:, boundary_type:, vintage:, province_code: nil)
+  def create_geography_snapshot!(uid:, name:, boundary_type:, vintage:, province_code: nil,
+    name_fr: nil, classification_type: nil, population: nil, area_sq_km: nil)
     vintage = Integer(vintage)
     canonical_id = Warehouse::InstitutionGeographySnapshot.canonical_id_for(
       boundary_type: boundary_type,
@@ -298,25 +303,20 @@ class Warehouse::InstitutionRelease::NovaScotiaMunicipalityImporter
     existing = release.institution_geography_snapshots.find_by(canonical_id: canonical_id)
     return existing if existing
 
-    boundary = Warehouse::GeoBoundary.find_by(
-      boundary_type: boundary_type,
-      geo_uid: uid,
-      census_year: vintage
-    )
     Warehouse::InstitutionGeographySnapshot.create!(
       institution_release: release,
       canonical_id: canonical_id,
       code_system: "#{boundary_type}_#{vintage}",
       geo_uid: uid,
       boundary_type: boundary_type,
-      name_en: boundary&.name_en.presence || name,
-      name_fr: boundary&.name_fr,
-      province_code: boundary&.province_code.presence || province_code || province_metadata["statcan_code"],
+      classification_type: classification_type,
+      name_en: name,
+      name_fr: name_fr,
+      province_code: province_code || province_metadata["statcan_code"],
       census_year: vintage,
       authority_status: boundary_type == "pr" ? "not_applicable" : "legacy",
-      geometry: boundary&.geometry,
-      population: boundary&.population,
-      area_sq_km: boundary&.area_sq_km
+      population: population,
+      area_sq_km: area_sq_km
     )
   end
 

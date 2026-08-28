@@ -1,6 +1,9 @@
 class CreateFinancialStatementExtractions < ActiveRecord::Migration[8.1]
   def change
     create_table "warehouse.financial_statement_extractions" do |t|
+      t.references :institution_release, null: false,
+        foreign_key: { to_table: "warehouse.institution_releases" },
+        index: { name: "index_financial_statement_extractions_on_release_id" }
       t.string :institution_canonical_id, null: false
       t.string :document_canonical_id, null: false
       t.string :asset_sha256, null: false
@@ -19,7 +22,7 @@ class CreateFinancialStatementExtractions < ActiveRecord::Migration[8.1]
       t.text :review_notes
       t.timestamps
 
-      t.index [ :asset_sha256, :extractor_version ], unique: true,
+      t.index [ :institution_release_id, :asset_sha256, :extractor_version ], unique: true,
         name: "index_financial_statement_extractions_source_version"
       t.index [ :institution_canonical_id, :fiscal_year_end ],
         name: "index_financial_statement_extractions_institution_year"

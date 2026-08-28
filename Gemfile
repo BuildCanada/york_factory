@@ -150,3 +150,8 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 end
+
+group :test do
+  # Minitest 6 moved its stubbing API into a separate gem.
+  gem "minitest-mock", "~> 5.27"
+end

@@ -30,7 +30,7 @@ class MunicipalFinancialReportScraper
   TESSDATA_DIR = Pathname("/Volumes/floppy/york_factory/ocr/tessdata")
   REPORT_PATTERN = /(?:audited?[\s_-]*financial|financial[\s_-]*(?:audit|statements?)|consolidated[\s_-]*financial|annual[\s_-]*(?:municipal[\s_-]*)?reports?|statement[\s_-]*of[\s_-]*financial[\s_-]*information|\bsofi\b|\bfs\b|finance[\s_-]*(?:and[\s_-]*)?(?:reports?|documents?)|proactive[\s_-]*disclosures?|[ée]tats?[\s_-]*financiers?|informations?[\s_-]*financi[èe]res?|rapports?[\s_-]*(?:financiers?|annuels?))/i
   EXCLUDE_PATTERN = /(?:budget|budg[ée]taire|financial[\s_-]*plan|plan[\s_-]*financier|quarterly|trimestriel|interim|grant|subvention|policy|politique|template|gabarit|guide|agenda|ordre[\s_-]*du[\s_-]*jour|minutes|proc[èe]s[\s_-]*verbal|water[\s_-]*quality|drinking[\s_-]*water|eau[\s_-]*potable|salar(?:y|ies)|salaires?|remuneration|r[ée]mun[ée]ration|payment[\s_-]*vouchers?|election[\s_-]*(?:candidate|contribution)|form[\s_-]*4)/i
-  HARD_EXCLUDE_PATTERN = /(?:\b(?:candidate|campaign|unaudited)\b|non[\s_-]*audit[ée]s?|election[\s_-]*(?:candidate|contribution)|form[\s_-]*4)/i
+  HARD_EXCLUDE_PATTERN = /(?:(?<![[:alnum:]])(?:candidate|campaign|unaudited)(?![[:alnum:]])|non[\s_-]*audit[ée]s?|election[\s_-]*(?:candidate|contribution)|form[\s_-]*4)/i
   STRONG_FINANCIAL_LOCATOR_PATTERN = /(?:audited?[\s_-]*financial|consolidated[\s_-]*financial|financial[\s_-]*statements?|[ée]tats?[\s_-]*financiers?)/i
   NON_CORPORATE_ANNUAL_PATTERN = /(?:accessibility|cemetery|credit[\s_-]*rating|economic[\s_-]*(?:review|outlook)|forest|health|housing|library|long[\s_-]*term[\s_-]*care|museum|opp|polic(?:e|ing)|procurement|quality[\s_-]*initiative|terms[\s_-]*of[\s_-]*reference|tourism|transit|trust[\s_-]*fund|wastewater|water|fire|climate)[^\n]{0,200}annual[\s_-]*(?:progress[\s_-]*)?report|annual[\s_-]*(?:progress[\s_-]*)?report[^\n]{0,200}(?:accessibility|cemetery|credit[\s_-]*rating|economic|forest|health|housing|library|long[\s_-]*term[\s_-]*care|museum|opp|polic(?:e|ing)|procurement|quality[\s_-]*initiative|terms[\s_-]*of[\s_-]*reference|tourism|transit|trust[\s_-]*fund|wastewater|water|fire|climate)/i
   PROGRAM_REPORT_PATTERN = /(?:\bccbf\b|\bstp\b|accessibility[\s_-]*(?:advisory|plan)|annual[\s_-]*report[\s_-]*(?:on|of)[\s_-]*building[\s_-]*fees|board[\s_-]*of[\s_-]*health|fraud[\s_-]*and[\s_-]*waste|integrity[\s_-]*commissioner|lobbyist[\s_-]*registrar|municipal[\s_-]*(?:heritage|accessibility)[\s_-]*(?:advisory[\s_-]*)?committee|public[\s_-]*health[\s_-]*(?:services?[\s_-]*)?annual|quality[\s_-]*initiative|sewage[\s_-]*treatment|trust[\s_-]*fund|wastewater[\s_-]*(?:collection|treatment)|lagoon[\s_-]*annual|county[\s_-]*forest[\s_-]*annual)/i
@@ -869,8 +869,8 @@ class MunicipalFinancialReportScraper
   end
 
   def excluded_report_evidence?(evidence)
-    return false unless evidence.match?(EXCLUDE_PATTERN)
     return true if evidence.match?(HARD_EXCLUDE_PATTERN)
+    return false unless evidence.match?(EXCLUDE_PATTERN)
 
     !evidence.match?(STRONG_FINANCIAL_LOCATOR_PATTERN)
   end

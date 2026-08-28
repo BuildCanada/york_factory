@@ -28,9 +28,12 @@
     /* Layout */
     .admin-layout { display: flex; min-height: 100vh; }
 
-    /* Sidebar */
-    .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); padding: 1rem 0; flex-shrink: 0; position: fixed; top: 0; bottom: 0; overflow-y: auto; }
-    .sidebar-brand { padding: 0 1rem 1rem; font-weight: 700; font-size: 1.1rem; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+    /* Sidebar — column with a fixed brand, a scrolling nav, and a pinned footer.
+       The footer must stay out of the scroll flow: when it was absolutely
+       positioned it rode over the section links as the nav scrolled. */
+    .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); padding: 1rem 0 0; flex-shrink: 0; position: fixed; top: 0; bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-brand { flex: 0 0 auto; padding: 0 1rem 1rem; font-weight: 700; font-size: 1.1rem; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+    .sidebar-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 0.5rem; }
     .sidebar-section-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; cursor: pointer; user-select: none; }
     .sidebar-section-toggle:hover { color: var(--text); }
     .chevron { display: inline-block; transition: transform 0.15s; font-size: 0.6rem; }
@@ -39,8 +42,12 @@
     .sidebar-links li a { display: block; padding: 0.35rem 1rem 0.35rem 1.5rem; font-size: 0.85rem; color: var(--muted); }
     .sidebar-links li a:hover, .sidebar-links li a.active { color: var(--text); text-decoration: none; background: rgba(255,255,255,0.04); }
     .sidebar-divider { border-top: 1px solid var(--border); margin: 0.5rem 0; }
-    .sidebar-bottom { position: absolute; bottom: 0; width: 100%; padding: 0.75rem 1rem; border-top: 1px solid var(--border); }
+    .sidebar-bottom { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem; border-top: 1px solid var(--border); background: var(--surface); }
     .sidebar-bottom a { font-size: 0.8rem; color: var(--muted); }
+    .sidebar-bottom form { margin: 0; flex: 0 0 auto; }
+    .sidebar-user { font-size: 0.8rem; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-logout { background: none; border: none; padding: 0; font-size: 0.8rem; font-family: inherit; color: var(--muted); cursor: pointer; }
+    .sidebar-logout:hover { color: var(--text); text-decoration: underline; }
 
     /* Main content */
     .main-content { margin-left: var(--sidebar-w); flex: 1; padding: 1.5rem 2rem; max-width: calc(100% - var(--sidebar-w)); }
@@ -173,98 +180,101 @@
       </div>
 
       <% if current_user %>
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="pipeline">
-          Pipeline <span class="chevron open">&#9654;</span>
-        </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="pipeline">
-          <li><a href="<%= admin_root_path %>" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'scraping' %>">Scraping</a></li>
-          <li><a href="/admin/ingestions" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'ingestions' %>">Ingestions</a></li>
-          <li><a href="<%= admin_records_path %>" class="<%= 'active' if controller_name == 'records' %>">Records</a></li>
-          <li><a href="/admin/lineage_review" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'lineage_review' %>">Lineage Review</a></li>
-          <li><a href="<%= admin_search_path %>" class="<%= 'active' if controller_path == 'admin/search' %>">Search</a></li>
-          <li><a href="<%= admin_media_feeds_path %>" class="<%= 'active' if controller_path == 'admin/media_feeds' %>">Media Feeds</a></li>
-          <% if current_user.superadmin? %>
-            <li><a href="/admin/jobs">Jobs</a></li>
-          <% end %>
-        </ul>
+        <div class="sidebar-scroll">
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="pipeline">
+            Pipeline <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="pipeline">
+            <li><a href="<%= admin_root_path %>" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'scraping' %>">Scraping</a></li>
+            <li><a href="/admin/ingestions" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'ingestions' %>">Ingestions</a></li>
+            <li><a href="<%= admin_records_path %>" class="<%= 'active' if controller_name == 'records' %>">Records</a></li>
+            <li><a href="/admin/lineage_review" class="<%= 'active' if controller_name == 'dashboard' && action_name == 'lineage_review' %>">Lineage Review</a></li>
+            <li><a href="<%= admin_search_path %>" class="<%= 'active' if controller_path == 'admin/search' %>">Search</a></li>
+            <li><a href="<%= admin_media_feeds_path %>" class="<%= 'active' if controller_path == 'admin/media_feeds' %>">Media Feeds</a></li>
+            <% if current_user.superadmin? %>
+              <li><a href="/admin/jobs">Jobs</a></li>
+            <% end %>
+          </ul>
 
-        <div class="sidebar-divider"></div>
-
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="kpis">
-          KPIs <span class="chevron open">&#9654;</span>
-        </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="kpis">
-          <li><a href="/admin/kpis/agent_runs" class="<%= 'active' if controller_path == 'admin/kpis/agent_runs' %>">Agent Runs</a></li>
-          <li><a href="/admin/kpis/measures" class="<%= 'active' if controller_path == 'admin/kpis/measures' %>">Measures</a></li>
-          <li><a href="/admin/kpis/citations" class="<%= 'active' if controller_path == 'admin/kpis/citations' %>">Citations</a></li>
-        </ul>
-
-        <div class="sidebar-divider"></div>
-
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="cms">
-          CMS <span class="chevron open">&#9654;</span>
-        </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="cms">
-          <li><a href="/admin/posts" class="<%= 'active' if controller_name == 'posts' %>">Posts</a></li>
-          <li><a href="/admin/memos" class="<%= 'active' if controller_name == 'memos' %>">Memos</a></li>
-          <li><a href="/admin/builders" class="<%= 'active' if controller_name == 'builders' %>">Builders</a></li>
-          <li><a href="/admin/team_members" class="<%= 'active' if controller_name == 'team_members' %>">Team</a></li>
-          <li><a href="/admin/tools" class="<%= 'active' if controller_name == 'tools' %>">Tools</a></li>
-          <li><a href="/admin/faqs" class="<%= 'active' if controller_name == 'faqs' %>">FAQs</a></li>
-          <li><a href="/admin/feed_entries" class="<%= 'active' if controller_name == 'feed_entries' %>">Feed</a></li>
-          <li><a href="/admin/testimonials" class="<%= 'active' if controller_name == 'testimonials' %>">Testimonials</a></li>
-          <li><a href="/admin/critiques" class="<%= 'active' if controller_name == 'critiques' %>">Critiques<% pending = (Critique.pending.count rescue 0); if pending > 0 %> <span class="badge badge-yellow"><%= pending %></span><% end %></a></li>
-          <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
-        </ul>
-
-        <% if current_user.can_edit_trade_barriers? %>
           <div class="sidebar-divider"></div>
 
-          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="trade_barriers">
-            Trade Barriers <span class="chevron open">&#9654;</span>
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="kpis">
+            KPIs <span class="chevron open">&#9654;</span>
           </div>
-          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="trade_barriers">
-            <li><a href="/admin/trade_barriers/agreements" class="<%= 'active' if controller_name == 'agreements' && controller_path.start_with?('admin/trade_barriers') %>">Agreements</a></li>
-            <li><a href="/admin/trade_barriers/themes" class="<%= 'active' if controller_name == 'themes' && controller_path.start_with?('admin/trade_barriers') %>">Themes</a></li>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="kpis">
+            <li><a href="/admin/kpis/agent_runs" class="<%= 'active' if controller_path == 'admin/kpis/agent_runs' %>">Agent Runs</a></li>
+            <li><a href="/admin/kpis/measures" class="<%= 'active' if controller_path == 'admin/kpis/measures' %>">Measures</a></li>
+            <li><a href="/admin/kpis/citations" class="<%= 'active' if controller_path == 'admin/kpis/citations' %>">Citations</a></li>
           </ul>
-        <% end %>
 
-        <div class="sidebar-divider"></div>
+          <div class="sidebar-divider"></div>
 
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="elections">
-          Elections <span class="chevron open">&#9654;</span>
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="cms">
+            CMS <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="cms">
+            <li><a href="/admin/posts" class="<%= 'active' if controller_name == 'posts' %>">Posts</a></li>
+            <li><a href="/admin/memos" class="<%= 'active' if controller_name == 'memos' %>">Memos</a></li>
+            <li><a href="/admin/builders" class="<%= 'active' if controller_name == 'builders' %>">Builders</a></li>
+            <li><a href="/admin/team_members" class="<%= 'active' if controller_name == 'team_members' %>">Team</a></li>
+            <li><a href="/admin/tools" class="<%= 'active' if controller_name == 'tools' %>">Tools</a></li>
+            <li><a href="/admin/faqs" class="<%= 'active' if controller_name == 'faqs' %>">FAQs</a></li>
+            <li><a href="/admin/feed_entries" class="<%= 'active' if controller_name == 'feed_entries' %>">Feed</a></li>
+            <li><a href="/admin/testimonials" class="<%= 'active' if controller_name == 'testimonials' %>">Testimonials</a></li>
+            <li><a href="/admin/endorsements" class="<%= 'active' if controller_name == 'endorsements' %>">Endorsements</a></li>
+            <li><a href="/admin/critiques" class="<%= 'active' if controller_name == 'critiques' %>">Critiques<% pending = (Critique.pending.count rescue 0); if pending > 0 %> <span class="badge badge-yellow"><%= pending %></span><% end %></a></li>
+            <li><a href="/admin/subscribers" class="<%= 'active' if controller_name == 'subscribers' %>">Subscribers</a></li>
+          </ul>
+
+          <% if current_user.can_edit_trade_barriers? %>
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="trade_barriers">
+              Trade Barriers <span class="chevron open">&#9654;</span>
+            </div>
+            <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="trade_barriers">
+              <li><a href="/admin/trade_barriers/agreements" class="<%= 'active' if controller_name == 'agreements' && controller_path.start_with?('admin/trade_barriers') %>">Agreements</a></li>
+              <li><a href="/admin/trade_barriers/themes" class="<%= 'active' if controller_name == 'themes' && controller_path.start_with?('admin/trade_barriers') %>">Themes</a></li>
+            </ul>
+          <% end %>
+
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="elections">
+            Elections <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="elections">
+            <li><a href="/admin/elections" class="<%= 'active' if controller_name == 'elections' %>">Elections</a></li>
+          </ul>
+
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="metrics">
+            Metrics <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="metrics">
+            <li><a href="/admin/metrics" class="<%= 'active' if controller_name == 'overview' %>">Overview</a></li>
+            <li><a href="/admin/metrics/twitter_stats" class="<%= 'active' if controller_name == 'twitter_stats' %>">Twitter Stats</a></li>
+            <li><a href="/admin/metrics/linkedin_stats" class="<%= 'active' if controller_name == 'linkedin_stats' %>">LinkedIn Stats</a></li>
+            <li><a href="/admin/metrics/substack_stats" class="<%= 'active' if controller_name == 'substack_stats' %>">Substack Stats</a></li>
+            <li><a href="/admin/metrics/tiktok_stats" class="<%= 'active' if controller_name == 'tiktok_stats' %>">TikTok Stats</a></li>
+            <li><a href="/admin/metrics/instagram_stats" class="<%= 'active' if controller_name == 'instagram_stats' %>">Instagram Stats</a></li>
+          </ul>
+
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="settings">
+            Settings <span class="chevron open">&#9654;</span>
+          </div>
+          <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="settings">
+            <li><a href="/admin/users" class="<%= 'active' if controller_name == 'users' %>">Users</a></li>
+            <li><a href="<%= profile_api_keys_path %>">My API Keys</a></li>
+          </ul>
         </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="elections">
-          <li><a href="/admin/elections" class="<%= 'active' if controller_name == 'elections' %>">Elections</a></li>
-        </ul>
-
-        <div class="sidebar-divider"></div>
-
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="metrics">
-          Metrics <span class="chevron open">&#9654;</span>
-        </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="metrics">
-          <li><a href="/admin/metrics" class="<%= 'active' if controller_name == 'overview' %>">Overview</a></li>
-          <li><a href="/admin/metrics/twitter_stats" class="<%= 'active' if controller_name == 'twitter_stats' %>">Twitter Stats</a></li>
-          <li><a href="/admin/metrics/linkedin_stats" class="<%= 'active' if controller_name == 'linkedin_stats' %>">LinkedIn Stats</a></li>
-          <li><a href="/admin/metrics/substack_stats" class="<%= 'active' if controller_name == 'substack_stats' %>">Substack Stats</a></li>
-          <li><a href="/admin/metrics/tiktok_stats" class="<%= 'active' if controller_name == 'tiktok_stats' %>">TikTok Stats</a></li>
-          <li><a href="/admin/metrics/instagram_stats" class="<%= 'active' if controller_name == 'instagram_stats' %>">Instagram Stats</a></li>
-        </ul>
-
-        <div class="sidebar-divider"></div>
-
-        <div class="sidebar-section-toggle" data-action="click->sidebar#toggle" data-sidebar-key="settings">
-          Settings <span class="chevron open">&#9654;</span>
-        </div>
-        <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="settings">
-          <li><a href="/admin/users" class="<%= 'active' if controller_name == 'users' %>">Users</a></li>
-          <li><a href="<%= profile_api_keys_path %>">My API Keys</a></li>
-        </ul>
 
         <div class="sidebar-bottom">
-          <span class="text-muted" style="font-size: 0.8rem;"><%= current_user.name || current_user.email %></span>
-          <%= button_to "Logout", destroy_user_session_path, method: :delete, style: "float: right; background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 0;" %>
+          <span class="sidebar-user"><%= current_user.name || current_user.email %></span>
+          <%= button_to "Logout", destroy_user_session_path, method: :delete, class: "sidebar-logout" %>
         </div>
       <% end %>
     </nav>

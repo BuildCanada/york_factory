@@ -1,7 +1,11 @@
 # Decides whether a postal code puts someone inside the jurisdiction holding
 # an election, so a pledge can be gated on residency.
 #
-# Geometry decides: the postal code's centroid is tested against the
+# Geometry decides, except where a city owns whole FSAs outright. Toronto is
+# every "M" postal code but M0R and M7R, so its check is a prefix test that
+# touches no table at all; see `fsa_decides` below. Everywhere else:
+#
+# The postal code's centroid is tested against the
 # jurisdiction's census subdivision (CSD) boundary, because a CSD *is* the
 # municipality. It catches what names can't — a postal code Canada Post labels
 # "Woodbridge" or "Milton" but which sits inside Toronto or Hamilton — and
@@ -40,9 +44,19 @@ class Warehouse::Election::PledgeEligibility < ActiveRecord::AssociatedObject
   #         every "M" FSA; nowhere else here is that clean (L6 spans Brampton,
   #         Oakville, Markham and Vaughan; K0A spans Ottawa and half of
   #         eastern Ontario).
+  # fsa_exceptions: the FSAs the pattern catches that the city does *not* own.
+  #         Toronto's two are both non-geographic: M7R is a Mississauga large
+  #         volume receiver block and M0R is reserved, so neither is anyone's
+  #         home address.
+  # fsa_decides: whether an FSA match on its own settles residency, skipping
+  #         the postal lookup and the containment query entirely. Only set it
+  #         where the city provably owns every FSA the pattern matches — it
+  #         trades the geometry check for a prefix test, so a pattern that
+  #         over-matches would let outsiders pledge.
   RULES = {
     "toronto" => {
-      province: "ON", csd_uid: "3520005", fsa_pattern: /\AM/,
+      province: "ON", csd_uid: "3520005",
+      fsa_pattern: /\AM/, fsa_exceptions: %w[M0R M7R], fsa_decides: true,
       cities: [ "TORONTO", "NORTH YORK", "SCARBOROUGH", "ETOBICOKE", "YORK", "EAST YORK" ]
     },
     "brampton" => {
@@ -105,6 +119,13 @@ class Warehouse::Election::PledgeEligibility < ActiveRecord::AssociatedObject
 
     normalized = Warehouse::PostalCode.normalize(raw_postal_code)
     return result(false, :malformed_postal_code) if normalized.nil?
+
+    # Where the city owns every FSA the pattern matches (see fsa_decides), the
+    # first three characters already answer the question, so we answer from
+    # them and skip both the postal-table row and the PostGIS containment
+    # query. `city` stays nil on this path: nothing looked it up, and claiming
+    # one would be inventing it.
+    return result(true, :fsa_match, normalized) if fsa_decides? && fsa_matches?(normalized)
 
     record = Warehouse::PostalCode.lookup(normalized)
     return unrecognized(normalized) if record.nil?
@@ -176,8 +197,20 @@ class Warehouse::Election::PledgeEligibility < ActiveRecord::AssociatedObject
     rule[:province].blank? || record.province_code.to_s.casecmp?(rule[:province])
   end
 
+  def fsa_decides?
+    rule[:fsa_decides] && rule[:fsa_pattern].present?
+  end
+
+  # A rule with no pattern can't disagree, so it matches — fsa_matches? is an
+  # AND-condition in city_match?, not a test on its own there.
   def fsa_matches?(normalized)
-    rule[:fsa_pattern].nil? || rule[:fsa_pattern].match?(normalized.to_s)
+    return true if rule[:fsa_pattern].nil?
+
+    rule[:fsa_pattern].match?(normalized.to_s) && !fsa_excluded?(normalized)
+  end
+
+  def fsa_excluded?(normalized)
+    Array(rule[:fsa_exceptions]).include?(normalized.to_s[0, 3])
   end
 
   def result(eligible, reason, postal_code = nil, city = nil)

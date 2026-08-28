@@ -178,6 +178,18 @@ class Admin::AdminRoutesTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # Layout
+  test "sidebar footer sits outside the scrolling nav" do
+    get admin_posts_path
+    assert_response :success
+    # The user/logout block has to stay a direct child of the sidebar. Inside
+    # .sidebar-scroll it scrolls with the section links and lands on top of them.
+    assert_select ".sidebar > .sidebar-scroll"
+    assert_select ".sidebar > .sidebar-bottom"
+    assert_select ".sidebar-scroll .sidebar-bottom", false,
+      "sidebar footer must not be nested in the scrolling nav region"
+  end
+
   # Auth guard
   test "unauthenticated request redirects to login" do
     reset!

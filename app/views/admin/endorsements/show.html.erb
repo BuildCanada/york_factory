@@ -1,0 +1,32 @@
+<div class="page-header">
+  <h1>Endorsement #<%= @endorsement.id %></h1>
+  <a href="<%= admin_endorsements_path %>" class="btn btn-sm">Back</a>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Memo</div>
+    <div class="value" style="font-size: 1rem;"><%= @endorsement.memo&.title_en || "—" %></div>
+    <% if @endorsement.memo %>
+      <a href="<%= admin_memo_path(@endorsement.memo) %>">Open memo</a>
+    <% end %>
+  </div>
+  <div class="card">
+    <div class="label">Endorser</div>
+    <div class="value" style="font-size: 1rem;"><%= @endorsement.author_name %></div>
+    <div class="text-muted mono"><%= @endorsement.user&.email %></div>
+    <div class="text-muted mono">postal: <%= @endorsement.author_postal_code.presence || "—" %></div>
+    <div class="text-muted mono">
+      <%= @endorsement.user&.identities&.map { |i| "#{i.provider} · uid #{i.uid}" }&.join(" · ").presence || "password" %>
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">Submitted</div>
+    <div class="value" style="font-size: 1rem;"><%= @endorsement.created_at.strftime("%b %d, %Y %H:%M") %></div>
+  </div>
+</div>
+
+<div class="btn-group" style="margin-top: 1rem;">
+  <%= button_to "Delete", admin_endorsement_path(@endorsement), method: :delete, class: "btn btn-danger",
+        data: { turbo_confirm: "Remove this endorsement? The memo's endorsement count will drop by one." } %>
+</div>

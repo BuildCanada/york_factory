@@ -54,11 +54,10 @@ To deploy you need:
    ```
 2. `config/master.key` (run `bin/rails credentials:setup`) — all deploy secrets
    are resolved from Rails credentials via `.kamal/secrets`
-3. Docker running locally, with a local registry on port 5555:
-
-   ```bash
-   docker run -d -p 127.0.0.1:5555:5000 --restart always --name kamal-registry registry:2
-   ```
+3. `kamal.registry_username` and `kamal.registry_password` in Rails credentials.
+   The password must be a GitHub token with `read:packages` and
+   `write:packages` access to the BuildCanada organization. Deploy images are
+   stored in GHCR so the server can pull the same image after the deploy run.
 
 Then, from pushed `main`:
 
@@ -68,3 +67,28 @@ bin/kamal deploy
 
 Note: the builder targets `amd64`, so the first build on Apple Silicon
 cross-compiles and is slow; subsequent builds are cached.
+
+Pushes to `main` are deployed automatically only after the repository's `CI`
+workflow succeeds. The deployment checks out and deploys the exact commit SHA
+tested by that CI run. Kamal starts the web role and completes `db:prepare`
+before starting the worker role. Configure a protected `production` GitHub
+environment with these secrets:
+
+- `RAILS_MASTER_KEY` — the contents of `config/master.key`
+- `SSH_PRIVATE_KEY` — an unencrypted private key authorized for the `ubuntu`
+  user on the deployment server
+- `SSH_KNOWN_HOSTS` — the verified `known_hosts` entry for `66.70.179.6`
+
+The Rails credentials unlocked by `RAILS_MASTER_KEY` must also contain the
+`kamal.registry_username` and `kamal.registry_password` values described above.
+Environment protection rules and required reviewers can be configured on the
+GitHub `production` environment.
+
+After a successful deploy, the workflow attempts to create a PostHog
+error-tracking release for the deployed commit. This reporting step is
+non-blocking: if it fails, the workflow summary warns that production deployed
+successfully but release registration must be retried. To enable it, configure
+`posthog.project_id` and a `posthog.personal_api_key` with
+`error_tracking:read` and `error_tracking:write` access in Rails credentials.
+For PostHog EU Cloud, set `posthog.api_host` to `https://eu.posthog.com`; it
+defaults to US Cloud.

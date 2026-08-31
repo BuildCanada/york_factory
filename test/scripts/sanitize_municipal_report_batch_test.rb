@@ -55,4 +55,41 @@ class SanitizeMunicipalReportBatchTest < Minitest::Test
 
     assert_equal 2019, @sanitizer.send(:corrected_year, report, text)
   end
+
+  def test_rejects_greater_sudbury_utilities_corporate_statements
+    [
+      "2009 - Consolidated Financial Statements Of The Greater Sudbury Utilities Inc.",
+      "2010 - Consolidated Financial Statements Of The Greater Sudbury Utilities Inc."
+    ].each do |title|
+      report = financial_statement_report(title)
+
+      assert_equal "subsidiary or trust financial statements, not the reporting institution's statements",
+        @sanitizer.send(:rejection_reason, report, "")
+    end
+  end
+
+  def test_retains_city_statements_that_discuss_utility_operations
+    report = financial_statement_report("Consolidated Financial Statements of the City of Greater Sudbury")
+    text = "The municipality reports utility revenue and utility expenses in its consolidated operations."
+
+    assert_nil @sanitizer.send(:rejection_reason, report, text)
+  end
+
+  def test_retains_municipal_statements_with_bare_plural_utilities_fund_title
+    report = financial_statement_report("Consolidated Financial Statements — General and Utilities Funds")
+
+    assert_nil @sanitizer.send(:rejection_reason, report, "")
+  end
+
+  private
+
+  def financial_statement_report(title)
+    {
+      "year" => 2024,
+      "document_type" => "financial-statements",
+      "download_url" => "https://example.ca/statements.pdf",
+      "source_page_url" => "https://example.ca/finance",
+      "title" => title
+    }
+  end
 end

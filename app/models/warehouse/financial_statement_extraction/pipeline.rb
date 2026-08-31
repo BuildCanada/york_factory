@@ -3,10 +3,21 @@ require "timeout"
 class Warehouse::FinancialStatementExtraction::Pipeline
   EXTRACTOR_VERSION = "headline-psas-v1"
   DEFAULT_MODEL = "gemini-3-flash-preview"
-  MODEL_TIMEOUT = 180
+  MODEL_TIMEOUT = ENV.fetch("MUNICIPAL_FINANCIAL_MODEL_TIMEOUT", 300).to_i
+  SINGLE_COMPONENT_FLAGS = {
+    "total_financial_assets" => "total_financial_assets_single_component",
+    "total_liabilities" => "total_liabilities_single_component",
+    "total_non_financial_assets" => "total_non_financial_assets_single_component"
+  }.freeze
   Result = Data.define(:status, :facts, :checks, :prompt, :response, :locator_result, :language, :statement_basis)
 
   class ResponseError < StandardError; end
+
+  def self.normalize_column_year(raw_value, **) = raw_value.to_s.strip
+
+  def self.single_component_concepts(response)
+    SINGLE_COMPONENT_FLAGS.filter_map { |concept, flag| concept if response.fetch(flag, false) }
+  end
 
   def initialize(pdf_path:, institution_canonical_id:, institution_name:, document_canonical_id:,
     asset_sha256:, fiscal_year_end:, population: nil, model: DEFAULT_MODEL, llm_client: nil,
@@ -25,7 +36,7 @@ class Warehouse::FinancialStatementExtraction::Pipeline
 
   def run
     verify_source_hash!
-    locator_result = @page_locator.locate
+    locator_result = primary_statement_locator(@page_locator.locate)
     prompt = build_prompt(locator_result)
     raw_response = nil
     response = nil
@@ -34,6 +45,57 @@ class Warehouse::FinancialStatementExtraction::Pipeline
       response = raw_response.respond_to?(:content) ? raw_response.content : raw_response
     end
     response = JSON.parse(response) if response.is_a?(String)
+    result_from(response, locator_result, prompt:)
+  rescue JSON::ParserError, KeyError, ArgumentError, ResponseError, Timeout::Error => error
+    raise ResponseError, error.message
+  end
+
+  def revalidate(response:, prompt: nil, source_pages: nil)
+    verify_source_hash!
+    response = JSON.parse(response) if response.is_a?(String)
+    locator_result = primary_statement_locator(@page_locator.locate)
+    response = remap_excerpt_pages(response, locator_result, source_pages) if source_pages
+    result_from(response, locator_result, prompt:)
+  rescue JSON::ParserError, KeyError, ArgumentError, ResponseError => error
+    raise ResponseError, error.message
+  end
+
+  private
+
+  def primary_statement_locator(locator_result)
+    pages = [ locator_result.position_page, locator_result.operations_page ].compact.uniq
+    supporting = headline_supporting_page(locator_result, excluding: pages)
+    pages << supporting if supporting
+    raise ResponseError, "primary financial statements were not located" if pages.empty?
+
+    locator_result.with(candidate_pages: pages.sort)
+  end
+
+  def headline_supporting_page(locator_result, excluding:)
+    locator_result.page_texts.filter_map do |page, text|
+      next if page.in?(excluding)
+
+      heading = text.lines.first(20).join
+      next unless heading.match?(/schedule|appendix|annexe|cédule|cedule/i)
+      next unless text.match?(/revenues?|revenus|produits/i) && text.match?(/expenses?|expenditures?|dépenses|depenses|charges/i)
+      next unless text.match?(/(?<!\d)#{@fiscal_year_end.year}(?!\d)/)
+
+      numeric_cells = text.scan(/\(?\d[\d ,.]*/).count { _1.scan(/\d/).length >= 3 }
+      [ page, numeric_cells ]
+    end.max_by { |page, score| [ score, -page ] }&.first
+  end
+
+  def remap_excerpt_pages(response, locator_result, source_pages)
+    response = response.deep_dup
+    response.fetch("facts").each do |fact|
+      source_page = source_pages[fact.fetch("concept")]
+      excerpt_index = locator_result.candidate_pages.index(source_page)
+      fact["excerpt_page"] = excerpt_index + 1 if excerpt_index
+    end
+    response
+  end
+
+  def result_from(response, locator_result, prompt:)
     validate_response!(response, locator_result)
     facts = normalize_facts(response.fetch("facts"), locator_result)
     validator = Warehouse::FinancialStatementExtraction::Validator.new(
@@ -42,18 +104,15 @@ class Warehouse::FinancialStatementExtraction::Pipeline
       flags: {
         remeasurement_present: response.fetch("remeasurement_present"),
         operations_adjustment_present: response.fetch("operations_adjustment_present"),
-        rollforward_adjustment_present: response.fetch("rollforward_adjustment_present")
+        rollforward_adjustment_present: response.fetch("rollforward_adjustment_present"),
+        single_component_concepts: self.class.single_component_concepts(response)
       }
     )
     checks = [ source_identity_check, *validator.validate ]
     status = validator.acceptable?(checks) ? "extracted" : "needs_review"
     Result.new(status:, facts:, checks:, prompt:, response:, locator_result:,
       language: response.fetch("language"), statement_basis: response.fetch("statement_basis"))
-  rescue JSON::ParserError, KeyError, ArgumentError, ResponseError, Timeout::Error => error
-    raise ResponseError, error.message
   end
-
-  private
 
   def source_identity_check
     {
@@ -93,7 +152,12 @@ class Warehouse::FinancialStatementExtraction::Pipeline
       Rules:
       - Extract only the expected fiscal year's ACTUAL column. Never use budget or comparative columns.
       - Return only totals explicitly printed in the attached primary statements. Never calculate or infer a missing fact.
+      - A supporting schedule may supply a consolidated total revenue or total expenses that is absent from the main operations statement.
       - A section total may be printed on an unlabeled line immediately before the next heading. In that case, use the section heading (for example "Revenues") as raw_label and the printed total as raw_text.
+      - When a financial-assets, liabilities, or non-financial-assets section contains exactly one printed component and no
+        separate total, return that component as the corresponding section total. Preserve the component's exact raw_label
+        and raw_text, set confidence no higher than 0.90, and set the matching *_single_component boolean true.
+        Otherwise every *_single_component boolean must be false.
       - Preserve raw_label and raw_text exactly as printed.
       - scale is exactly 1, 1000, or 1000000 and must follow the printed heading.
       - Preserve parentheses and minus signs in raw_text. The deterministic parser applies signs and scale.
@@ -134,10 +198,16 @@ class Warehouse::FinancialStatementExtraction::Pipeline
       confidence = Float(fact.fetch("confidence"))
       raise ResponseError, "confidence out of range" unless confidence.between?(0, 1)
     end
+    self.class.single_component_concepts(response).each do |concept|
+      fact = response.fetch("facts").find { _1.fetch("concept") == concept }
+      raise ResponseError, "single-component flag lacks #{concept}" unless fact
+      raise ResponseError, "single-component confidence exceeds 0.90" if Float(fact.fetch("confidence")) > 0.90
+    end
   end
 
   def normalize_facts(raw_facts, locator_result)
     raw_facts.map do |fact|
+      source_page = locator_result.candidate_pages.fetch(Integer(fact.fetch("excerpt_page")) - 1)
       {
         concept: fact.fetch("concept"),
         statement: fact.fetch("statement"),
@@ -147,8 +217,11 @@ class Warehouse::FinancialStatementExtraction::Pipeline
           fact.fetch("raw_text"), raw_label: fact.fetch("raw_label"), concept: fact.fetch("concept")
         ) * Integer(fact.fetch("scale")),
         scale: Integer(fact.fetch("scale")),
-        source_page: locator_result.candidate_pages.fetch(Integer(fact.fetch("excerpt_page")) - 1),
-        column_year: fact.fetch("column_year"),
+        source_page:,
+        column_year: self.class.normalize_column_year(
+          fact.fetch("column_year"), fiscal_year: @fiscal_year_end.year,
+          page_text: locator_result.page_texts.fetch(source_page)
+        ),
         extraction_confidence: BigDecimal(fact.fetch("confidence").to_s)
       }
     end

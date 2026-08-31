@@ -97,6 +97,10 @@ Rails.application.routes.draw do
 
       namespace :warehouse do
         resources :jurisdictions, only: [ :index ]
+        get "municipal_financial_statements", to: "municipal_financial_statements#index"
+        get "municipal_financial_statements/:province/:municipality", to: "municipal_financial_statements#show"
+        get "municipal_financial_statements/:province/:municipality/:year",
+          to: "municipal_financial_statements#show", constraints: { year: /\d{4}/ }
       end
 
       namespace :metrics do

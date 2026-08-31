@@ -105,6 +105,43 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     assert followers.all?(&:cumulative?)
   end
 
+  test "links ad entities when provider platforms differ from channel platforms" do
+    [ [ "twitter", "xads" ], [ "facebook", "meta" ] ].each do |channel, provider|
+      account_key = "build_canada_#{channel}"
+      account = Metrics::SocialMediaAccount.create!(
+        zernio_account_id: "zernio-#{channel}",
+        zernio_profile_id: "profile-#{channel}",
+        profile_name: "Build Canada #{channel}",
+        platform: channel, account_key:, username: "buildcanada"
+      )
+      ad_account = account.ad_accounts.create!(
+        platform_ad_account_id: "#{provider}-account", platform: provider
+      )
+      campaign = account.ad_campaigns.create!(
+        ad_account:, platform_campaign_id: "#{channel}-campaign", platform: channel
+      )
+      account.ads.create!(
+        ad_account:, campaign:, zernio_ad_id: "#{provider}-ad",
+        platform_ad_id: "#{provider}-ad", platform: provider
+      )
+    end
+
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    [ [ "twitter", "xads" ], [ "facebook", "meta" ] ].each do |channel, provider|
+      account_key = "build_canada_#{channel}"
+      campaign = Metrics::SocialEntity.find(
+        "campaign:#{channel}:#{account_key}:#{channel}-campaign"
+      )
+      assert_equal(
+        "ad_account:#{provider}:#{account_key}:#{provider}-account",
+        campaign.parent_id
+      )
+      ad = Metrics::SocialEntity.find("ad:#{provider}:#{account_key}:#{provider}-ad")
+      assert_equal campaign.id, ad.parent_id
+    end
+  end
+
   test "is idempotent and deactivates observations removed from source tables" do
     stat = Metrics::TwitterStat.create!(
       account: "build_canada", date: Date.new(2026, 8, 12), impressions: 100

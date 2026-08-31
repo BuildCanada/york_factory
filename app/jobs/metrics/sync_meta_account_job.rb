@@ -7,7 +7,10 @@ class Metrics::SyncMetaAccountJob < Metrics::MetaJob
       )
     end
 
-    sync = Metrics::MetaAnalyticsSync.new(client: client_for(platform, settings))
+    sync = Metrics::MetaAnalyticsSync.new(
+      client: client_for(platform, settings),
+      time_zone: time_zone_for(settings)
+    )
     account = sync.sync_account!(
       platform: platform,
       account_key: account_key,

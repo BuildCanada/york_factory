@@ -260,23 +260,33 @@ class Metrics::SocialAnalyticsRefresh
     end
 
     Metrics::SocialMediaAdCampaign.find_each do |campaign|
+      parent_id = if campaign.ad_account
+        ad_entity_id(
+          "ad_account", campaign.ad_account.platform,
+          campaign.ad_account.account.account_key, campaign.ad_account.platform_ad_account_id
+        )
+      end
       entity_id = ad_entity(
         entity_type: "campaign", platform: campaign.platform,
         account_key: campaign.account.account_key, source: "zernio", record: campaign,
         external_id: campaign.platform_campaign_id, name: campaign.name,
-        parent_id: campaign.ad_account && ad_entity_id("ad_account", campaign.platform,
-          campaign.account.account_key, campaign.ad_account.platform_ad_account_id)
+        parent_id:
       )
       extract_ad_metrics(campaign.daily_metrics, entity_id, campaign.platform,
         campaign.account.account_key, "campaign")
     end
 
     Metrics::SocialMediaAd.find_each do |ad|
+      parent_id = if ad.campaign
+        ad_entity_id(
+          "campaign", ad.campaign.platform,
+          ad.campaign.account.account_key, ad.campaign.platform_campaign_id
+        )
+      end
       entity_id = ad_entity(
         entity_type: "ad", platform: ad.platform, account_key: ad.account.account_key,
         source: "zernio", record: ad, external_id: ad.platform_ad_id.presence || ad.zernio_ad_id,
-        name: ad.name, parent_id: ad.campaign && ad_entity_id("campaign", ad.platform,
-          ad.account.account_key, ad.campaign.platform_campaign_id)
+        name: ad.name, parent_id:
       )
       extract_ad_metrics(ad.daily_metrics, entity_id, ad.platform, ad.account.account_key, "ad")
     end

@@ -111,31 +111,26 @@ module Api
         end
 
         def paginated_municipality_ids(scope, page:, per_page:)
-          connection = ::Warehouse::FinancialStatementExtraction.connection
-          latest_sql = scope.to_sql
-          statement_count = connection.select_value(<<~SQL.squish).to_i
-            SELECT COUNT(*) FROM (#{latest_sql}) latest_financial_statements
-          SQL
-          municipality_count = connection.select_value(<<~SQL.squish).to_i
-            SELECT COUNT(DISTINCT institution_canonical_id)
-            FROM (#{latest_sql}) latest_financial_statements
-          SQL
+          rows = scope.unscope(:select, :order).pluck(
+            :institution_release_id, :institution_canonical_id, :fiscal_year_end
+          )
+          statement_count = rows.map { |_, canonical_id, period| [ canonical_id, period ] }.uniq.length
+          canonical_ids = rows.map { |_, canonical_id, _| canonical_id }.uniq
+          release_ids = rows.map(&:first).uniq
+          names = ::Warehouse::Institution.joins(:institution_release)
+            .where(institution_release_id: release_ids, canonical_id: canonical_ids)
+            .pluck(:canonical_id, :name_en, :name_fr, "warehouse.institution_releases.effective_on")
+            .group_by(&:first)
+            .transform_values do |versions|
+              newest = versions.max_by { |_, _, _, effective_on| effective_on }
+              newest[1].presence || newest[2].presence || newest[0]
+            end
+          ordered_ids = canonical_ids.sort_by do |canonical_id|
+            [ canonical_id.split("/").fetch(1, ""), names.fetch(canonical_id, canonical_id).downcase, canonical_id ]
+          end
+          municipality_count = ordered_ids.length
           offset = (page - 1) * per_page
-          canonical_ids = connection.select_values(<<~SQL.squish)
-            WITH latest_financial_statements AS (#{latest_sql})
-            SELECT latest_financial_statements.institution_canonical_id
-            FROM latest_financial_statements
-            INNER JOIN warehouse.institutions index_institutions
-              ON index_institutions.institution_release_id = latest_financial_statements.institution_release_id
-              AND index_institutions.canonical_id = latest_financial_statements.institution_canonical_id
-            GROUP BY latest_financial_statements.institution_canonical_id
-            ORDER BY
-              split_part(latest_financial_statements.institution_canonical_id, '/', 2),
-              LOWER(MAX(COALESCE(index_institutions.name_en, index_institutions.name_fr, ''))),
-              latest_financial_statements.institution_canonical_id
-            LIMIT #{per_page} OFFSET #{offset}
-          SQL
-          [ canonical_ids, municipality_count, statement_count ]
+          [ ordered_ids.slice(offset, per_page) || [], municipality_count, statement_count ]
         end
 
         def institutions_by_key(extractions)

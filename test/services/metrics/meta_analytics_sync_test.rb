@@ -45,6 +45,8 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     def get(path, params: {})
       return super unless path == "ig-123/insights" && params[:metric_type] == "total_value"
 
+      # Record here too, so tests can assert on the day scoping of these requests.
+      requests << [ path, params ]
       { "data" => params.fetch(:metric).split(",").map do |name|
         { "name" => name, "period" => "day", "total_value" => { "value" => 42 } }
       end }

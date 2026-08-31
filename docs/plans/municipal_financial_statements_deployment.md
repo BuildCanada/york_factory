@@ -28,11 +28,15 @@ Use release `2026-08-27` for the current national run. Before exporting it:
 3. Preserve the final coverage, numeric, scale, lineage, issuer, and test-result
    artifacts alongside the release. Failures and unavailable documents remain
    explicit; they are not silently dropped.
-4. Run the York Factory test suite and the CanadaSpends Vitest suite/build from
+4. Upload the finalizer, coverage, numeric, scale, lineage, issuer, and test logs
+   to the immutable release's R2 `audit/` prefix. Files left only on
+   `/Volumes/floppy` do not satisfy this gate.
+5. Run the York Factory test suite and the CanadaSpends Vitest suite/build from
    the exact commits being deployed.
-5. Export the immutable ontology release only after its `published_at` includes
-   the final review timestamps. Never edit an already-published release in place;
-   if the release has already been published, create a new dated release.
+6. Freeze the financial-data bundle at an explicit review cutoff. The ontology
+   release's `published_at` predates these extractions, so its current exporter
+   would emit none of the newly reviewed rows. Never change or recut an existing
+   bundle; corrections use a new dated bundle.
 
 ## Data promotion contract
 
@@ -45,7 +49,7 @@ bin/rails institution_ontology:export[2026-08-27,tmp/public-institutions-2026-08
 
 The exported directory must contain the ontology, documents, document-asset
 metadata, approved extractions, facts, detailed revenue/expense line items,
-census context, manifest, SQL loader, and `SHA256SUMS`. Upload it under a
+  census context, manifest, SQL loader, and `checksums.sha256`. Upload it under a
 versioned R2 key such as
 `municipal-financial-statements/releases/2026-08-27/`; never overwrite that key.
 Archived source binaries remain content-addressed by SHA-256 in the archival R2
@@ -66,24 +70,34 @@ existing Warehouse release. That importer must:
 - stage and validate all rows, then make them visible atomically;
 - provide a dry-run that performs every validation without writing.
 
-Until that importer is implemented and tested, the supported fallback is to run
-the deterministic extraction/review pipeline against the imported immutable
-source release in production. A whole-database dump/restore is not a supported
-promotion path.
+Until that importer and the immutable R2 uploader are implemented and tested,
+production data promotion is blocked. Re-running the extraction pipeline in
+production would re-derive rather than promote the reviewed result and is not a
+supported fallback. A whole-database dump/restore is also not supported.
 
 ## York Factory deployment
 
-After PR #111 and the stacked York Factory PR merge:
+Production currently predates the institution-ontology tables. Deploy in two
+York steps: merge and deploy PR #111 first, initialize the checksummed source
+release through its recipe, then run the read-only migration preflight:
+
+```sh
+bin/rails runner script/preflight_municipal_financial_migrations.rb
+```
+
+Only after that succeeds should the stacked York Factory PR merge and deploy:
 
 ```sh
 bin/kamal deploy
 bin/kamal app exec --reuse 'bin/rails db:migrate:status'
 ```
 
-The seven municipal migrations are additive except for replacing extraction and
-line-item unique indexes and adding check constraints. Before deploy, verify the
-production table has no rows that violate the new constraints. Keep the API
-unreferenced by CanadaSpends until migrations and data promotion succeed.
+The web entrypoint runs `db:prepare`, so migrations execute as the new container
+starts. The seven municipal migrations are additive except for replacing
+extraction and line-item unique indexes and adding validated check constraints.
+The constraints are added `NOT VALID` and then validated to avoid taking the
+strongest table lock for the scan. Keep the API unreferenced by CanadaSpends
+until migrations and data promotion succeed.
 
 Promote data only through the verified importer described above (first with
 `DRY_RUN=1`), then verify at minimum:
@@ -100,7 +114,9 @@ Sankey data where detailed line items passed validation.
 
 ## CanadaSpends deployment
 
-Set the production server-side environment variable:
+Set the production server-side environment variable in the Cloudflare Workers
+dashboard (and explicitly configure preview deployments rather than allowing
+them to inherit an accidental origin):
 
 ```text
 YORK_FACTORY_API_URL=https://yorkfactory.buildcanada.com/api/v1
@@ -119,6 +135,7 @@ origin and its URL must not be committed or configured in production.
 - Roll CanadaSpends back first; York's new API can remain unused.
 - Roll York code back only while leaving additive tables/columns in place. Do not
   reverse schema migrations during an incident.
-- If a data payload is wrong, disable the frontend route or mark the affected
-  release unpublished, retain the import audit, and promote a corrected new
-  release. Do not mutate the immutable R2 key or erase failed test evidence.
+- If a data payload is wrong, disable the frontend route, retain the import
+  audit, and promote a corrected, superseding dated release. The current release
+  model has no unpublished state. Do not mutate the immutable R2 key or erase
+  failed test evidence.

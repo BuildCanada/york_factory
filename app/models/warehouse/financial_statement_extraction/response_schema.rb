@@ -7,6 +7,9 @@ class Warehouse::FinancialStatementExtraction::ResponseSchema < RubyLLM::Schema
   boolean :remeasurement_present
   boolean :operations_adjustment_present
   boolean :rollforward_adjustment_present
+  boolean :total_financial_assets_single_component
+  boolean :total_liabilities_single_component
+  boolean :total_non_financial_assets_single_component
   array :facts, min_items: 1, max_items: 9 do
     object do
       string :concept, enum: Warehouse::FinancialStatementFact::CONCEPTS

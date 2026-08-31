@@ -27,6 +27,8 @@ All 13 manifests have zero validation errors and the coverage audits have zero a
 
 The validator emits 17 non-blocking duplicate-content warnings: 3 in Alberta and 14 in New Brunswick. They represent predecessor/successor duplication or an explicitly shared regional report. The PAAC and Le Goulet/Shippagan misattributions identified during review were corrected before v6. Remaining warnings stay explicit for human review.
 
+For financial extraction coverage, 9 of the 14 New Brunswick warnings are duplicate preferred financial-statement identities. The other 5 hashes (`23d4035a…`, `27a47f8e…`, `7ab8acd2…`, `7c72ca25…`, and `d3d007e2…`) occur only on annual-report documents and are outside the preferred financial-statement candidate set. Extraction coverage reports the 9 non-owner candidates as `shared_asset` rather than duplicating extraction rows or treating them as unattempted.
+
 ## Deliberate limitations
 
 - Ten-year completion means any ten distinct fiscal years; it does not require a contiguous or recent ten-year window.

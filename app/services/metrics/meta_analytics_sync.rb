@@ -35,32 +35,63 @@ module Metrics
       ]
     }.freeze
 
-    def initialize(client:, now: Time.current)
+    # Instagram buckets account insights on the account's own calendar day, not UTC.
+    # Meta reports that boundary back to us in the `end_time` of its time-series
+    # metrics (e.g. reach), which lands on 07:00Z in August — midnight Pacific.
+    # Override per account in credentials with `time_zone:` if an account differs.
+    DEFAULT_INSIGHTS_TIME_ZONE = "America/Los_Angeles".freeze
+
+    # Meta keeps revising a day's totals for a while after midnight, so each sync
+    # re-requests a short trailing window. Re-requests upsert rather than insert.
+    DEFAULT_SYNC_LOOKBACK_DAYS = 3
+
+    def initialize(client:, now: Time.current, time_zone: DEFAULT_INSIGHTS_TIME_ZONE)
       @client = client
       @now = now
+      @time_zone = ActiveSupport::TimeZone[time_zone.to_s] ||
+        ActiveSupport::TimeZone[DEFAULT_INSIGHTS_TIME_ZONE]
     end
 
-    def sync!(platform:, account_key:, platform_account_id:, account_metrics: [], media_metrics: [])
+    # The most recent complete days in the account's timezone, newest last.
+    def default_sync_days(count = DEFAULT_SYNC_LOOKBACK_DAYS)
+      last_complete = @now.in_time_zone(@time_zone).to_date - 1
+      ((last_complete - (count - 1))..last_complete).to_a
+    end
+
+    def sync!(platform:, account_key:, platform_account_id:, account_metrics: [], media_metrics: [], days: nil)
       account = sync_account!(
         platform: platform,
         account_key: account_key,
         platform_account_id: platform_account_id,
-        account_metrics: account_metrics
+        account_metrics: account_metrics,
+        days: days
       )
       discover_recent_media!(account)
       account
     end
 
-    def sync_account!(platform:, account_key:, platform_account_id:, account_metrics: [])
+    def sync_account!(platform:, account_key:, platform_account_id:, account_metrics: [], days: nil)
       validate_account!(platform, account_key)
       profile = @client.get(platform_account_id, params: {
         fields: ACCOUNT_FIELDS.fetch(platform).join(",")
       })
       account = upsert_account!(platform, account_key, platform_account_id, profile)
       sync_insights!(account.insights, platform_account_id, account_metrics,
-        platform: platform, scope: :account)
+        platform: platform, scope: :account, days: days || default_sync_days)
       account.update!(last_synced_at: @now)
       account
+    end
+
+    # Re-request a specific date range of account insights. Meta serves historical
+    # account insights, so this recovers days that were never captured (or that were
+    # captured with the old sync-clock timestamp).
+    def backfill_account_insights!(account, metric_names:, from:, to:)
+      days = (from.to_date..to.to_date).to_a
+      return 0 if days.empty? || metric_names.blank?
+
+      sync_insights!(account.insights, account.platform_account_id, metric_names,
+        platform: account.platform, scope: :account, days: days)
+      days.length
     end
 
     def discover_recent_media!(account)
@@ -162,17 +193,17 @@ module Metrics
       end
     end
 
-    def sync_insights!(association, object_id, metric_names, platform:, scope:)
+    def sync_insights!(association, object_id, metric_names, platform:, scope:, days: nil)
       return if metric_names.blank?
 
-      insight_queries(platform, scope, metric_names).each do |params|
-        each_page("#{object_id}/insights", params: params, follow_paging: false) do |metric|
-          sync_metric!(association, metric)
+      insight_queries(platform, scope, metric_names, days: days).each do |query|
+        each_page("#{object_id}/insights", params: query[:params], follow_paging: false) do |metric|
+          sync_metric!(association, metric, day_observed_at: query[:observed_at])
         end
       end
     end
 
-    def sync_metric!(association, metric)
+    def sync_metric!(association, metric, day_observed_at: nil)
         values = Array(metric["values"])
         values = [ { "value" => metric["value"] } ] if values.empty? && metric.key?("value")
         if values.empty? && metric.key?("total_value")
@@ -181,7 +212,10 @@ module Metrics
           values = [ { "value" => value } ]
         end
         values.each do |value|
-          observed_at = parse_time(value["end_time"]) || @now
+          # A total_value response carries no end_time. Without the requested day's
+          # boundary it would fall back to the sync clock, which leaves the row
+          # unattributable to a calendar day and defeats the uniqueness index.
+          observed_at = parse_time(value["end_time"]) || day_observed_at || @now
           insight = association.find_or_initialize_by(
             metric_name: metric.fetch("name"),
             period: metric["period"],
@@ -197,29 +231,63 @@ module Metrics
         end
     end
 
-    def insight_queries(platform, scope, metric_names)
+    def insight_queries(platform, scope, metric_names, days: nil)
       names = metric_names.map(&:to_s)
       default_params = { period: "day" } if scope == :account
       default_params ||= {}
-      return [ default_params.merge(metric: names.join(",")) ] unless platform == "instagram"
-      return [ { metric: names.join(","), metric_type: "total_value" } ] if scope == :media
+      unless platform == "instagram"
+        return [ insight_query(default_params.merge(metric: names.join(","))) ]
+      end
+      if scope == :media
+        return [ insight_query({ metric: names.join(","), metric_type: "total_value" }) ]
+      end
 
       breakdown_names = names & INSTAGRAM_ACCOUNT_BREAKDOWNS.keys
       total_names = names & INSTAGRAM_ACCOUNT_TOTAL_METRICS
       time_series_names = names - breakdown_names - total_names
       queries = []
-      queries << default_params.merge(metric: time_series_names.join(",")) if time_series_names.any?
-      if total_names.any?
-        queries << default_params.merge(metric: total_names.join(","), metric_type: "total_value")
+      if time_series_names.any?
+        # These come back with a real end_time per day, so they need no day scoping.
+        queries << insight_query(default_params.merge(metric: time_series_names.join(",")))
       end
-      breakdown_names.each do |name|
-        queries << default_params.merge(
-          metric: name,
-          metric_type: "total_value",
-          breakdown: INSTAGRAM_ACCOUNT_BREAKDOWNS.fetch(name)
-        )
+
+      # total_value metrics aggregate over the whole requested window and return no
+      # end_time, so they must be requested one day at a time to keep a daily grain.
+      (days.presence || default_sync_days).each do |day|
+        window = day_window(day)
+        observed_at = window.fetch(:observed_at)
+        params = default_params.merge(since: window.fetch(:since), until: window.fetch(:until))
+        if total_names.any?
+          queries << insight_query(
+            params.merge(metric: total_names.join(","), metric_type: "total_value"),
+            observed_at: observed_at
+          )
+        end
+        breakdown_names.each do |name|
+          queries << insight_query(
+            params.merge(
+              metric: name,
+              metric_type: "total_value",
+              breakdown: INSTAGRAM_ACCOUNT_BREAKDOWNS.fetch(name)
+            ),
+            observed_at: observed_at
+          )
+        end
       end
       queries
+    end
+
+    def insight_query(params, observed_at: nil)
+      { params: params, observed_at: observed_at }
+    end
+
+    # Meta stamps a day's time-series value with the *end* of that day, so a value
+    # observed_at Aug 12 00:00 covers Aug 11. Day-scoped total_value rows follow the
+    # same convention, which keeps both kinds of row on one timeline.
+    def day_window(day)
+      start_of_day = @time_zone.parse(day.to_date.to_s)
+      end_of_day = start_of_day + 1.day
+      { since: start_of_day.to_i, until: end_of_day.to_i, observed_at: end_of_day }
     end
 
     def each_page(path, params:, follow_paging: true)

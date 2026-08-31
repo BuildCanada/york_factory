@@ -42,6 +42,13 @@ class Metrics::MetaJob < ApplicationJob
     defaults.fetch(platform)
   end
 
+  # Instagram buckets account insights on the account's own calendar day. Allow a
+  # per-account override, then a global one, before the service default.
+  def time_zone_for(settings)
+    settings[:time_zone].presence || meta_config[:time_zone].presence ||
+      Metrics::MetaAnalyticsSync::DEFAULT_INSIGHTS_TIME_ZONE
+  end
+
   def client_for(platform, settings)
     access_token = access_token_for(settings)
     raise Metrics::MetaGraphClient::Error, "Meta access token is missing" if access_token.blank?

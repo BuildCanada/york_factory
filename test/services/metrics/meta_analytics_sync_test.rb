@@ -45,6 +45,8 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     def get(path, params: {})
       return super unless path == "ig-123/insights" && params[:metric_type] == "total_value"
 
+      # Record here too, so tests can assert on the day scoping of these requests.
+      requests << [ path, params ]
       { "data" => params.fetch(:metric).split(",").map do |name|
         { "name" => name, "period" => "day", "total_value" => { "value" => 42 } }
       end }
@@ -109,6 +111,76 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
 
     assert_equal 42, account.insights.find_by!(metric_name: "views").value_numeric
     assert_equal 42, account.insights.find_by!(metric_name: "accounts_engaged").value_numeric
+  end
+
+  test "day-scoped total-value metrics are dated by the requested day, not the sync clock" do
+    now = Time.zone.parse("2026-08-20 02:30:00")
+    client = TotalValueClient.new
+    sync = Metrics::MetaAnalyticsSync.new(client: client, now: now, time_zone: "America/Los_Angeles")
+    zone = ActiveSupport::TimeZone["America/Los_Angeles"]
+
+    account = sync.sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[views],
+      days: [ Date.new(2026, 8, 17), Date.new(2026, 8, 18) ]
+    )
+
+    observed = account.insights.where(metric_name: "views").order(:observed_at).pluck(:observed_at)
+    # Meta stamps a day with the end of that day, so Aug 17 lands on Aug 18 00:00.
+    assert_equal [ zone.parse("2026-08-18"), zone.parse("2026-08-19") ], observed
+    refute observed.include?(now), "observed_at must never fall back to the sync clock"
+
+    total_requests = client.requests.select { |_path, params| params[:metric_type] == "total_value" }
+    assert_equal 2, total_requests.length
+    since, untl = total_requests.first.last.values_at(:since, :until)
+    assert_equal zone.parse("2026-08-17").to_i, since
+    assert_equal zone.parse("2026-08-18").to_i, untl
+  end
+
+  test "re-syncing a day updates the row instead of inserting another" do
+    days = [ Date.new(2026, 8, 17) ]
+    2.times do |run|
+      Metrics::MetaAnalyticsSync.new(
+        client: TotalValueClient.new,
+        now: Time.zone.parse("2026-08-18 02:30:00") + run.hours,
+        time_zone: "America/Los_Angeles"
+      ).sync_account!(
+        platform: "instagram",
+        account_key: "build_toronto",
+        platform_account_id: "ig-123",
+        account_metrics: %w[views],
+        days: days
+      )
+    end
+
+    account = Metrics::MetaAccount.find_by!(platform: "instagram", account_key: "build_toronto")
+    assert_equal 1, account.insights.where(metric_name: "views").count
+  end
+
+  test "backfill requests one day per date in the range" do
+    client = TotalValueClient.new
+    sync = Metrics::MetaAnalyticsSync.new(
+      client: client,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    )
+    account = sync.sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[views],
+      days: []
+    )
+    account.insights.delete_all
+
+    days = sync.backfill_account_insights!(
+      account, metric_names: %w[views], from: Date.new(2026, 8, 1), to: Date.new(2026, 8, 5)
+    )
+
+    assert_equal 5, days
+    assert_equal 5, account.insights.where(metric_name: "views").count
   end
 
   test "historical discovery schedules a real baseline at the backfill time" do

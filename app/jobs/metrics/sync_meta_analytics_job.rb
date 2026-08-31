@@ -25,7 +25,10 @@ class Metrics::SyncMetaAnalyticsJob < Metrics::MetaJob
       return Rails.logger.warn("[Meta] skipped #{platform}/#{account_key}: id or access token is missing")
     end
 
-    sync = Metrics::MetaAnalyticsSync.new(client: client_for(platform, settings))
+    sync = Metrics::MetaAnalyticsSync.new(
+      client: client_for(platform, settings),
+      time_zone: time_zone_for(settings)
+    )
     account = sync.sync_account!(
       platform: platform,
       account_key: account_key,

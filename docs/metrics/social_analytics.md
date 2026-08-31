@@ -40,3 +40,31 @@ future reach values derived from non-unique views or impressions.
 Snapshot sources set `cumulative = true`. Only their latest observation per entity, source,
 and normalized metric has `current_value = true`; older snapshots remain queryable for
 history without being accidentally summed into current reports.
+
+## Instagram account grain
+
+Instagram's account-level `views`, `accounts_engaged`, `total_interactions`,
+`profile_links_taps` and `follows_and_unfollows` are only available from Meta as
+`metric_type=total_value`. A `total_value` response aggregates over the whole
+requested window and carries no `end_time`, so it must be requested one day at a
+time or it cannot be attributed to a calendar day.
+
+`Metrics::MetaAnalyticsSync` therefore requests these metrics per day with explicit
+`since`/`until`, and stamps `observed_at` with the end of the requested day. That
+matches Meta's own convention for time-series metrics such as `reach`, where a value
+stamped Aug 12 00:00 covers Aug 11, and keeps both kinds of row on one timeline.
+
+Day boundaries follow the account's timezone, not UTC. The default is
+`America/Los_Angeles`, inferred from the `end_time` values Meta returns for `reach`
+(07:00Z in August). Override with `meta.time_zone`, or per account with
+`meta.accounts.<platform>.<account_key>.time_zone`.
+
+Each sync re-requests a trailing window (`DEFAULT_SYNC_LOOKBACK_DAYS`, currently 3)
+because Meta keeps revising a day's totals after midnight. Re-requests upsert on
+`(meta_account_id, metric_name, period, observed_at)`.
+
+To recover history, or days captured before this behaviour existed, use
+`Metrics::BackfillMetaAccountInsightsJob` or the `meta_insights:backfill` rake task.
+Rows written by the older code carry the sync clock rather than a day boundary;
+`meta_insights:undated` lists them and `meta_insights:purge_undated` removes them.
+Clear them before backfilling the same dates, or the two sets sum together.

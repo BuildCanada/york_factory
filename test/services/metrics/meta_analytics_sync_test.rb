@@ -53,6 +53,66 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     end
   end
 
+  class BreakdownClient < TotalValueClient
+    def get(path, params: {})
+      return super unless path == "ig-123/insights" &&
+        params[:metric] == "follows_and_unfollows"
+
+      requests << [ path, params ]
+      {
+        "data" => [ {
+          "name" => "follows_and_unfollows",
+          "period" => "day",
+          "total_value" => {
+            "breakdowns" => [ {
+              "dimension_keys" => [ "follow_type" ],
+              "results" => [
+                { "dimension_values" => [ "FOLLOWER" ], "value" => 17 },
+                { "dimension_values" => [ "NON_FOLLOWER" ], "value" => 3 }
+              ]
+            } ]
+          }
+        } ]
+      }
+    end
+  end
+
+  class PaidOrganicClient < TotalValueClient
+    def get(path, params: {})
+      return super unless path == "ig-123/insights" && params[:breakdown] == "media_product_type"
+
+      requests << [ path, params ]
+      {
+        "data" => params.fetch(:metric).split(",").map do |name|
+          {
+            "name" => name,
+            "period" => "day",
+            "total_value" => {
+              "value" => 100,
+              "breakdowns" => [ {
+                "dimension_keys" => [ "media_product_type" ],
+                "results" => [
+                  { "dimension_values" => [ "POST" ], "value" => 70 },
+                  { "dimension_values" => [ "REEL" ], "value" => 20 },
+                  { "dimension_values" => [ "AD" ], "value" => 10 }
+                ]
+              } ]
+            }
+          }
+        end
+      }
+    end
+  end
+
+  class FollowersOnlyClient < BreakdownClient
+    def get(path, params: {})
+      response = super
+      results = response.dig("data", 0, "total_value", "breakdowns", 0, "results")
+      results&.select! { |result| result["dimension_values"] == [ "FOLLOWER" ] }
+      response
+    end
+  end
+
   test "stores normalized Instagram analytics and complete source payloads" do
     now = Time.zone.parse("2026-08-12 13:00:00")
     client = FakeClient.new
@@ -136,7 +196,105 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     assert_equal 2, total_requests.length
     since, untl = total_requests.first.last.values_at(:since, :until)
     assert_equal zone.parse("2026-08-17").to_i, since
-    assert_equal zone.parse("2026-08-18").to_i, untl
+    assert_equal zone.parse("2026-08-18").to_i - 1, untl
+  end
+
+  test "normalizes follower breakdowns into numeric follows and unfollows" do
+    account = Metrics::MetaAnalyticsSync.new(
+      client: BreakdownClient.new,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    ).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[follows_and_unfollows],
+      days: [ Date.new(2026, 8, 17) ]
+    )
+
+    assert_equal 17, account.insights.find_by!(metric_name: "follows").value_numeric
+    assert_equal 3, account.insights.find_by!(metric_name: "unfollows").value_numeric
+    refute account.insights.exists?(metric_name: "follows_and_unfollows")
+  end
+
+  test "removes a normalized sibling omitted from a later breakdown response" do
+    observed_at = Time.find_zone!("America/Los_Angeles").parse("2026-08-18")
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-123"
+    )
+    account.insights.create!(
+      metric_name: "unfollows", period: "day", observed_at: observed_at,
+      value_numeric: 9
+    )
+
+    Metrics::MetaAnalyticsSync.new(
+      client: FollowersOnlyClient.new,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    ).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[follows_and_unfollows],
+      days: [ Date.new(2026, 8, 17) ]
+    )
+
+    assert_equal 17, account.insights.find_by!(metric_name: "follows").value_numeric
+    refute account.insights.exists?(metric_name: "unfollows")
+  end
+
+  test "removes paid and organic siblings when Meta omits their breakdown" do
+    observed_at = Time.find_zone!("America/Los_Angeles").parse("2026-08-18")
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-123"
+    )
+    %w[views_organic views_paid].each do |metric_name|
+      account.insights.create!(
+        metric_name: metric_name, period: "day", observed_at: observed_at,
+        value_numeric: 9
+      )
+    end
+
+    Metrics::MetaAnalyticsSync.new(
+      client: TotalValueClient.new,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    ).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[views],
+      days: [ Date.new(2026, 8, 17) ]
+    )
+
+    assert_equal 42, account.insights.find_by!(metric_name: "views").value_numeric
+    refute account.insights.exists?(metric_name: %w[views_organic views_paid])
+  end
+
+  test "normalizes media product breakdowns into paid and organic properties" do
+    account = Metrics::MetaAnalyticsSync.new(
+      client: PaidOrganicClient.new,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    ).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[views reach total_interactions],
+      days: [ Date.new(2026, 8, 17) ]
+    )
+
+    assert_equal 100, account.insights.find_by!(metric_name: "views").value_numeric
+    assert_equal 90, account.insights.find_by!(metric_name: "views_organic").value_numeric
+    assert_equal 10, account.insights.find_by!(metric_name: "views_paid").value_numeric
+    assert_equal 90, account.insights.find_by!(metric_name: "reach_organic").value_numeric
+    assert_equal 10, account.insights.find_by!(metric_name: "reach_paid").value_numeric
+    assert_equal 90,
+      account.insights.find_by!(metric_name: "total_interactions_organic").value_numeric
+    assert_equal 10,
+      account.insights.find_by!(metric_name: "total_interactions_paid").value_numeric
   end
 
   test "re-syncing a day updates the row instead of inserting another" do

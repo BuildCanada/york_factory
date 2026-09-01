@@ -59,11 +59,15 @@ class Metrics::SocialAnalyticsRefresh
   ].freeze
 
   META_ACCOUNT_METRICS = {
-    "views" => "content_views",
-    "reach" => "unique_reach",
+    "views_organic" => "content_views",
+    "views_paid" => "content_views",
+    "reach_organic" => "unique_reach",
+    "reach_paid" => "unique_reach",
     "accounts_engaged" => "accounts_engaged",
-    "total_interactions" => "engagements",
-    "follows_and_unfollows" => "net_follows",
+    "total_interactions_organic" => "engagements",
+    "total_interactions_paid" => "engagements",
+    "follows" => "followers_gained",
+    "unfollows" => "followers_lost",
     "profile_links_taps" => "clicks",
     "page_post_engagements" => "engagements",
     "page_daily_follows" => "followers_gained",
@@ -190,7 +194,7 @@ class Metrics::SocialAnalyticsRefresh
           value: insight.value_numeric, period_start: insight.observed_at - 1.day,
           period_end: insight.observed_at, observed_at: insight.observed_at,
           reporting_source: account.platform == "instagram",
-          fallback_metric: false
+          paid: insight.metric_name.end_with?("_paid"), fallback_metric: false
         )
       end
 

@@ -24,6 +24,9 @@ module Metrics
       }
     }.freeze
     INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS = %w[views total_interactions].freeze
+    INSTAGRAM_ACCOUNT_DEPRECATED_SIBLINGS = {
+      "reach" => %w[reach_organic reach_paid]
+    }.freeze
     DEFAULT_ACCOUNT_METRICS = {
       "facebook" => %w[
         page_post_engagements page_daily_follows page_daily_unfollows
@@ -279,6 +282,8 @@ module Metrics
       return explicit.values if explicit
       return [ "#{metric_name}_organic", "#{metric_name}_paid" ] if
         INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS.include?(metric_name)
+      return INSTAGRAM_ACCOUNT_DEPRECATED_SIBLINGS.fetch(metric_name) if
+        INSTAGRAM_ACCOUNT_DEPRECATED_SIBLINGS.key?(metric_name)
 
       []
     end

@@ -1460,7 +1460,7 @@ CREATE TABLE public.metrics_social_metric_observations (
     period_end timestamp(6) without time zone NOT NULL,
     observed_at timestamp(6) without time zone NOT NULL,
     cumulative boolean DEFAULT false NOT NULL,
-    paid boolean DEFAULT false NOT NULL,
+    paid boolean DEFAULT false,
     reporting_source boolean DEFAULT false NOT NULL,
     fallback_metric boolean DEFAULT false NOT NULL,
     current_value boolean DEFAULT true NOT NULL,
@@ -9917,6 +9917,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260901000000'),
 ('20260813000001'),
 ('20260812000005'),
 ('20260812000004'),

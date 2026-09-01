@@ -27,7 +27,9 @@ AND current_value = true
 AND reporting_source = true
 ```
 
-Also filter `paid` explicitly. Never add paid and organic rows without labelling the result.
+Also filter `paid` explicitly. It is tri-state: `true` is paid, `false` is organic,
+and `NULL` is a combined value that the source cannot split correctly. Never add
+paid, organic, and combined rows without labelling the result.
 
 `reporting_source` follows the source-of-truth tiers: X exports, direct Meta Instagram,
 Zernio LinkedIn and TikTok, and Substack daily stats. Other observations are retained as
@@ -86,7 +88,7 @@ reach counts unique accounts and those product buckets overlap, so subtracting t
 `AD` bucket from total reach would not produce organic unique reach. Meta also does
 not support this breakdown for `accounts_engaged` or `profile_links_taps`. These
 source rows remain combined rather than being assigned an invented paid or organic
-value.
+value. Combined observations carry `paid = NULL`.
 
 Day boundaries follow the account's timezone, not UTC. The default is
 `America/Los_Angeles`, inferred from the `end_time` values Meta returns for `reach`

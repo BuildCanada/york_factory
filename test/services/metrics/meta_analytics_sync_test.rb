@@ -158,6 +158,30 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     assert_equal 2, medium.insights.count
   end
 
+  test "removes deprecated paid and organic reach siblings" do
+    observed_at = Time.zone.parse("2026-08-12T00:00:00+0000")
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-123"
+    )
+    %w[reach_organic reach_paid].each do |metric_name|
+      account.insights.create!(
+        metric_name: metric_name, period: "day", observed_at: observed_at,
+        value_numeric: 9
+      )
+    end
+
+    Metrics::MetaAnalyticsSync.new(client: FakeClient.new).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[reach]
+    )
+
+    assert_equal 10, account.insights.find_by!(metric_name: "reach").value_numeric
+    refute account.insights.exists?(metric_name: %w[reach_organic reach_paid])
+  end
+
   test "rejects accounts outside the configured allowlist" do
     error = assert_raises(ArgumentError) do
       Metrics::MetaAnalyticsSync.new(client: FakeClient.new).sync_account!(

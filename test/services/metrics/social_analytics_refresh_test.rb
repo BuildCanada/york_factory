@@ -43,7 +43,7 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
       platform_account_id: "ig-account", username: "build_toronto"
     )
     account.insights.create!(
-      metric_name: "reach_organic", period: "day", observed_at: @now,
+      metric_name: "reach", period: "day", observed_at: @now,
       value_numeric: 1_000
     )
     medium = account.media.create!(

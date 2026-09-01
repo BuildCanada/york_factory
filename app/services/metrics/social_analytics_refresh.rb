@@ -61,8 +61,7 @@ class Metrics::SocialAnalyticsRefresh
   META_ACCOUNT_METRICS = {
     "views_organic" => "content_views",
     "views_paid" => "content_views",
-    "reach_organic" => "unique_reach",
-    "reach_paid" => "unique_reach",
+    "reach" => "unique_reach",
     "accounts_engaged" => "accounts_engaged",
     "total_interactions_organic" => "engagements",
     "total_interactions_paid" => "engagements",

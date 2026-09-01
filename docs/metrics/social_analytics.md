@@ -72,7 +72,7 @@ with the end of the requested day. That
 matches Meta's own convention for time-series metrics such as `reach`, where a value
 stamped Aug 12 00:00 covers Aug 11, and keeps both kinds of row on one timeline.
 
-Instagram `views`, `reach`, and `total_interactions` are requested with the
+Instagram `views` and `total_interactions` are requested with the
 `media_product_type` breakdown. Meta identifies paid delivery as `AD`; the remaining
 media product values are normalized as organic. Reporting observations publish the
 two components separately with `paid = true` and `paid = false`. The raw combined
@@ -81,9 +81,12 @@ a third reporting observation that could be double-counted. `follows_and_unfollo
 is similarly unpacked into `followers_gained` and `followers_lost`; it must not be
 treated as a scalar net-follow count.
 
-Meta does not support this breakdown for `accounts_engaged` or
-`profile_links_taps`. Those source rows remain combined rather than being assigned
-an invented paid or organic value.
+Instagram `reach` remains combined. Although Meta exposes reach by media product,
+reach counts unique accounts and those product buckets overlap, so subtracting the
+`AD` bucket from total reach would not produce organic unique reach. Meta also does
+not support this breakdown for `accounts_engaged` or `profile_links_taps`. These
+source rows remain combined rather than being assigned an invented paid or organic
+value.
 
 Day boundaries follow the account's timezone, not UTC. The default is
 `America/Los_Angeles`, inferred from the `end_time` values Meta returns for `reach`

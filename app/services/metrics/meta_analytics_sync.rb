@@ -15,7 +15,6 @@ module Metrics
     INSTAGRAM_ACCOUNT_BREAKDOWNS = {
       "follows_and_unfollows" => "follow_type",
       "views" => "media_product_type",
-      "reach" => "media_product_type",
       "total_interactions" => "media_product_type"
     }.freeze
     INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS = {
@@ -24,7 +23,7 @@ module Metrics
         "NON_FOLLOWER" => "unfollows"
       }
     }.freeze
-    INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS = %w[views reach total_interactions].freeze
+    INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS = %w[views total_interactions].freeze
     DEFAULT_ACCOUNT_METRICS = {
       "facebook" => %w[
         page_post_engagements page_daily_follows page_daily_unfollows
@@ -311,7 +310,16 @@ module Metrics
       results = Array(metric.dig("total_value", "breakdowns")).flat_map do |breakdown|
         Array(breakdown["results"])
       end
-      return [ { "value" => total } ] if results.empty?
+      if results.empty?
+        return [ { "value" => total } ] unless total.to_d.zero?
+
+        base_name = metric.fetch("name")
+        return [
+          { "value" => total },
+          { "value" => 0, "normalized_metric_name" => "#{base_name}_organic" },
+          { "value" => 0, "normalized_metric_name" => "#{base_name}_paid" }
+        ]
+      end
 
       paid = results.sum do |result|
         Array(result["dimension_values"]).include?("AD") ? result["value"].to_d : 0.to_d

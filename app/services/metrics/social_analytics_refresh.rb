@@ -61,8 +61,7 @@ class Metrics::SocialAnalyticsRefresh
   META_ACCOUNT_METRICS = {
     "views_organic" => "content_views",
     "views_paid" => "content_views",
-    "reach_organic" => "unique_reach",
-    "reach_paid" => "unique_reach",
+    "reach" => "unique_reach",
     "accounts_engaged" => "accounts_engaged",
     "total_interactions_organic" => "engagements",
     "total_interactions_paid" => "engagements",
@@ -83,6 +82,9 @@ class Metrics::SocialAnalyticsRefresh
     "post_clicks" => "clicks", "post_media_view" => "content_views",
     "post_video_views" => "video_views"
   }.freeze
+  INSTAGRAM_COMBINED_ACCOUNT_METRICS = %w[
+    reach accounts_engaged profile_links_taps
+  ].freeze
 
   def initialize(now: Time.current)
     # Rounded to Postgres timestamp(6) precision so a row written with
@@ -194,7 +196,7 @@ class Metrics::SocialAnalyticsRefresh
           value: insight.value_numeric, period_start: insight.observed_at - 1.day,
           period_end: insight.observed_at, observed_at: insight.observed_at,
           reporting_source: account.platform == "instagram",
-          paid: insight.metric_name.end_with?("_paid"), fallback_metric: false
+          paid: meta_account_paid_value(account, insight), fallback_metric: false
         )
       end
 
@@ -253,6 +255,15 @@ class Metrics::SocialAnalyticsRefresh
         end
       end
     end
+  end
+
+  def meta_account_paid_value(account, insight)
+    return true if insight.metric_name.end_with?("_paid")
+    return false if insight.metric_name.end_with?("_organic")
+    return nil if account.platform == "instagram" &&
+      INSTAGRAM_COMBINED_ACCOUNT_METRICS.include?(insight.metric_name)
+
+    false
   end
 
   def extract_ads

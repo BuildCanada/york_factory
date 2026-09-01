@@ -43,7 +43,7 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
       platform_account_id: "ig-account", username: "build_toronto"
     )
     account.insights.create!(
-      metric_name: "reach_organic", period: "day", observed_at: @now,
+      metric_name: "reach", period: "day", observed_at: @now,
       value_numeric: 1_000
     )
     medium = account.media.create!(
@@ -69,6 +69,7 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     )
     assert_equal 1_000, account_reach.value
     assert account_reach.reporting_source?
+    assert_nil account_reach.paid
     assert_equal 600, content_reach.value
     refute content_reach.reporting_source?
     assert content_reach.current_value?
@@ -79,6 +80,28 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     refute Metrics::SocialMetricObservation.exists?(
       social_entity_id: "content:instagram:ig-post", metric_name: "unique_reach"
     )
+  end
+
+  test "marks unsupported Instagram attribution metrics as combined" do
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-account", username: "build_toronto"
+    )
+    %w[accounts_engaged profile_links_taps].each do |metric_name|
+      account.insights.create!(
+        metric_name: metric_name, period: "day", observed_at: @now,
+        value_numeric: 10
+      )
+    end
+
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    observations = Metrics::SocialMetricObservation.where(
+      social_entity_id: "account:instagram:build_toronto",
+      source_metric_name: %w[accounts_engaged profile_links_taps]
+    )
+    assert_equal 2, observations.count
+    assert observations.all? { |observation| observation.paid.nil? }
   end
 
   test "normalizes Meta follower gains and losses as separate account metrics" do

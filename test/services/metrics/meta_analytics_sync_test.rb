@@ -113,6 +113,16 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     end
   end
 
+  class ZeroTotalClient < TotalValueClient
+    def get(path, params: {})
+      response = super
+      if path == "ig-123/insights" && params[:metric_type] == "total_value"
+        response["data"].each { |metric| metric["total_value"]["value"] = 0 }
+      end
+      response
+    end
+  end
+
   test "stores normalized Instagram analytics and complete source payloads" do
     now = Time.zone.parse("2026-08-12 13:00:00")
     client = FakeClient.new
@@ -146,6 +156,30 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
 
     sync.sync_media_insights!(medium, metric_names: %w[likes comments])
     assert_equal 2, medium.insights.count
+  end
+
+  test "removes deprecated paid and organic reach siblings" do
+    observed_at = Time.zone.parse("2026-08-12T00:00:00+0000")
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-123"
+    )
+    %w[reach_organic reach_paid].each do |metric_name|
+      account.insights.create!(
+        metric_name: metric_name, period: "day", observed_at: observed_at,
+        value_numeric: 9
+      )
+    end
+
+    Metrics::MetaAnalyticsSync.new(client: FakeClient.new).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[reach]
+    )
+
+    assert_equal 10, account.insights.find_by!(metric_name: "reach").value_numeric
+    refute account.insights.exists?(metric_name: %w[reach_organic reach_paid])
   end
 
   test "rejects accounts outside the configured allowlist" do
@@ -273,6 +307,23 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     refute account.insights.exists?(metric_name: %w[views_organic views_paid])
   end
 
+  test "writes explicit paid and organic zeros when a zero total omits its breakdown" do
+    account = Metrics::MetaAnalyticsSync.new(
+      client: ZeroTotalClient.new,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    ).sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: %w[views],
+      days: [ Date.new(2026, 8, 17) ]
+    )
+
+    assert_equal 0, account.insights.find_by!(metric_name: "views_organic").value_numeric
+    assert_equal 0, account.insights.find_by!(metric_name: "views_paid").value_numeric
+  end
+
   test "normalizes media product breakdowns into paid and organic properties" do
     account = Metrics::MetaAnalyticsSync.new(
       client: PaidOrganicClient.new,
@@ -282,15 +333,13 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
       platform: "instagram",
       account_key: "build_toronto",
       platform_account_id: "ig-123",
-      account_metrics: %w[views reach total_interactions],
+      account_metrics: %w[views total_interactions],
       days: [ Date.new(2026, 8, 17) ]
     )
 
     assert_equal 100, account.insights.find_by!(metric_name: "views").value_numeric
     assert_equal 90, account.insights.find_by!(metric_name: "views_organic").value_numeric
     assert_equal 10, account.insights.find_by!(metric_name: "views_paid").value_numeric
-    assert_equal 90, account.insights.find_by!(metric_name: "reach_organic").value_numeric
-    assert_equal 10, account.insights.find_by!(metric_name: "reach_paid").value_numeric
     assert_equal 90,
       account.insights.find_by!(metric_name: "total_interactions_organic").value_numeric
     assert_equal 10,

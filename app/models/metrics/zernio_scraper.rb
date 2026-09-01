@@ -219,8 +219,15 @@ module Metrics
         next if payload.nil? && metric.persisted?
 
         values = payload&.fetch("metrics", {}) || {}
-        attributes = fields.to_h { |field| [ field, values.fetch(field, 0) ] }
-        source_payload = payload || { "date" => date.iso8601, "zeroFilled" => true }
+        attributes = fields.to_h do |field|
+          value = values.key?(field) ? values[field] : metric.public_send(field)
+          [ field, value || 0 ]
+        end
+        source_payload = if payload && metric.persisted?
+          metric.source_payload.deep_merge(payload)
+        else
+          payload || { "date" => date.iso8601, "zeroFilled" => true }
+        end
         metric.assign_attributes(attributes.merge(source_payload:))
         save_changed_snapshot!(metric)
       end

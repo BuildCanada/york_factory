@@ -232,6 +232,37 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert account.daily_metrics.find_by!(date: Date.new(2026, 8, 2)).source_payload["zeroFilled"]
   end
 
+  test "preserves stored fields omitted from a partial LinkedIn day" do
+    @account_payload.merge!(
+      "_id" => "account-linkedin-build-canada",
+      "platform" => "linkedin"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-linkedin-build-canada")
+    account.daily_metrics.create!(
+      date: Date.new(2026, 8, 1), impressions: 500, unique_impressions: 400,
+      scraped_at: @now - 1.day,
+      source_payload: { "date" => "2026-08-01", "metrics" => {
+        "impressions" => 500, "unique_impressions" => 400
+      } }
+    )
+    response = { "metrics" => {
+      "impressions" => { "values" => [ { "date" => "2026-08-01", "value" => 550 } ] }
+    } }
+
+    described_scraper(fake_client("/analytics/linkedin/org-aggregate-analytics" => response))
+      .sync_account_daily_metrics!(
+        account_id: account.id,
+        from_date: Date.new(2026, 8, 1),
+        to_date: Date.new(2026, 8, 1)
+      )
+
+    stored = account.daily_metrics.find_by!(date: Date.new(2026, 8, 1))
+    assert_equal 550, stored.impressions
+    assert_equal 400, stored.unique_impressions
+    assert_equal 400, stored.source_payload.dig("metrics", "unique_impressions")
+  end
+
   test "imports ad accounts, campaigns, ads, and every daily analytics payload" do
     scraper_for(accounts_response).sync_accounts!
     account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")

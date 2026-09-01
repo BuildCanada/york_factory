@@ -217,42 +217,71 @@ module Metrics
         values = breakdown_values(metric)
         values = Array(metric["values"]) if values.empty?
         values = [ { "value" => metric["value"] } ] if values.empty? && metric.key?("value")
-        if values.empty? && metric.key?("total_value")
+        if values.empty? && metric.key?("total_value") &&
+            !INSTAGRAM_ACCOUNT_BREAKDOWNS.key?(metric["name"])
           total_value = metric["total_value"]
           value = total_value.is_a?(Hash) && total_value.key?("value") ? total_value["value"] : total_value
           values = [ { "value" => value } ]
         end
-        values.each do |value|
-          # A total_value response carries no end_time. Without the requested day's
-          # boundary it would fall back to the sync clock, which leaves the row
-          # unattributable to a calendar day and defeats the uniqueness index.
-          observed_at = parse_time(value["end_time"]) || day_observed_at || @now
-          metric_name = value["normalized_metric_name"] || metric.fetch("name")
-          insight = association.find_or_initialize_by(
-            metric_name: metric_name,
-            period: metric["period"],
-            observed_at: observed_at
-          )
-          raw_value = value["value"]
-          insight.assign_attributes(
-            value_numeric: numeric_value(raw_value),
-            value_payload: raw_value.is_a?(Hash) || raw_value.is_a?(Array) ? raw_value : {},
-            source_payload: metric.merge("value_entry" => value.except("normalized_metric_name"))
-          )
-          insight.save!
-
-          # Rows written before breakdown normalization stored the enclosing metric
-          # with a nil numeric value. Remove that stale row as soon as the same day
-          # is successfully replaced by its explicit follows/unfollows properties.
-          if metric_name != metric["name"] &&
-              INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS.key?(metric["name"])
-            association.where(
-              metric_name: metric.fetch("name"),
+        association.klass.transaction do
+          values.each do |value|
+            # A total_value response carries no end_time. Without the requested day's
+            # boundary it would fall back to the sync clock, which leaves the row
+            # unattributable to a calendar day and defeats the uniqueness index.
+            observed_at = parse_time(value["end_time"]) || day_observed_at || @now
+            metric_name = value["normalized_metric_name"] || metric.fetch("name")
+            insight = association.find_or_initialize_by(
+              metric_name: metric_name,
               period: metric["period"],
               observed_at: observed_at
-            ).delete_all
+            )
+            raw_value = value["value"]
+            insight.assign_attributes(
+              value_numeric: numeric_value(raw_value),
+              value_payload: raw_value.is_a?(Hash) || raw_value.is_a?(Array) ? raw_value : {},
+              source_payload: metric.merge("value_entry" => value.except("normalized_metric_name"))
+            )
+            insight.save!
           end
+
+          reconcile_breakdown_siblings!(association, metric, values, day_observed_at)
         end
+    end
+
+    def reconcile_breakdown_siblings!(association, metric, values, day_observed_at)
+      expected = normalized_sibling_names(metric["name"])
+      return if expected.empty?
+
+      observed_times = values.filter_map { |value| parse_time(value["end_time"]) }.uniq
+      observed_times = [ day_observed_at || @now ] if observed_times.empty?
+      present = values.filter_map { |value| value["normalized_metric_name"] }.uniq
+      stale = expected - present
+      observed_times.each do |observed_at|
+        association.where(
+          metric_name: stale,
+          period: metric["period"],
+          observed_at: observed_at
+        ).delete_all if stale.any?
+
+        # Older follows_and_unfollows rows stored the enclosing payload with no
+        # numeric value. Its normalized siblings now fully replace that row.
+        if INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS.key?(metric["name"])
+          association.where(
+            metric_name: metric.fetch("name"),
+            period: metric["period"],
+            observed_at: observed_at
+          ).delete_all
+        end
+      end
+    end
+
+    def normalized_sibling_names(metric_name)
+      explicit = INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS[metric_name]
+      return explicit.values if explicit
+      return [ "#{metric_name}_organic", "#{metric_name}_paid" ] if
+        INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS.include?(metric_name)
+
+      []
     end
 
     def breakdown_values(metric)
@@ -277,10 +306,12 @@ module Metrics
 
     def paid_organic_values(metric)
       total = metric.dig("total_value", "value")
+      return [] if total.nil?
+
       results = Array(metric.dig("total_value", "breakdowns")).flat_map do |breakdown|
         Array(breakdown["results"])
       end
-      return [] if total.nil? || results.empty?
+      return [ { "value" => total } ] if results.empty?
 
       paid = results.sum do |result|
         Array(result["dimension_values"]).include?("AD") ? result["value"].to_d : 0.to_d

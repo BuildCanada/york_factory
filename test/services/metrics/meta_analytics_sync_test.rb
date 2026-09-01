@@ -390,6 +390,35 @@ class Metrics::MetaAnalyticsSyncTest < ActiveSupport::TestCase
     assert_equal 5, account.insights.where(metric_name: "views").count
   end
 
+  test "backfill scopes time-series metrics across bounded historical ranges" do
+    client = FakeClient.new
+    sync = Metrics::MetaAnalyticsSync.new(
+      client: client,
+      now: Time.zone.parse("2026-08-20 02:30:00"),
+      time_zone: "America/Los_Angeles"
+    )
+    account = sync.sync_account!(
+      platform: "instagram",
+      account_key: "build_toronto",
+      platform_account_id: "ig-123",
+      account_metrics: [],
+      days: []
+    )
+
+    sync.backfill_account_insights!(
+      account, metric_names: %w[reach],
+      from: Date.new(2026, 1, 1), to: Date.new(2026, 2, 4)
+    )
+
+    requests = client.requests.select { |_path, params| params[:metric] == "reach" }
+    assert_equal 2, requests.length
+    zone = ActiveSupport::TimeZone["America/Los_Angeles"]
+    assert_equal [
+      [ zone.parse("2026-01-01").to_i, zone.parse("2026-01-31").to_i ],
+      [ zone.parse("2026-01-31").to_i, zone.parse("2026-02-05").to_i ]
+    ], requests.map { |_path, params| params.values_at(:since, :until) }
+  end
+
   test "historical discovery schedules a real baseline at the backfill time" do
     now = Time.zone.parse("2026-08-12 13:00:00")
     sync = Metrics::MetaAnalyticsSync.new(client: FakeClient.new, now: now)

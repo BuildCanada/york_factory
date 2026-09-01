@@ -84,14 +84,11 @@ module Admin
             accept: ".csv,.zip",
             file_label: "CSV or ZIP"
           },
-          {
-            name: "Build Canada Instagram",
-            last_date: ::Metrics::InstagramStat.for_account("build_canada").filled.maximum(:date),
-            manual_path: new_admin_metrics_instagram_stat_path(account: "build_canada"),
-            manage_path: admin_metrics_instagram_stats_path(account: "build_canada"),
-            analytics_url: "https://business.instagram.com/",
-            manual_note: "Weekly entry (Mon–Sun)"
-          },
+          meta_source("Build Canada Instagram", "instagram", "build_canada"),
+          # The weekly form stays alongside the API card while the Graph API history
+          # is still being backfilled. Anything before the API's first synced day has
+          # no other source, so this is the only way to enter it.
+          instagram_manual_source("Build Canada Instagram (manual weekly)", "build_canada"),
           meta_source("Build Toronto Instagram", "instagram", "build_toronto"),
           meta_source("Build Canada Facebook", "facebook", "build_canada"),
           meta_source("Build Toronto Facebook", "facebook", "build_toronto")
@@ -99,6 +96,17 @@ module Admin
       end
 
       private
+
+      def instagram_manual_source(name, account_key)
+        {
+          name: name,
+          last_date: ::Metrics::InstagramStat.for_account(account_key).filled.maximum(:date),
+          manual_path: new_admin_metrics_instagram_stat_path(account: account_key),
+          manage_path: admin_metrics_instagram_stats_path(account: account_key),
+          analytics_url: "https://business.instagram.com/",
+          manual_note: "Weekly entry (Mon–Sun) · backfill only, superseded by the API"
+        }
+      end
 
       def meta_source(name, platform, account_key)
         account = ::Metrics::MetaAccount.find_by(platform: platform, account_key: account_key)

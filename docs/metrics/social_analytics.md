@@ -50,6 +50,8 @@ question is specifically about content-level performance.
 Zernio account-day collection uses platform-specific APIs. LinkedIn is read from the
 organization aggregate time series in bounded windows; its `until` date is exclusive.
 TikTok is read from daily metrics with `source = all` and `attribution = received`.
+Requests are also split at calendar-year boundaries because Zernio can return an empty
+TikTok result for a cross-year range even when the in-year dates contain data.
 Both APIs omit inactive dates, so the scraper stores explicit zero rows for newly
 encountered missing dates from the first observed day onward. A later sparse response
 does not erase a previously stored day or field; explicit values returned for that

@@ -13,8 +13,18 @@ module Metrics
       views accounts_engaged total_interactions profile_links_taps
     ].freeze
     INSTAGRAM_ACCOUNT_BREAKDOWNS = {
-      "follows_and_unfollows" => "follow_type"
+      "follows_and_unfollows" => "follow_type",
+      "views" => "media_product_type",
+      "reach" => "media_product_type",
+      "total_interactions" => "media_product_type"
     }.freeze
+    INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS = {
+      "follows_and_unfollows" => {
+        "FOLLOWER" => "follows",
+        "NON_FOLLOWER" => "unfollows"
+      }
+    }.freeze
+    INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS = %w[views reach total_interactions].freeze
     DEFAULT_ACCOUNT_METRICS = {
       "facebook" => %w[
         page_post_engagements page_daily_follows page_daily_unfollows
@@ -204,7 +214,8 @@ module Metrics
     end
 
     def sync_metric!(association, metric, day_observed_at: nil)
-        values = Array(metric["values"])
+        values = breakdown_values(metric)
+        values = Array(metric["values"]) if values.empty?
         values = [ { "value" => metric["value"] } ] if values.empty? && metric.key?("value")
         if values.empty? && metric.key?("total_value")
           total_value = metric["total_value"]
@@ -216,8 +227,9 @@ module Metrics
           # boundary it would fall back to the sync clock, which leaves the row
           # unattributable to a calendar day and defeats the uniqueness index.
           observed_at = parse_time(value["end_time"]) || day_observed_at || @now
+          metric_name = value["normalized_metric_name"] || metric.fetch("name")
           insight = association.find_or_initialize_by(
-            metric_name: metric.fetch("name"),
+            metric_name: metric_name,
             period: metric["period"],
             observed_at: observed_at
           )
@@ -225,10 +237,61 @@ module Metrics
           insight.assign_attributes(
             value_numeric: numeric_value(raw_value),
             value_payload: raw_value.is_a?(Hash) || raw_value.is_a?(Array) ? raw_value : {},
-            source_payload: metric.merge("value_entry" => value)
+            source_payload: metric.merge("value_entry" => value.except("normalized_metric_name"))
           )
           insight.save!
+
+          # Rows written before breakdown normalization stored the enclosing metric
+          # with a nil numeric value. Remove that stale row as soon as the same day
+          # is successfully replaced by its explicit follows/unfollows properties.
+          if metric_name != metric["name"] &&
+              INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS.key?(metric["name"])
+            association.where(
+              metric_name: metric.fetch("name"),
+              period: metric["period"],
+              observed_at: observed_at
+            ).delete_all
+          end
         end
+    end
+
+    def breakdown_values(metric)
+      names = INSTAGRAM_ACCOUNT_BREAKDOWN_METRICS[metric["name"]]
+      return paid_organic_values(metric) if INSTAGRAM_ACCOUNT_PAID_ORGANIC_METRICS.include?(metric["name"])
+      return [] unless names
+
+      Array(metric.dig("total_value", "breakdowns")).flat_map do |breakdown|
+        Array(breakdown["results"]).filter_map do |result|
+          dimension = Array(result["dimension_values"]).first
+          normalized_name = names[dimension]
+          next unless normalized_name
+
+          {
+            "value" => result["value"],
+            "normalized_metric_name" => normalized_name,
+            "dimension_values" => result["dimension_values"]
+          }
+        end
+      end
+    end
+
+    def paid_organic_values(metric)
+      total = metric.dig("total_value", "value")
+      results = Array(metric.dig("total_value", "breakdowns")).flat_map do |breakdown|
+        Array(breakdown["results"])
+      end
+      return [] if total.nil? || results.empty?
+
+      paid = results.sum do |result|
+        Array(result["dimension_values"]).include?("AD") ? result["value"].to_d : 0.to_d
+      end
+      organic = total.to_d - paid
+      base_name = metric.fetch("name")
+      [
+        { "value" => total },
+        { "value" => organic, "normalized_metric_name" => "#{base_name}_organic" },
+        { "value" => paid, "normalized_metric_name" => "#{base_name}_paid" }
+      ]
     end
 
     def insight_queries(platform, scope, metric_names, days: nil)
@@ -243,7 +306,7 @@ module Metrics
       end
 
       breakdown_names = names & INSTAGRAM_ACCOUNT_BREAKDOWNS.keys
-      total_names = names & INSTAGRAM_ACCOUNT_TOTAL_METRICS
+      total_names = (names & INSTAGRAM_ACCOUNT_TOTAL_METRICS) - breakdown_names
       time_series_names = names - breakdown_names - total_names
       queries = []
       if time_series_names.any?
@@ -287,7 +350,10 @@ module Metrics
     def day_window(day)
       start_of_day = @time_zone.parse(day.to_date.to_s)
       end_of_day = start_of_day + 1.day
-      { since: start_of_day.to_i, until: end_of_day.to_i, observed_at: end_of_day }
+      # Meta treats an epoch `until` exactly on midnight as inclusive, despite the
+      # equivalent YYYY-MM-DD boundary being exclusive. Stop one second short so
+      # adjacent day requests never include the following day twice.
+      { since: start_of_day.to_i, until: end_of_day.to_i - 1, observed_at: end_of_day }
     end
 
     def each_page(path, params:, follow_paging: true)

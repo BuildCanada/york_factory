@@ -43,7 +43,7 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
       platform_account_id: "ig-account", username: "build_toronto"
     )
     account.insights.create!(
-      metric_name: "reach", period: "day", observed_at: @now,
+      metric_name: "reach_organic", period: "day", observed_at: @now,
       value_numeric: 1_000
     )
     medium = account.media.create!(
@@ -79,6 +79,58 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     refute Metrics::SocialMetricObservation.exists?(
       social_entity_id: "content:instagram:ig-post", metric_name: "unique_reach"
     )
+  end
+
+  test "normalizes Meta follower gains and losses as separate account metrics" do
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-account", username: "build_toronto"
+    )
+    account.insights.create!(
+      metric_name: "follows", period: "day", observed_at: @now,
+      value_numeric: 17
+    )
+    account.insights.create!(
+      metric_name: "unfollows", period: "day", observed_at: @now,
+      value_numeric: 3
+    )
+
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    gained = Metrics::SocialMetricObservation.find_by!(
+      social_entity_id: "account:instagram:build_toronto",
+      metric_name: "followers_gained"
+    )
+    lost = Metrics::SocialMetricObservation.find_by!(
+      social_entity_id: "account:instagram:build_toronto",
+      metric_name: "followers_lost"
+    )
+    assert_equal 17, gained.value
+    assert_equal 3, lost.value
+  end
+
+  test "keeps Meta paid and organic account metrics separate" do
+    account = Metrics::MetaAccount.create!(
+      platform: "instagram", account_key: "build_toronto",
+      platform_account_id: "ig-account", username: "build_toronto"
+    )
+    account.insights.create!(
+      metric_name: "views_organic", period: "day", observed_at: @now,
+      value_numeric: 90
+    )
+    account.insights.create!(
+      metric_name: "views_paid", period: "day", observed_at: @now,
+      value_numeric: 10
+    )
+
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    views = Metrics::SocialMetricObservation.where(
+      social_entity_id: "account:instagram:build_toronto",
+      metric_name: "content_views"
+    ).order(:paid)
+    assert_equal [ false, true ], views.pluck(:paid)
+    assert_equal [ 90, 10 ], views.pluck(:value).map(&:to_i)
   end
 
   test "reports current follower totals for every social platform" do

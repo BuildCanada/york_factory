@@ -13,6 +13,12 @@ cursor. Both tables are rebuilt idempotently every six hours by
 `Metrics::RefreshSocialAnalyticsJob`. Rows no longer present upstream remain available with
 `active = false`, so incremental sync does not depend on delete propagation.
 
+`updated_at` moves only when a row's values actually change, including the flip to
+`active = false`. `refreshed_at` is the separate "this run saw the row" stamp, and is not
+part of the change comparison. A rebuild that finds nothing new therefore advances no
+cursor and syncs no rows; do not treat `refreshed_at` as the incremental cursor or every
+sync becomes a full table transfer.
+
 For normal reports, filter observations to:
 
 ```sql
@@ -31,6 +37,16 @@ reportable for every configured social platform because the direct exports do no
 provide a comparable current follower total. Direct Meta content snapshots are also cross-checks: Instagram's
 account-level daily insights are the reporting grain, so adding its post-level snapshots would
 count the channel twice.
+
+`reporting_source` alone does not make the rows summable. It spans two grains that are
+different units: `account_day` rows (X, Substack, Instagram) are per-day increments, while
+`account_snapshot` and `content_snapshot` rows (LinkedIn, TikTok) are lifetime-to-date
+values for one piece of content. Content rows also set `period_start` to the content's
+publication time, so a `period_start` window filter selects *content published* in the
+window rather than *views that occurred* in it. For cumulative rows the window axis is
+`observed_at`, and the in-window value is the latest snapshot minus the last snapshot
+before the window opened. `docs/metrics/queries/content_views.sql` is the canonical
+roll-up; use it rather than writing a `SUM(value)` by hand.
 
 `content_views` is a volume measure. `unique_reach` is reserved for an account-level value
 that the platform has deduplicated for its reporting window. Per-content reach is named

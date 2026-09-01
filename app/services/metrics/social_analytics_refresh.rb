@@ -1,6 +1,12 @@
 require "digest"
 
 class Metrics::SocialAnalyticsRefresh
+  # Chunk the upserts so one run does not build a single multi-hundred-thousand
+  # row INSERT statement.
+  UPSERT_BATCH_SIZE = 1_000
+  IDENTITY_COLUMNS = %i[id].freeze
+  BOOKKEEPING_COLUMNS = %i[created_at updated_at refreshed_at].freeze
+
   AD_METRICS = %w[
     spend impressions reach clicks engagements conversions conversion_value
     ctr cpc cpm cost_per_conversion roas
@@ -75,7 +81,10 @@ class Metrics::SocialAnalyticsRefresh
   }.freeze
 
   def initialize(now: Time.current)
-    @now = now
+    # Rounded to Postgres timestamp(6) precision so a row written with
+    # refreshed_at = @now compares equal to @now afterwards; without this,
+    # deactivate_stale! would see every row as untouched and deactivate it.
+    @now = now.round(6)
     @entities = {}
     @observations = {}
   end
@@ -375,19 +384,58 @@ class Metrics::SocialAnalyticsRefresh
     end
   end
 
+  # PostHog syncs both tables incrementally with `updated_at` as the cursor
+  # (see docs/metrics/social_analytics.md), so `updated_at` must move only when
+  # a row's values actually change. `refreshed_at` carries "seen in this run"
+  # instead, which is also what lets us deactivate the rows we no longer produce
+  # without enumerating every id.
   def persist!
     Metrics::SocialEntity.transaction do
-      Metrics::SocialEntity.update_all(active: false, refreshed_at: @now, updated_at: @now)
-      Metrics::SocialEntity.upsert_all(@entities.values, unique_by: :id) if @entities.any?
-      Metrics::SocialMetricObservation.update_all(
-        active: false, refreshed_at: @now, updated_at: @now
-      )
-      if @observations.any?
-        Metrics::SocialMetricObservation.upsert_all(
-          @observations.values, unique_by: :id
-        )
-      end
+      upsert_rows!(Metrics::SocialEntity, @entities.values)
+      upsert_rows!(Metrics::SocialMetricObservation, @observations.values)
+      deactivate_stale!(Metrics::SocialEntity)
+      deactivate_stale!(Metrics::SocialMetricObservation)
     end
+  end
+
+  def upsert_rows!(model, rows)
+    return if rows.empty?
+
+    compared = rows.first.keys - IDENTITY_COLUMNS - BOOKKEEPING_COLUMNS
+    clause = Arel.sql(on_duplicate_clause(model, compared))
+    rows.each_slice(UPSERT_BATCH_SIZE) do |slice|
+      model.upsert_all(slice, unique_by: :id, on_duplicate: clause)
+    end
+  end
+
+  # Assigns every real column, always advances refreshed_at, and advances
+  # updated_at only when at least one compared column differs. created_at is
+  # left out entirely so the row keeps its original insert time.
+  def on_duplicate_clause(model, compared)
+    connection = model.connection
+    table = model.quoted_table_name
+    quoted = compared.map { |column| connection.quote_column_name(column) }
+
+    assignments = quoted.map { |column| "#{column} = excluded.#{column}" }
+    assignments << "#{connection.quote_column_name('refreshed_at')} = excluded.#{connection.quote_column_name('refreshed_at')}"
+    assignments << <<~SQL.squish
+      #{connection.quote_column_name('updated_at')} = CASE
+        WHEN ROW(#{quoted.map { |column| "#{table}.#{column}" }.join(', ')})
+             IS DISTINCT FROM ROW(#{quoted.map { |column| "excluded.#{column}" }.join(', ')})
+        THEN excluded.#{connection.quote_column_name('updated_at')}
+        ELSE #{table}.#{connection.quote_column_name('updated_at')}
+      END
+    SQL
+
+    assignments.join(", ")
+  end
+
+  # Anything still active that this run did not touch is no longer produced
+  # upstream. Only these rows genuinely changed, so only these bump updated_at.
+  def deactivate_stale!(model)
+    model.where(active: true)
+      .where(model.arel_table[:refreshed_at].lt(@now))
+      .update_all(active: false, updated_at: @now)
   end
 
   def account_entity_id(platform, account_key)

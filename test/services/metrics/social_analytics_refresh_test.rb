@@ -180,6 +180,49 @@ class Metrics::SocialAnalyticsRefreshTest < ActiveSupport::TestCase
     assert followers.all?(&:cumulative?)
   end
 
+  test "publishes Zernio account days without removing content snapshots" do
+    account = Metrics::SocialMediaAccount.create!(
+      zernio_account_id: "zernio-linkedin-daily", zernio_profile_id: "profile-linkedin",
+      profile_name: "Build Canada", platform: "linkedin", account_key: "build_canada",
+      username: "build-canada"
+    )
+    daily = account.daily_metrics.create!(
+      date: Date.new(2026, 8, 12), scraped_at: @now,
+      impressions: 125, unique_impressions: 100, clicks: 7,
+      organic_followers_gained: 4, paid_followers_gained: 2
+    )
+    post = account.posts.create!(
+      zernio_post_id: "linkedin-post", platform: "linkedin", status: "published",
+      published_at: @now - 2.days
+    )
+    snapshot = post.metric_snapshots.create!(
+      observed_at: @now, scraped_at: @now, impressions: 1_000
+    )
+
+    Metrics::SocialAnalyticsRefresh.new(now: @now).call
+
+    daily_views = Metrics::SocialMetricObservation.find_by!(
+      source_record_type: daily.class.name, source_record_id: daily.id.to_s,
+      metric_name: "content_views"
+    )
+    snapshot_views = Metrics::SocialMetricObservation.find_by!(
+      source_record_type: snapshot.class.name, source_record_id: snapshot.id.to_s,
+      metric_name: "content_views"
+    )
+    assert_equal "account_day", daily_views.grain
+    assert_equal 125, daily_views.value
+    assert_nil daily_views.paid
+    assert daily_views.reporting_source?
+    assert_equal "content_snapshot", snapshot_views.grain
+    assert snapshot_views.reporting_source?
+    follower_gains = Metrics::SocialMetricObservation.where(
+      source_record_type: daily.class.name, source_record_id: daily.id.to_s,
+      metric_name: "followers_gained"
+    ).order(:paid)
+    assert_equal [ false, true ], follower_gains.pluck(:paid)
+    assert_equal [ 4, 2 ], follower_gains.pluck(:value).map(&:to_i)
+  end
+
   test "links ad entities when provider platforms differ from channel platforms" do
     [ [ "twitter", "xads" ], [ "facebook", "meta" ] ].each do |channel, provider|
       account_key = "build_canada_#{channel}"

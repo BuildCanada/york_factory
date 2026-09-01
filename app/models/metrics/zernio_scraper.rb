@@ -3,6 +3,17 @@ module Metrics
     PAGE_SIZE = 100
     HISTORY_DAYS = 365
     AD_HISTORY_DAYS = 730
+    ACCOUNT_DAILY_PLATFORMS = %w[linkedin tiktok].freeze
+    ACCOUNT_DAILY_HISTORY_DAYS = 365
+    ACCOUNT_DAILY_LOOKBACK_DAYS = 7
+    LINKEDIN_DAILY_WINDOW_DAYS = 89
+    TIKTOK_DAILY_WINDOW_DAYS = 180
+
+    LINKEDIN_DAILY_FIELDS = %w[
+      impressions unique_impressions clicks likes comments shares engagement_rate
+      organic_followers_gained paid_followers_gained
+    ].freeze
+    TIKTOK_DAILY_FIELDS = %w[views likes comments shares].freeze
 
     SOCIAL_POST_TYPES = {
       "twitter" => [ "SocialPost::X" ],
@@ -62,6 +73,22 @@ module Metrics
         total: pagination.fetch("total"),
         next_page: current_page < pagination.fetch("pages") ? current_page + 1 : nil
       }
+    end
+
+    def sync_account_daily_metrics!(account_id:, from_date: nil, to_date: nil)
+      account = Metrics::SocialMediaAccount.find(account_id)
+      unless account.platform.in?(ACCOUNT_DAILY_PLATFORMS)
+        raise ArgumentError, "Daily account metrics are unsupported for #{account.platform}"
+      end
+
+      to_date = (to_date || @scraped_at.to_date).to_date
+      from_date = (from_date || account_daily_start_date(account, to_date)).to_date
+      return 0 if from_date > to_date
+
+      rows = account.platform == "linkedin" ?
+        linkedin_daily_rows(account, from_date, to_date) :
+        tiktok_daily_rows(account, from_date, to_date)
+      persist_account_daily_metrics!(account, rows, from_date:, to_date:)
     end
 
     def sync_ad_account!(account_id:)
@@ -130,6 +157,91 @@ module Metrics
     end
 
     private
+
+    def account_daily_start_date(account, to_date)
+      latest = account.daily_metrics.maximum(:date)
+      return to_date - ACCOUNT_DAILY_HISTORY_DAYS unless latest
+
+      [ latest - ACCOUNT_DAILY_LOOKBACK_DAYS, to_date - ACCOUNT_DAILY_HISTORY_DAYS ].max
+    end
+
+    def linkedin_daily_rows(account, from_date, to_date)
+      rows = {}
+      each_date_window(from_date, to_date, LINKEDIN_DAILY_WINDOW_DAYS) do |window_start, window_end|
+        response = @client.get("/analytics/linkedin/org-aggregate-analytics", params: {
+          accountId: account.zernio_account_id,
+          metrics: LINKEDIN_DAILY_FIELDS.join(","),
+          since: window_start.iso8601,
+          until: (window_end + 1).iso8601,
+          metricType: "time_series"
+        })
+        response.fetch("metrics", {}).each do |metric_name, metric_payload|
+          next unless metric_name.in?(LINKEDIN_DAILY_FIELDS)
+
+          Array(metric_payload["values"]).each do |value|
+            date = Date.iso8601(value.fetch("date"))
+            rows[date] ||= { "date" => date.iso8601, "metrics" => {} }
+            rows[date]["metrics"][metric_name] = value["value"]
+          end
+        end
+      end
+      rows
+    end
+
+    def tiktok_daily_rows(account, from_date, to_date)
+      rows = {}
+      each_date_window(from_date, to_date, TIKTOK_DAILY_WINDOW_DAYS) do |window_start, window_end|
+        response = @client.get("/analytics/daily-metrics", params: {
+          accountId: account.zernio_account_id,
+          platform: "tiktok",
+          fromDate: window_start.iso8601,
+          toDate: window_end.iso8601,
+          source: "all",
+          attribution: "received"
+        })
+        Array(response["dailyData"]).each do |payload|
+          date = Date.iso8601(payload.fetch("date"))
+          rows[date] = payload.slice("date", "metrics", "platforms", "postCount")
+        end
+      end
+      rows
+    end
+
+    def persist_account_daily_metrics!(account, rows, from_date:, to_date:)
+      first_source_date = rows.keys.min
+      fill_start = account.daily_metrics.exists? ? from_date : first_source_date
+      return 0 unless fill_start
+
+      fields = account.platform == "linkedin" ? LINKEDIN_DAILY_FIELDS : TIKTOK_DAILY_FIELDS
+      (fill_start..to_date).each do |date|
+        payload = rows[date]
+        metric = account.daily_metrics.find_or_initialize_by(date:)
+        next if payload.nil? && metric.persisted?
+
+        values = payload&.fetch("metrics", {}) || {}
+        attributes = fields.to_h do |field|
+          value = values.key?(field) ? values[field] : metric.public_send(field)
+          [ field, value || 0 ]
+        end
+        source_payload = if payload && metric.persisted?
+          metric.source_payload.deep_merge(payload)
+        else
+          payload || { "date" => date.iso8601, "zeroFilled" => true }
+        end
+        metric.assign_attributes(attributes.merge(source_payload:))
+        save_changed_snapshot!(metric)
+      end
+      (to_date - fill_start).to_i + 1
+    end
+
+    def each_date_window(from_date, to_date, days)
+      window_start = from_date
+      while window_start <= to_date
+        window_end = [ window_start + days - 1, to_date ].min
+        yield window_start, window_end
+        window_start = window_end + 1
+      end
+    end
 
     def analytics_params(page)
       {

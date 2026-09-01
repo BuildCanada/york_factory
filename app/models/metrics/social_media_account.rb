@@ -11,6 +11,11 @@ class Metrics::SocialMediaAccount < ApplicationRecord
     foreign_key: :social_media_account_id,
     inverse_of: :account,
     dependent: :destroy
+  has_many :daily_metrics,
+    class_name: "Metrics::SocialMediaAccountDailyMetric",
+    foreign_key: :social_media_account_id,
+    inverse_of: :account,
+    dependent: :destroy
   has_many :ad_accounts,
     class_name: "Metrics::SocialMediaAdAccount",
     foreign_key: :social_media_account_id,

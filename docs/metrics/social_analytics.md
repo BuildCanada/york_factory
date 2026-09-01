@@ -40,15 +40,27 @@ provide a comparable current follower total. Direct Meta content snapshots are a
 account-level daily insights are the reporting grain, so adding its post-level snapshots would
 count the channel twice.
 
-`reporting_source` alone does not make the rows summable. It spans two grains that are
-different units: `account_day` rows (X, Substack, Instagram) are per-day increments, while
-`account_snapshot` and `content_snapshot` rows (LinkedIn, TikTok) are lifetime-to-date
-values for one piece of content. Content rows also set `period_start` to the content's
-publication time, so a `period_start` window filter selects *content published* in the
-window rather than *views that occurred* in it. For cumulative rows the window axis is
-`observed_at`, and the in-window value is the latest snapshot minus the last snapshot
-before the window opened. `docs/metrics/queries/content_views.sql` is the canonical
-roll-up; use it rather than writing a `SUM(value)` by hand.
+`reporting_source` alone does not make the rows summable. LinkedIn and TikTok now have
+both per-day account observations and lifetime-to-date content snapshots. Both remain
+reportable because the snapshots are useful cross-checks, but they must not be added
+together. For a daily downstream series, filter `grain = 'account_day'`. Content rows
+set `period_start` to the content's publication time and should only be used when the
+question is specifically about content-level performance.
+
+Zernio account-day collection uses platform-specific APIs. LinkedIn is read from the
+organization aggregate time series in bounded windows; its `until` date is exclusive.
+TikTok is read from daily metrics with `source = all` and `attribution = received`.
+Both APIs omit inactive dates, so the scraper stores explicit zero rows for newly
+encountered missing dates from the first observed day onward. A later sparse response
+does not erase a previously stored day or field; explicit values returned for that
+day still capture upstream revisions. The initial run requests one year of history
+and later runs re-request a trailing seven days.
+
+LinkedIn and TikTok account-level view totals do not expose a reliable paid/organic
+split through these endpoints, so those observations carry `paid = NULL` (combined).
+Instagram publishes separate organic and paid account-day views. Queries for organic
+views with a combined fallback should use `paid IS NOT TRUE`: that selects organic rows
+where the platform provides the split and combined rows where it does not.
 
 `content_views` is a volume measure. `unique_reach` is reserved for an account-level value
 that the platform has deduplicated for its reporting window. Per-content reach is named

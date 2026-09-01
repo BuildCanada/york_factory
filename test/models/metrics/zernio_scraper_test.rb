@@ -142,6 +142,127 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert snapshot.updated_at > 1.minute.ago
   end
 
+  test "imports LinkedIn organization time series as zero-filled account days" do
+    @account_payload.merge!(
+      "_id" => "account-linkedin-build-canada",
+      "platform" => "linkedin"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-linkedin-build-canada")
+    response = { "metrics" => {
+      "impressions" => { "values" => [
+        { "date" => "2026-08-01", "value" => 100 },
+        { "date" => "2026-08-03", "value" => 300 }
+      ] },
+      "unique_impressions" => { "values" => [
+        { "date" => "2026-08-01", "value" => 80 },
+        { "date" => "2026-08-03", "value" => 240 }
+      ] },
+      "engagement_rate" => { "values" => [
+        { "date" => "2026-08-01", "value" => 0.05 }
+      ] }
+    } }
+    client = fake_client("/analytics/linkedin/org-aggregate-analytics" => response)
+
+    count = described_scraper(client).sync_account_daily_metrics!(
+      account_id: account.id, from_date: Date.new(2026, 8, 1), to_date: Date.new(2026, 8, 3)
+    )
+
+    assert_equal 3, count
+    assert_equal [ 100, 0, 300 ], account.daily_metrics.order(:date).pluck(:impressions)
+    assert_equal [ 80, 0, 240 ], account.daily_metrics.order(:date).pluck(:unique_impressions)
+    assert account.daily_metrics.find_by!(date: Date.new(2026, 8, 2)).source_payload["zeroFilled"]
+    request = client.requests.sole.last
+    assert_equal "time_series", request[:metricType]
+    assert_equal "2026-08-01", request[:since]
+    assert_equal "2026-08-04", request[:until]
+  end
+
+  test "imports TikTok received-attribution metrics as account days" do
+    @account_payload.merge!(
+      "_id" => "account-tiktok-build-canada",
+      "platform" => "tiktok"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-tiktok-build-canada")
+    response = { "dailyData" => [
+      { "date" => "2026-08-01", "metrics" => {
+        "views" => 500, "likes" => 20, "comments" => 2, "shares" => 3
+      } },
+      { "date" => "2026-08-03", "metrics" => {
+        "views" => 750, "likes" => 30, "comments" => 4, "shares" => 5
+      } }
+    ] }
+    client = fake_client("/analytics/daily-metrics" => response)
+
+    described_scraper(client).sync_account_daily_metrics!(
+      account_id: account.id, from_date: Date.new(2026, 8, 1), to_date: Date.new(2026, 8, 3)
+    )
+
+    assert_equal [ 500, 0, 750 ], account.daily_metrics.order(:date).pluck(:views)
+    request = client.requests.sole.last
+    assert_equal "received", request[:attribution]
+    assert_equal "all", request[:source]
+    assert_equal "tiktok", request[:platform]
+  end
+
+  test "preserves a stored day when a later sparse response omits it" do
+    @account_payload.merge!(
+      "_id" => "account-tiktok-build-canada",
+      "platform" => "tiktok"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-tiktok-build-canada")
+    account.daily_metrics.create!(
+      date: Date.new(2026, 8, 1), views: 500, likes: 20,
+      scraped_at: @now - 1.day, source_payload: { "date" => "2026-08-01" }
+    )
+
+    described_scraper(fake_client("/analytics/daily-metrics" => { "dailyData" => [] }))
+      .sync_account_daily_metrics!(
+        account_id: account.id,
+        from_date: Date.new(2026, 8, 1),
+        to_date: Date.new(2026, 8, 2)
+      )
+
+    stored = account.daily_metrics.find_by!(date: Date.new(2026, 8, 1))
+    assert_equal 500, stored.views
+    assert_equal 20, stored.likes
+    assert_equal(@now - 1.day, stored.scraped_at)
+    assert account.daily_metrics.find_by!(date: Date.new(2026, 8, 2)).source_payload["zeroFilled"]
+  end
+
+  test "preserves stored fields omitted from a partial LinkedIn day" do
+    @account_payload.merge!(
+      "_id" => "account-linkedin-build-canada",
+      "platform" => "linkedin"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-linkedin-build-canada")
+    account.daily_metrics.create!(
+      date: Date.new(2026, 8, 1), impressions: 500, unique_impressions: 400,
+      scraped_at: @now - 1.day,
+      source_payload: { "date" => "2026-08-01", "metrics" => {
+        "impressions" => 500, "unique_impressions" => 400
+      } }
+    )
+    response = { "metrics" => {
+      "impressions" => { "values" => [ { "date" => "2026-08-01", "value" => 550 } ] }
+    } }
+
+    described_scraper(fake_client("/analytics/linkedin/org-aggregate-analytics" => response))
+      .sync_account_daily_metrics!(
+        account_id: account.id,
+        from_date: Date.new(2026, 8, 1),
+        to_date: Date.new(2026, 8, 1)
+      )
+
+    stored = account.daily_metrics.find_by!(date: Date.new(2026, 8, 1))
+    assert_equal 550, stored.impressions
+    assert_equal 400, stored.unique_impressions
+    assert_equal 400, stored.source_payload.dig("metrics", "unique_impressions")
+  end
+
   test "imports ad accounts, campaigns, ads, and every daily analytics payload" do
     scraper_for(accounts_response).sync_accounts!
     account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")

@@ -989,6 +989,52 @@ CREATE TABLE public.metrics_social_entities (
 
 
 --
+-- Name: metrics_social_media_account_daily_metrics; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.metrics_social_media_account_daily_metrics (
+    id bigint NOT NULL,
+    social_media_account_id bigint NOT NULL,
+    date date NOT NULL,
+    impressions bigint,
+    unique_impressions bigint,
+    reach bigint,
+    views bigint,
+    likes bigint,
+    comments bigint,
+    shares bigint,
+    saves bigint,
+    clicks bigint,
+    engagement_rate numeric(18,10),
+    organic_followers_gained bigint,
+    paid_followers_gained bigint,
+    scraped_at timestamp(6) without time zone NOT NULL,
+    source_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: metrics_social_media_account_daily_metrics_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.metrics_social_media_account_daily_metrics_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: metrics_social_media_account_daily_metrics_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.metrics_social_media_account_daily_metrics_id_seq OWNED BY public.metrics_social_media_account_daily_metrics.id;
+
+
+--
 -- Name: metrics_social_media_account_metric_snapshots; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4894,6 +4940,13 @@ ALTER TABLE ONLY public.metrics_meta_media_insights ALTER COLUMN id SET DEFAULT 
 
 
 --
+-- Name: metrics_social_media_account_daily_metrics id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_daily_metrics ALTER COLUMN id SET DEFAULT nextval('public.metrics_social_media_account_daily_metrics_id_seq'::regclass);
+
+
+--
 -- Name: metrics_social_media_account_metric_snapshots id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5656,6 +5709,14 @@ ALTER TABLE ONLY public.metrics_meta_media
 
 ALTER TABLE ONLY public.metrics_social_entities
     ADD CONSTRAINT metrics_social_entities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metrics_social_media_account_daily_metrics metrics_social_media_account_daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_daily_metrics
+    ADD CONSTRAINT metrics_social_media_account_daily_metrics_pkey PRIMARY KEY (id);
 
 
 --
@@ -7366,6 +7427,13 @@ CREATE UNIQUE INDEX ux_metrics_substack_posts_publication_post ON public.metrics
 
 
 --
+-- Name: ux_social_media_account_daily_metrics_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_social_media_account_daily_metrics_date ON public.metrics_social_media_account_daily_metrics USING btree (social_media_account_id, date);
+
+
+--
 -- Name: ux_social_media_account_snapshots_observed; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8951,6 +9019,14 @@ ALTER TABLE ONLY public.metrics_substack_posts
 
 
 --
+-- Name: metrics_social_media_account_daily_metrics fk_rails_ce7da03586; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metrics_social_media_account_daily_metrics
+    ADD CONSTRAINT fk_rails_ce7da03586 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: metrics_meta_media fk_rails_cf10656876; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9917,6 +9993,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260901000001'),
 ('20260901000000'),
 ('20260813000001'),
 ('20260812000005'),

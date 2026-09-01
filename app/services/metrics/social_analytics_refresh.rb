@@ -15,6 +15,19 @@ class Metrics::SocialAnalyticsRefresh
     impressions reach likes comments shares saves clicks views follows
     reels_average_watch_time reels_total_watch_time video_duration_seconds engagement_rate
   ].freeze
+  ZERNIO_ACCOUNT_DAILY_METRICS = {
+    "linkedin" => {
+      "impressions" => "content_views", "unique_impressions" => "unique_reach",
+      "clicks" => "clicks", "likes" => "likes", "comments" => "comments",
+      "shares" => "shares", "engagement_rate" => "engagement_rate",
+      "organic_followers_gained" => "followers_gained",
+      "paid_followers_gained" => "followers_gained"
+    },
+    "tiktok" => {
+      "views" => "content_views", "likes" => "likes", "comments" => "comments",
+      "shares" => "shares"
+    }
+  }.freeze
   SUBSTACK_POST_METRICS = %w[
     views cumulative_views opens opened open_rate clicks clicked click_through_rate
     delivered sent shares signups cumulative_signups subscribes cumulative_subscribes
@@ -151,6 +164,26 @@ class Metrics::SocialAnalyticsRefresh
           period_end: snapshot.observed_at, observed_at: snapshot.observed_at,
           reporting_source: true, cumulative: true
         )
+      end
+
+      account.daily_metrics.find_each do |metric|
+        period_start = metric.date.in_time_zone.beginning_of_day
+        ZERNIO_ACCOUNT_DAILY_METRICS.fetch(account.platform, {}).each do |source_metric, metric_name|
+          paid = if source_metric == "organic_followers_gained"
+            false
+          elsif source_metric == "paid_followers_gained"
+            true
+          end
+          add_observation(
+            entity_id: account_id, record: metric, platform: account.platform,
+            account_key: account.account_key, source: "zernio", grain: "account_day",
+            metric_name:, source_metric_name: source_metric,
+            value: metric.public_send(source_metric), period_start:,
+            period_end: period_start + 1.day, observed_at: period_start + 1.day,
+            reporting_source: true, paid:,
+            unit: source_metric == "engagement_rate" ? "ratio" : "count"
+          )
+        end
       end
 
       account.posts.find_each do |post|

@@ -101,6 +101,8 @@ because Meta keeps revising a day's totals after midnight. Re-requests upsert on
 
 To recover history, or days captured before this behaviour existed, use
 `Metrics::BackfillMetaAccountInsightsJob` or the `meta_insights:backfill` rake task.
+Timestamped time-series metrics such as `reach` are requested in bounded 30-day
+ranges; total-value metrics remain one request per account day.
 Rows written by the older code carry the sync clock rather than a day boundary;
 `meta_insights:undated` lists them and `meta_insights:purge_undated` removes them.
 Clear them before backfilling the same dates, or the two sets sum together.

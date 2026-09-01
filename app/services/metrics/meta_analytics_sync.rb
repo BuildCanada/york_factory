@@ -354,8 +354,16 @@ module Metrics
       time_series_names = names - breakdown_names - total_names
       queries = []
       if time_series_names.any?
-        # These come back with a real end_time per day, so they need no day scoping.
-        queries << insight_query(default_params.merge(metric: time_series_names.join(",")))
+        # These come back with a real end_time per day, so one bounded request can
+        # contain several days. Keep ranges small enough for Meta and, critically,
+        # include the requested historical dates during a backfill.
+        (days.presence || default_sync_days).each_slice(30) do |slice|
+          window = time_series_window(slice.first, slice.last)
+          queries << insight_query(default_params.merge(
+            metric: time_series_names.join(","),
+            since: window.fetch(:since), until: window.fetch(:until)
+          ))
+        end
       end
 
       # total_value metrics aggregate over the whole requested window and return no
@@ -398,6 +406,15 @@ module Metrics
       # equivalent YYYY-MM-DD boundary being exclusive. Stop one second short so
       # adjacent day requests never include the following day twice.
       { since: start_of_day.to_i, until: end_of_day.to_i - 1, observed_at: end_of_day }
+    end
+
+    # Time-series responses use `end_time` boundaries and need the final midnight
+    # included so Meta returns the value for the last requested calendar day.
+    def time_series_window(first_day, last_day)
+      {
+        since: @time_zone.parse(first_day.to_date.to_s).to_i,
+        until: @time_zone.parse((last_day.to_date + 1).to_s).to_i
+      }
     end
 
     def each_page(path, params:, follow_paging: true)

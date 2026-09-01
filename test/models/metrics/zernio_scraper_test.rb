@@ -206,6 +206,32 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert_equal "tiktok", request[:platform]
   end
 
+  test "preserves a stored day when a later sparse response omits it" do
+    @account_payload.merge!(
+      "_id" => "account-tiktok-build-canada",
+      "platform" => "tiktok"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-tiktok-build-canada")
+    account.daily_metrics.create!(
+      date: Date.new(2026, 8, 1), views: 500, likes: 20,
+      scraped_at: @now - 1.day, source_payload: { "date" => "2026-08-01" }
+    )
+
+    described_scraper(fake_client("/analytics/daily-metrics" => { "dailyData" => [] }))
+      .sync_account_daily_metrics!(
+        account_id: account.id,
+        from_date: Date.new(2026, 8, 1),
+        to_date: Date.new(2026, 8, 2)
+      )
+
+    stored = account.daily_metrics.find_by!(date: Date.new(2026, 8, 1))
+    assert_equal 500, stored.views
+    assert_equal 20, stored.likes
+    assert_equal(@now - 1.day, stored.scraped_at)
+    assert account.daily_metrics.find_by!(date: Date.new(2026, 8, 2)).source_payload["zeroFilled"]
+  end
+
   test "imports ad accounts, campaigns, ads, and every daily analytics payload" do
     scraper_for(accounts_response).sync_accounts!
     account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-twitter-build-canada")

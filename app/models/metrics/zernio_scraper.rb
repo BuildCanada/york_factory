@@ -215,8 +215,10 @@ module Metrics
       fields = account.platform == "linkedin" ? LINKEDIN_DAILY_FIELDS : TIKTOK_DAILY_FIELDS
       (fill_start..to_date).each do |date|
         payload = rows[date]
-        values = payload&.fetch("metrics", {}) || {}
         metric = account.daily_metrics.find_or_initialize_by(date:)
+        next if payload.nil? && metric.persisted?
+
+        values = payload&.fetch("metrics", {}) || {}
         attributes = fields.to_h { |field| [ field, values.fetch(field, 0) ] }
         source_payload = payload || { "date" => date.iso8601, "zeroFilled" => true }
         metric.assign_attributes(attributes.merge(source_payload:))

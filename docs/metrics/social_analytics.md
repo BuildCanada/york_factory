@@ -50,9 +50,11 @@ question is specifically about content-level performance.
 Zernio account-day collection uses platform-specific APIs. LinkedIn is read from the
 organization aggregate time series in bounded windows; its `until` date is exclusive.
 TikTok is read from daily metrics with `source = all` and `attribution = received`.
-Both APIs omit inactive dates, so the scraper stores explicit zero rows from the first
-observed day onward. The initial run requests one year of history and later runs
-re-request a trailing seven days so upstream revisions are captured.
+Both APIs omit inactive dates, so the scraper stores explicit zero rows for newly
+encountered missing dates from the first observed day onward. A later sparse response
+does not erase a previously stored day; explicit values returned for that day still
+capture upstream revisions. The initial run requests one year of history and later
+runs re-request a trailing seven days.
 
 LinkedIn and TikTok account-level view totals do not expose a reliable paid/organic
 split through these endpoints, so those observations carry `paid = NULL` (combined).

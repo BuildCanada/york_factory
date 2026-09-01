@@ -28,7 +28,14 @@ class Metrics::ScrapeZernioSocialMediaJob < ApplicationJob
     step :sync_account_daily_metrics, start: 0 do |step|
       Metrics::SocialMediaAccount.where(platform: Metrics::ZernioScraper::ACCOUNT_DAILY_PLATFORMS)
         .where(id: (step.cursor + 1)..).find_each do |account|
-          @scraper.sync_account_daily_metrics!(account_id: account.id)
+          begin
+            @scraper.sync_account_daily_metrics!(account_id: account.id)
+          rescue Metrics::ZernioClient::Error => error
+            Rails.logger.error(
+              "[Zernio] daily metrics failed for #{account.platform} " \
+                "account #{account.zernio_account_id}: #{error.message}"
+            )
+          end
           step.advance! from: account.id
         end
     end

@@ -9,14 +9,22 @@
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
 ARG RUBY_VERSION=4.0.2
+FROM node:22-bookworm-slim AS report_tools
+WORKDIR /reports
+COPY reports/package.json reports/package-lock.json ./
+RUN npm ci --omit=dev
+
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 # Rails app lives here
 WORKDIR /rails
+COPY --from=report_tools /usr/local/bin/node /usr/local/bin/node
+COPY --from=report_tools /reports/node_modules /rails/reports/node_modules
+ENV CHROME_PATH=/usr/bin/chromium CHROME_NO_SANDBOX=1
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client libgeos-dev libproj-dev && \
+    apt-get install --no-install-recommends -y chromium fonts-liberation curl libjemalloc2 libvips postgresql-client libgeos-dev libproj-dev && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 

@@ -1,0 +1,56 @@
+<fieldset class="card mb-2">
+  <legend>Publication format</legend>
+  <details open>
+    <summary>Poll details, downloads and launch copy</summary>
+    <p>Use Body for the analysis markdown and Key Takeaways for the findings. Place interactive charts in fenced <code>buildcanada-chart</code> JSON blocks. See <code>docs/api/polls.md</code> for the format.</p>
+    <div class="form-group">
+      <%= form.label :survey_scope %>
+      <%= form.select :survey_scope, PollPublication::SURVEY_SCOPES.map { |scope| [ scope.capitalize, scope ] }, {}, class: "form-control" %>
+    </div>
+    <% %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end].each do |field| %>
+      <div class="form-group">
+        <%= form.label field %>
+        <% if field.to_s.start_with?("fieldwork_") %>
+          <%= form.date_field field, class: "form-control" %>
+        <% elsif field == :sample_size %>
+          <%= form.number_field field, min: 1, class: "form-control" %>
+        <% else %>
+          <%= form.text_field field, class: "form-control" %>
+        <% end %>
+      </div>
+    <% end %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :methodology %>
+    <p>The analysis PDF is generated automatically after you save the markdown. Excel is generated when crosstabs JSON changes. Upload the crosstabs JSON below. Surveyor's administrative exports contain unsuppressed small cells; complete disclosure review before publishing them.</p>
+    <% PollPublication::UPLOADS.each do |name| %>
+      <div class="form-group">
+        <%= form.label name %>
+        <% if form.object.public_send(name).attached? %>
+          <%= link_to form.object.public_send(name).filename, url_for(form.object.public_send(name)) %>
+          <label><%= form.check_box "purge_#{name}", { checked: false }, "1", "0" %> Remove</label>
+        <% end %>
+        <%= form.file_field name, accept: name == "crosstabs_json" ? ".json,application/json" : ".pdf,application/pdf", class: "form-control" %>
+      </div>
+    <% end %>
+    <% if form.object.persisted? %>
+      <h3>Generated downloads</h3>
+      <% PollArtifacts::GENERATED.each do |name| %>
+        <% next unless form.object.artifact_digest(name) %>
+        <p><strong><%= name.humanize %>:</strong>
+          <% if form.object.artifact_current?(name) %>
+            <%= link_to "Download", url_for(form.object.public_send(name)) %>
+          <% elsif (error = form.object.artifact_errors[name]) && error["digest"] == form.object.artifact_digest(name) %>
+            Generation failed: <%= error["message"] %>. Correct the source and save to retry.
+          <% else %>
+            Generating. Refresh this page shortly.
+          <% end %>
+        </p>
+      <% end %>
+    <% end %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :news_release %>
+    <p>Launch copy stays in the admin preview API. Saving or publishing a poll does not send an email or post a tweet. Use the existing subscriber campaign workflow to send the approved copy.</p>
+    <%= render "admin/shared/translated_text_field", form: form, field: :email_subject %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :subscriber_email %>
+    <%= render "admin/shared/translated_text_field", form: form, field: :tweet, input_type: :text_area %>
+  </details>
+</fieldset>
+

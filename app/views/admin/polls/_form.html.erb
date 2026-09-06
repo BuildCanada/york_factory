@@ -1,0 +1,48 @@
+<%= form_with(model: [:admin, poll], class: "card") do |f| %>
+  <% if poll.errors.any? %>
+    <div class="flash flash-alert">
+      <% poll.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+    </div>
+  <% end %>
+
+  <%= render "admin/shared/translated_text_field", form: f, field: :title %>
+  <%= render "admin/shared/slug_field", form: f %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :appendix, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
+  <p>Key takeaways appear at the top of the poll in the memo-style summary.</p>
+  <%= render "admin/shared/translated_string_list", form: f, field: :key_messages %>
+
+  <div class="form-group">
+    <label>Author</label>
+    <%= f.collection_select :author_id, TeamMember.ordered, :id, :name, { include_blank: "— None —" }, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Author Name (override)</label>
+    <%= f.text_field :author_name, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Author Title</label>
+    <%= f.text_field :author_title, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <label>Twitter Embed</label>
+    <%= f.text_area :twitter_embed, class: "form-control", rows: 3 %>
+  </div>
+
+  <div class="form-group">
+    <label><%= f.check_box :featured %> Featured</label>
+  </div>
+
+  <%= render "admin/shared/file_upload", form: f, field: :banner_image, label: "Banner Image" %>
+  <%= render "admin/shared/file_upload", form: f, field: :seo_image, label: "SEO Image" %>
+  <%= render "poll_fields", form: f %>
+  <%= render "admin/shared/publish_fields", form: f %>
+
+  <div class="btn-group mt-1">
+    <%= f.submit "Save", class: "btn btn-primary" %>
+    <a href="<%= poll.persisted? ? admin_poll_path(poll) : admin_polls_path %>" class="btn">Cancel</a>
+  </div>
+<% end %>

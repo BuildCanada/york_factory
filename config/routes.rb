@@ -53,9 +53,14 @@ Rails.application.routes.draw do
         resources :matches, only: :index, controller: "saved_search_matches"
       end
 
+      get "feeds/:kind", to: "publication_feeds#show", as: :publication_feed, defaults: { format: "xml" }
+
       resources :memos, param: :slug do
         resources :endorsements, only: [ :index, :create ]
         resources :critiques,    only: [ :index, :create ]
+      end
+      resources :polls, param: :slug do
+        get "downloads/:asset", action: :download, on: :member, as: :download
       end
       resources :posts, param: :slug
       resources :builders, param: :slug
@@ -195,6 +200,10 @@ Rails.application.routes.draw do
     end
 
     resources :posts, only: full do
+      post :retranslate, on: :member
+    end
+    resources :polls, only: full do
+      post :import_publication, on: :collection
       post :retranslate, on: :member
     end
     resources :memos, only: full do

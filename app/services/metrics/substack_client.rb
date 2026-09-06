@@ -1,7 +1,5 @@
 module Metrics
   class SubstackClient
-    USER_AGENT = "BuildCanadaBot/1.0 (+https://buildcanada.com)"
-
     class Error < StandardError; end
     class AuthenticationError < Error; end
     class NotFoundError < Error; end
@@ -65,7 +63,7 @@ module Metrics
     end
 
     def headers
-      values = { "Accept" => "application/json", "User-Agent" => USER_AGENT }
+      values = { "Accept" => "application/json", "User-Agent" => "BuildCanadaBot/1.0 (+#{PublicWebsite.url})" }
       values["Cookie"] = cookie_header if cookie_header.present?
       values
     end

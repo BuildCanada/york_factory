@@ -50,6 +50,10 @@ module Polls
       "data:font/woff2;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/fonts', name).binread)}"
     end
 
+    def cover_logo
+      "data:image/svg+xml;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/logo-square.svg').binread)}"
+    end
+
     def logo(size = 256.3077)
       svg = Nokogiri::XML(Rails.root.join("vendor/poll_reports/logo-polling.svg").read)
       svg.root["width"] = size.to_s

@@ -26,7 +26,7 @@
 html { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 body { margin: 0; color: #272727; font: 12pt/1.5 Financier, Georgia, serif; }
 .cover { height: 11in; padding: 0.65in; background: #f3e7dc; display: flex; flex-direction: column; break-after: page; }
-.cover-logo { width: 256.3077px; height: auto; align-self: flex-start; }
+.cover-logo { width: 128px; height: 128px; align-self: flex-start; }
 .eyebrow { font: 10pt/1.4 Founders, monospace; text-transform: uppercase; letter-spacing: 1.5px; }
 .cover-title { margin-top: auto; margin-bottom: 0.65in; }
 .cover h1 { color: #272727; font: 700 44pt/1.08 Soehne, sans-serif; letter-spacing: -1.5px; margin: 0 0 32px; overflow-wrap: anywhere; }
@@ -45,7 +45,7 @@ tr { break-inside: avoid; } pre { white-space: pre-wrap; overflow-wrap: anywhere
 .section { break-before: page; } .metadata { font-size: 11pt; }
 </style></head><body>
 <section class="cover">
-  <img class="cover-logo" src="<%= logo %>" alt="Build Canada | Polling">
+  <img class="cover-logo" src="<%= cover_logo %>" alt="Build Canada">
   <div class="cover-title">
     <h1><%= e(@title) %></h1>
     <p class="cover-scope"><%= e(survey_scope_label) %></p>

@@ -47,6 +47,14 @@ class Api::V1::PublicationFeedsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "/polls/rss-poll"
   end
 
+  test "combined feed can omit polls for the restricted frontend" do
+    get api_v1_publication_feed_url(kind: "all", format: :xml), params: { exclude: "polls" }
+    assert_response :success
+    feed = RSS::Parser.parse(response.body, true)
+    assert feed.items.any?
+    assert feed.items.none? { |item| item.categories.first.content == "polls" }
+  end
+
   test "unknown feeds are not found" do
     get api_v1_publication_feed_url(kind: "private", format: :xml)
     assert_response :not_found

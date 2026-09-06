@@ -2,9 +2,10 @@ class PublicationFeed
   KINDS = %w[all memos posts polls].freeze
   LIMIT = 50
 
-  def initialize(kind)
+  def initialize(kind, include_polls: true)
     raise ArgumentError, "Unknown feed" unless KINDS.include?(kind)
     @kind = kind
+    @include_polls = include_polls
   end
 
   def render
@@ -39,6 +40,7 @@ class PublicationFeed
 
   def records
     scopes = { "memos" => Memo.published, "posts" => Post.published.visible, "polls" => Poll.published }
+    scopes.delete("polls") if @kind == "all" && !@include_polls
     selected = @kind == "all" ? scopes.values : [ scopes.fetch(@kind) ]
     selected.flat_map { |scope| scope.order(published_at: :desc, id: :desc).limit(LIMIT).to_a }
       .sort_by { |record| [ -record.published_at.to_f, record.model_name.name, -record.id ] }.first(LIMIT)

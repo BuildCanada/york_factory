@@ -24,8 +24,9 @@ link for the full content and interactive charts.
 
 Feeds refresh with a 60-second public cache lifetime. No authentication is required.
 TradingPost never forwards cookies, authorization or preview parameters to the
-feed endpoints, and advertises all four feeds with RSS alternate links in the
-document head on every page.
+feed endpoints. While its poll section is admin-only, it requests all.xml?exclude=polls
+and advertises only the public all/memos/posts feeds. Its polls.xml proxy requires
+a live admin session. York Factory’s feed endpoints remain public.
 
 Validation: run bin/rails test test/controllers/api/v1/publication_feeds_controller_test.rb.
 Deploy York Factory before the TradingPost proxy routes.

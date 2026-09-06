@@ -42,6 +42,10 @@ module Polls
 
     def e(value) = ERB::Util.html_escape(value)
 
+    def css_string(value)
+      '"' + value.to_s.codepoints.map { |code| "\\#{code.to_s(16)} " }.join + '"'
+    end
+
     def font(name)
       "data:font/woff2;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/fonts', name).binread)}"
     end
@@ -53,7 +57,7 @@ module Polls
     end
 
     def survey_scope_label
-      return "#{@poll.survey_scope.capitalize} survey" unless @locale == "fr"
+      return "#{@poll.survey_scope.capitalize} poll" unless @locale == "fr"
       { "national" => "Sondage national", "provincial" => "Sondage provincial", "municipal" => "Sondage municipal" }.fetch(@poll.survey_scope)
     end
 

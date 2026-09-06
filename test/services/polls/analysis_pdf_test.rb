@@ -9,7 +9,7 @@ class Polls::AnalysisPdfTest < ActiveSupport::TestCase
     doc = Nokogiri::HTML(html)
     assert_equal "Public opinion", doc.at_css(".cover h1").text
     assert_equal "August 7, 2026", doc.at_css(".cover-date").text
-    assert_equal "Provincial survey Public opinion August 7, 2026", doc.at_css(".cover").text.squish
+    assert_equal "Public opinion Provincial poll August 7, 2026", doc.at_css(".cover").text.squish
     assert_includes html, "https://buildcanada.com/polls/report"
     assert_includes doc.at_css(".takeaways").text, "First finding"
     assert_includes doc.at_css("main").text, "A clear finding."

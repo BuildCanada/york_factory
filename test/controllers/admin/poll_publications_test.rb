@@ -8,7 +8,8 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     get new_admin_poll_path
     assert_response :success
     assert_select "select[name='poll[content_kind]']", count: 0
-    assert_select "input[name='poll[analysis_pdf_en]']"
+    assert_select "input[name='poll[analysis_pdf_en]']", count: 0
+    assert_select "input[name='poll[crosstabs_json]']"
     assert_select "textarea[name='poll[subscriber_email_en]']"
     assert_select "textarea[name='poll[tweet_en]']"
     get admin_polls_path
@@ -33,16 +34,16 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
   test "rejected edits retain report and image attachments and public downloads" do
     sign_in_admin
     poll = Poll.create!(slug: "asset-edit-test", title_en: "Poll", survey_slug: "survey", published_at: 1.day.ago)
-    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
+    poll.crosstabs_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
     poll.seo_image.attach(io: StringIO.new("image"), filename: "image.jpg", content_type: "image/jpeg", identify: false)
-    blobs = [ poll.analysis_pdf_en.blob, poll.seo_image.blob ]
+    blobs = [ poll.crosstabs_pdf_en.blob, poll.seo_image.blob ]
 
-    patch admin_poll_path(poll), params: { poll: { sample_size: -1, purge_analysis_pdf_en: "1", purge_seo_image: "1" } }
+    patch admin_poll_path(poll), params: { poll: { sample_size: -1, purge_crosstabs_pdf_en: "1", purge_seo_image: "1" } }
     assert_response :unprocessable_entity
     poll.reload
-    assert_equal blobs.map(&:id), [ poll.analysis_pdf_en.blob.id, poll.seo_image.blob.id ]
+    assert_equal blobs.map(&:id), [ poll.crosstabs_pdf_en.blob.id, poll.seo_image.blob.id ]
     assert blobs.all? { |blob| blob.service.exist?(blob.key) }
-    get download_api_v1_poll_url(poll.slug, asset: "analysis_pdf_en")
+    get download_api_v1_poll_url(poll.slug, asset: "crosstabs_pdf_en")
     assert_response :success
     assert_equal "%PDF-1.4 original", response.body
   end
@@ -50,17 +51,17 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
   test "valid edits remove attachments and replacement uploads take precedence" do
     sign_in_admin
     poll = Poll.create!(slug: "asset-remove-test", title_en: "Poll", survey_slug: "survey")
-    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
+    poll.crosstabs_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
     replacement = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("%PDF-1.4 replacement"), filename: "replacement.pdf", content_type: "application/pdf", identify: false)
 
-    patch admin_poll_path(poll), params: { poll: { purge_analysis_pdf_en: "1", analysis_pdf_en: replacement.signed_id } }
+    patch admin_poll_path(poll), params: { poll: { purge_crosstabs_pdf_en: "1", crosstabs_pdf_en: replacement.signed_id } }
     assert_redirected_to admin_poll_path(poll)
-    assert_equal replacement.id, poll.reload.analysis_pdf_en.blob.id
-    assert_equal "%PDF-1.4 replacement", poll.analysis_pdf_en.download
+    assert_equal replacement.id, poll.reload.crosstabs_pdf_en.blob.id
+    assert_equal "%PDF-1.4 replacement", poll.crosstabs_pdf_en.download
 
-    patch admin_poll_path(poll), params: { poll: { purge_analysis_pdf_en: "1" } }
+    patch admin_poll_path(poll), params: { poll: { purge_crosstabs_pdf_en: "1" } }
     assert_redirected_to admin_poll_path(poll)
-    assert_not poll.reload.analysis_pdf_en.attached?
+    assert_not poll.reload.crosstabs_pdf_en.attached?
   end
   test "admin creates and previews a separate poll without creating a memo" do
     sign_in_admin

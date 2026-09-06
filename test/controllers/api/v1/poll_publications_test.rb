@@ -30,24 +30,31 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_equal markdown, response.body
   end
 
-  test "PDF display keys link to localized assets with English fallback" do
-    %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en].each do |asset|
-      @poll.public_send(asset).attach(io: StringIO.new("%PDF-1.4 #{asset}"), filename: "#{asset}.pdf", content_type: "application/pdf", identify: false)
+  test "generated report links select French with English fallback and branded filenames" do
+    @poll.update!(body_fr: "## Analyse")
+    %w[analysis_pdf_en analysis_pdf_fr].each do |asset|
+      @poll.public_send(asset).attach(io: StringIO.new("%PDF-1.4 #{asset}"), filename: "#{asset}.pdf", content_type: "application/pdf", identify: false,
+        metadata: { source_digest: @poll.artifact_digest(asset) })
     end
     %w[en fr].each do |locale|
       get api_v1_poll_url(@poll.slug), params: { locale: locale }
+      url = response.parsed_body.dig("poll", "downloads", "analysis_pdf")
+      assert_includes URI(url).path, "/downloads/analysis_pdf_#{locale}"
+      get url
       assert_response :success
-      downloads = response.parsed_body.dig("poll", "downloads")
-      { "analysis_pdf" => "analysis_pdf_#{locale}", "crosstabs_pdf" => "crosstabs_pdf_en" }.each do |kind, asset|
-        url = downloads.fetch(kind)
-        assert_includes URI(url).path, "/downloads/#{asset}"
-        assert_includes url, "locale=#{locale}"
-        assert_not downloads.key?(asset)
-        get url
-        assert_response :success
-        assert_equal "%PDF-1.4 #{asset}", response.body
-      end
+      assert_equal "%PDF-1.4 analysis_pdf_#{locale}", response.body
+      assert_includes response.headers["Content-Disposition"], "Build Canada"
+      assert_includes response.headers["Content-Disposition"], @poll.published_at.to_date.iso8601
+      assert_includes response.headers["Content-Disposition"], "Poll"
     end
+    @poll.update!(body_fr: nil)
+    get api_v1_poll_url(@poll.slug), params: { locale: "fr" }
+    assert_includes response.parsed_body.dig("poll", "downloads", "analysis_pdf"), "analysis_pdf_en"
+    @poll.update!(body_en: "Changed")
+    get download_api_v1_poll_url(@poll.slug, asset: "analysis_pdf_en")
+    assert_response :service_unavailable
+    get api_v1_poll_url(@poll.slug)
+    assert_not response.parsed_body.dig("poll", "downloads").key?("analysis_pdf")
   end
 
   test "poll index excludes memos and hides drafts" do

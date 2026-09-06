@@ -36,7 +36,7 @@ module Admin
       attributes = poll_params
       # Assign removals as attachment changes so they commit only after a valid
       # save. A replacement upload wins over a checked removal checkbox.
-      ([ :seo_image, :banner_image ] + PollPublication::DOWNLOADS).each do |name|
+      ([ :seo_image, :banner_image ] + PollPublication::UPLOADS).each do |name|
         attributes[name] = nil if params.dig(:poll, "purge_#{name}") == "1" && attributes[name].blank?
       end
       if @poll.update(attributes)

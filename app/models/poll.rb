@@ -9,6 +9,7 @@ class Poll < ApplicationRecord
   has_localized_markdown :body
   has_localized_markdown :appendix
   include PollPublication
+  include PollArtifacts
 
   has_one_attached :seo_image
   has_one_attached :banner_image

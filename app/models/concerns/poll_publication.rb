@@ -3,9 +3,10 @@ module PollPublication
   extend ActiveSupport::Concern
 
   DOWNLOADS = %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
+  UPLOADS = %w[crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
   PARAMS = %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
     methodology_en methodology_fr news_release_en news_release_fr subscriber_email_en subscriber_email_fr
-    email_subject_en email_subject_fr tweet_en tweet_fr].concat(DOWNLOADS.map(&:to_sym)).freeze
+    email_subject_en email_subject_fr tweet_en tweet_fr].concat(UPLOADS.map(&:to_sym)).freeze
 
   included do
     DOWNLOADS.each { |name| has_one_attached name }
@@ -22,11 +23,11 @@ module PollPublication
 
   def poll_downloads
     locale = I18n.locale == :fr ? "fr" : "en"
-    downloads = %w[analysis_pdf crosstabs_pdf crosstabs_json].filter_map do |kind|
-      name = kind == "crosstabs_json" ? kind : "#{kind}_#{locale}"
-      name = "#{kind}_en" if kind != "crosstabs_json" && !public_send(name).attached?
-      [ kind, name ] if public_send(name).attached?
-    end.to_h
+    downloads = {}
+    pdf = artifact_current?("analysis_pdf_#{locale}") ? "analysis_pdf_#{locale}" : "analysis_pdf_en"
+    downloads["analysis_pdf"] = pdf if artifact_current?(pdf)
+    downloads["crosstabs_json"] = "crosstabs_json" if crosstabs_json.attached?
+    downloads["crosstabs_xlsx"] = "crosstabs_xlsx" if artifact_current?("crosstabs_xlsx")
     downloads["analysis_markdown"] = "analysis_markdown" if body.present?
     downloads
   end

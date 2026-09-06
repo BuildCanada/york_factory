@@ -30,7 +30,7 @@
 
 <% if @poll.key_messages_en.present? %>
   <div class="card mb-2">
-    <h2>Key Messages</h2>
+    <h2>Key Takeaways</h2>
     <ul>
       <% @poll.key_messages_en.each do |msg| %>
         <li><%= msg.is_a?(Hash) ? msg["message"] : msg %></li>
@@ -54,7 +54,7 @@
   <div class="card mt-1">
     <h2>Poll publication</h2>
     <p>Survey: <%= @poll.survey_slug %> · Campaign: <%= @poll.survey_campaign_id %></p>
-    <% PollPublication::DOWNLOADS.each do |name| %>
+    <% (PollPublication::UPLOADS + PollArtifacts::GENERATED).each do |name| %>
       <% if @poll.public_send(name).attached? %>
         <p><%= link_to name.humanize, url_for(@poll.public_send(name)) %></p>
       <% end %>

@@ -9,6 +9,7 @@
   <%= render "admin/shared/slug_field", form: f %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
   <%= render "admin/shared/translated_rich_text", form: f, field: :appendix, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
+  <p>Key takeaways appear at the top of the poll in the memo-style summary.</p>
   <%= render "admin/shared/translated_string_list", form: f, field: :key_messages %>
 
   <div class="form-group">

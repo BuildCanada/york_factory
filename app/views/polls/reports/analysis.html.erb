@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="<%= @locale %>"><head><meta charset="utf-8"><title><%= e(@title) %></title>
+<style>
+@font-face { font-family: Soehne; src: url('<%= font("soehne-kraftig.woff2") %>'); font-weight: 500; }
+@font-face { font-family: Soehne; src: url('<%= font("soehne-fett.woff2") %>'); font-weight: 700; }
+@font-face { font-family: Financier; src: url('<%= font("financier-text-regular.woff2") %>'); }
+@font-face { font-family: Founders; src: url('<%= font("founders-grotesk-mono-regular.woff2") %>'); }
+@font-face { font-family: 'Söhne Kräftig'; src: url('<%= font("soehne-kraftig.woff2") %>'); }
+@page { size: letter; margin: 0.95in 0.65in 0.7in; }
+* { box-sizing: border-box; }
+html { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+body { margin: 0; color: #252323; font: 12pt/1.5 Financier, Georgia, serif; }
+.cover { height: 9.15in; padding: 38px; background: #f3e7dc; border-top: 10px solid #8c3031; display: flex; flex-direction: column; break-after: page; }
+.cover-logo { width: 150px; background: #8c3031; padding: 22px; margin-bottom: 75px; }
+.eyebrow { font: 10pt/1.4 Founders, monospace; text-transform: uppercase; letter-spacing: 1.5px; }
+.cover h1 { font: 700 34pt/1.12 Soehne, sans-serif; margin: 18px 0 24px; overflow-wrap: anywhere; }
+.cover-bottom { margin-top: auto; border-top: 1px solid #8c3031; padding-top: 18px; }
+h1,h2,h3,h4 { font-family: Soehne, sans-serif; line-height: 1.2; break-after: avoid; }
+h1 { font-size: 26pt; } h2 { font-size: 22pt; margin-top: 30px; } h3 { font-size: 16pt; margin-top: 24px; }
+p,li { orphans: 3; widows: 3; } a { color: #8c3031; text-decoration: underline; overflow-wrap: anywhere; }
+.takeaways { border: 3px double #b6a79b; padding: 20px 24px; background: #f3e7dc; margin: 0 0 28px; }
+.takeaways ol { margin-bottom: 0; padding-left: 23px; } .takeaways li { padding-left: 8px; margin-bottom: 12px; }
+figure { margin: 24px 0; break-inside: avoid; } img { max-width: 100%; max-height: 7in; object-fit: contain; } figure img { width: 100%; }
+blockquote { margin-left: 0; padding-left: 20px; border-left: 3px solid #8c3031; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; table-layout: fixed; } thead { display: table-header-group; }
+th,td { padding: 7px; text-align: left; border-bottom: 1px solid #d7cec7; overflow-wrap: anywhere; } th { background: #f3e7dc; font-family: Soehne; }
+tr { break-inside: avoid; } pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 9pt; } code { font-family: Founders, monospace; }
+.section { break-before: page; } .metadata { font-size: 11pt; }
+</style></head><body>
+<section class="cover">
+  <img class="cover-logo" src="<%= logo %>" alt="Build Canada">
+  <div class="eyebrow"><%= @locale == "fr" ? "Recherche sur l’opinion publique" : "Public opinion research" %></div>
+  <h1><%= e(@title) %></h1>
+  <p><%= e(@date) %></p>
+  <div class="cover-bottom"><div class="eyebrow">Build Canada</div><p>buildcanada.com</p></div>
+</section>
+<% if @takeaways.present? %>
+<section class="takeaways"><div class="eyebrow"><%= @locale == "fr" ? "Points à retenir" : "Key takeaways" %></div><ol>
+<% @takeaways.each do |item| %><li><%= e(item.is_a?(Hash) ? item["message"] : item) %></li><% end %>
+</ol></section>
+<% end %>
+<main><%= @body %></main>
+<% if @methodology.present? || @poll.pollster.present? || @poll.sample_size.present? %>
+<section class="section"><h2><%= @locale == "fr" ? "Méthodologie" : "Methodology" %></h2>
+<div class="metadata">
+<% if @poll.pollster.present? %><p><%= e(@poll.pollster) %></p><% end %>
+<% if @poll.sample_size.present? %><p><%= @locale == "fr" ? "Échantillon" : "Sample" %>: <%= @poll.sample_size %></p><% end %>
+<% if @poll.fieldwork_start || @poll.fieldwork_end %><p><%= e([@poll.fieldwork_start, @poll.fieldwork_end].compact.join(" – ")) %></p><% end %>
+</div><%= @methodology %></section>
+<% end %>
+<% if @appendix.present? %><section class="section"><h2><%= @locale == "fr" ? "Annexe" : "Appendix" %></h2><%= @appendix %></section><% end %>
+</body></html>

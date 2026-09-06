@@ -2009,7 +2009,8 @@ CREATE TABLE public.polls (
     email_subject_fr character varying,
     tweet_fr text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    artifact_errors jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -10098,6 +10099,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260906000000'),
 ('20260905000000'),
 ('20260901000001'),
 ('20260901000000'),

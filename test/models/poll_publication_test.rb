@@ -9,11 +9,11 @@ class PollPublicationTest < ActiveSupport::TestCase
   end
 
   test "PDF downloads fall back to English and JSON is shared across locales" do
-    poll = Poll.new(slug: "poll", title_en: "Poll", survey_slug: "survey")
-    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 test"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
+    poll = Poll.new(slug: "poll", title_en: "Poll", survey_slug: "survey", body_en: "Report")
+    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 test"), filename: "analysis.pdf", content_type: "application/pdf", identify: false, metadata: { source_digest: poll.artifact_digest("analysis_pdf_en") })
     poll.crosstabs_json.attach(io: StringIO.new("{}"), filename: "crosstabs.json", content_type: "application/json", identify: false)
     I18n.with_locale(:fr) do
-      assert_equal({ "analysis_pdf" => "analysis_pdf_en", "crosstabs_json" => "crosstabs_json" }, poll.poll_downloads)
+      assert_equal({ "analysis_pdf" => "analysis_pdf_en", "crosstabs_json" => "crosstabs_json", "analysis_markdown" => "analysis_markdown" }, poll.poll_downloads)
     end
   end
 

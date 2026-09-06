@@ -26,13 +26,16 @@ module Api
         name = params[:asset]
         response.headers["Cache-Control"] = "private, no-store"
         if name == "analysis_markdown"
-          return send_data @poll.body.to_s, filename: "#{@poll.slug}.md", type: "text/markdown", disposition: "attachment"
+          return send_data @poll.body.to_s, filename: @poll.download_filename(name), type: "text/markdown", disposition: "attachment"
         end
-        raise ActiveRecord::RecordNotFound unless PollPublication::DOWNLOADS.include?(name)
+        raise ActiveRecord::RecordNotFound unless (PollPublication::DOWNLOADS + [ "crosstabs_xlsx" ]).include?(name)
+        if PollArtifacts::GENERATED.include?(name) && !@poll.artifact_current?(name)
+          return head :service_unavailable
+        end
         attachment = @poll.public_send(name)
         raise ActiveRecord::RecordNotFound unless attachment.attached?
 
-        send_data attachment.download, filename: attachment.filename.to_s,
+        send_data attachment.download, filename: @poll.download_filename(name),
           type: attachment.content_type, disposition: "attachment"
       end
 

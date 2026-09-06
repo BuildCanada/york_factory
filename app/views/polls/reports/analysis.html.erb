@@ -10,10 +10,10 @@
   size: letter;
   margin: 1in 0.65in 0.7in;
   background: #f3e7dc;
-  @top-right { content: <%= css_string(@title) %>; text-align: right; font: 500 11pt/1.3 Soehne, sans-serif; color: #8c3031; vertical-align: middle; width: 65%; }
+  @top-right { content: <%= css_string(@title) %>; text-align: right; font: 500 11pt/1.3 Soehne, sans-serif; color: #272727; vertical-align: middle; width: 65%; }
   @top-left { content: url("<%= logo(180) %>"); vertical-align: middle; }
-  @bottom-left { content: "<%= poll_url %>"; font: 8pt Founders, monospace; color: #8c3031; vertical-align: middle; }
-  @bottom-right { content: counter(page); font: 9pt Founders, monospace; color: #8c3031; vertical-align: middle; }
+  @bottom-left { content: "<%= poll_url %>"; font: 8pt Founders, monospace; color: #272727; vertical-align: middle; }
+  @bottom-right { content: counter(page); font: 9pt Founders, monospace; color: #272727; vertical-align: middle; }
 }
 @page :first {
   margin: 0;
@@ -24,14 +24,14 @@
 }
 * { box-sizing: border-box; }
 html { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-body { margin: 0; color: #252323; font: 12pt/1.5 Financier, Georgia, serif; }
+body { margin: 0; color: #272727; font: 12pt/1.5 Financier, Georgia, serif; }
 .cover { height: 11in; padding: 0.65in; background: #f3e7dc; display: flex; flex-direction: column; break-after: page; }
 .cover-logo { width: 280px; height: auto; align-self: flex-start; }
 .eyebrow { font: 10pt/1.4 Founders, monospace; text-transform: uppercase; letter-spacing: 1.5px; }
 .cover-title { margin-top: auto; margin-bottom: 0.65in; }
-.cover h1 { color: #8c3031; font: 700 44pt/1.08 Soehne, sans-serif; letter-spacing: -1.5px; margin: 0 0 32px; overflow-wrap: anywhere; }
-.cover-scope { font: 500 18pt/1.3 Soehne, sans-serif; margin: 0 0 8px; color: #8c3031; }
-.cover-date { font: 12pt/1.5 Founders, monospace; margin: 0; color: #8c3031; }
+.cover h1 { color: #272727; font: 700 44pt/1.08 Soehne, sans-serif; letter-spacing: -1.5px; margin: 0 0 32px; overflow-wrap: anywhere; }
+.cover-scope { font: 500 18pt/1.3 Soehne, sans-serif; margin: 0 0 8px; color: #272727; }
+.cover-date { font: 12pt/1.5 Founders, monospace; margin: 0; color: #272727; }
 h1,h2,h3,h4 { font-family: Soehne, sans-serif; line-height: 1.2; break-after: avoid; }
 h1 { font-size: 26pt; } h2 { font-size: 22pt; margin-top: 30px; } h3 { font-size: 16pt; margin-top: 24px; }
 p,li { orphans: 3; widows: 3; } a { color: #8c3031; text-decoration: underline; overflow-wrap: anywhere; }

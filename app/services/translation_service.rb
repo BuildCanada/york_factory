@@ -37,25 +37,31 @@ class TranslationService
 
   # Chart JSON contains identifiers and observations, not translatable prose.
   # Keep it byte-for-byte intact; authors can localize labels in the FR editor.
-  CHART_FENCE = /^ {0,3}(`{3,}|~{3,})buildcanada-chart[^\n]*\n.*?^ {0,3}\1[ \t]*(?:\n|\z)/m
-
   def translate_markdown(markdown)
-    return translate_text(markdown) unless markdown.match?(CHART_FENCE)
+    # Use the renderer's parser rather than a second fence grammar: CommonMark
+    # permits longer closing fences, whitespace before info, and closure at EOF.
+    charts = Commonmarker.parse(markdown, options: Markdown::Renderer::OPTIONS).walk.select do |node|
+      node.type == :code_block && node.fence_info.to_s.split.first == "buildcanada-chart"
+    end
+    return translate_text(markdown) if charts.empty?
 
+    lines = markdown.lines
     parts = []
     cursor = 0
-    markdown.to_enum(:scan, CHART_FENCE).each do
-      match = Regexp.last_match
-      prose = markdown[cursor...match.begin(0)]
+    charts.each do |node|
+      position = node.source_position
+      first_line = position[:start_line] - 1
+      after_last_line = position[:end_line]
+      prose = lines[cursor...first_line].join
       unless prose.blank?
         translated = translate_text(prose)
         return nil unless translated
         parts << translated
       end
-      parts << match[0]
-      cursor = match.end(0)
+      parts << lines[first_line...after_last_line].join
+      cursor = after_last_line
     end
-    prose = markdown[cursor..]
+    prose = lines[cursor..].join
     unless prose.blank?
       translated = translate_text(prose)
       return nil unless translated

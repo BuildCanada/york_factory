@@ -35,10 +35,13 @@ module Admin
     end
 
     def update
-      purge_attachment(:seo_image)
-      purge_attachment(:banner_image)
-      PollPublication::DOWNLOADS.each { |name| purge_attachment(name) }
-      if @memo.update(memo_params)
+      attributes = memo_params
+      # Assign removals as attachment changes so they commit only after a valid
+      # save. A replacement upload wins over a checked removal checkbox.
+      ([ :seo_image, :banner_image ] + PollPublication::DOWNLOADS).each do |name|
+        attributes[name] = nil if params.dig(:memo, "purge_#{name}") == "1" && attributes[name].blank?
+      end
+      if @memo.update(attributes)
         redirect_to admin_memo_path(@memo), notice: "Memo updated."
       else
         render :edit, status: :unprocessable_entity
@@ -91,10 +94,6 @@ module Admin
         str = v.is_a?(Hash) ? (v["message"] || v[:message]) : v
         { "message" => str.to_s.strip } if str.to_s.strip.present?
       end
-    end
-
-    def purge_attachment(name)
-      @memo.send(name).purge if params.dig(:memo, "purge_#{name}") == "1"
     end
   end
 end

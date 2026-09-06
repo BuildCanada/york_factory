@@ -30,6 +30,26 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_equal markdown, response.body
   end
 
+  test "PDF display keys link to localized assets with English fallback" do
+    %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en].each do |asset|
+      @poll.public_send(asset).attach(io: StringIO.new("%PDF-1.4 #{asset}"), filename: "#{asset}.pdf", content_type: "application/pdf", identify: false)
+    end
+    %w[en fr].each do |locale|
+      get api_v1_memo_url(@poll.slug), params: { locale: locale }
+      assert_response :success
+      downloads = response.parsed_body.dig("poll", "downloads")
+      { "analysis_pdf" => "analysis_pdf_#{locale}", "crosstabs_pdf" => "crosstabs_pdf_en" }.each do |kind, asset|
+        url = downloads.fetch(kind)
+        assert_includes URI(url).path, "/downloads/#{asset}"
+        assert_includes url, "locale=#{locale}"
+        assert_not downloads.key?(asset)
+        get url
+        assert_response :success
+        assert_equal "%PDF-1.4 #{asset}", response.body
+      end
+    end
+  end
+
   test "poll index filters existing memos and hides drafts" do
     get api_v1_memos_url, params: { content_kind: "poll" }
     assert_equal [ @poll.slug ], response.parsed_body["data"].map { |item| item["slug"] }

@@ -17,6 +17,35 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_includes result, "AFTER"
   end
 
+  test "CommonMark chart fences preserve JSON across delimiter and container variants" do
+    charts = [
+      "```buildcanada-chart\n{\"metricId\":54}\n`````\n",
+      "~~~~ buildcanada-chart\n{\"metricId\":54}\n~~~~~~\n",
+      "   ``` buildcanada-chart extra-info\n   {\"metricId\":54}\n   ````\n",
+      "> ```buildcanada-chart\n> {\"metricId\":54}\n> ````\n",
+      "- ```buildcanada-chart\n  {\"metricId\":54}\n  ````\n",
+      "```buildcanada-chart\r\n{\"metricId\":54}\r\n````\r\n"
+    ]
+    charts.each do |chart|
+      inputs = []
+      @service.define_singleton_method(:translate_text) { |text| inputs << text; text.upcase.strip }
+      result = @service.send(:translate_markdown, "Before\n\n#{chart}\nAfter")
+      assert inputs.none? { |text| text.include?("metricId") }, chart
+      assert_includes result, chart
+      assert_includes result, "BEFORE"
+      assert_includes result, "AFTER"
+    end
+  end
+
+  test "unclosed chart fences remain protected through end of document" do
+    chart = "``` buildcanada-chart\n{\"metricId\":54}\n~~\n``"
+    inputs = []
+    @service.define_singleton_method(:translate_text) { |text| inputs << text; text.upcase.strip }
+    result = @service.send(:translate_markdown, "Before\n\n#{chart}")
+    assert_equal [ "Before\n\n" ], inputs
+    assert_includes result, chart
+  end
+
   test "translates EN to FR via RubyLLM" do
     fake_response = Struct.new(:content).new("Bonjour le monde")
     fake_chat = Object.new

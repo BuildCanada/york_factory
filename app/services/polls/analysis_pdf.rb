@@ -50,10 +50,14 @@ module Polls
       "data:font/woff2;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/fonts', name).binread)}"
     end
 
-    def logo(size = 128)
-      svg = Rails.root.join("vendor/poll_reports/logo-square.svg").read
-      svg = svg.sub('width="2040" height="2040"', "width=\"#{size}\" height=\"#{size}\"")
-      "data:image/svg+xml;base64,#{Base64.strict_encode64(svg)}"
+    def logo(size = 280)
+      svg = Nokogiri::XML(Rails.root.join("vendor/poll_reports/logo-polling.svg").read)
+      svg.root["width"] = size.to_s
+      svg.root["height"] = (size * 60.0 / 208).to_s
+      style = Nokogiri::XML::Node.new("style", svg)
+      style.content = "@font-face { font-family: Soehne; src: url(#{font('soehne-kraftig.woff2')}); font-weight: 500; }"
+      svg.root.children.first.add_previous_sibling(style)
+      "data:image/svg+xml;base64,#{Base64.strict_encode64(svg.to_xml)}"
     end
 
     def survey_scope_label

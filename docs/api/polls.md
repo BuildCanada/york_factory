@@ -157,4 +157,4 @@ Poppler, including all pages and embedded charts, and open the workbook in Excel
 Run the poll model/API/admin, generation-job, PDF-template and workbook tests;
 TradingPost's chart/download tests and browser checks cover the public presentation.
 
-Reports use an edge-to-edge linen background. The cover has the square logo, survey scope, title and release date (Month Day, YYYY). Methodology markdown starts on page two, followed by takeaways and analysis. Subsequent pages show the square logo at top right and the poll’s public URL in the footer.
+Reports use an edge-to-edge linen background. The cover has the Build Canada | Polling wordmark, survey scope, title and release date (Month Day, YYYY). Methodology markdown starts on page two, followed by takeaways and analysis. Subsequent pages show the Build Canada | Polling wordmark at top right and the poll’s public URL in the footer.

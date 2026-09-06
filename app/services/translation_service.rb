@@ -53,21 +53,30 @@ class TranslationService
       first_line = position[:start_line] - 1
       after_last_line = position[:end_line]
       prose = lines[cursor...first_line].join
-      unless prose.blank?
-        translated = translate_text(prose)
-        return nil unless translated
-        parts << translated
-      end
+      translated = translate_markdown_fragment(prose)
+      return nil unless translated
+      parts << translated
       parts << lines[first_line...after_last_line].join
       cursor = after_last_line
     end
     prose = lines[cursor..].join
-    unless prose.blank?
-      translated = translate_text(prose)
-      return nil unless translated
-      parts << translated
-    end
-    parts.join("\n\n")
+    translated = translate_markdown_fragment(prose)
+    return nil unless translated
+    parts << translated
+    parts.join
+  end
+
+  # translate_text strips its result, so restore the source fragment's boundary
+  # whitespace. Those bytes carry list indentation and blank-line/container
+  # boundaries; adding separators or dropping whitespace-only fragments changes
+  # the CommonMark structure around an untouched chart.
+  def translate_markdown_fragment(prose)
+    return prose if prose.blank?
+
+    translated = translate_text(prose)
+    return nil unless translated
+
+    prose[/\A\s*/] + translated.strip + prose[/\s*\z/]
   end
 
   def translate_hash_fields(record)

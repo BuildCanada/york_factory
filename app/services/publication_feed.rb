@@ -1,7 +1,6 @@
 class PublicationFeed
   KINDS = %w[all memos posts polls].freeze
   LIMIT = 50
-  SITE_URL = ENV.fetch("WEBSITE_URL", "https://www.buildcanada.com").delete_suffix("/").freeze
 
   def initialize(kind)
     raise ArgumentError, "Unknown feed" unless KINDS.include?(kind)
@@ -14,11 +13,11 @@ class PublicationFeed
       xml.rss(version: "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") do
         xml.channel do
           xml.title(@kind == "all" ? "Build Canada" : "Build Canada | #{@kind.capitalize}")
-          xml.link(@kind == "all" ? SITE_URL : "#{SITE_URL}/#{@kind}")
+          xml.link(@kind == "all" ? PublicWebsite.url : "#{PublicWebsite.url}/#{@kind}")
           xml.description("The latest #{@kind == 'all' ? 'memos, posts and polls' : @kind} from Build Canada.")
           xml.language("en-ca")
           xml.ttl(1)
-          xml["atom"].link(href: "#{SITE_URL}/feeds/#{@kind}.xml", rel: "self", type: "application/rss+xml")
+          xml["atom"].link(href: "#{PublicWebsite.url}/feeds/#{@kind}.xml", rel: "self", type: "application/rss+xml")
           xml.lastBuildDate(items.map(&:updated_at).compact.max.rfc2822) if items.any?
           items.each do |record|
             xml.item do
@@ -47,7 +46,7 @@ class PublicationFeed
 
   def article_url(record)
     section = record.is_a?(Memo) && record.publication == "build_toronto" ? "toronto/memos" : record.model_name.plural
-    "#{SITE_URL}/#{section}/#{ERB::Util.url_encode(record.slug)}"
+    "#{PublicWebsite.url}/#{section}/#{ERB::Util.url_encode(record.slug)}"
   end
 
   def excerpt(record)

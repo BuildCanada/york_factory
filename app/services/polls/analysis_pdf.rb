@@ -70,7 +70,7 @@ module Polls
     end
 
     def poll_url
-      "https://buildcanada.com/polls/#{ERB::Util.url_encode(@poll.slug)}"
+      "#{PublicWebsite.url}/polls/#{ERB::Util.url_encode(@poll.slug)}"
     end
 
     def render_markdown(markdown)

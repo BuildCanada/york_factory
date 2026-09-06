@@ -18,7 +18,7 @@ module PollArtifacts
     else
       locale = name.end_with?("_fr") ? "fr" : "en"
       return if public_send("body_#{locale}").blank?
-      common.concat([ survey_scope, locale, public_send("body_#{locale}"), public_send("appendix_#{locale}"),
+      common.concat([ PublicWebsite.url, survey_scope, locale, public_send("body_#{locale}"), public_send("appendix_#{locale}"),
         public_send("methodology_#{locale}"), public_send("key_messages_#{locale}").presence || key_messages_en, pollster, sample_size,
         fieldwork_start, fieldwork_end, author&.name, author_name ])
     end

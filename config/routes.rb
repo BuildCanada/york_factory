@@ -53,6 +53,8 @@ Rails.application.routes.draw do
         resources :matches, only: :index, controller: "saved_search_matches"
       end
 
+      get "feeds/:kind", to: "publication_feeds#show", as: :publication_feed, defaults: { format: "xml" }
+
       resources :memos, param: :slug do
         resources :endorsements, only: [ :index, :create ]
         resources :critiques,    only: [ :index, :create ]

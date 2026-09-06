@@ -1,7 +1,7 @@
 class PublicationFeed
   KINDS = %w[all memos posts polls].freeze
   LIMIT = 50
-  SITE_URL = "https://buildcanada.com".freeze
+  SITE_URL = ENV.fetch("WEBSITE_URL", "https://www.buildcanada.com").delete_suffix("/").freeze
 
   def initialize(kind)
     raise ArgumentError, "Unknown feed" unless KINDS.include?(kind)

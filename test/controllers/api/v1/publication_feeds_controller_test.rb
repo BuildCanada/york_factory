@@ -18,9 +18,9 @@ class Api::V1::PublicationFeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Build Canada", feed.channel.title
     items = feed.items
     assert_equal items.map(&:pubDate).sort.reverse, items.map(&:pubDate)
-    assert_includes items.map(&:link), "https://buildcanada.com/memos/housing-crisis-memo"
-    assert_includes items.map(&:link), "https://buildcanada.com/toronto/memos/toronto-transit-memo"
-    assert_includes items.map(&:link), "https://buildcanada.com/posts/first-post"
+    assert_includes items.map(&:link), "https://www.buildcanada.com/memos/housing-crisis-memo"
+    assert_includes items.map(&:link), "https://www.buildcanada.com/toronto/memos/toronto-transit-memo"
+    assert_includes items.map(&:link), "https://www.buildcanada.com/posts/first-post"
     item = items.find { |i| i.link.end_with?("/polls/rss-poll") }
     assert_equal @poll.title_en, item.title
     assert_equal "urn:buildcanada:poll:#{@poll.id}", item.guid.content
@@ -31,7 +31,7 @@ class Api::V1::PublicationFeedsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "Private launch copy"
     assert_equal [ "max-age=60", "public" ], response.headers["Cache-Control"].split(", ").sort
     doc = Nokogiri::XML(response.body) { |config| config.strict }
-    assert_equal "https://buildcanada.com/feeds/all.xml", doc.at_xpath("//atom:link", "atom" => "http://www.w3.org/2005/Atom")["href"]
+    assert_equal "https://www.buildcanada.com/feeds/all.xml", doc.at_xpath("//atom:link", "atom" => "http://www.w3.org/2005/Atom")["href"]
   end
 
   test "individual feeds only contain their own type and never expose unpublished items" do

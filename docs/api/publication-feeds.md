@@ -7,6 +7,8 @@ York Factory serves RSS 2.0 at:
 - /api/v1/feeds/posts.xml
 - /api/v1/feeds/polls.xml
 
+The public base URL comes from WEBSITE_URL, defaulting to https://www.buildcanada.com.
+
 TradingPost proxies these at /feeds/all.xml, /feeds/memos.xml, /feeds/posts.xml and
 /feeds/polls.xml. RSS self links use these public frontend URLs.
 

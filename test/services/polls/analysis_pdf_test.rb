@@ -10,7 +10,7 @@ class Polls::AnalysisPdfTest < ActiveSupport::TestCase
     assert_equal "Public opinion", doc.at_css(".cover h1").text
     assert_equal "August 7, 2026", doc.at_css(".cover-date").text
     assert_equal "Public opinion Provincial poll August 7, 2026", doc.at_css(".cover").text.squish
-    assert_includes html, "https://buildcanada.com/polls/report"
+    assert_includes html, "www.buildcanada.com/polls/report"
     assert_includes doc.at_css(".takeaways").text, "First finding"
     assert_includes doc.at_css("main").text, "A clear finding."
     assert doc.at_css("main figure img")["src"].start_with?("data:image/svg+xml;base64,")

@@ -1,0 +1,40 @@
+<fieldset class="card mb-2">
+  <legend>Publication format</legend>
+  <div class="form-group">
+    <%= form.label :content_kind %>
+    <%= form.select :content_kind, [["Memo", "memo"], ["Poll analysis", "poll"]], {}, class: "form-control" %>
+  </div>
+  <details <%= "open" if form.object.poll? %>>
+    <summary>Poll details, downloads and launch copy</summary>
+    <p>Use Body for the analysis markdown and Key Messages for the findings. Place interactive charts in fenced <code>buildcanada-chart</code> JSON blocks. See <code>docs/api/polls.md</code> for the format.</p>
+    <% %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end].each do |field| %>
+      <div class="form-group">
+        <%= form.label field %>
+        <% if field.to_s.start_with?("fieldwork_") %>
+          <%= form.date_field field, class: "form-control" %>
+        <% elsif field == :sample_size %>
+          <%= form.number_field field, min: 1, class: "form-control" %>
+        <% else %>
+          <%= form.text_field field, class: "form-control" %>
+        <% end %>
+      </div>
+    <% end %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :methodology %>
+    <p>Upload the final analysis and crosstabs. Surveyor's administrative exports contain unsuppressed small cells; complete disclosure review before publishing them.</p>
+    <% PollPublication::DOWNLOADS.each do |name| %>
+      <div class="form-group">
+        <%= form.label name %>
+        <% if form.object.public_send(name).attached? %>
+          <%= link_to form.object.public_send(name).filename, url_for(form.object.public_send(name)) %>
+          <label><%= form.check_box "purge_#{name}", { checked: false }, "1", "0" %> Remove</label>
+        <% end %>
+        <%= form.file_field name, accept: name == "crosstabs_json" ? ".json,application/json" : ".pdf,application/pdf", class: "form-control" %>
+      </div>
+    <% end %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :news_release %>
+    <p>Launch copy stays in the admin preview API. Saving or publishing a poll does not send an email or post a tweet. Use the existing subscriber campaign workflow to send the approved copy.</p>
+    <%= render "admin/shared/translated_text_field", form: form, field: :email_subject %>
+    <%= render "admin/shared/translated_rich_text", form: form, field: :subscriber_email %>
+    <%= render "admin/shared/translated_text_field", form: form, field: :tweet, input_type: :text_area %>
+  </details>
+</fieldset>

@@ -697,7 +697,24 @@ CREATE TABLE public.memos (
     supporters_md_fr text,
     publication character varying DEFAULT 'build_canada'::character varying NOT NULL,
     endorsements_count integer DEFAULT 0 NOT NULL,
-    approved_critiques_count integer DEFAULT 0 NOT NULL
+    approved_critiques_count integer DEFAULT 0 NOT NULL,
+    content_kind character varying DEFAULT 'memo'::character varying NOT NULL,
+    survey_slug character varying,
+    survey_campaign_id character varying,
+    pollster character varying,
+    sample_size integer,
+    fieldwork_start date,
+    fieldwork_end date,
+    methodology_md_en text,
+    news_release_md_en text,
+    subscriber_email_md_en text,
+    email_subject_en character varying,
+    tweet_en text,
+    methodology_md_fr text,
+    news_release_md_fr text,
+    subscriber_email_md_fr text,
+    email_subject_fr character varying,
+    tweet_fr text
 );
 
 
@@ -6937,6 +6954,13 @@ CREATE INDEX index_memos_on_co_author_id ON public.memos USING btree (co_author_
 
 
 --
+-- Name: index_memos_on_content_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memos_on_content_kind ON public.memos USING btree (content_kind);
+
+
+--
 -- Name: index_memos_on_featured; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9993,6 +10017,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260905000000'),
 ('20260901000001'),
 ('20260901000000'),
 ('20260813000001'),

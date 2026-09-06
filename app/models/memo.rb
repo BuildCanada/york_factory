@@ -10,6 +10,8 @@ class Memo < ApplicationRecord
   has_localized_markdown :body
   has_localized_markdown :appendix
   has_localized_markdown :supporters
+  include PollPublication
+
   has_one_attached :seo_image
   has_one_attached :banner_image
   belongs_to :author, class_name: "TeamMember", optional: true
@@ -37,8 +39,8 @@ class Memo < ApplicationRecord
     where("title_en ILIKE :q", q: "%#{sanitized}%")
   }
 
-  translatable_fields :title
-  markdown_fields :body, :appendix, :supporters
+  translatable_fields :title, :email_subject, :tweet
+  markdown_fields :body, :appendix, :supporters, :methodology, :news_release, :subscriber_email
   hash_fields :key_messages
 
   def self.feed_type_label = "memo"

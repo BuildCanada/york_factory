@@ -28,11 +28,40 @@ class TranslationService
       next if en_md.blank?
       next if record.public_send(:"#{field}_fr").present?
 
-      fr_md = translate_text(en_md)
+      fr_md = translate_markdown(en_md)
       next unless fr_md
 
       record.update_column(:"#{field}_md_fr", fr_md)
     end
+  end
+
+  # Chart JSON contains identifiers and observations, not translatable prose.
+  # Keep it byte-for-byte intact; authors can localize labels in the FR editor.
+  CHART_FENCE = /^ {0,3}(`{3,}|~{3,})buildcanada-chart[^\n]*\n.*?^ {0,3}\1[ \t]*(?:\n|\z)/m
+
+  def translate_markdown(markdown)
+    return translate_text(markdown) unless markdown.match?(CHART_FENCE)
+
+    parts = []
+    cursor = 0
+    markdown.to_enum(:scan, CHART_FENCE).each do
+      match = Regexp.last_match
+      prose = markdown[cursor...match.begin(0)]
+      unless prose.blank?
+        translated = translate_text(prose)
+        return nil unless translated
+        parts << translated
+      end
+      parts << match[0]
+      cursor = match.end(0)
+    end
+    prose = markdown[cursor..]
+    unless prose.blank?
+      translated = translate_text(prose)
+      return nil unless translated
+      parts << translated
+    end
+    parts.join("\n\n")
   end
 
   def translate_hash_fields(record)

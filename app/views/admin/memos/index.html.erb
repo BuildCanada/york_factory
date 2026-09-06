@@ -42,3 +42,12 @@
 </table>
 
 <%= render "admin/shared/pagination", pagy: @pagy %>
+
+<details class="card mt-1">
+  <summary>Import a poll from Surveyor</summary>
+  <%= form_with url: import_poll_admin_memos_path, multipart: true do |form| %>
+    <%= form.label :publication_export, "Publication draft JSON" %>
+    <%= form.file_field :publication_export, accept: ".json,application/json", required: true %>
+    <%= form.submit "Import as draft", class: "btn btn-primary" %>
+  <% end %>
+</details>

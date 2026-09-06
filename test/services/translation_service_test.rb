@@ -5,6 +5,18 @@ class TranslationServiceTest < ActiveSupport::TestCase
     @service = TranslationService.new
   end
 
+  test "chart definitions are never passed to the translator" do
+    chart = "```buildcanada-chart\n{\"definition\":{\"title\":\"Canada\"},\"value\":54}\n```\n"
+    source = "Before\n\n#{chart}\nAfter"
+    translated_inputs = []
+    @service.define_singleton_method(:translate_text) { |text| translated_inputs << text; text.upcase.strip }
+    result = @service.send(:translate_markdown, source)
+    assert translated_inputs.none? { |text| text.include?("definition") }
+    assert_includes result, chart
+    assert_includes result, "BEFORE"
+    assert_includes result, "AFTER"
+  end
+
   test "translates EN to FR via RubyLLM" do
     fake_response = Struct.new(:content).new("Bonjour le monde")
     fake_chat = Object.new

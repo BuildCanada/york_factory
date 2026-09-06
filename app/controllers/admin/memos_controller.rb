@@ -9,6 +9,18 @@ module Admin
       @pagy, @memos = pagy(scope)
     end
 
+    def import_poll
+      upload = params[:publication_export]
+      unless upload.respond_to?(:read) && upload.size <= 25.megabytes
+        redirect_to admin_memos_path, alert: "Choose a Surveyor publication JSON export smaller than 25 MB."
+        return
+      end
+      memo = Polls::Import.call(JSON.parse(upload.read))
+      redirect_to edit_admin_memo_path(memo), notice: "Poll imported as a draft. Review the analysis and crosstabs, then add PDFs and launch copy."
+    rescue JSON::ParserError, ArgumentError, ActiveRecord::RecordInvalid => e
+      redirect_to admin_memos_path, alert: "Import failed: #{e.message}"
+    end
+
     def show; end
     def new; @memo = Memo.new; end
     def edit; end
@@ -25,6 +37,7 @@ module Admin
     def update
       purge_attachment(:seo_image)
       purge_attachment(:banner_image)
+      PollPublication::DOWNLOADS.each { |name| purge_attachment(name) }
       if @memo.update(memo_params)
         redirect_to admin_memo_path(@memo), notice: "Memo updated."
       else
@@ -42,6 +55,11 @@ module Admin
       @memo.body_fr = nil
       @memo.appendix_fr = nil
       @memo.supporters_fr = nil
+      @memo.methodology_fr = nil
+      @memo.news_release_fr = nil
+      @memo.subscriber_email_fr = nil
+      @memo.email_subject_fr = nil
+      @memo.tweet_fr = nil
       @memo.save!
       TranslateRecordJob.perform_later(@memo)
       head :ok
@@ -55,6 +73,7 @@ module Admin
 
     def memo_params
       params.require(:memo).permit(
+        *PollPublication::PARAMS,
         :slug, :author_id, :co_author_id, :author_name, :author_title,
         :author_avatar, :category, :publication, :twitter_embed, :published_at, :featured, :seo_image, :banner_image,
         :title_en, :title_fr,

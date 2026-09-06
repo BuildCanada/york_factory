@@ -54,6 +54,7 @@ Rails.application.routes.draw do
       end
 
       resources :memos, param: :slug do
+        get "downloads/:asset", action: :download, on: :member, as: :download
         resources :endorsements, only: [ :index, :create ]
         resources :critiques,    only: [ :index, :create ]
       end
@@ -198,6 +199,7 @@ Rails.application.routes.draw do
       post :retranslate, on: :member
     end
     resources :memos, only: full do
+      post :import_poll, on: :collection
       post :retranslate, on: :member
     end
     resources :builders, only: full do

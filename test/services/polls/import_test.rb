@@ -3,19 +3,18 @@ require "test_helper"
 class Polls::ImportTest < ActiveSupport::TestCase
   def bundle
     { "schemaVersion" => 1, "kind" => "buildcanada-poll-publication",
-      "memo" => { "slug" => "imported-poll", "survey_slug" => "survey", "title_en" => "Poll", "body_en" => "## Analysis",
+      "poll" => { "slug" => "imported-poll", "survey_slug" => "survey", "title_en" => "Poll", "body_en" => "## Analysis",
         "published_at" => 1.day.ago.iso8601, "publication" => "build_toronto", "featured" => true },
       "crosstabs" => { "schemaVersion" => 2, "survey" => { "slug" => "survey" }, "tables" => [] } }
   end
 
   test "imports a draft with crosstabs and ignores publication controls" do
-    memo = Polls::Import.call(bundle)
-    assert memo.poll?
-    assert memo.draft?
-    assert_equal "build_canada", memo.publication
-    assert_not memo.featured?
-    assert memo.crosstabs_json.attached?
-    assert_equal 2, JSON.parse(memo.crosstabs_json.download)["schemaVersion"]
+    poll = Polls::Import.call(bundle)
+    assert_instance_of Poll, poll
+    assert poll.draft?
+    assert_not poll.featured?
+    assert poll.crosstabs_json.attached?
+    assert_equal 2, JSON.parse(poll.crosstabs_json.download)["schemaVersion"]
   end
 
   test "rejects mismatched survey data and unsupported versions" do

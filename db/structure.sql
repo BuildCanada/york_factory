@@ -697,24 +697,7 @@ CREATE TABLE public.memos (
     supporters_md_fr text,
     publication character varying DEFAULT 'build_canada'::character varying NOT NULL,
     endorsements_count integer DEFAULT 0 NOT NULL,
-    approved_critiques_count integer DEFAULT 0 NOT NULL,
-    content_kind character varying DEFAULT 'memo'::character varying NOT NULL,
-    survey_slug character varying,
-    survey_campaign_id character varying,
-    pollster character varying,
-    sample_size integer,
-    fieldwork_start date,
-    fieldwork_end date,
-    methodology_md_en text,
-    news_release_md_en text,
-    subscriber_email_md_en text,
-    email_subject_en character varying,
-    tweet_en text,
-    methodology_md_fr text,
-    news_release_md_fr text,
-    subscriber_email_md_fr text,
-    email_subject_fr character varying,
-    tweet_fr text
+    approved_critiques_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -1989,6 +1972,67 @@ ALTER SEQUENCE public.oauth_applications_id_seq OWNED BY public.oauth_applicatio
 
 
 --
+-- Name: polls; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.polls (
+    id bigint NOT NULL,
+    slug character varying NOT NULL,
+    author_id bigint,
+    author_name character varying,
+    author_title character varying,
+    featured boolean DEFAULT false,
+    published_at timestamp(6) without time zone,
+    twitter_embed text,
+    survey_slug character varying NOT NULL,
+    survey_campaign_id character varying,
+    pollster character varying,
+    sample_size integer,
+    fieldwork_start date,
+    fieldwork_end date,
+    title_en character varying,
+    key_messages_en jsonb DEFAULT '[]'::jsonb,
+    body_md_en text,
+    appendix_md_en text,
+    methodology_md_en text,
+    news_release_md_en text,
+    subscriber_email_md_en text,
+    email_subject_en character varying,
+    tweet_en text,
+    title_fr character varying,
+    key_messages_fr jsonb DEFAULT '[]'::jsonb,
+    body_md_fr text,
+    appendix_md_fr text,
+    methodology_md_fr text,
+    news_release_md_fr text,
+    subscriber_email_md_fr text,
+    email_subject_fr character varying,
+    tweet_fr text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: polls_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.polls_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: polls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.polls_id_seq OWNED BY public.polls.id;
+
+
+--
 -- Name: posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2046,7 +2090,7 @@ CREATE TABLE public.saved_search_matches (
     searchable_type character varying NOT NULL,
     searchable_id character varying NOT NULL,
     notification_batch_id bigint,
-    CONSTRAINT saved_search_matches_state CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'buffered'::character varying, 'dispatching'::character varying, 'delivered'::character varying, 'dead'::character varying])::text[])))
+    CONSTRAINT saved_search_matches_state CHECK (((state)::text = ANY (ARRAY[('pending'::character varying)::text, ('buffered'::character varying)::text, ('dispatching'::character varying)::text, ('delivered'::character varying)::text, ('dead'::character varying)::text])))
 );
 
 
@@ -2090,7 +2134,7 @@ CREATE TABLE public.saved_search_runs (
     finished_at timestamp with time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT saved_search_runs_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying])::text[])))
+    CONSTRAINT saved_search_runs_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text])))
 );
 
 
@@ -2136,9 +2180,9 @@ CREATE TABLE public.saved_searches (
     timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY ((ARRAY['instant'::character varying, 'digest'::character varying])::text[]))),
+    CONSTRAINT saved_searches_delivery_mode CHECK (((delivery_mode)::text = ANY (ARRAY[('instant'::character varying)::text, ('digest'::character varying)::text]))),
     CONSTRAINT saved_searches_poll_interval CHECK (((poll_interval_seconds >= 60) AND (poll_interval_seconds <= 86400))),
-    CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY ((ARRAY['future_only'::character varying, 'backfill'::character varying])::text[])))
+    CONSTRAINT saved_searches_start_policy CHECK (((start_policy)::text = ANY (ARRAY[('future_only'::character varying)::text, ('backfill'::character varying)::text])))
 );
 
 
@@ -3215,7 +3259,7 @@ CREATE TABLE warehouse.election_candidates (
     photo_source character varying,
     photo_attribution character varying,
     photo_suggestions jsonb DEFAULT '[]'::jsonb NOT NULL,
-    CONSTRAINT election_candidates_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'withdrawn'::character varying])::text[])))
+    CONSTRAINT election_candidates_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('withdrawn'::character varying)::text])))
 );
 
 
@@ -3253,8 +3297,8 @@ CREATE TABLE warehouse.election_races (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT election_races_district_type_check CHECK (((district_type)::text = ANY ((ARRAY['at_large'::character varying, 'ward'::character varying, 'school_board_ward'::character varying, 'riding'::character varying, 'district'::character varying])::text[]))),
-    CONSTRAINT election_races_office_type_check CHECK (((office_type)::text = ANY ((ARRAY['mayor'::character varying, 'councillor'::character varying, 'trustee'::character varying, 'mp'::character varying, 'mpp'::character varying])::text[])))
+    CONSTRAINT election_races_district_type_check CHECK (((district_type)::text = ANY (ARRAY[('at_large'::character varying)::text, ('ward'::character varying)::text, ('school_board_ward'::character varying)::text, ('riding'::character varying)::text, ('district'::character varying)::text]))),
+    CONSTRAINT election_races_office_type_check CHECK (((office_type)::text = ANY (ARRAY[('mayor'::character varying)::text, ('councillor'::character varying)::text, ('trustee'::character varying)::text, ('mp'::character varying)::text, ('mpp'::character varying)::text])))
 );
 
 
@@ -3292,7 +3336,7 @@ CREATE TABLE warehouse.elections (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     published_at timestamp(6) without time zone,
-    CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY ((ARRAY['municipal'::character varying, 'provincial'::character varying, 'federal'::character varying, 'by_election'::character varying])::text[])))
+    CONSTRAINT elections_kind_check CHECK (((kind)::text = ANY (ARRAY[('municipal'::character varying)::text, ('provincial'::character varying)::text, ('federal'::character varying)::text, ('by_election'::character varying)::text])))
 );
 
 
@@ -4006,9 +4050,9 @@ CREATE TABLE warehouse.media_articles (
     validation_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY ((ARRAY['full'::character varying, 'truncated'::character varying])::text[])))),
+    CONSTRAINT media_articles_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY (ARRAY[('full'::character varying)::text, ('truncated'::character varying)::text])))),
     CONSTRAINT media_articles_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT media_articles_state CHECK (((state)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'withdrawn'::character varying, 'invalid'::character varying])::text[])))
+    CONSTRAINT media_articles_state CHECK (((state)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('withdrawn'::character varying)::text, ('invalid'::character varying)::text])))
 );
 
 
@@ -4030,7 +4074,7 @@ CREATE TABLE warehouse.media_feed_fetches (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'running'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'not_modified'::character varying])::text[])))
+    CONSTRAINT media_feed_fetches_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('running'::character varying)::text, ('succeeded'::character varying)::text, ('failed'::character varying)::text, ('not_modified'::character varying)::text])))
 );
 
 
@@ -4701,9 +4745,9 @@ CREATE TABLE warehouse.spending_awards (
     updated_at timestamp(6) without time zone NOT NULL,
     canonical_key character varying NOT NULL,
     is_canonical boolean DEFAULT true NOT NULL,
-    CONSTRAINT spending_awards_award_type CHECK (((award_type)::text = ANY ((ARRAY['contract'::character varying, 'grant'::character varying, 'contribution'::character varying, 'transfer_payment'::character varying])::text[]))),
+    CONSTRAINT spending_awards_award_type CHECK (((award_type)::text = ANY (ARRAY[('contract'::character varying)::text, ('grant'::character varying)::text, ('contribution'::character varying)::text, ('transfer_payment'::character varying)::text]))),
     CONSTRAINT spending_awards_revision_nonnegative CHECK ((search_revision >= 0)),
-    CONSTRAINT spending_awards_state CHECK (((state)::text = ANY ((ARRAY['published'::character varying, 'withdrawn'::character varying])::text[])))
+    CONSTRAINT spending_awards_state CHECK (((state)::text = ANY (ARRAY[('published'::character varying)::text, ('withdrawn'::character varying)::text])))
 );
 
 
@@ -5108,6 +5152,13 @@ ALTER TABLE ONLY public.oauth_access_tokens ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY public.oauth_applications ALTER COLUMN id SET DEFAULT nextval('public.oauth_applications_id_seq'::regclass);
+
+
+--
+-- Name: polls id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.polls ALTER COLUMN id SET DEFAULT nextval('public.polls_id_seq'::regclass);
 
 
 --
@@ -5910,6 +5961,14 @@ ALTER TABLE ONLY public.oauth_access_tokens
 
 ALTER TABLE ONLY public.oauth_applications
     ADD CONSTRAINT oauth_applications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: polls polls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.polls
+    ADD CONSTRAINT polls_pkey PRIMARY KEY (id);
 
 
 --
@@ -6954,13 +7013,6 @@ CREATE INDEX index_memos_on_co_author_id ON public.memos USING btree (co_author_
 
 
 --
--- Name: index_memos_on_content_kind; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_memos_on_content_kind ON public.memos USING btree (content_kind);
-
-
---
 -- Name: index_memos_on_featured; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7182,6 +7234,27 @@ CREATE UNIQUE INDEX index_oauth_access_tokens_on_token ON public.oauth_access_to
 --
 
 CREATE UNIQUE INDEX index_oauth_applications_on_uid ON public.oauth_applications USING btree (uid);
+
+
+--
+-- Name: index_polls_on_author_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_polls_on_author_id ON public.polls USING btree (author_id);
+
+
+--
+-- Name: index_polls_on_published_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_polls_on_published_at ON public.polls USING btree (published_at);
+
+
+--
+-- Name: index_polls_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_polls_on_slug ON public.polls USING btree (slug);
 
 
 --
@@ -8768,6 +8841,14 @@ ALTER TABLE ONLY public.metrics_substack_posts
 
 ALTER TABLE ONLY public.metrics_social_media_ads
     ADD CONSTRAINT fk_rails_09d8c3097d FOREIGN KEY (ad_account_id) REFERENCES public.metrics_social_media_ad_accounts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: polls fk_rails_0bfc525c5b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.polls
+    ADD CONSTRAINT fk_rails_0bfc525c5b FOREIGN KEY (author_id) REFERENCES public.team_members(id);
 
 
 --

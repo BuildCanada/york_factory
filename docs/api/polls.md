@@ -1,13 +1,14 @@
 # Poll publications
 
-A poll is a `Memo` with `content_kind: "poll"`. It shares the bilingual editor,
-publication/draft rules, feed, authors, key messages and canonical `/memos/:slug`
-page. TradingPost also lists polls at `/polls`. Existing memos default to `memo`.
+A poll is a separate `Poll` model with its own table, bilingual editor, author,
+publication/draft rules and key messages. Its canonical page is `/polls/:slug`.
+Polls reuse the frontend article presentation without using memo records, routes,
+engagements or slugs. No existing memo records are migrated into polls.
 
 ## Import from Surveyor
 
 1. In Surveyor, open a campaign's Crosstabs and download **Publication draft**.
-2. In York Factory, open **Memos → Import a poll from Surveyor**, choose the JSON,
+2. In York Factory, open **Polls → Import a poll from Surveyor**, choose the JSON,
    and import. The import creates a Build Canada draft, never publishes or
    overwrites an existing slug, and attaches the embedded crosstabs JSON.
 3. Edit Body into the analysis report. Surveyor provides bilingual charts and
@@ -25,8 +26,8 @@ page. TradingPost also lists polls at `/polls`. Existing memos default to `memo`
    Saving, importing or publishing does not itself send messages.
 
 The importer accepts `kind: "buildcanada-poll-publication", schemaVersion: 1`,
-with `memo` and `crosstabs` objects. Crosstabs must have `schemaVersion: 2`, a
-`tables` array, and a survey slug matching the memo. Imports are limited to 25 MB.
+with `poll` and `crosstabs` objects. Crosstabs must have `schemaVersion: 2`, a
+`tables` array, and a survey slug matching the poll. Imports are limited to 25 MB.
 The same service is available in Rails as `Polls::Import.call(JSON.parse(json))`.
 
 ## Authoring inline charts
@@ -85,10 +86,11 @@ labels and notes explicitly in the French editor; never translate metric IDs/dat
 
 ## API
 
-Existing authenticated memo create/update endpoints accept the following additional
-fields. API keys still cannot set `published_at`.
+Authenticated `POST /api/v1/polls` and `PATCH /api/v1/polls/:slug` accept a
+`poll` object with the following fields. API keys still cannot set `published_at`.
 
-- `content_kind`: `memo` or `poll`; polls require `survey_slug`.
+- `slug`, `title_en/fr`, `body_en/fr`, `appendix_en/fr`, `key_messages_en/fr`.
+- `author_id`, `author_name`, `author_title`, `featured`, `seo_image`, `banner_image`.
 - `survey_slug`, `survey_campaign_id`, `pollster`, `sample_size` (positive integer).
 - `fieldwork_start`, `fieldwork_end` (ISO dates, end must not precede start).
 - `methodology_en/fr`, `news_release_en/fr`, `subscriber_email_en/fr` (markdown).
@@ -97,19 +99,19 @@ fields. API keys still cannot set `published_at`.
   Send file uploads as multipart or use ActiveStorage signed blob IDs. PDF and JSON
   content types are validated; attachments are limited to 100 MB each.
 
-`GET /api/v1/memos?content_kind=poll` lists polls using normal publication/category
-filters and pagination. Detail responses add `content_kind` and a `poll` object
+`GET /api/v1/polls` lists polls with pagination, optional `featured` and `q` filters.
+`GET /api/v1/polls/:slug` returns the article fields and a `poll` object
 with survey metadata, methodology and news release (HTML and markdown), and download
 URLs. English PDFs are used when a French version is missing; JSON is bilingual.
 
 `poll.launch_copy` (email subject, email markdown, tweet) is returned **only** to
 an authenticated admin preview. It is absent from public responses.
 
-`GET /api/v1/memos/:slug/downloads/:asset` serves `analysis_markdown`,
+`GET /api/v1/polls/:slug/downloads/:asset` serves `analysis_markdown`,
 `analysis_pdf_en/fr`, `crosstabs_pdf_en/fr`, or `crosstabs_json`. Every request checks
 publication and preview access. Draft/scheduled/unpublished assets return 404 to
 public callers. TradingPost proxies downloads to preserve admin preview credentials;
-responses are not cached. The existing `/memos/:slug.md` remains a public, complete
+responses are not cached. `/polls/:slug.md` is a public, complete
 markdown representation including methodology, news release and download links.
 
 ## Rollout and verification

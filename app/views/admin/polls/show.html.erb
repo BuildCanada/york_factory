@@ -1,0 +1,69 @@
+<div class="page-header">
+  <h1><%= @poll.title_en || "Untitled" %></h1>
+  <div class="btn-group">
+    <% if !@poll.published? %>
+      <a href="<%= preview_url("/polls/#{@poll.slug}") %>" target="_blank" class="btn btn-sm">Preview</a>
+    <% end %>
+    <a href="<%= edit_admin_poll_path(@poll) %>" class="btn btn-sm">Edit</a>
+    <%= link_to "Delete", admin_poll_path(@poll), data: { turbo_method: :delete, turbo_confirm: "Delete this poll?" }, class: "btn btn-sm btn-danger" %>
+  </div>
+</div>
+
+<div class="card mb-2">
+  <p><strong>Slug:</strong> <%= render "admin/shared/slug_with_history", record: @poll %></p>
+  <p><strong>Author:</strong> <%= @poll.author&.name || @poll.author_name || "—" %></p>
+  <p><strong>Status:</strong>
+    <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[@poll.publish_status] %>">
+      <%= @poll.publish_status.capitalize %>
+    </span>
+  </p>
+  <p><strong>Published at:</strong> <%= @poll.published_at&.strftime("%b %d, %Y %H:%M") || "—" %></p>
+  <% if @poll.banner_image.attached? %>
+    <p><strong>Banner Image:</strong></p>
+    <%= image_tag url_for(@poll.banner_image), class: "file-preview" %>
+  <% end %>
+  <% if @poll.seo_image.attached? %>
+    <p><strong>SEO Image:</strong></p>
+    <%= image_tag url_for(@poll.seo_image), class: "file-preview" %>
+  <% end %>
+</div>
+
+<% if @poll.key_messages_en.present? %>
+  <div class="card mb-2">
+    <h2>Key Messages</h2>
+    <ul>
+      <% @poll.key_messages_en.each do |msg| %>
+        <li><%= msg.is_a?(Hash) ? msg["message"] : msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="card mb-2">
+  <h2>Body (EN)</h2>
+  <div class="rendered-markdown"><%= render_markdown @poll.body_en %></div>
+</div>
+
+<% if @poll.appendix_en.present? %>
+  <div class="card">
+    <h2>Appendix (EN)</h2>
+    <div class="rendered-markdown"><%= render_markdown @poll.appendix_en %></div>
+  </div>
+<% end %>
+
+  <div class="card mt-1">
+    <h2>Poll publication</h2>
+    <p>Survey: <%= @poll.survey_slug %> · Campaign: <%= @poll.survey_campaign_id %></p>
+    <% PollPublication::DOWNLOADS.each do |name| %>
+      <% if @poll.public_send(name).attached? %>
+        <p><%= link_to name.humanize, url_for(@poll.public_send(name)) %></p>
+      <% end %>
+    <% end %>
+    <% %i[methodology news_release subscriber_email].each do |field| %>
+      <h3><%= field.to_s.humanize %> (EN)</h3>
+      <div class="rendered-markdown"><%= render_markdown @poll.public_send("#{field}_en") %></div>
+    <% end %>
+    <p><strong>Email subject:</strong> <%= @poll.email_subject_en %></p>
+    <p><strong>Tweet:</strong> <%= @poll.tweet_en %></p>
+  </div>
+

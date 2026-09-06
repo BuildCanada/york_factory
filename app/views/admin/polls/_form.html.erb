@@ -1,35 +1,19 @@
-<%= form_with(model: [:admin, memo], class: "card") do |f| %>
-  <% if memo.errors.any? %>
+<%= form_with(model: [:admin, poll], class: "card") do |f| %>
+  <% if poll.errors.any? %>
     <div class="flash flash-alert">
-      <% memo.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+      <% poll.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
     </div>
   <% end %>
 
   <%= render "admin/shared/translated_text_field", form: f, field: :title %>
   <%= render "admin/shared/slug_field", form: f %>
-  <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
-  <%= render "admin/shared/translated_rich_text", form: f, field: :appendix, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
-  <%= render "admin/shared/translated_rich_text", form: f, field: :supporters, retranslate_url: memo.persisted? ? retranslate_admin_memo_path(memo) : nil %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :body, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
+  <%= render "admin/shared/translated_rich_text", form: f, field: :appendix, retranslate_url: poll.persisted? ? retranslate_admin_poll_path(poll) : nil %>
   <%= render "admin/shared/translated_string_list", form: f, field: :key_messages %>
-
-  <div class="form-group">
-    <label>Category</label>
-    <%= f.select :category, Memo::CATEGORIES.map { |c| [c.titleize, c] }, { include_blank: "— None —" }, class: "form-control" %>
-  </div>
-
-  <div class="form-group">
-    <label>Publication</label>
-    <%= f.select :publication, Memo::PUBLICATIONS.map { |p| [p.titleize, p] }, {}, class: "form-control" %>
-  </div>
 
   <div class="form-group">
     <label>Author</label>
     <%= f.collection_select :author_id, TeamMember.ordered, :id, :name, { include_blank: "— None —" }, class: "form-control" %>
-  </div>
-
-  <div class="form-group">
-    <label>Co-Author</label>
-    <%= f.collection_select :co_author_id, TeamMember.ordered, :id, :name, { include_blank: "— None —" }, class: "form-control" %>
   </div>
 
   <div class="form-group">
@@ -53,10 +37,11 @@
 
   <%= render "admin/shared/file_upload", form: f, field: :banner_image, label: "Banner Image" %>
   <%= render "admin/shared/file_upload", form: f, field: :seo_image, label: "SEO Image" %>
+  <%= render "poll_fields", form: f %>
   <%= render "admin/shared/publish_fields", form: f %>
 
   <div class="btn-group mt-1">
     <%= f.submit "Save", class: "btn btn-primary" %>
-    <a href="<%= memo.persisted? ? admin_memo_path(memo) : admin_memos_path %>" class="btn">Cancel</a>
+    <a href="<%= poll.persisted? ? admin_poll_path(poll) : admin_polls_path %>" class="btn">Cancel</a>
   </div>
 <% end %>

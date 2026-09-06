@@ -2,13 +2,12 @@ module Api
   module V1
     class MemosController < CmsBaseController
       before_action :authenticate_admin!, only: [ :create, :update, :destroy ]
-      before_action :set_memo, only: [ :show, :update, :destroy, :download ]
+      before_action :set_memo, only: [ :show, :update, :destroy ]
 
       def index
         scope = publication_scope
         scope = preview_mode? ? scope : scope.published
         scope = scope.includes(:author, :co_author).with_attached_seo_image.with_attached_banner_image.order(published_at: :desc)
-        scope = scope.where(content_kind: params[:content_kind]) if params[:content_kind].present?
         scope = scope.featured if params[:featured].present?
         scope = scope.by_category(params[:category]) if params[:category].present?
         scope = scope.search(params[:q]) if params[:q].present?
@@ -22,21 +21,6 @@ module Api
 
       def show
         render json: serialize_memo(@memo, full: true)
-      end
-
-      def download
-        name = params[:asset]
-        raise ActiveRecord::RecordNotFound unless @memo.poll?
-        response.headers["Cache-Control"] = "private, no-store"
-        if name == "analysis_markdown"
-          return send_data @memo.body.to_s, filename: "#{@memo.slug}.md", type: "text/markdown", disposition: "attachment"
-        end
-        raise ActiveRecord::RecordNotFound unless PollPublication::DOWNLOADS.include?(name)
-        attachment = @memo.public_send(name)
-        raise ActiveRecord::RecordNotFound unless attachment.attached?
-
-        send_data attachment.download, filename: attachment.filename.to_s,
-          type: attachment.content_type, disposition: "attachment"
       end
 
       def create
@@ -75,7 +59,6 @@ module Api
 
       def memo_params
         scalar_fields = [
-          *PollPublication::PARAMS,
           :slug, :author_id, :co_author_id, :author_name, :author_title,
           :author_avatar, :category, :publication, :twitter_embed, :featured, :seo_image, :banner_image,
           :title_en, :title_fr,
@@ -96,7 +79,6 @@ module Api
           slug: memo.slug,
           title: memo.title,
           category: memo.category,
-          content_kind: memo.content_kind,
           publication: memo.publication,
           featured: memo.featured,
           published_at: memo.published_at,
@@ -106,24 +88,6 @@ module Api
         }
 
         if full
-          if memo.poll?
-            data[:poll] = {
-              survey_slug: memo.survey_slug, survey_campaign_id: memo.survey_campaign_id,
-              pollster: memo.pollster, sample_size: memo.sample_size,
-              fieldwork_start: memo.fieldwork_start, fieldwork_end: memo.fieldwork_end,
-              methodology: memo.methodology_html, methodology_markdown: memo.methodology,
-              news_release: memo.news_release_html, news_release_markdown: memo.news_release,
-              downloads: memo.poll_downloads.transform_values { |name|
-                download_api_v1_memo_url(memo.slug, asset: name, publication: memo.publication, locale: I18n.locale)
-              }
-            }
-            if preview_mode?
-              data[:poll][:launch_copy] = {
-                email_subject: memo.email_subject, subscriber_email_markdown: memo.subscriber_email,
-                tweet: memo.tweet
-              }
-            end
-          end
           data.merge!(
             body: memo.body_html,
             body_markdown: memo.body,

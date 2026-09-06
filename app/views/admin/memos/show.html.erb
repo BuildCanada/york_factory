@@ -58,21 +58,3 @@
     <div class="rendered-markdown"><%= render_markdown @memo.appendix_en %></div>
   </div>
 <% end %>
-
-<% if @memo.poll? %>
-  <div class="card mt-1">
-    <h2>Poll publication</h2>
-    <p>Survey: <%= @memo.survey_slug %> · Campaign: <%= @memo.survey_campaign_id %></p>
-    <% PollPublication::DOWNLOADS.each do |name| %>
-      <% if @memo.public_send(name).attached? %>
-        <p><%= link_to name.humanize, url_for(@memo.public_send(name)) %></p>
-      <% end %>
-    <% end %>
-    <% %i[methodology news_release subscriber_email].each do |field| %>
-      <h3><%= field.to_s.humanize %> (EN)</h3>
-      <div class="rendered-markdown"><%= render_markdown @memo.public_send("#{field}_en") %></div>
-    <% end %>
-    <p><strong>Email subject:</strong> <%= @memo.email_subject_en %></p>
-    <p><strong>Tweet:</strong> <%= @memo.tweet_en %></p>
-  </div>
-<% end %>

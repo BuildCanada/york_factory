@@ -1,9 +1,9 @@
-# Polls share the memo publication lifecycle, feed, editor and canonical URL.
+# Report assets and localized launch copy for Poll records.
 module PollPublication
   extend ActiveSupport::Concern
 
   DOWNLOADS = %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
-  PARAMS = %i[content_kind survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
+  PARAMS = %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
     methodology_en methodology_fr news_release_en news_release_fr subscriber_email_en subscriber_email_fr
     email_subject_en email_subject_fr tweet_en tweet_fr].concat(DOWNLOADS.map(&:to_sym)).freeze
 
@@ -14,19 +14,13 @@ module PollPublication
     has_localized_markdown :subscriber_email
     translates :email_subject, :tweet, backend: :column
 
-    validates :content_kind, inclusion: { in: %w[memo poll] }
-    validates :survey_slug, presence: true, if: :poll?
+    validates :survey_slug, presence: true
     validates :sample_size, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
     validate :validate_poll_files
     validate :validate_fieldwork_dates
-    scope :polls, -> { where(content_kind: "poll") }
   end
 
-  def poll? = content_kind == "poll"
-
   def poll_downloads
-    return {} unless poll?
-
     locale = I18n.locale == :fr ? "fr" : "en"
     downloads = %w[analysis_pdf crosstabs_pdf crosstabs_json].filter_map do |kind|
       name = kind == "crosstabs_json" ? kind : "#{kind}_#{locale}"

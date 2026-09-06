@@ -23,6 +23,12 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_equal 0, workbook.sheet(1).cell(8, 2)
       assert_nil workbook.sheet(1).cell(7, 3)
       Zip::File.open(file.path) do |zip|
+        zip.each do |entry|
+          next unless entry.name.end_with?(".xml", ".rels")
+          Nokogiri::XML(entry.get_input_stream.read) { |config| config.strict.nonet }
+        end
+        styles = Nokogiri::XML(zip.read("xl/styles.xml"))
+        assert_includes styles.xpath("//*[local-name()='numFmt']/@formatCode").map(&:value), '0\%'
         xml = zip.read("xl/worksheets/sheet2.xml")
         assert_not_includes xml, "<f>"
         assert_includes xml, "Summary &amp; Index"

@@ -14,7 +14,7 @@ module Polls
       book.escape_formulas = true
       heading = book.styles.add_style(bg_color: "8C3031", fg_color: "FFFFFF", b: true, sz: 13, alignment: { wrap_text: true })
       text = book.styles.add_style(font_name: "Arial", sz: 11, alignment: { wrap_text: true, vertical: :top })
-      percent = book.styles.add_style(format_code: '0"%"', alignment: { horizontal: :right })
+      percent = book.styles.add_style(format_code: '0\%', alignment: { horizontal: :right })
       book.add_worksheet(name: "Summary & Index") do |sheet|
         sheet.add_row [ "Build Canada", @poll.title_en ], style: heading
         sheet.add_row [ "Release date", @poll.published_at&.to_date&.iso8601 || "Draft" ], style: text
@@ -71,6 +71,8 @@ module Polls
           groups.each { |id, group| sheet.add_row [ bilingual(group["label"] || id), JSON.generate(group["semantics"]) ], style: text, height: 35 }
         end
       end
+      errors = package.validate
+      raise ArgumentError, "Invalid workbook: #{errors.map(&:message).join('; ').truncate(1000)}" if errors.any?
       package.to_stream.read
     end
 

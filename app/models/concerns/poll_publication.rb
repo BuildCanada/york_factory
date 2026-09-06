@@ -4,7 +4,8 @@ module PollPublication
 
   DOWNLOADS = %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
   UPLOADS = %w[crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
-  PARAMS = %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
+  SURVEY_SCOPES = %w[national provincial municipal].freeze
+  PARAMS = %i[survey_scope survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
     methodology_en methodology_fr news_release_en news_release_fr subscriber_email_en subscriber_email_fr
     email_subject_en email_subject_fr tweet_en tweet_fr].concat(UPLOADS.map(&:to_sym)).freeze
 
@@ -15,6 +16,7 @@ module PollPublication
     has_localized_markdown :subscriber_email
     translates :email_subject, :tweet, backend: :column
 
+    validates :survey_scope, inclusion: { in: SURVEY_SCOPES }
     validates :survey_slug, presence: true
     validates :sample_size, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
     validate :validate_poll_files

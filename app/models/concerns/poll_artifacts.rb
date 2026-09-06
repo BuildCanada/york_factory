@@ -2,7 +2,7 @@ module PollArtifacts
   extend ActiveSupport::Concern
   GENERATED = %w[analysis_pdf_en analysis_pdf_fr crosstabs_xlsx].freeze
   XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  VERSION = 2
+  VERSION = 3
 
   included do
     has_one_attached :crosstabs_xlsx
@@ -18,7 +18,7 @@ module PollArtifacts
     else
       locale = name.end_with?("_fr") ? "fr" : "en"
       return if public_send("body_#{locale}").blank?
-      common.concat([ locale, public_send("body_#{locale}"), public_send("appendix_#{locale}"),
+      common.concat([ survey_scope, locale, public_send("body_#{locale}"), public_send("appendix_#{locale}"),
         public_send("methodology_#{locale}"), public_send("key_messages_#{locale}").presence || key_messages_en, pollster, sample_size,
         fieldwork_start, fieldwork_end, author&.name, author_name ])
     end

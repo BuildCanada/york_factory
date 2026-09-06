@@ -13,7 +13,7 @@ engagements or slugs. No existing memo records are migrated into polls.
    overwrites an existing slug, and attaches the embedded crosstabs JSON.
 3. Edit Body into the analysis report. Surveyor provides bilingual charts and
    methodology as a starting point, not a written interpretation of findings.
-   Add key takeaways, pollster, sample size and fieldwork dates.
+   Add key takeaways, survey scope (National, Provincial or Municipal), pollster, sample size and fieldwork dates.
 4. Review the crosstabs and chart data for disclosure before publication.
    Surveyor's administrative export has **unsuppressed small cells**. Replace the
    attached JSON and chart rows with the reviewed public versions as needed.
@@ -92,6 +92,7 @@ Authenticated `POST /api/v1/polls` and `PATCH /api/v1/polls/:slug` accept a
 
 - `slug`, `title_en/fr`, `body_en/fr`, `appendix_en/fr`, `key_messages_en/fr`.
 - `author_id`, `author_name`, `author_title`, `featured`, `seo_image`, `banner_image`.
+- `survey_scope`: `national` (default), `provincial` or `municipal`; shown on the PDF cover.
 - `survey_slug`, `survey_campaign_id`, `pollster`, `sample_size` (positive integer).
 - `fieldwork_start`, `fieldwork_end` (ISO dates, end must not precede start).
 - `methodology_en/fr`, `news_release_en/fr`, `subscriber_email_en/fr` (markdown).
@@ -155,3 +156,5 @@ Poppler, including all pages and embedded charts, and open the workbook in Excel
 
 Run the poll model/API/admin, generation-job, PDF-template and workbook tests;
 TradingPost's chart/download tests and browser checks cover the public presentation.
+
+Reports use an edge-to-edge linen background. The cover has the square logo, survey scope, title and release date (Month Day, YYYY). Methodology markdown starts on page two, followed by takeaways and analysis. Subsequent pages show the square logo at top right and the poll’s public URL in the footer.

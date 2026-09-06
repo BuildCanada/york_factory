@@ -2010,7 +2010,9 @@ CREATE TABLE public.polls (
     tweet_fr text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    artifact_errors jsonb DEFAULT '{}'::jsonb NOT NULL
+    artifact_errors jsonb DEFAULT '{}'::jsonb NOT NULL,
+    survey_scope character varying DEFAULT 'national'::character varying NOT NULL,
+    CONSTRAINT polls_survey_scope CHECK (((survey_scope)::text = ANY ((ARRAY['national'::character varying, 'provincial'::character varying, 'municipal'::character varying])::text[])))
 );
 
 
@@ -10099,6 +10101,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260906000001'),
 ('20260906000000'),
 ('20260905000000'),
 ('20260901000001'),

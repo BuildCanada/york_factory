@@ -6,15 +6,29 @@
 @font-face { font-family: Financier; src: url('<%= font("financier-text-regular.woff2") %>'); }
 @font-face { font-family: Founders; src: url('<%= font("founders-grotesk-mono-regular.woff2") %>'); }
 @font-face { font-family: 'Söhne Kräftig'; src: url('<%= font("soehne-kraftig.woff2") %>'); }
-@page { size: letter; margin: 0.95in 0.65in 0.7in; }
+@page {
+  size: letter;
+  margin: 1in 0.65in 0.7in;
+  background: #f3e7dc;
+  @top-right { content: url("<%= logo(48) %>"); vertical-align: middle; }
+  @bottom-left { content: "<%= poll_url %>"; font: 8pt Founders, monospace; color: #8c3031; vertical-align: middle; }
+  @bottom-right { content: counter(page); font: 9pt Founders, monospace; color: #8c3031; vertical-align: middle; }
+}
+@page :first {
+  margin: 0;
+  @top-right { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { content: none; }
+}
 * { box-sizing: border-box; }
 html { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 body { margin: 0; color: #252323; font: 12pt/1.5 Financier, Georgia, serif; }
-.cover { height: 9.15in; padding: 38px; background: #f3e7dc; border-top: 10px solid #8c3031; display: flex; flex-direction: column; break-after: page; }
-.cover-logo { width: 150px; background: #8c3031; padding: 22px; margin-bottom: 75px; }
+.cover { height: 11in; padding: 0.65in; background: #f3e7dc; display: flex; flex-direction: column; break-after: page; }
+.cover-logo { width: 128px; height: 128px; align-self: flex-end; }
 .eyebrow { font: 10pt/1.4 Founders, monospace; text-transform: uppercase; letter-spacing: 1.5px; }
-.cover h1 { font: 700 34pt/1.12 Soehne, sans-serif; margin: 18px 0 24px; overflow-wrap: anywhere; }
-.cover-bottom { margin-top: auto; border-top: 1px solid #8c3031; padding-top: 18px; }
+.cover-title { margin-top: auto; margin-bottom: 0.65in; }
+.cover h1 { color: #8c3031; font: 700 44pt/1.08 Soehne, sans-serif; letter-spacing: -1.5px; margin: 0 0 32px; overflow-wrap: anywhere; }
+.cover-date { font: 12pt/1.5 Founders, monospace; margin: 0; color: #8c3031; }
 h1,h2,h3,h4 { font-family: Soehne, sans-serif; line-height: 1.2; break-after: avoid; }
 h1 { font-size: 26pt; } h2 { font-size: 22pt; margin-top: 30px; } h3 { font-size: 16pt; margin-top: 24px; }
 p,li { orphans: 3; widows: 3; } a { color: #8c3031; text-decoration: underline; overflow-wrap: anywhere; }
@@ -29,24 +43,25 @@ tr { break-inside: avoid; } pre { white-space: pre-wrap; overflow-wrap: anywhere
 </style></head><body>
 <section class="cover">
   <img class="cover-logo" src="<%= logo %>" alt="Build Canada">
-  <div class="eyebrow"><%= @locale == "fr" ? "Recherche sur l’opinion publique" : "Public opinion research" %></div>
-  <h1><%= e(@title) %></h1>
-  <p><%= e(@date) %></p>
-  <div class="cover-bottom"><div class="eyebrow">Build Canada</div><p>buildcanada.com</p></div>
+  <div class="cover-title">
+    <p class="eyebrow"><%= e(survey_scope_label) %></p>
+    <h1><%= e(@title) %></h1>
+    <p class="cover-date"><%= e(@date) %></p>
+  </div>
 </section>
-<% if @takeaways.present? %>
-<section class="takeaways"><div class="eyebrow"><%= @locale == "fr" ? "Points à retenir" : "Key takeaways" %></div><ol>
-<% @takeaways.each do |item| %><li><%= e(item.is_a?(Hash) ? item["message"] : item) %></li><% end %>
-</ol></section>
-<% end %>
-<main><%= @body %></main>
-<% if @methodology.present? || @poll.pollster.present? || @poll.sample_size.present? %>
 <section class="section"><h2><%= @locale == "fr" ? "Méthodologie" : "Methodology" %></h2>
 <div class="metadata">
 <% if @poll.pollster.present? %><p><%= e(@poll.pollster) %></p><% end %>
 <% if @poll.sample_size.present? %><p><%= @locale == "fr" ? "Échantillon" : "Sample" %>: <%= @poll.sample_size %></p><% end %>
 <% if @poll.fieldwork_start || @poll.fieldwork_end %><p><%= e([@poll.fieldwork_start, @poll.fieldwork_end].compact.join(" – ")) %></p><% end %>
 </div><%= @methodology %></section>
+<section class="section analysis">
+<% if @takeaways.present? %>
+<section class="takeaways"><div class="eyebrow"><%= @locale == "fr" ? "Points à retenir" : "Key takeaways" %></div><ol>
+<% @takeaways.each do |item| %><li><%= e(item.is_a?(Hash) ? item["message"] : item) %></li><% end %>
+</ol></section>
 <% end %>
+<main><%= @body %></main>
+</section>
 <% if @appendix.present? %><section class="section"><h2><%= @locale == "fr" ? "Annexe" : "Appendix" %></h2><%= @appendix %></section><% end %>
 </body></html>

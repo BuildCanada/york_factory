@@ -99,7 +99,7 @@ module Api
 
         if full
           data[:poll] = {
-            survey_slug: poll.survey_slug, survey_campaign_id: poll.survey_campaign_id,
+            survey_scope: poll.survey_scope, survey_slug: poll.survey_slug, survey_campaign_id: poll.survey_campaign_id,
             pollster: poll.pollster, sample_size: poll.sample_size,
             fieldwork_start: poll.fieldwork_start, fieldwork_end: poll.fieldwork_end,
             methodology: poll.methodology_html, methodology_markdown: poll.methodology,

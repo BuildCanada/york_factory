@@ -3,6 +3,10 @@
   <details open>
     <summary>Poll details, downloads and launch copy</summary>
     <p>Use Body for the analysis markdown and Key Takeaways for the findings. Place interactive charts in fenced <code>buildcanada-chart</code> JSON blocks. See <code>docs/api/polls.md</code> for the format.</p>
+    <div class="form-group">
+      <%= form.label :survey_scope %>
+      <%= form.select :survey_scope, PollPublication::SURVEY_SCOPES.map { |scope| [ scope.capitalize, scope ] }, {}, class: "form-control" %>
+    </div>
     <% %i[survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end].each do |field| %>
       <div class="form-group">
         <%= form.label field %>

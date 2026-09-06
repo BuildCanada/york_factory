@@ -9,6 +9,7 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select[name='poll[content_kind]']", count: 0
     assert_select "input[name='poll[analysis_pdf_en]']", count: 0
+    assert_select "select[name='poll[survey_scope]'] option", count: 3
     assert_select "input[name='poll[crosstabs_json]']"
     assert_select "textarea[name='poll[subscriber_email_en]']"
     assert_select "textarea[name='poll[tweet_en]']"
@@ -67,10 +68,11 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     sign_in_admin
     assert_no_difference "Memo.count" do
       assert_difference "Poll.count" do
-        post admin_polls_path, params: { poll: { slug: "admin-poll", title_en: "Admin poll", survey_slug: "survey", body_en: "## Findings", key_messages_en: [ "Finding" ] } }
+        post admin_polls_path, params: { poll: { slug: "admin-poll", title_en: "Admin poll", survey_scope: "municipal", survey_slug: "survey", body_en: "## Findings", key_messages_en: [ "Finding" ] } }
       end
     end
     poll = Poll.find_by!(slug: "admin-poll")
+    assert_equal "municipal", poll.survey_scope
     assert_redirected_to admin_poll_path(poll)
     follow_redirect!
     assert_response :success

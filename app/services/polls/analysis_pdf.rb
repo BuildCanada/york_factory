@@ -21,7 +21,7 @@ module Polls
       loaded = browser.evaluate_async("Promise.all([document.fonts.ready, ...Array.from(document.images, image => image.decode())]).then(() => arguments[0](true), () => arguments[0](false))", 30)
       raise "A report image could not be rendered" unless loaded
       pdf = Base64.decode64(browser.pdf(format: :letter, print_background: true, prefer_css_page_size: true,
-        display_header_footer: true, header_template: letterhead, footer_template: footer))
+        display_header_footer: false))
       raise "Chromium returned an invalid PDF" unless pdf.start_with?("%PDF-")
       pdf
     ensure
@@ -30,7 +30,7 @@ module Polls
 
     def document_html
       @title = @poll.public_send("title_#{@locale}").presence || @poll.title_en
-      @date = @poll.published_at&.to_date&.iso8601 || (@locale == "fr" ? "Ébauche" : "Draft")
+      @date = @poll.published_at&.strftime("%B %-d, %Y") || (@locale == "fr" ? "Ébauche" : "Draft")
       @body = render_markdown(@poll.public_send("body_#{@locale}"))
       @appendix = render_markdown(@poll.public_send("appendix_#{@locale}"))
       @methodology = render_markdown(@poll.public_send("methodology_#{@locale}"))
@@ -46,16 +46,19 @@ module Polls
       "data:font/woff2;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/fonts', name).binread)}"
     end
 
-    def logo
-      "data:image/svg+xml;base64,#{Base64.strict_encode64(Rails.root.join('vendor/poll_reports/logo-standard.svg').binread)}"
+    def logo(size = 128)
+      svg = Rails.root.join("vendor/poll_reports/logo-square.svg").read
+      svg = svg.sub('width="2040" height="2040"', "width=\"#{size}\" height=\"#{size}\"")
+      "data:image/svg+xml;base64,#{Base64.strict_encode64(svg)}"
     end
 
-    def letterhead
-      %(<div style="width:100%;margin:0 54px;border-bottom:2px solid #8c3031;padding-bottom:12px;display:flex;align-items:center;justify-content:space-between;font:10px Arial;color:#8c3031"><strong style="font-size:16px">Build Canada</strong><span style="letter-spacing:2px">PUBLIC OPINION RESEARCH · #{@date}</span></div>)
+    def survey_scope_label
+      return "#{@poll.survey_scope.capitalize} survey" unless @locale == "fr"
+      { "national" => "Sondage national", "provincial" => "Sondage provincial", "municipal" => "Sondage municipal" }.fetch(@poll.survey_scope)
     end
 
-    def footer
-      %(<div style="width:100%;margin:0 54px;display:flex;justify-content:space-between;font:9px Arial;color:#666"><span>BUILDCANADA.COM</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>)
+    def poll_url
+      "https://buildcanada.com/polls/#{ERB::Util.url_encode(@poll.slug)}"
     end
 
     def render_markdown(markdown)

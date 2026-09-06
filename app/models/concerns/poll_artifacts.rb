@@ -2,7 +2,7 @@ module PollArtifacts
   extend ActiveSupport::Concern
   GENERATED = %w[analysis_pdf_en analysis_pdf_fr crosstabs_xlsx].freeze
   XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  VERSION = 7
+  VERSION = 8
 
   included do
     has_one_attached :crosstabs_xlsx

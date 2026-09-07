@@ -1,11 +1,19 @@
 class HubspotContact < ApplicationRecord
-  performs :sync_to_hubspot
+  performs :sync_to_hubspot do
+    rescue_from TransientError do |error|
+      if executions < HubspotSyncService::MAX_ATTEMPTS
+        retry_job(wait: error.retry_after || executions**4 + 2, error: error)
+      else
+        raise error
+      end
+    end
+  end
 
   validates :hubspot_contact_id, uniqueness: true, allow_nil: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP, message: "must be a valid email address" }, uniqueness: true
 
   after_update :sync_to_hubspot_if_changed, if: :should_sync_to_hubspot?
-  after_create :sync_to_hubspot_later
+  after_create :sync_to_hubspot_later, unless: :hubspot_sync_skipped?
 
   scope :stale, -> { where(synced_at: ..1.hour.ago).or(where(synced_at: nil)) }
 
@@ -416,7 +424,11 @@ class HubspotContact < ApplicationRecord
 
   def should_sync_to_hubspot?
     # Don't sync if this update came from a webhook (to prevent loops)
-    !@skip_hubspot_sync && hubspot_contact_id.present?
+    !hubspot_sync_skipped? && hubspot_contact_id.present?
+  end
+
+  def hubspot_sync_skipped?
+    @skip_hubspot_sync == true
   end
 
   def sync_to_hubspot_if_changed

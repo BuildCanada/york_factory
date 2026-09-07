@@ -1,6 +1,8 @@
 require "test_helper"
 
 class HubspotContactTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   # Disable fixtures to avoid conflicts
   self.use_transactional_tests = true
 
@@ -27,6 +29,24 @@ class HubspotContactTest < ActiveSupport::TestCase
     assert_equal "Doe", contact.lastname
     assert_equal "+1234567890", contact.phone
     assert_equal "Test Corp", contact.company
+  end
+
+  test "does not enqueue an outbound sync when creating a contact imported from hubspot" do
+    contact = HubspotContact.from_hubspot_properties(
+      "hs_object_id" => "imported-123",
+      "email" => "imported@example.com"
+    )
+    contact.skip_hubspot_sync!
+
+    assert_no_enqueued_jobs only: HubspotContact::SyncToHubspotJob do
+      contact.save!
+    end
+  end
+
+  test "enqueues an outbound sync for a new local contact" do
+    assert_enqueued_with(job: HubspotContact::SyncToHubspotJob) do
+      HubspotContact.create!(email: "local@example.com")
+    end
   end
 
   test "validates required fields" do

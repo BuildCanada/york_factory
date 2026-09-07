@@ -14,7 +14,7 @@ module PollArtifacts
     common = [ VERSION, title_en, title_fr, published_at&.iso8601, slug ]
     if name == "crosstabs_xlsx"
       return unless crosstabs_json.attached?
-      common << crosstabs_json.blob.checksum
+      common.concat([ Polls::CrosstabsWorkbook::VERSION, crosstabs_json.blob.checksum ])
     else
       locale = name.end_with?("_fr") ? "fr" : "en"
       return if public_send("body_#{locale}").blank?

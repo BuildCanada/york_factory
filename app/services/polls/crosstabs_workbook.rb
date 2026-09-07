@@ -1,6 +1,6 @@
 module Polls
   class CrosstabsWorkbook
-    VERSION = 2
+    VERSION = 3
 
     def initialize(poll)
       @poll = poll
@@ -11,6 +11,16 @@ module Polls
       unless report["schemaVersion"] == 2 && report["tables"].is_a?(Array)
         raise ArgumentError, "Upload Surveyor schema-v2 crosstabs JSON with a tables array."
       end
+      tables = report["tables"]
+      # Dependent tables band a question by answers to the other questions. They
+      # share the question's number so readers can move between the two sheets.
+      question_numbers = tables.each_with_index.to_h { |table, index| [ table["id"], index + 1 ] }
+      dependent_tables = Array(report["dependentTables"]).select { |table| table.is_a?(Hash) && table["columns"].is_a?(Array) && table["rows"].is_a?(Array) }
+      dependent_sheets = dependent_tables.each_with_index.map do |table, index|
+        number = question_numbers[table["id"]] || tables.size + index + 1
+        { table: table, number: number, name: "Q#{number} by others", heading: "Question #{number} by other questions" }
+      end
+      groups = Array(report["breakdowns"]).index_by { |group| group["id"] }
       package = Axlsx::Package.new
       book = package.workbook
       book.escape_formulas = true
@@ -25,67 +35,31 @@ module Polls
         }.each do |label, value|
           sheet.add_row [ label, value ], style: styles[:text], height: text_height(value, 90) if value.present?
         end
-        sheet.add_row [ "Reading the results", "Percentages are weighted and rounded to whole numbers. Blank cells indicate unavailable results. Multiple selections can total more than 100%. Sample sizes vary by question and group. Unknown demographic categories are omitted; overall totals include all respondents." ], style: styles[:text], height: 80
+        reading = "Percentages are weighted and rounded to whole numbers. Blank cells indicate unavailable results. Multiple selections can total more than 100%. Sample sizes vary by question and group. Unknown demographic categories are omitted; overall totals include all respondents."
+        reading += " Sheets named \"by others\" break a question down by how respondents answered the other questions." if dependent_sheets.any?
+        sheet.add_row [ "Reading the results", reading ], style: styles[:text], height: dependent_sheets.any? ? 96 : 80
         sheet.add_row []
         sheet.add_row [ "Question", "Select a question to view results" ], style: styles[:heading], height: 30
-        report["tables"].each_with_index do |table, index|
+        tables.each_with_index do |table, index|
           sheet.add_row [ "Question #{index + 1}", bilingual(table["question"]) ], style: [ styles[:link], styles[:text] ], height: text_height(bilingual(table["question"]), 90)
           sheet.add_hyperlink location: "'Q#{index + 1}'!A1", ref: "A#{sheet.rows.size}", target: :internal
+        end
+        if dependent_sheets.any?
+          sheet.add_row []
+          sheet.add_row [ "By other questions", "Select a question to view it broken down by answers to the other questions" ], style: styles[:heading], height: 30
+          dependent_sheets.each do |entry|
+            sheet.add_row [ entry[:heading], bilingual(entry[:table]["question"]) ], style: [ styles[:link], styles[:text] ], height: text_height(bilingual(entry[:table]["question"]), 90)
+            sheet.add_hyperlink location: "'#{entry[:name]}'!A1", ref: "A#{sheet.rows.size}", target: :internal
+          end
         end
         sheet.column_widths 28, 100
         sheet.sheet_view.show_grid_lines = false
       end
-      report["tables"].each_with_index do |table, index|
-        book.add_worksheet(name: "Q#{index + 1}") do |sheet|
-          columns = table.fetch("columns").reject { |column| unknown_category?(column) }
-          last_column = Axlsx.col_ref([ columns.size, 1 ].max)
-          sheet.add_row [ "Back to summary & index" ], style: styles[:link], height: 26
-          sheet.add_hyperlink location: "'Summary & Index'!A1", ref: "A1", target: :internal
-          sheet.add_row [ "Question #{index + 1}", bilingual(table["question"]) ], style: styles[:title], height: text_height(bilingual(table["question"]), [ columns.size * 14, 14 ].max) + 16
-          sheet.merge_cells("B2:#{last_column}2") if columns.size > 1
-          variants = table["variants"] || table["armVariants"] || {}
-          arm_numbers = (variants.keys | table.fetch("rows").flat_map { |row| (row["armVariants"] || {}).keys }).each_with_index.to_h { |arm, n| [ arm, n + 1 ] }
-          variants.each do |arm, variant|
-            wording = if variant.is_a?(Hash) && variant.key?("prompt")
-              ([ variant["prompt"], variant["description"], *Array(variant["options"]&.values), *variant.values_at("minLabel", "maxLabel", "trueLabel", "falseLabel") ].compact.map { |value| bilingual(value) }).reject(&:blank?).join("\n")
-            else
-              bilingual(variant)
-            end
-            sheet.add_row [ "Version #{arm_numbers.fetch(arm)}", wording ], style: styles[:text], height: text_height(wording, [ columns.size * 22, 22 ].max)
-            sheet.merge_cells("B#{sheet.rows.size}:#{last_column}#{sheet.rows.size}") if columns.size > 1
-          end
-          groups = Array(report["breakdowns"]).index_by { |group| group["id"] }
-          labels = columns.map do |column|
-            group_data = groups[column["breakdownId"]]
-            group = group_data&.fetch("kind", nil) == "overall" ? nil : bilingual(group_data&.fetch("label", nil))
-            [ group.presence, bilingual(column["label"]) ].compact.uniq.join("\n")
-          end
-          sheet.add_row [ "Answer / sample size", *labels ], style: styles[:heading], height: labels.map { |label| text_height(label, 20) }.max || 40
-          freeze_row = sheet.rows.size
-          table.fetch("rows").each_with_index do |row, row_index|
-            values = columns.map do |column|
-              value = row.fetch("values")[column.fetch("key")]
-              raise ArgumentError, "Crosstab values must be numeric or null" unless value.nil? || (value.is_a?(Numeric) && value.finite?)
-              value
-            end
-            band = row_index.even? ? :even : :odd
-            number_style = row["kind"] == "weighted-percent" ? styles[:percent][band] : styles[:number][band]
-            label = bilingual(row["label"])
-            sheet.add_row [ label, *values ], style: [ styles[band], *Array.new(values.size, number_style) ], height: text_height(label, 48)
-            (row["armVariants"] || {}).each do |arm, wording|
-              label = "Version #{arm_numbers.fetch(arm)}: #{bilingual(wording)}"
-              sheet.add_row [ label ], style: styles[:text], height: text_height(label, 48)
-            end
-          end
-          sheet.sheet_view.show_grid_lines = false
-          sheet.sheet_view.pane do |pane|
-            pane.state = :frozen; pane.x_split = 1; pane.y_split = freeze_row; pane.top_left_cell = "B#{freeze_row + 1}"; pane.active_pane = :bottom_right
-          end
-          sheet.column_widths 55, *Array.new(columns.size, 24)
-          sheet.page_setup.orientation = :landscape
-          sheet.page_setup.fit_to_width = 1
-          sheet.page_setup.fit_to_height = 0
-        end
+      tables.each_with_index do |table, index|
+        add_table_sheet(book, styles, groups, question_numbers, table, name: "Q#{index + 1}", heading: "Question #{index + 1}")
+      end
+      dependent_sheets.each do |entry|
+        add_table_sheet(book, styles, groups, question_numbers, entry[:table], name: entry[:name], heading: entry[:heading])
       end
       errors = package.validate
       raise ArgumentError, "Invalid workbook: #{errors.map(&:message).join('; ').truncate(1000)}" if errors.any?
@@ -93,6 +67,61 @@ module Polls
     end
 
     private
+
+    def add_table_sheet(book, styles, groups, question_numbers, table, name:, heading:)
+      book.add_worksheet(name: name) do |sheet|
+        columns = table.fetch("columns").reject { |column| unknown_category?(column) }
+        last_column = Axlsx.col_ref([ columns.size, 1 ].max)
+        sheet.add_row [ "Back to summary & index" ], style: styles[:link], height: 26
+        sheet.add_hyperlink location: "'Summary & Index'!A1", ref: "A1", target: :internal
+        sheet.add_row [ heading, bilingual(table["question"]) ], style: styles[:title], height: text_height(bilingual(table["question"]), [ columns.size * 14, 14 ].max) + 16
+        sheet.merge_cells("B2:#{last_column}2") if columns.size > 1
+        variants = table["variants"] || table["armVariants"] || {}
+        arm_numbers = (variants.keys | table.fetch("rows").flat_map { |row| (row["armVariants"] || {}).keys }).each_with_index.to_h { |arm, n| [ arm, n + 1 ] }
+        variants.each do |arm, variant|
+          wording = if variant.is_a?(Hash) && variant.key?("prompt")
+            ([ variant["prompt"], variant["description"], *Array(variant["options"]&.values), *variant.values_at("minLabel", "maxLabel", "trueLabel", "falseLabel") ].compact.map { |value| bilingual(value) }).reject(&:blank?).join("\n")
+          else
+            bilingual(variant)
+          end
+          sheet.add_row [ "Version #{arm_numbers.fetch(arm)}", wording ], style: styles[:text], height: text_height(wording, [ columns.size * 22, 22 ].max)
+          sheet.merge_cells("B#{sheet.rows.size}:#{last_column}#{sheet.rows.size}") if columns.size > 1
+        end
+        labels = columns.map do |column|
+          group_data = groups[column["breakdownId"]]
+          group = group_data&.fetch("kind", nil) == "overall" ? nil : bilingual(group_data&.fetch("label", nil))
+          # A banner that is itself a question carries its number so the column can be traced back to its own sheet.
+          number = question_numbers[column["breakdownId"]]
+          group = "Q#{number}: #{group}" if group.present? && group_data&.fetch("kind", nil) == "question" && number
+          [ group.presence, bilingual(column["label"]) ].compact.uniq.join("\n")
+        end
+        sheet.add_row [ "Answer / sample size", *labels ], style: styles[:heading], height: labels.map { |label| text_height(label, 20) }.max || 40
+        freeze_row = sheet.rows.size
+        table.fetch("rows").each_with_index do |row, row_index|
+          values = columns.map do |column|
+            value = row.fetch("values")[column.fetch("key")]
+            raise ArgumentError, "Crosstab values must be numeric or null" unless value.nil? || (value.is_a?(Numeric) && value.finite?)
+            value
+          end
+          band = row_index.even? ? :even : :odd
+          number_style = row["kind"] == "weighted-percent" ? styles[:percent][band] : styles[:number][band]
+          label = bilingual(row["label"])
+          sheet.add_row [ label, *values ], style: [ styles[band], *Array.new(values.size, number_style) ], height: text_height(label, 48)
+          (row["armVariants"] || {}).each do |arm, wording|
+            label = "Version #{arm_numbers.fetch(arm)}: #{bilingual(wording)}"
+            sheet.add_row [ label ], style: styles[:text], height: text_height(label, 48)
+          end
+        end
+        sheet.sheet_view.show_grid_lines = false
+        sheet.sheet_view.pane do |pane|
+          pane.state = :frozen; pane.x_split = 1; pane.y_split = freeze_row; pane.top_left_cell = "B#{freeze_row + 1}"; pane.active_pane = :bottom_right
+        end
+        sheet.column_widths 55, *Array.new(columns.size, 24)
+        sheet.page_setup.orientation = :landscape
+        sheet.page_setup.fit_to_width = 1
+        sheet.page_setup.fit_to_height = 0
+      end
+    end
 
     def unknown_category?(column)
       column["id"].to_s.casecmp?("unknown") || column["key"].to_s.split(":").last.to_s.casecmp?("unknown")

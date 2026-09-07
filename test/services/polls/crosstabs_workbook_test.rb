@@ -68,4 +68,42 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_not_includes sheet.to_a.flatten.join, "option-id"
     end
   end
+
+  test "dependent tables get their own sheets, numbered after their question, with index links" do
+    columns = ->(*keys) { [ { key: "overall:all", id: "all", breakdownId: "overall", label: { en: "Total" } },
+      *keys.map { |key| { key: key, id: key.split(":").last, breakdownId: key.split(":").first, label: { en: key.split(":").last.titleize } } } ] }
+    row = ->(label, kind, values) { { kind: kind, label: { en: label }, values: values } }
+    posture = { id: "q2-posture", question: { en: "Hold firm or concede?" }, columns: columns.call("age:young"),
+      rows: [ row.call("Sample size", "unweighted-sample-size", { "overall:all" => 400, "age:young" => 150 }), row.call("Hold firm", "weighted-percent", { "overall:all" => 60, "age:young" => 55 }) ] }
+    groceries = { id: "q4-groceries", question: { en: "Paying more for groceries" }, columns: columns.call("age:young"),
+      rows: [ row.call("Sample size", "unweighted-sample-size", { "overall:all" => 400, "age:young" => 150 }), row.call("Acceptable", "weighted-percent", { "overall:all" => 40, "age:young" => 30 }) ] }
+    dependent = { id: "q4-groceries", question: { en: "Paying more for groceries" }, columns: columns.call("q2-posture:hold-firm", "q2-posture:concede", "q2-posture:unknown"),
+      rows: [ row.call("Sample size", "unweighted-sample-size", { "overall:all" => 400, "q2-posture:hold-firm" => 240, "q2-posture:concede" => 160, "q2-posture:unknown" => 0 }),
+        row.call("Acceptable", "weighted-percent", { "overall:all" => 40, "q2-posture:hold-firm" => 58, "q2-posture:concede" => 13, "q2-posture:unknown" => nil }) ] }
+    report = { schemaVersion: 2, tables: [ posture, groceries ], dependentTables: [ dependent ], breakdowns: [
+      { id: "overall", kind: "overall", label: { en: "Overall" } }, { id: "age", kind: "census", label: { en: "Age" } },
+      { id: "q2-posture", kind: "question", label: { en: "Hold firm or concede?" } } ] }
+    upload = Struct.new(:download).new(report.to_json)
+    poll = Struct.new(:crosstabs_json, :title_en, :published_at).new(upload, "Survey", nil)
+    Tempfile.create([ "dependent", ".xlsx" ]) do |file|
+      file.binmode; file.write(Polls::CrosstabsWorkbook.new(poll).render); file.flush
+      workbook = Roo::Excelx.new(file.path)
+      assert_equal [ "Summary & Index", "Q1", "Q2", "Q2 by others" ], workbook.sheets
+      index = workbook.sheet("Summary & Index").to_a
+      assert_includes index.map(&:first), "By other questions"
+      assert_equal [ "Question 2 by other questions", "Paying more for groceries" ], index.last
+      assert_includes index.find { |row| row.first == "Reading the results" }.last, "by others"
+      sheet = workbook.sheet("Q2 by others")
+      assert_equal "Question 2 by other questions", sheet.cell(2, 1)
+      assert_equal "Paying more for groceries", sheet.cell(2, 2)
+      assert_equal [ "Answer / sample size", "Total", "Q1: Hold firm or concede?\nHold Firm", "Q1: Hold firm or concede?\nConcede" ], sheet.row(3)
+      assert_equal 58, sheet.cell(5, 3)
+      assert_equal 13, sheet.cell(5, 4)
+      assert_equal 4, sheet.last_column
+      assert_equal "Age\nYoung", workbook.sheet("Q2").cell(3, 3)
+      Zip::File.open(file.path) do |zip|
+        assert_includes zip.read("xl/worksheets/sheet1.xml"), "&apos;Q2 by others&apos;!A1"
+      end
+    end
+  end
 end

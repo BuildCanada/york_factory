@@ -1,0 +1,23 @@
+{
+  "age": "Age",
+  "age-range": "Age",
+  "qs2-age": "Age",
+  "gender": "Gender",
+  "qs3-gender": "Gender",
+  "region": "Region",
+  "province": "Province",
+  "qs4-province": "Province",
+  "education": "Education",
+  "qx4-education": "Education",
+  "qx1-employment": "Employment",
+  "qx2-work-type": "Type of work",
+  "qx3-work-situations": "Work situation",
+  "qx5-income": "Household income",
+  "qx6-parent": "Children under 18 at home",
+  "qx7-housing": "Housing",
+  "qx8-birthplace": "Birthplace",
+  "qx9-background": "Racial or ethnic background",
+  "qx10-vote": "2025 federal vote",
+  "arm": "Survey version",
+  "response-language": "Language"
+}

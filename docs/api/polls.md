@@ -165,3 +165,24 @@ Run the poll model/API/admin, generation-job, PDF-template and workbook tests;
 TradingPost's chart/download tests and browser checks cover the public presentation.
 
 Reports use an edge-to-edge linen background. The cover has the Build Canada | Polling wordmark, survey scope, title and release date (Month Day, YYYY). Methodology markdown starts on page two, followed by takeaways and analysis. Subsequent pages show the Build Canada | Polling wordmark at top right and the poll’s public URL in the footer.
+
+### Customer crosstabs and split-ballot results
+
+JSON downloads and Excel generation pass through `Polls::CrosstabsExport`. Each
+question/subgroup (including each arm/subgroup) needs at least 50 unweighted
+respondents. Below 50, or when no unweighted base is supplied, every value in
+that column is null in JSON and marked Suppressed in Excel. Exactly 50 is
+published. Weighted bases never override this threshold. Raw weighting margins
+and other metadata counts are excluded from the customer JSON projection.
+
+Surveyor now supplies optional `tables[].arms[]` with each arm's question wording,
+columns, sample-size rows, and percentages. Excel adds separate result rows for
+each arm on its question sheet. Older uploads supply only arm-total columns; those
+are transposed without inventing arm-by-demographic results. Re-export from
+Surveyor and replace the upload to populate the detailed arm breakdowns.
+
+Uploaded crosstab PDFs are not served by the customer download endpoint because
+their values cannot be automatically suppressed. Source uploads remain editor
+assets; customer JSON and regenerated Excel are the supported downloads.
+
+The same suppression projection applies to `dependentTables`, including nested arm results.

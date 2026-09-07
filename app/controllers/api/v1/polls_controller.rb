@@ -35,7 +35,11 @@ module Api
         attachment = @poll.public_send(name)
         raise ActiveRecord::RecordNotFound unless attachment.attached?
 
-        send_data attachment.download, filename: @poll.download_filename(name),
+        # Uploaded crosstab PDFs cannot be reliably redacted. Only the generated
+        # workbook and the filtered JSON are exposed as customer crosstabs.
+        raise ActiveRecord::RecordNotFound if name.start_with?("crosstabs_pdf")
+        bytes = name == "crosstabs_json" ? JSON.pretty_generate(Polls::CrosstabsExport.new(attachment.download).render) : attachment.download
+        send_data bytes, filename: @poll.download_filename(name),
           type: attachment.content_type, disposition: "attachment"
       end
 

@@ -206,4 +206,73 @@ class Api::V1::ElectionSurveyResponsesControllerTest < ActionDispatch::Integrati
     assert_equal 2, data["total"]
     assert_equal({ "housing" => 1, "transit" => 1 }, data["tallies"]["concern"])
   end
+
+  # The survey asks "Subscribe to our newsletter" outright. Before this was
+  # wired up the answer went into jsonb and nothing read it, while the
+  # subscriber row was created and pushed to the newsletter form regardless —
+  # so answering "no" subscribed you.
+  test "answering no to the newsletter question does not subscribe" do
+    submit(email: "declined@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(updates: "no"))
+
+    assert_response :created
+    subscriber = Subscriber.find_by(email: "declined@example.com")
+    assert subscriber, "the response still needs a subscriber to hang off"
+    assert_not subscriber.newsletter_opt_in
+  end
+
+  test "answering yes to the newsletter question subscribes" do
+    submit(email: "keen@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(updates: "yes"))
+
+    assert Subscriber.find_by(email: "keen@example.com").newsletter_opt_in
+  end
+
+  test "a declining respondent enqueues no HubSpot newsletter submission" do
+    assert_no_enqueued_jobs(only: Subscriber::SubmitToHubspotFormJob) do
+      submit(email: "quiet@example.com", name: "Q Uiet", survey_slug: SURVEY,
+             postal_code: "M5V 2T6", answers: @answers.merge(updates: "no"))
+    end
+    assert_response :created
+  end
+
+  # An explicit choice is the most recent statement of intent, so unlike the
+  # contact fields it overwrites what we already held — in both directions.
+  test "a later no takes an existing subscriber off the list" do
+    subscriber = Subscriber.create!(email: "changed@example.com", newsletter_opt_in: true)
+
+    submit(email: "changed@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(updates: "no"))
+
+    assert_not subscriber.reload.newsletter_opt_in
+  end
+
+  test "a later yes puts an unsubscribed person back on it" do
+    subscriber = Subscriber.create!(email: "returned@example.com", newsletter_opt_in: false)
+
+    submit(email: "returned@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(updates: "yes"))
+
+    assert subscriber.reload.newsletter_opt_in
+  end
+
+  # Guessing at consent is worse than leaving it alone, so anything we do not
+  # recognise — a blank, a reworded option — changes nothing.
+  test "an unrecognised or absent answer leaves the subscription as it was" do
+    subscriber = Subscriber.create!(email: "steady@example.com", newsletter_opt_in: true)
+
+    submit(email: "steady@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(updates: "maybe later"))
+    assert subscriber.reload.newsletter_opt_in
+
+    submit(email: "steady@example.com", survey_slug: SURVEY, answers: @answers)
+    assert subscriber.reload.newsletter_opt_in
+  end
+
+  # Someone who never answers the question was never asked, so they stay off.
+  test "a respondent who never answers the question is not subscribed" do
+    submit(email: "unasked@example.com", survey_slug: SURVEY, answers: @answers)
+
+    assert_not Subscriber.find_by(email: "unasked@example.com").newsletter_opt_in
+  end
 end

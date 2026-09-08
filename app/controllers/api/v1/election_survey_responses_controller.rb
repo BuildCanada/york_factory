@@ -52,6 +52,7 @@ module Api
         end
 
         subscriber = find_or_build_subscriber(source: "survey")
+        apply_newsletter_choice(subscriber)
         unless subscriber.save
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
         end
@@ -84,6 +85,32 @@ module Api
       end
 
       private
+
+      # The one question id this controller knows by name. Answers are
+      # otherwise an opaque bag on purpose, but this one has a side effect
+      # outside the response — it decides whether we may mail someone — so it
+      # cannot stay opaque. Renaming it in the CMS silently stops consent being
+      # recorded, which is why it is a named constant rather than a literal.
+      NEWSLETTER_QUESTION_ID = "updates"
+      NEWSLETTER_YES = %w[yes true 1 on].freeze
+      NEWSLETTER_NO = %w[no false 0 off].freeze
+
+      # The survey asks "Subscribe to our newsletter" outright, so that answer
+      # decides the subscription, in both directions.
+      #
+      # Deliberately unlike the contact fields, which never overwrite what a
+      # subscriber already told us: an explicit choice here is the most recent
+      # statement of intent and outranks an older one, so a "no" from someone
+      # already on the list takes them off it. Anything unrecognised — a blank,
+      # a reworded option — changes nothing, since guessing at consent is worse
+      # than leaving it as it was.
+      def apply_newsletter_choice(subscriber)
+        choice = answers_param[NEWSLETTER_QUESTION_ID].to_s.strip.downcase
+        return if choice.blank?
+
+        subscriber.newsletter_opt_in = true if NEWSLETTER_YES.include?(choice)
+        subscriber.newsletter_opt_in = false if NEWSLETTER_NO.include?(choice)
+      end
 
       # An unpublished election takes no responses — it isn't public yet.
       def set_election

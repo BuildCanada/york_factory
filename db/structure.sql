@@ -1819,7 +1819,8 @@ CREATE TABLE public.subscribers (
     page_name character varying,
     hubspot_utk character varying,
     ip_address character varying,
-    pledged_to_vote_at timestamp(6) without time zone
+    pledged_to_vote_at timestamp(6) without time zone,
+    newsletter_opt_in boolean DEFAULT false NOT NULL
 );
 
 
@@ -9573,6 +9574,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260908000000'),
 ('20260812010000'),
 ('20260811000002'),
 ('20260811000001'),

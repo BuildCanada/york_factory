@@ -63,6 +63,10 @@ module Api
 
         subscriber = find_or_build_subscriber(source: "pledge")
         subscriber.pledging = eligibility.eligible?
+        # The pledge form signs you up — an ineligible pledger is told so
+        # outright below, in `subscribed: true`. Kept as it was rather than
+        # made conditional: the form makes no separate ask to make good on.
+        subscriber.newsletter_opt_in = true
         unless subscriber.save
           return render json: { errors: subscriber.errors.full_messages }, status: :unprocessable_entity
         end

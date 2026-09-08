@@ -3,3 +3,5 @@ existing_subscriber:
   last_name: User
   email: test@example.com
   postal_code: K1A 0A6
+  # On the list, like every subscriber that predates the opt-in column.
+  newsletter_opt_in: true

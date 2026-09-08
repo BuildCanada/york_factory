@@ -21,8 +21,19 @@ class Subscriber < ApplicationRecord
 
   # Solid Queue runs on a separate database, so the job must not be enqueued
   # until the subscriber row is committed and visible to the worker.
+  #
+  # Gated on newsletter_opt_in because submitting this form is what subscribes
+  # someone: it exists to fire HubSpot's signup workflows. A subscriber row is
+  # now also the identity key for a survey response, so plenty of rows here
+  # belong to people who never asked for mail.
   after_commit :submit_to_hubspot_form_later, on: [ :create, :update ],
-    if: -> { hubspot_fields_saved? && !pledging }
+    if: -> { newsletter_opt_in? && hubspot_form_triggering_change? && !pledging }
+
+  # An opt-out has to reach HubSpot too, or the two disagree and the CRM keeps
+  # mailing someone who withdrew. The form path can't say it — submitting the
+  # newsletter form is what subscribes you — so it goes through the direct sync.
+  after_commit :sync_to_hubspot_later, on: :update,
+    if: -> { saved_change_to_newsletter_opt_in? && !newsletter_opt_in? }
 
   # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
   # Every pledge submits the dedicated HubSpot pledge form so pledge
@@ -47,6 +58,9 @@ class Subscriber < ApplicationRecord
 
   # Direct CRM upsert, bypassing form workflows. Used for backfills and for
   # fields the subscriber form doesn't define (pledged_to_vote_at).
+  # `newsletter_subscription` is merged in after compact_blank rather than
+  # sitting in the hash: false is blank, so compacting would drop the very
+  # value an opt-out needs to send and leave the CRM subscribed.
   def sync_to_hubspot
     HubspotContact.upsert_hubspot_user(
       email: email,
@@ -54,9 +68,8 @@ class Subscriber < ApplicationRecord
         firstname: first_name,
         lastname: last_name,
         postal_code: postal_code,
-        newsletter_subscription: true,
         pledged_to_vote_at: pledged_to_vote_at
-      }.compact_blank
+      }.compact_blank.merge(newsletter_subscription: newsletter_opt_in)
     )
   end
 
@@ -69,5 +82,11 @@ class Subscriber < ApplicationRecord
 
   def hubspot_fields_saved?
     saved_changes.keys.intersect?(HUBSPOT_SYNCED_FIELDS)
+  end
+
+  # Newly opting in counts on its own: someone who subscribes later without
+  # touching their name or postal code still has to reach the signup workflows.
+  def hubspot_form_triggering_change?
+    hubspot_fields_saved? || saved_change_to_newsletter_opt_in?
   end
 end

@@ -87,6 +87,10 @@ Rails.application.routes.draw do
         # survey_responses above, and candidate answers only in the CMS.
         resources :surveys, only: [ :index, :show ], param: :slug,
           controller: "election_surveys"
+        # Published candidate answers. Read-only for the same reason: the CMS
+        # is the only write path.
+        resources :candidate_responses, only: [ :index ],
+          controller: "election_candidate_responses"
       end
 
       namespace :geo do

@@ -27,6 +27,19 @@ class Warehouse::ElectionSurveyResponse < Warehouse::Record
 
   before_validation { self.submitted_at ||= Time.current }
 
+  # Responses attributable to one ward, whether the respondent told us or we
+  # worked it out from their postal code.
+  #
+  # `region` is the self-reported ward and `derived_region` the one
+  # Warehouse::BoundaryLookup resolved from the postal code. The resident survey
+  # no longer asks for a ward — the postal code alone is collected — so newer
+  # responses carry only `derived_region` while ones taken while the question was
+  # live carry both. Preferring the self-reported value keeps those earlier rows
+  # grouped the way their respondents described themselves.
+  scope :in_region, ->(region) {
+    where("COALESCE(region, derived_region) = :region", region: region)
+  }
+
   # Answers for one question id across a scope, as {value => count}. Used to
   # publish results; skips rows that never answered that question.
   #

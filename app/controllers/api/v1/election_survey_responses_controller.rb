@@ -30,12 +30,14 @@ module Api
       MAX_TALLY_QUESTIONS = 50
 
       # Answer tallies for publishing results: {question_id => {answer => count}}.
-      # Optionally narrowed to one ward via ?region=ward-12, which reads the
-      # respondent's own answer, not the derived column, since that is the one
-      # always populated.
+      # Optionally narrowed to one ward via ?region=ward-12, which counts a
+      # response whose ward we derived from the postal code alongside one that
+      # named its own ward — see ElectionSurveyResponse.in_region. The resident
+      # survey stopped asking for a ward, so filtering on the self-reported
+      # column alone would quietly drop every response taken since.
       def index
         scope = @election.survey_responses.where(survey_slug: survey_slug)
-        scope = scope.where(region: params[:region]) if params[:region].present?
+        scope = scope.in_region(params[:region]) if params[:region].present?
 
         question_ids = Array(params[:question_ids].presence&.split(","))
           .map(&:strip).compact_blank.uniq.take(MAX_TALLY_QUESTIONS)
@@ -136,13 +138,16 @@ module Api
         "#{raw[0, 3]} #{raw[3, 3]}"
       end
 
-      # Best-guess ward from the postal code, stored alongside what the
-      # respondent picked so the two can be compared.
+      # Best-guess ward from the postal code. Now the only ward on a Toronto
+      # resident response — that survey asks for a postal code and nothing else
+      # about where someone lives — though `region` is still honoured for a
+      # survey that does collect one, so the two can be compared where both
+      # exist.
       #
       # A miss is never fatal: no postal code, an unknown one, or no ward layer
       # loaded for the city all leave `derived_region` null and the response is
-      # still recorded with the self-reported ward. Null rows stay backfillable
-      # from `postal_code` once a city's wards land.
+      # still recorded, unattributed to a ward. Null rows stay backfillable from
+      # `postal_code` once a city's wards land.
       def derive_region(postal_code)
         return nil if postal_code.blank?
 

@@ -1,8 +1,13 @@
 # Survey definitions for the election tracker.
 #
-# Resident question sets are loaded from JSON under db/seeds/elections/, which
+# Question sets are loaded from JSON under db/seeds/elections/. The resident one
 # was generated from the tracker's surveyData.ts when the questions moved into
-# this app. The JSON is the migration record, not an ongoing source of truth:
+# this app; the Toronto candidate questionnaire was generated from the Google
+# Form the candidates actually filled in, so the two share question ids and
+# option values wherever they ask the same thing and a candidate's answer can be
+# read against the resident tally directly.
+#
+# The JSON is the migration record, not an ongoing source of truth:
 # after this runs, the database is authoritative and questions are edited in the
 # CMS. Re-running is safe and will overwrite CMS edits to the questions it
 # names, so treat it as a restore, not a sync.
@@ -20,8 +25,9 @@ def load_election_survey(path)
   survey.audience = definition.fetch("audience")
   survey.version = definition.fetch("version")
   survey.meta = definition.fetch("meta", {})
-  # Resident surveys ship live — this one is already collecting responses on the
-  # site. A candidate questionnaire is authored in the CMS and published there.
+  # The resident survey ships live — it is already collecting responses on the
+  # site. The candidate questionnaire sets "published": false and is released
+  # from the CMS once its imported answers have been reviewed.
   survey.published_at ||= Time.current if definition.fetch("published", true)
   survey.save!
 
@@ -47,27 +53,4 @@ end
 
 Dir[Rails.root.join("db/seeds/elections/*.json")].sort.each do |path|
   load_election_survey(path)
-end
-
-# The candidate questionnaire for Toronto 2026. Created empty and unpublished on
-# purpose: the questions are still being written, and the public API skips
-# unpublished surveys, so this can sit in the CMS until it is ready without
-# appearing on the site.
-toronto = Warehouse::Election.find_by(slug: "toronto-2026")
-if toronto
-  questionnaire = Warehouse::ElectionSurvey.find_or_initialize_by(
-    election: toronto,
-    slug: "candidate-questionnaire"
-  )
-  if questionnaire.new_record?
-    questionnaire.audience = "candidate"
-    questionnaire.version = "1"
-    questionnaire.meta = {
-      "title" => "Toronto 2026 candidate questionnaire",
-      "intro" => "What each candidate told us they would do in office."
-    }
-    questionnaire.save!
-    puts "Created empty candidate questionnaire for toronto-2026 (unpublished — " \
-         "add questions in admin, then publish)"
-  end
 end

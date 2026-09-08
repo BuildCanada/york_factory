@@ -184,4 +184,26 @@ class Api::V1::ElectionSurveyResponsesControllerTest < ActionDispatch::Integrati
     assert_equal 1, data["total"]
     assert_equal({ "housing" => 1 }, data["tallies"]["concern"])
   end
+
+  # The resident survey collects a postal code and no ward, so a response
+  # attributable to ward 11 may carry that ward only in `derived_region`.
+  # Narrowing to a ward has to count it, or ward-by-ward results go empty the
+  # day the ward question comes out of the survey.
+  test "index narrows to a ward derived from the postal code when none was reported" do
+    @election.survey_responses.create!(
+      subscriber: Subscriber.create!(email: "derived@example.com", source: "survey"),
+      survey_slug: SURVEY, answers: @answers, region: nil,
+      derived_region: "ward-11", postal_code: "M5V 2T6"
+    )
+    submit(email: "reported@example.com", name: "R Three", survey_slug: SURVEY,
+           region: "ward-11", answers: @answers.merge(concern: "transit"))
+
+    get api_v1_election_survey_responses_url("toronto-2026"),
+      params: { survey_slug: SURVEY, question_ids: "concern", region: "ward-11" }
+
+    assert_response :success
+    data = JSON.parse(response.body)["data"]
+    assert_equal 2, data["total"]
+    assert_equal({ "housing" => 1, "transit" => 1 }, data["tallies"]["concern"])
+  end
 end

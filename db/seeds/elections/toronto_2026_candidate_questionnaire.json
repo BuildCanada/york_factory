@@ -30,7 +30,7 @@
     {
       "question_id": "housing_as_of_right",
       "step_id": "direct-questions",
-      "step_title": "Five direct questions",
+      "step_title": "Five decisions facing the next council",
       "step_intro": "The five we are asking every candidate, and every resident, to answer.",
       "step_position": 1,
       "position": 0,
@@ -61,7 +61,7 @@
     {
       "question_id": "encampment_removal",
       "step_id": "direct-questions",
-      "step_title": "Five direct questions",
+      "step_title": "Five decisions facing the next council",
       "step_intro": "The five we are asking every candidate, and every resident, to answer.",
       "step_position": 1,
       "position": 1,
@@ -92,7 +92,7 @@
     {
       "question_id": "road_pricing",
       "step_id": "direct-questions",
-      "step_title": "Five direct questions",
+      "step_title": "Five decisions facing the next council",
       "step_intro": "The five we are asking every candidate, and every resident, to answer.",
       "step_position": 1,
       "position": 2,
@@ -123,7 +123,7 @@
     {
       "question_id": "infrastructure_revenue",
       "step_id": "direct-questions",
-      "step_title": "Five direct questions",
+      "step_title": "Five decisions facing the next council",
       "step_intro": "The five we are asking every candidate, and every resident, to answer.",
       "step_position": 1,
       "position": 3,
@@ -154,7 +154,7 @@
     {
       "question_id": "capital_transparency",
       "step_id": "direct-questions",
-      "step_title": "Five direct questions",
+      "step_title": "Five decisions facing the next council",
       "step_intro": "The five we are asking every candidate, and every resident, to answer.",
       "step_position": 1,
       "position": 4,
@@ -853,7 +853,7 @@
     {
       "question_id": "cycling_network",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 0,
@@ -887,7 +887,7 @@
     {
       "question_id": "protest_access",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 1,
@@ -921,7 +921,7 @@
     {
       "question_id": "technology_investment",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 2,
@@ -955,7 +955,7 @@
     {
       "question_id": "budget_gap_first",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 3,
@@ -986,7 +986,7 @@
     {
       "question_id": "business_climate",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 4,
@@ -1020,7 +1020,7 @@
     {
       "question_id": "business_attraction",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 5,
@@ -1054,7 +1054,7 @@
     {
       "question_id": "construction_capacity",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 6,
@@ -1088,7 +1088,7 @@
     {
       "question_id": "public_realm_priority",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 7,
@@ -1122,7 +1122,7 @@
     {
       "question_id": "arts_culture_support",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 8,
@@ -1156,7 +1156,7 @@
     {
       "question_id": "av_conditions",
       "step_id": "more-topics",
-      "step_title": "A few more, if you have time",
+      "step_title": "Priorities and trade-offs",
       "step_intro": null,
       "step_position": 9,
       "position": 9,

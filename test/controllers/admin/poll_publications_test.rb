@@ -34,21 +34,25 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
       assert_match "Import failed", flash[:alert]
     end
   end
-  test "rejected edits retain source report and image attachments" do
+  test "rejected edits retain report and image attachments and public downloads" do
     sign_in_admin
     poll = Poll.create!(slug: "asset-edit-test", title_en: "Poll", survey_slug: "survey", published_at: 1.day.ago)
     poll.crosstabs_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
+    poll.crosstabs_json.attach(io: StringIO.new('{"schemaVersion":2,"tables":[]}'), filename: "crosstabs.json", content_type: "application/json", identify: false)
     poll.seo_image.attach(io: StringIO.new("image"), filename: "image.jpg", content_type: "image/jpeg", identify: false)
-    blobs = [ poll.crosstabs_pdf_en.blob, poll.seo_image.blob ]
+    blobs = [ poll.crosstabs_pdf_en.blob, poll.crosstabs_json.blob, poll.seo_image.blob ]
 
-    patch admin_poll_path(poll), params: { poll: { sample_size: -1, purge_crosstabs_pdf_en: "1", purge_seo_image: "1" } }
+    patch admin_poll_path(poll), params: { poll: { sample_size: -1, purge_crosstabs_pdf_en: "1", purge_crosstabs_json: "1", purge_seo_image: "1" } }
     assert_response :unprocessable_entity
     poll.reload
-    assert_equal blobs.map(&:id), [ poll.crosstabs_pdf_en.blob.id, poll.seo_image.blob.id ]
+    assert_equal blobs.map(&:id), [ poll.crosstabs_pdf_en.blob.id, poll.crosstabs_json.blob.id, poll.seo_image.blob.id ]
     assert blobs.all? { |blob| blob.service.exist?(blob.key) }
+    get download_api_v1_poll_url(poll.slug, asset: "crosstabs_json")
+    assert_response :success
+    assert_equal 2, response.parsed_body["schemaVersion"]
+    # Uploaded crosstab PDFs stay an editor asset; they cannot be suppressed, so the public endpoint never serves them.
     get download_api_v1_poll_url(poll.slug, asset: "crosstabs_pdf_en")
     assert_response :not_found
-    assert_equal "%PDF-1.4 original", poll.crosstabs_pdf_en.download
   end
 
   test "valid edits remove attachments and replacement uploads take precedence" do

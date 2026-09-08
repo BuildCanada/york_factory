@@ -40,6 +40,18 @@ class Polls::CrosstabsExportTest < ActiveSupport::TestCase
     assert report["tables"][0]["rows"].all? { |row| row["values"].values.all?(&:nil?) }
   end
 
+  test "dependent tables and their arm results use the same suppression boundary" do
+    raw = source
+    raw[:dependentTables] = raw[:tables].deep_dup
+    report = Polls::CrosstabsExport.new(raw.to_json).render
+    table = report["dependentTables"].first
+    assert_equal 50, table.dig("rows", 0, "values", "arm:a")
+    assert_nil table.dig("rows", 0, "values", "arm:b")
+    assert_nil table.dig("rows", 2, "values", "arm:b")
+    assert_equal 50, table.dig("arms", 0, "rows", 0, "values", "overall:all")
+    assert_nil table.dig("arms", 1, "rows", 2, "values", "overall:all")
+  end
+
   test "rejects invalid schema rather than returning the original upload" do
     assert_raises(ArgumentError) { Polls::CrosstabsExport.new('{"schemaVersion":1}').render }
   end

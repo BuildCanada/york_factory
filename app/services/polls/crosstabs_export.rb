@@ -20,6 +20,7 @@ module Polls
         "weighting" => public_weighting(report.fetch("weighting", {})),
         "privacy" => { "minimumResponses" => MINIMUM_RESPONSES, "smallCellSuppression" => true },
         "breakdowns" => Array(report["breakdowns"]).map { |group| group.slice("id", "label", "kind", "question") },
+        "dependentTables" => Array(report["dependentTables"]).map { |table| public_table(table, include_arms: true) },
         "tables" => report["tables"].map { |table| public_table(table, include_arms: true) }
       }
     end

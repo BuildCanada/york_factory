@@ -141,6 +141,13 @@ headers. Text is escaped as text, never executed as an Excel formula. Filenames 
 `Build Canada - YYYY-MM-DD - Poll title - Report.pdf` or `... - Crosstabs.json/xlsx`.
 Unreleased previews use `Draft` in place of a release date.
 
+Surveyor's crosstabs JSON may also carry `dependentTables`: the same table shape,
+banding each question by answers to the other substantive questions instead of
+demographics. Each gets a sheet named `Q<n> by others`, where `n` is the number of
+the matching question sheet, and column groups that come from a question are
+prefixed with that question's number. The Summary & Index sheet lists them under
+"By other questions". Uploads without `dependentTables` render as before.
+
 ## Rollout and verification
 
 Deploy York Factory with `bin/rails db:migrate`, then TradingPost. Keep the existing
@@ -177,3 +184,10 @@ Surveyor and replace the upload to populate the detailed arm breakdowns.
 Uploaded crosstab PDFs are not served by the customer download endpoint because
 their values cannot be automatically suppressed. Source uploads remain editor
 assets; customer JSON and regenerated Excel are the supported downloads.
+
+The same suppression projection applies to `dependentTables`, including nested arm results.
+
+Question detail sheets show the supplied English and French question wording and
+answer labels, including split-ballot versions and question-by-question breakdowns.
+Missing translations are not invented. Polls also accept optional `subtitle_en` and
+`subtitle_fr`; public responses include the localized `subtitle`.

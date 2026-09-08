@@ -139,6 +139,122 @@ namespace :elections do
     77 => "34. Comments"
   }.freeze
 
+  desc "Load the committed survey question sets and candidate answers (a restore, not a sync)"
+  task seed_surveys: :environment do
+    load Rails.root.join("db/seeds/election_surveys.rb")
+    Rake::Task["elections:seed_candidate_responses"].invoke
+  end
+
+  # Deliberately not wired into db:seed. Both halves overwrite what they name —
+  # question wording edited in the CMS, and answers corrected there — so this is
+  # a restore you ask for, not something a routine db:seed does to you.
+  desc "Load committed candidate questionnaire answers (PUBLISH=1 to publish new ones)"
+  task seed_candidate_responses: :environment do
+    paths = Dir[Rails.root.join("db/seeds/elections/responses/*.json")].sort
+    abort "No response seeds under db/seeds/elections/responses/" if paths.empty?
+
+    paths.each do |path|
+      CandidateResponseSeed.new(path: path, publish: ENV["PUBLISH"].present?).run
+    end
+  end
+
+  # Loads a committed export of candidate answers.
+  #
+  # The Google Sheet is domain-restricted, so the server cannot fetch it: an
+  # anonymous CSV export answers 401. Rather than give production a Google
+  # credential for a sheet that changes a few times a season, someone who can
+  # read it regenerates this JSON and commits it, and every environment loads
+  # the same reviewed file. Re-running after a refresh is the periodic update.
+  #
+  # Candidates are matched on ballot name within their race, never on email —
+  # the export's emails are contact details we have no reason to commit.
+  class CandidateResponseSeed
+    def initialize(path:, publish: false)
+      @path = path
+      @publish = publish
+    end
+
+    def run
+      definition = JSON.parse(File.read(@path))
+      survey = load_survey(definition)
+      imported = updated = 0
+      unmatched = []
+
+      ActiveRecord::Base.transaction do
+        definition.fetch("responses").each do |row|
+          candidate = find_candidate(survey.election, row.fetch("candidate"))
+          if candidate.nil?
+            unmatched << row.dig("candidate", "full_name")
+            next
+          end
+
+          response = Warehouse::ElectionCandidateSurveyResponse
+            .find_or_initialize_by(survey: survey, candidate: candidate)
+          was_new = response.new_record?
+
+          response.assign_attributes(
+            answers: row.fetch("answers"),
+            explanations: row.fetch("explanations", {}),
+            survey_version: definition.fetch("survey_version", survey.version),
+            source: definition.fetch("source", "form"),
+            entered_by: "elections:seed_candidate_responses",
+            submitted_at: row["submitted_at"]
+          )
+          # Only ever set on a new row, so a re-seed neither un-publishes a
+          # reviewed response nor publishes one that was held back. Assigned
+          # rather than ||=: the column already defaults to "draft", so ||=
+          # would silently never fire.
+          response.status = @publish ? "published" : "draft" if was_new
+          response.save!
+
+          was_new ? imported += 1 : updated += 1
+        end
+      end
+
+      report(survey, imported: imported, updated: updated, unmatched: unmatched)
+    end
+
+    private
+
+    def load_survey(definition)
+      slug = definition.fetch("election_slug")
+      election = Warehouse::Election.find_by(slug: slug)
+      abort "No election #{slug} — run bin/rails db:seed first" if election.nil?
+
+      survey_slug = definition.fetch("survey_slug")
+      survey = election.surveys.find_by(slug: survey_slug)
+      abort "No survey #{slug}/#{survey_slug} — run bin/rails elections:seed_surveys" if survey.nil?
+      survey
+    end
+
+    # The race identifies which "Smith, J" this is, so a councillor and a
+    # school trustee with the same name cannot collide.
+    def find_candidate(election, spec)
+      race = election.races.find_by(
+        office_type: spec.fetch("office_type"), district_number: spec["district_number"]
+      )
+      return nil if race.nil?
+
+      Warehouse::ElectionCandidate
+        .where(election_race_id: race.id)
+        .find_by(full_name: spec.fetch("full_name"))
+    end
+
+    def report(survey, imported:, updated:, unmatched:)
+      puts "#{File.basename(@path)}: #{imported} loaded, #{updated} refreshed"
+
+      if unmatched.any?
+        puts "\nNot on the roster (#{unmatched.size}) — refresh the candidate roster and " \
+             "re-run to pick these up:"
+        unmatched.sort.each { |name| puts "  #{name}" }
+      end
+
+      by_status = survey.candidate_responses.group(:status).count
+      puts "#{survey.candidate_responses.count} response(s) on file " \
+           "(#{by_status.sort.map { |status, n| "#{n} #{status}" }.join(', ')})."
+    end
+  end
+
   desc "Import candidate questionnaire answers from a Google Form CSV export"
   task :import_candidate_questionnaire, [ :path ] => :environment do |_t, args|
     path = args[:path].presence || abort("Usage: bin/rails \"elections:import_candidate_questionnaire[path/to.csv]\"")

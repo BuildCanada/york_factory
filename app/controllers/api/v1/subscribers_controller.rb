@@ -4,6 +4,8 @@ module Api
       def create
         subscriber = Subscriber.new(subscriber_params)
         subscriber.source = "hubspot_form"
+        # This endpoint *is* the newsletter signup — reaching it is the ask.
+        subscriber.newsletter_opt_in = true
         if subscriber.save
           # PostHog: track newsletter subscription (distinct_id is the stable subscriber id, not email)
           PostHog.capture(

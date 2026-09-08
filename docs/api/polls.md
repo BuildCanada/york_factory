@@ -191,3 +191,6 @@ Question detail sheets show the supplied English and French question wording and
 answer labels, including split-ballot versions and question-by-question breakdowns.
 Missing translations are not invented. Polls also accept optional `subtitle_en` and
 `subtitle_fr`; public responses include the localized `subtitle`.
+
+Published poll listings, detail responses, and supported downloads are public: no
+login, subscription, or API key is required. Draft previews and editing require admin access.

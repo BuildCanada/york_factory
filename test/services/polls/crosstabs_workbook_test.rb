@@ -62,7 +62,7 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
     rows = ->(total, young, percent) { [
       { id: "base", kind: "unweighted-sample-size", label: { en: "Sample size" }, values: { "overall:all" => total, "age:young" => young } },
       { id: "weighted", kind: "weighted-sample-size", label: { en: "Weighted sample size" }, values: { "overall:all" => 500, "age:young" => 200 } },
-      { id: "yes", kind: "weighted-percent", label: { en: "Yes" }, values: { "overall:all" => percent, "age:young" => 0 } }
+      { id: "yes", kind: "weighted-percent", label: { en: "Yes", fr: "Oui" }, values: { "overall:all" => percent, "age:young" => 0 } }
     ] }
     table = { id: "q1", question: { en: "Choose an option" }, columns: columns, rows: rows.call(400, 199, 55), arms: [
       { id: "internal-a", question: { en: "First wording", fr: "Première version" }, columns: columns, rows: rows.call(200, 50, 70) },
@@ -77,6 +77,7 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       second = sheet.to_a.index { |row| row[0] == "Version 2: Second wording" } + 1
       assert_equal 200, sheet.cell(first + 1, 2)
       assert_equal 50, sheet.cell(first + 1, 3)
+      assert_equal "Yes\nOui", sheet.cell(first + 3, 1)
       assert_equal 70, sheet.cell(first + 3, 2)
       assert_equal 0, sheet.cell(first + 3, 3)
       assert_equal 40, sheet.cell(second + 3, 2)

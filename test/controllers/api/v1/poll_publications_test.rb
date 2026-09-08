@@ -30,6 +30,23 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "Private email"
   end
 
+  test "published poll Excel downloads are available without authentication" do
+    bytes = Polls::CrosstabsWorkbook.new(@poll).render
+    @poll.crosstabs_xlsx.attach(io: StringIO.new(bytes), filename: "crosstabs.xlsx",
+      content_type: PollArtifacts::XLSX_TYPE, identify: false,
+      metadata: { source_digest: @poll.artifact_digest("crosstabs_xlsx") })
+
+    get api_v1_polls_url
+    assert_response :success
+    assert_includes response.parsed_body["data"].map { |poll| poll["slug"] }, @poll.slug
+    get api_v1_poll_url(@poll.slug)
+    assert_response :success
+    assert_includes response.parsed_body["body_markdown"], "## Analysis"
+    get response.parsed_body.dig("poll", "downloads", "crosstabs_xlsx")
+    assert_response :success
+    assert_equal bytes.b, response.body.b
+  end
+
   test "French markdown downloads preserve chart source and locale" do
     markdown = "## Résultats\n\n```buildcanada-chart\n{\"data\":54}\n```"
     @poll.update!(body_fr: markdown)

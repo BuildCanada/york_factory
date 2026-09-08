@@ -122,7 +122,7 @@ module Polls
         values = columns.map do |column|
           Array(table["suppressedColumns"]).include?(column["key"]) ? "Suppressed" : row.fetch("values")[column["key"]]
         end
-        label = bilingual(row["label"])
+        label = ([ bilingual(row["label"]) ] + (row["armVariants"] || {}).values.map { |value| bilingual(value) }).compact_blank.uniq.join("\n")
         sheet.add_row [ label, *values ], style: [ styles[band], *Array.new(values.size, number_style) ], height: text_height(label, 48)
       end
     end

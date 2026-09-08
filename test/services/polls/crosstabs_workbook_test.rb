@@ -88,6 +88,30 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_includes sheet.to_a.flatten.join, "Première version"
     end
   end
+  test "split ballot labels stay associated with their version" do
+    variants = { "a" => { en: "Keep it", fr: "Conserver" }, "b" => { en: "Replace it", fr: "Remplacer" } }
+    columns = [ { key: "all", label: { en: "Total" } } ]
+    rows = [ { kind: "unweighted-sample-size", label: { en: "Sample size" }, values: { all: 100 } },
+      { kind: "weighted-percent", label: { en: "Choice", fr: "Choix" }, armVariants: variants, values: { all: 60 } } ]
+    table = { id: "q1", question: { en: "Question" }, columns: columns, rows: rows,
+      arms: variants.keys.map { |id| { id: id, question: { en: "Wording #{id}" }, columns: columns, rows: rows } } }
+    upload = Struct.new(:download).new({ schemaVersion: 2, tables: [ table ] }.to_json)
+    poll = Struct.new(:crosstabs_json, :title_en, :published_at).new(upload, "Survey", nil)
+    Tempfile.create([ "arm-labels", ".xlsx" ]) do |file|
+      file.binmode; file.write(Polls::CrosstabsWorkbook.new(poll).render); file.flush
+      sheet = Roo::Excelx.new(file.path).sheet("Q1").to_a
+      assert_includes sheet, [ "Choice\nChoix", 60 ]
+      assert_includes sheet.map(&:first), "Version 1: Keep it\nConserver"
+      assert_includes sheet.map(&:first), "Version 2: Replace it\nRemplacer"
+      first = sheet.index { |row| row.first == "Version 1: Wording a" }
+      second = sheet.index { |row| row.first == "Version 2: Wording b" }
+      assert_equal [ "Keep it\nConserver", 60 ], sheet[first + 2]
+      assert_equal [ "Replace it\nRemplacer", 60 ], sheet[second + 2]
+      assert_not_includes sheet[first...second].flatten.join, "Remplacer"
+      assert_not_includes sheet[second..].flatten.join, "Conserver"
+    end
+  end
+
   test "dependent tables get their own sheets, numbered after their question, with index links" do
     columns = ->(*keys) { [ { key: "overall:all", id: "all", breakdownId: "overall", label: { en: "Total" } },
       *keys.map { |key| { key: key, id: key.split(":").last, breakdownId: key.split(":").first, label: { en: key.split(":").last.titleize } } } ] }

@@ -3,6 +3,17 @@ require "test_helper"
 class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
   include AdminTestHelper
 
+  test "retranslation clears the stale French subtitle and queues translation" do
+    sign_in_admin
+    poll = Poll.create!(slug: "retranslate-subtitle", survey_slug: "survey", title_en: "Poll", subtitle_en: "Updated wording", subtitle_fr: "Ancien texte")
+    assert_enqueued_with(job: TranslateRecordJob, args: [ poll ]) do
+      post retranslate_admin_poll_path(poll)
+    end
+    assert_response :success
+    assert_nil poll.reload.subtitle_fr
+    assert_equal "Updated wording", poll.subtitle_en
+  end
+
   test "poll editor renders report uploads and launch copy" do
     sign_in_admin
     get new_admin_poll_path

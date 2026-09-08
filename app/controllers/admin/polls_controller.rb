@@ -52,7 +52,7 @@ module Admin
     end
 
     def retranslate
-      @poll.update(title_fr: nil, key_messages_fr: [])
+      @poll.update(title_fr: nil, subtitle_fr: nil, key_messages_fr: [])
       @poll.body_fr = nil
       @poll.appendix_fr = nil
       @poll.methodology_fr = nil

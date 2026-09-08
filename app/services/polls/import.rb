@@ -12,7 +12,7 @@ module Polls
         raise ArgumentError, "Crosstabs must use Surveyor schema version 2 and match the survey."
       end
       allowed = (PollPublication::PARAMS - PollPublication::DOWNLOADS.map(&:to_sym)) +
-        %i[slug title_en title_fr body_en body_fr appendix_en appendix_fr]
+        %i[slug title_en title_fr subtitle_en subtitle_fr body_en body_fr appendix_en appendix_fr]
       poll = Poll.new(fields.slice(*allowed.map(&:to_s)))
       poll.published_at = nil
       poll.crosstabs_json.attach(io: StringIO.new(JSON.pretty_generate(crosstabs)),

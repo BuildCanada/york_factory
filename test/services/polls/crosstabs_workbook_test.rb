@@ -6,8 +6,8 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
     table = { id: "duplicate/invalid:sheet-name", type: "multiple", question: { en: "=Dangerous label", fr: "Question française" },
       columns: [ { key: "all", label: { en: "Total" } }, { key: "missing", breakdownId: "qx5-income", label: { en: "Missing", fr: "Manquant" } }, { key: "age:unknown", id: "unknown", label: { en: "Unknown" } }, { key: "gender:unknown", label: { en: "Not recorded" } } ],
       rows: [ { label: { en: "Weighted sample size" }, kind: "unweighted-sample-size", values: { all: 100, missing: nil } },
-        { label: { en: "Support" }, kind: "weighted-percent", values: { all: 67, missing: nil } },
-        { label: { en: "Oppose" }, kind: "weighted-percent", values: { all: 0, missing: nil } } ] }
+        { label: { en: "Support", fr: "Pour" }, kind: "weighted-percent", values: { all: 67, missing: nil } },
+        { label: { en: "Oppose", fr: "Contre" }, kind: "weighted-percent", values: { all: 0, missing: nil } } ] }
     report = { schemaVersion: 2, survey: { slug: "survey" }, breakdowns: [ { id: "qx5-income", label: { en: "What is your household income?", fr: "Revenu du ménage" } } ], warnings: [ "Internal warning" ], translationFallbacks: [ "internal.translation.key" ], tables: [ table, table ], weighting: { method: "none", unweightedResponses: 100 } }
     poll.crosstabs_json.attach(io: StringIO.new(report.to_json), filename: "tabs.json", content_type: "application/json", identify: false)
     bytes = Polls::CrosstabsWorkbook.new(poll).render
@@ -18,6 +18,12 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_equal "Build Canada\nOpinion poll", workbook.sheet(0).cell(1, 1)
       assert_equal "September 6, 2026", workbook.sheet(0).cell(2, 2)
       assert_includes workbook.sheet(1).cell(2, 1), "=Dangerous label"
+      [ "Q1", "Q2" ].each do |name|
+        sheet = workbook.sheet(name)
+        assert_includes sheet.cell(2, 1), "Question française"
+        assert_equal "Support\nPour", sheet.cell(5, 1)
+        assert_equal "Oppose\nContre", sheet.cell(6, 1)
+      end
       assert_equal 67, workbook.sheet(1).cell(5, 2)
       assert_equal 0, workbook.sheet(1).cell(6, 2)
       assert_equal "Suppressed", workbook.sheet(1).cell(5, 3)
@@ -25,7 +31,7 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_equal "Household income\nMissing", workbook.sheet(1).cell(3, 3)
       assert_equal 2, workbook.sheet(0).last_column
       all_text = workbook.sheets.flat_map { |name| workbook.sheet(name).to_a.flatten }.compact.join("\n")
-      [ table[:id], "Question ID", "Question type", "Breakdown semantics", "Translation fallback", "Internal warning", "internal.translation.key", "Not recorded", "Question française", "Manquant", "Revenu du ménage", "What is your household income?" ].each do |internal|
+      [ table[:id], "Question ID", "Question type", "Breakdown semantics", "Translation fallback", "Internal warning", "internal.translation.key", "Not recorded", "Manquant", "Revenu du ménage", "What is your household income?" ].each do |internal|
         assert_not_includes all_text, internal
       end
       assert_not_includes workbook.sheet(1).to_a.flatten, "Unknown"
@@ -56,7 +62,7 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
     rows = ->(total, young, percent) { [
       { id: "base", kind: "unweighted-sample-size", label: { en: "Sample size" }, values: { "overall:all" => total, "age:young" => young } },
       { id: "weighted", kind: "weighted-sample-size", label: { en: "Weighted sample size" }, values: { "overall:all" => 500, "age:young" => 200 } },
-      { id: "yes", kind: "weighted-percent", label: { en: "Yes" }, values: { "overall:all" => percent, "age:young" => 0 } }
+      { id: "yes", kind: "weighted-percent", label: { en: "Yes", fr: "Oui" }, values: { "overall:all" => percent, "age:young" => 0 } }
     ] }
     table = { id: "q1", question: { en: "Choose an option" }, columns: columns, rows: rows.call(400, 199, 55), arms: [
       { id: "internal-a", question: { en: "First wording", fr: "Première version" }, columns: columns, rows: rows.call(200, 50, 70) },
@@ -67,10 +73,11 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
     Tempfile.create([ "versions", ".xlsx" ]) do |file|
       file.binmode; file.write(Polls::CrosstabsWorkbook.new(poll).render); file.flush
       sheet = Roo::Excelx.new(file.path).sheet("Q1")
-      first = sheet.to_a.index { |row| row[0] == "Version 1: First wording" } + 1
+      first = sheet.to_a.index { |row| row[0] == "Version 1: First wording\nPremière version" } + 1
       second = sheet.to_a.index { |row| row[0] == "Version 2: Second wording" } + 1
       assert_equal 200, sheet.cell(first + 1, 2)
       assert_equal 50, sheet.cell(first + 1, 3)
+      assert_equal "Yes\nOui", sheet.cell(first + 3, 1)
       assert_equal 70, sheet.cell(first + 3, 2)
       assert_equal 0, sheet.cell(first + 3, 3)
       assert_equal 40, sheet.cell(second + 3, 2)
@@ -78,9 +85,33 @@ class Polls::CrosstabsWorkbookTest < ActiveSupport::TestCase
       assert_equal "Suppressed", sheet.cell(second + 2, 3)
       assert_equal "Suppressed", sheet.cell(second + 3, 3)
       assert_not_includes sheet.to_a.flatten.join, "internal-a"
-      assert_not_includes sheet.to_a.flatten.join, "Première version"
+      assert_includes sheet.to_a.flatten.join, "Première version"
     end
   end
+  test "split ballot labels stay associated with their version" do
+    variants = { "a" => { en: "Keep it", fr: "Conserver" }, "b" => { en: "Replace it", fr: "Remplacer" } }
+    columns = [ { key: "all", label: { en: "Total" } } ]
+    rows = [ { kind: "unweighted-sample-size", label: { en: "Sample size" }, values: { all: 100 } },
+      { kind: "weighted-percent", label: { en: "Choice", fr: "Choix" }, armVariants: variants, values: { all: 60 } } ]
+    table = { id: "q1", question: { en: "Question" }, columns: columns, rows: rows,
+      arms: variants.keys.map { |id| { id: id, question: { en: "Wording #{id}" }, columns: columns, rows: rows } } }
+    upload = Struct.new(:download).new({ schemaVersion: 2, tables: [ table ] }.to_json)
+    poll = Struct.new(:crosstabs_json, :title_en, :published_at).new(upload, "Survey", nil)
+    Tempfile.create([ "arm-labels", ".xlsx" ]) do |file|
+      file.binmode; file.write(Polls::CrosstabsWorkbook.new(poll).render); file.flush
+      sheet = Roo::Excelx.new(file.path).sheet("Q1").to_a
+      assert_includes sheet, [ "Choice\nChoix", 60 ]
+      assert_includes sheet.map(&:first), "Version 1: Keep it\nConserver"
+      assert_includes sheet.map(&:first), "Version 2: Replace it\nRemplacer"
+      first = sheet.index { |row| row.first == "Version 1: Wording a" }
+      second = sheet.index { |row| row.first == "Version 2: Wording b" }
+      assert_equal [ "Keep it\nConserver", 60 ], sheet[first + 2]
+      assert_equal [ "Replace it\nRemplacer", 60 ], sheet[second + 2]
+      assert_not_includes sheet[first...second].flatten.join, "Remplacer"
+      assert_not_includes sheet[second..].flatten.join, "Conserver"
+    end
+  end
+
   test "dependent tables get their own sheets, numbered after their question, with index links" do
     columns = ->(*keys) { [ { key: "overall:all", id: "all", breakdownId: "overall", label: { en: "Total" } },
       *keys.map { |key| { key: key, id: key.split(":").last, breakdownId: key.split(":").first, label: { en: key.split(":").last.titleize } } } ] }

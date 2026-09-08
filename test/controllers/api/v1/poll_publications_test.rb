@@ -8,6 +8,17 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     @poll.crosstabs_json.attach(io: StringIO.new('{"schemaVersion":2,"tables":[]}'), filename: "crosstabs.json", content_type: "application/json", identify: false)
   end
 
+  test "poll subtitles are optional, editable and localized" do
+    get api_v1_poll_url(@poll.slug)
+    assert_nil response.parsed_body["subtitle"]
+    patch api_v1_poll_url(@poll.slug), params: { poll: { subtitle_en: "What Canadians think", subtitle_fr: "Ce que pensent les Canadiens" } },
+      headers: { "Authorization" => "Bearer #{@key}" }, as: :json
+    assert_response :success
+    assert_equal "What Canadians think", response.parsed_body["subtitle"]
+    get api_v1_poll_url(@poll.slug), params: { locale: "fr" }
+    assert_equal "Ce que pensent les Canadiens", response.parsed_body["subtitle"]
+  end
+
   test "public poll includes downloads and news but not launch copy" do
     get api_v1_poll_url(@poll.slug)
     assert_response :success
@@ -17,6 +28,23 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert payload.dig("poll", "downloads", "crosstabs_json")
     assert_not payload["poll"].key?("launch_copy")
     assert_not_includes response.body, "Private email"
+  end
+
+  test "published poll Excel downloads are available without authentication" do
+    bytes = Polls::CrosstabsWorkbook.new(@poll).render
+    @poll.crosstabs_xlsx.attach(io: StringIO.new(bytes), filename: "crosstabs.xlsx",
+      content_type: PollArtifacts::XLSX_TYPE, identify: false,
+      metadata: { source_digest: @poll.artifact_digest("crosstabs_xlsx") })
+
+    get api_v1_polls_url
+    assert_response :success
+    assert_includes response.parsed_body["data"].map { |poll| poll["slug"] }, @poll.slug
+    get api_v1_poll_url(@poll.slug)
+    assert_response :success
+    assert_includes response.parsed_body["body_markdown"], "## Analysis"
+    get response.parsed_body.dig("poll", "downloads", "crosstabs_xlsx")
+    assert_response :success
+    assert_equal bytes.b, response.body.b
   end
 
   test "French markdown downloads preserve chart source and locale" do

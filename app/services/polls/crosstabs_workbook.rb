@@ -1,6 +1,6 @@
 module Polls
   class CrosstabsWorkbook
-    VERSION = 6
+    VERSION = 8
     DEMOGRAPHIC_TITLES = JSON.parse(Rails.root.join("config/poll_demographic_titles.json").read).freeze
 
     def initialize(poll)
@@ -73,15 +73,15 @@ module Polls
         last_column = Axlsx.col_ref([ columns.size, 1 ].max)
         sheet.add_row [ "Back to summary & index" ], style: styles[:link], height: 26
         sheet.add_hyperlink location: "'Summary & Index'!A1", ref: "A1", target: :internal
-        sheet.add_row [ "#{heading}\n#{english(table["question"])}" ], style: styles[:title], height: text_height(english(table["question"]), 35 + columns.size * 14) + 32
+        sheet.add_row [ "#{heading}\n#{bilingual(table["question"])}" ], style: styles[:title], height: text_height(bilingual(table["question"]), 35 + columns.size * 14) + 32
         sheet.merge_cells("A2:#{last_column}2")
         variants = table["variants"] || table["armVariants"] || {}
-        arm_numbers = (variants.keys | table.fetch("rows").flat_map { |row| (row["armVariants"] || {}).keys }).each_with_index.to_h { |arm, n| [ arm, n + 1 ] }
+        arm_numbers = (Array(table["arms"]).map { |arm| arm["id"] } | variants.keys | table.fetch("rows").flat_map { |row| (row["armVariants"] || {}).keys }).each_with_index.to_h { |arm, n| [ arm, n + 1 ] }
         variants.each do |arm, variant|
           wording = if variant.is_a?(Hash) && variant.key?("prompt")
-            ([ variant["prompt"], variant["description"], *Array(variant["options"]&.values), *variant.values_at("minLabel", "maxLabel", "trueLabel", "falseLabel") ].compact.map { |value| english(value) }).reject(&:blank?).join("\n")
+            ([ variant["prompt"], variant["description"], *Array(variant["options"]&.values), *variant.values_at("minLabel", "maxLabel", "trueLabel", "falseLabel") ].compact.map { |value| bilingual(value) }).reject(&:blank?).join("\n")
           else
-            english(variant)
+            bilingual(variant)
           end
           sheet.add_row [ "Version #{arm_numbers.fetch(arm)}", wording ], style: styles[:text], height: text_height(wording, [ columns.size * 22, 22 ].max)
           sheet.merge_cells("B#{sheet.rows.size}:#{last_column}#{sheet.rows.size}") if columns.size > 1
@@ -96,13 +96,13 @@ module Polls
         end
         sheet.add_row [ "Answer / sample size", *labels ], style: styles[:heading], height: labels.map { |label| text_height(label, 20) }.max || 40
         freeze_row = sheet.rows.size
-        add_result_rows(sheet, table, columns, styles)
+        add_result_rows(sheet, table, columns, styles, arm_numbers: arm_numbers)
         Array(table["arms"]).each_with_index do |arm, arm_index|
           sheet.add_row []
-          arm_heading = "Version #{arm_index + 1}: #{english(arm["question"])}"
+          arm_heading = "Version #{arm_index + 1}: #{bilingual(arm["question"])}"
           sheet.add_row [ arm_heading ], style: styles[:heading], height: text_height(arm_heading, 35 + columns.size * 14)
           sheet.merge_cells("A#{sheet.rows.size}:#{last_column}#{sheet.rows.size}")
-          add_result_rows(sheet, arm, columns, styles)
+          add_result_rows(sheet, arm, columns, styles, arm_id: arm["id"])
         end
         sheet.sheet_view.show_grid_lines = false
         sheet.sheet_view.pane do |pane|
@@ -115,15 +115,21 @@ module Polls
       end
     end
 
-    def add_result_rows(sheet, table, columns, styles)
+    def add_result_rows(sheet, table, columns, styles, arm_id: nil, arm_numbers: {})
       table.fetch("rows").each_with_index do |row, row_index|
         band = row_index.even? ? :even : :odd
         number_style = row["kind"] == "weighted-percent" ? styles[:percent][band] : styles[:number][band]
         values = columns.map do |column|
           Array(table["suppressedColumns"]).include?(column["key"]) ? "Suppressed" : row.fetch("values")[column["key"]]
         end
-        label = english(row["label"])
+        label = bilingual(arm_id ? row.dig("armVariants", arm_id) || row["label"] : row["label"])
         sheet.add_row [ label, *values ], style: [ styles[band], *Array.new(values.size, number_style) ], height: text_height(label, 48)
+        unless arm_id
+          (row["armVariants"] || {}).each do |arm, wording|
+            label = "Version #{arm_numbers.fetch(arm)}: #{bilingual(wording)}"
+            sheet.add_row [ label ], style: styles[:text], height: text_height(label, 48)
+          end
+        end
       end
     end
 
@@ -152,6 +158,10 @@ module Polls
         styles[:percent][band] = book.styles.add_style(**numeric, format_code: '0\\%')
       end
       styles
+    end
+
+    def bilingual(value)
+      value.is_a?(Hash) ? value.values_at("en", "fr").compact_blank.uniq.join("\n") : value.to_s
     end
 
     def english(value)

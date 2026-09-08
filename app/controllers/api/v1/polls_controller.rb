@@ -78,7 +78,7 @@ module Api
           *PollPublication::PARAMS,
           :slug, :author_id, :author_name, :author_title,
           :twitter_embed, :featured, :seo_image, :banner_image,
-          :title_en, :title_fr,
+          :title_en, :title_fr, :subtitle_en, :subtitle_fr,
           :body_en, :body_fr, :appendix_en, :appendix_fr
         ]
         scalar_fields << :published_at unless current_api_key
@@ -94,6 +94,7 @@ module Api
           id: poll.id,
           slug: poll.slug,
           title: poll.title,
+          subtitle: poll.subtitle,
           featured: poll.featured,
           published_at: poll.published_at,
           seo_image_url: image_url(poll.seo_image),

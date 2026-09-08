@@ -76,7 +76,7 @@ module Admin
         *PollPublication::PARAMS,
         :slug, :author_id, :author_name, :author_title,
         :twitter_embed, :published_at, :featured, :seo_image, :banner_image,
-        :title_en, :title_fr,
+        :title_en, :title_fr, :subtitle_en, :subtitle_fr,
         :body_en, :body_fr, :appendix_en, :appendix_fr,
         key_messages_en: [], key_messages_fr: []
       ).tap do |p|

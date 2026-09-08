@@ -10,6 +10,8 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_select "select[name='poll[content_kind]']", count: 0
     assert_select "input[name='poll[analysis_pdf_en]']", count: 0
     assert_select "select[name='poll[survey_scope]'] option", count: 3
+    assert_select "input[name='poll[subtitle_en]']"
+    assert_select "input[name='poll[subtitle_fr]']"
     assert_select "input[name='poll[crosstabs_json]']"
     assert_select "textarea[name='poll[subscriber_email_en]']"
     assert_select "textarea[name='poll[tweet_en]']"
@@ -32,7 +34,7 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
       assert_match "Import failed", flash[:alert]
     end
   end
-  test "rejected edits retain report and image attachments and public downloads" do
+  test "rejected edits retain source report and image attachments" do
     sign_in_admin
     poll = Poll.create!(slug: "asset-edit-test", title_en: "Poll", survey_slug: "survey", published_at: 1.day.ago)
     poll.crosstabs_pdf_en.attach(io: StringIO.new("%PDF-1.4 original"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
@@ -45,8 +47,8 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_equal blobs.map(&:id), [ poll.crosstabs_pdf_en.blob.id, poll.seo_image.blob.id ]
     assert blobs.all? { |blob| blob.service.exist?(blob.key) }
     get download_api_v1_poll_url(poll.slug, asset: "crosstabs_pdf_en")
-    assert_response :success
-    assert_equal "%PDF-1.4 original", response.body
+    assert_response :not_found
+    assert_equal "%PDF-1.4 original", poll.crosstabs_pdf_en.download
   end
 
   test "valid edits remove attachments and replacement uploads take precedence" do

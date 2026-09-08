@@ -2,7 +2,7 @@ class Poll < ApplicationRecord
   include Translatable, Publishable, HasLocalizedMarkdown, ValidatesSlugAvailability
 
   extend Mobility
-  translates :title, backend: :column
+  translates :title, :subtitle, backend: :column
   extend FriendlyId
   friendly_id :title_en, use: :history
 
@@ -19,7 +19,7 @@ class Poll < ApplicationRecord
   scope :featured, -> { where(featured: true) }
   scope :search, ->(q) { where("title_en ILIKE ?", "%#{sanitize_sql_like(q)}%") }
 
-  translatable_fields :title, :email_subject, :tweet
+  translatable_fields :title, :subtitle, :email_subject, :tweet
   markdown_fields :body, :appendix, :methodology, :news_release, :subscriber_email
   hash_fields :key_messages
 

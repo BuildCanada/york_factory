@@ -5,7 +5,18 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     _, @key = ApiKey.issue!(user: users(:admin), name: "poll-test")
     @poll = Poll.create!(slug: "test-poll-publication", title_en: "Poll", survey_slug: "survey",
       body_en: "## Analysis", published_at: 1.day.ago, news_release_en: "Public news", subscriber_email_en: "Private email", tweet_en: "Private tweet")
-    @poll.crosstabs_json.attach(io: StringIO.new('{"schemaVersion":2}'), filename: "crosstabs.json", content_type: "application/json", identify: false)
+    @poll.crosstabs_json.attach(io: StringIO.new('{"schemaVersion":2,"tables":[]}'), filename: "crosstabs.json", content_type: "application/json", identify: false)
+  end
+
+  test "poll subtitles are optional, editable and localized" do
+    get api_v1_poll_url(@poll.slug)
+    assert_nil response.parsed_body["subtitle"]
+    patch api_v1_poll_url(@poll.slug), params: { poll: { subtitle_en: "What Canadians think", subtitle_fr: "Ce que pensent les Canadiens" } },
+      headers: { "Authorization" => "Bearer #{@key}" }, as: :json
+    assert_response :success
+    assert_equal "What Canadians think", response.parsed_body["subtitle"]
+    get api_v1_poll_url(@poll.slug), params: { locale: "fr" }
+    assert_equal "Ce que pensent les Canadiens", response.parsed_body["subtitle"]
   end
 
   test "public poll includes downloads and news but not launch copy" do
@@ -87,6 +98,25 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_response :not_found
     get url, headers: { "Authorization" => "Bearer #{@key}" }
     assert_response :success
+  end
+
+  test "crosstabs downloads suppress small samples even for admin previews" do
+    report = { schemaVersion: 2, weighting: { unweightedResponses: 49, margins: [ { unknownResponses: 7 } ] },
+      tables: [ { id: "q1", columns: [ { key: "all", id: "all" } ], rows: [
+        { kind: "unweighted-sample-size", values: { all: 49 } },
+        { kind: "weighted-percent", values: { all: 72 } }
+      ] } ] }
+    @poll.crosstabs_json.attach(io: StringIO.new(report.to_json), filename: "tabs.json", content_type: "application/json", identify: false)
+    [ {}, { "Authorization" => "Bearer #{@key}" } ].each do |headers|
+      get download_api_v1_poll_url(@poll.slug, asset: "crosstabs_json"), headers: headers
+      assert_response :success
+      payload = response.parsed_body
+      assert_equal [ "all" ], payload.dig("tables", 0, "suppressedColumns")
+      assert_nil payload.dig("tables", 0, "rows", 0, "values", "all")
+      assert_nil payload.dig("tables", 0, "rows", 1, "values", "all")
+      assert_not payload["weighting"].key?("margins")
+      assert_not payload["weighting"].key?("unweightedResponses")
+    end
   end
 
   test "only named report attachments are downloadable" do

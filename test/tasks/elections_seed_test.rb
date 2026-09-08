@@ -1,5 +1,6 @@
 require "test_helper"
 require "rake"
+require "tmpdir"
 
 # The seed is how every environment other than a laptop gets the questionnaire,
 # so what matters is that it rebuilds from nothing and that re-running it is
@@ -14,6 +15,11 @@ class ElectionsSeedTest < ActiveSupport::TestCase
 
   setup do
     Rails.application.load_tasks unless Rake::Task.task_defined?("elections:seed_candidate_responses")
+
+    # A directory per test. The suite runs in parallel, so a shared fixed path
+    # means one test overwrites the seed another is about to read — which fails
+    # as a wrong assertion rather than an obvious collision, and only sometimes.
+    @seed_dir = Dir.mktmpdir("candidate-responses")
 
     jurisdiction = Warehouse::Jurisdiction.find_or_create_by!(slug: "toronto") do |j|
       j.name = "City of Toronto"
@@ -44,7 +50,13 @@ class ElectionsSeedTest < ActiveSupport::TestCase
     )
   end
 
-  def write_seed(responses, path: Rails.root.join("tmp/test_candidate_responses.json"))
+  teardown do
+    FileUtils.remove_entry(@seed_dir) if @seed_dir && File.directory?(@seed_dir)
+  end
+
+  # Repeated calls within one test deliberately reuse the same file, which is
+  # what the re-seed cases rewrite.
+  def write_seed(responses, path: File.join(@seed_dir, "candidate_responses.json"))
     File.write(path, JSON.pretty_generate(
       "election_slug" => "seedtown-2026",
       "survey_slug" => "candidate-questionnaire",

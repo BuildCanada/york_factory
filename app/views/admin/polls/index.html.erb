@@ -1,0 +1,41 @@
+<div class="page-header">
+  <h1>Polls</h1>
+  <a href="<%= new_admin_poll_path %>" class="btn btn-primary">New Poll</a>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Status</th>
+      <th>Published</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @polls.each do |poll| %>
+      <tr>
+        <td><a href="<%= admin_poll_path(poll) %>"><%= poll.title_en || "Untitled" %></a></td>
+        <td>
+          <span class="badge badge-<%= { 'published' => 'green', 'draft' => 'yellow', 'scheduled' => 'blue' }[poll.publish_status] %>">
+            <%= poll.publish_status.capitalize %>
+          </span>
+          <% if poll.featured? %><span class="badge badge-blue">Featured</span><% end %>
+        </td>
+        <td class="text-muted"><%= poll.published_at&.strftime("%b %d, %Y") || "—" %></td>
+        <td class="text-right"><a href="<%= edit_admin_poll_path(poll) %>" class="btn btn-sm">Edit</a></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>
+
+<details class="card mt-1">
+  <summary>Import a poll from Surveyor</summary>
+  <%= form_with url: import_publication_admin_polls_path, multipart: true do |form| %>
+    <%= form.label :publication_export, "Publication draft JSON" %>
+    <%= form.file_field :publication_export, accept: ".json,application/json", required: true %>
+    <%= form.submit "Import as draft", class: "btn btn-primary" %>
+  <% end %>
+</details>

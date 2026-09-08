@@ -98,13 +98,51 @@ class Warehouse::Election::PledgeEligibilityTest < ActiveSupport::TestCase
     assert_equal :city_mismatch, result.reason
   end
 
-  test "Toronto requires both an M postal code and a Toronto city name" do
-    postal("M9C 1A1", city: "ETOBICOKE")
+  # Toronto owns every M FSA, so the prefix settles it and nothing else is
+  # consulted — no postal row, no boundary.
+  test "an M postal code is Toronto without any lookup at all" do
+    @toronto.pledge_eligibility.rule # warm the jurisdiction load
+
+    result = nil
+    assert_queries_count(0) { result = @toronto.pledge_eligibility.check("m9c1a1") }
+
+    assert result.eligible?
+    assert_equal :fsa_match, result.reason
+    assert_equal "M9C 1A1", result.postal_code
+    assert_nil result.city, "nothing looked the city up on this path"
+  end
+
+  test "a non-Toronto FSA is still judged the long way" do
+    # "York, ON" also exists in Haldimand, outside the city.
     postal("N0A 1A1", city: "YORK")
 
-    assert @toronto.pledge_eligibility.check("M9C 1A1").eligible?
-    # "York, ON" also exists in Haldimand, outside the city.
-    refute @toronto.pledge_eligibility.check("N0A 1A1").eligible?
+    result = @toronto.pledge_eligibility.check("N0A 1A1")
+
+    refute result.eligible?
+    assert_equal :city_mismatch, result.reason
+  end
+
+  # The two M FSAs Toronto does not own: M7R is a Mississauga large volume
+  # receiver block, M0R is reserved.
+  test "the M FSAs Toronto does not own skip the fast path" do
+    postal("M7R 1A1", city: "MISSISSAUGA")
+    postal("M0R 1A1", city: "MISSISSAUGA")
+
+    %w[M7R\ 1A1 M0R\ 1A1].each do |code|
+      result = @toronto.pledge_eligibility.check(code)
+
+      refute result.eligible?, "#{code} is not Toronto"
+      assert_equal :city_mismatch, result.reason
+    end
+  end
+
+  test "an excluded M FSA we have never seen is not waved through as Toronto" do
+    postal("L8P 1A1", city: "HAMILTON") # so ON postal data exists
+
+    result = @toronto.pledge_eligibility.check("M7R 9Z9")
+
+    refute result.eligible?
+    assert_equal :unknown_postal_code, result.reason
   end
 
   test "an unknown postal code still counts where the city owns the whole FSA" do

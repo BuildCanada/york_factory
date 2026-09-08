@@ -1,0 +1,46 @@
+<div class="page-header">
+  <h1>Endorsements</h1>
+  <span class="text-muted">
+    <%= @memo_filter.present? ? "On this memo" : "Total" %>: <strong><%= @pagy.count %></strong>
+  </span>
+</div>
+
+<%= form_with url: admin_endorsements_path, method: :get, local: true, class: "filter-bar" do |f| %>
+  <%= f.label :memo_id, "Memo" %>
+  <%= f.select :memo_id,
+        [ [ "All memos", "" ] ] + @memo_options.map { |m| [ m.title_en.presence || m.slug, m.id ] },
+        { selected: @memo_filter },
+        class: "form-control filter-input", onchange: "this.form.submit()" %>
+<% end %>
+
+<% if @endorsements.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Memo</th>
+        <th>Endorser</th>
+        <th>Postal</th>
+        <th>Submitted</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @endorsements.each do |endorsement| %>
+        <tr>
+          <td><%= endorsement.memo&.title_en || "—" %></td>
+          <td>
+            <div><%= endorsement.author_name %></div>
+            <div class="text-muted mono" style="font-size: 0.7rem;"><%= endorsement.user&.email %></div>
+          </td>
+          <td class="mono"><%= endorsement.author_postal_code.presence || "—" %></td>
+          <td class="text-muted"><%= endorsement.created_at.strftime("%b %d, %Y") %></td>
+          <td class="text-right"><a href="<%= admin_endorsement_path(endorsement) %>" class="btn btn-sm">View</a></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="empty">No endorsements yet.</div>
+<% end %>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

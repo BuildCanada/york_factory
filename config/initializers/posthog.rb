@@ -7,22 +7,15 @@
 # The project key is stored in encrypted Rails credentials, so Kamal needs
 # only RAILS_MASTER_KEY to make it available in every deploy environment.
 
-token = Rails.application.credentials.dig(:posthog, :api_key)
-host  = Rails.application.credentials.dig(:posthog, :host).presence || "https://us.i.posthog.com"
-
-if token.blank? && Rails.env.development?
-  warn "[PostHog] posthog.api_key credential required by PostHog is missing or " \
-       "un-configured, this causes events to be silently missed. " \
-       "This error stops appearing once posthog.api_key is configured."
-end
-
-# Always initialize so PostHog.capture/identify calls are safe even without a
-# token (posthog-ruby silently drops events when api_key is nil).
-PostHog.init do |config|
-  config.api_key = token
-  config.host    = host
-  # Keep captures available for assertions without ever starting a sender in tests.
-  config.test_mode = Rails.env.test?
+if Rails.env.production?
+  PostHog.init do |config|
+    config.api_key = Rails.application.credentials.dig(:posthog, :api_key)
+    config.host = Rails.application.credentials.dig(:posthog, :host).presence || "https://us.i.posthog.com"
+  end
+else
+  # Keep direct PostHog.capture/identify calls safe while guaranteeing that
+  # development, test, console, and local runner activity never leaves the app.
+  PostHog.init(api_key: nil, silence_disabled_client_error: true)
 end
 
 PostHog::Rails.configure do |config|

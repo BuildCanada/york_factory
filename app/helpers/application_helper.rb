@@ -2,7 +2,7 @@ module ApplicationHelper
   # Base URL of the public Build Canada website (TradingPost / Next.js).
   # Overridable via WEBSITE_URL for non-production environments.
   def website_url
-    ENV.fetch("WEBSITE_URL", "https://www.buildcanada.com")
+    PublicWebsite.url
   end
 
   # Draft preview link for admin content.

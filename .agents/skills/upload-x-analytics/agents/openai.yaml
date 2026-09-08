@@ -1,0 +1,4 @@
+interface:
+  display_name: "X Analytics Uploader"
+  short_description: "Download and upload one year of X analytics"
+  default_prompt: "Use $upload-x-analytics to download and upload the one-year X analytics exports."

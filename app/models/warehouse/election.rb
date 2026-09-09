@@ -27,6 +27,16 @@ class Warehouse::Election < Warehouse::Record
   validates :name, :slug, :election_date, presence: true
   validates :slug, uniqueness: true
 
+  # Choices for every survey question that defers to this election for its
+  # options, keyed by options_source — see
+  # Warehouse::ElectionSurveyQuestion#options_for.
+  def survey_option_sources
+    {
+      "wards" => ward_options,
+      "mayoral_candidates" => mayoral_candidate_options
+    }
+  end
+
   # Ward choices for survey questions whose options_source is "wards", as
   # [{value,label}] — e.g. {"value" => "ward-1", "label" => "1 — Etobicoke North"}.
   #
@@ -43,5 +53,25 @@ class Warehouse::Election < Warehouse::Record
         label = race.district_name.presence ? "#{number} — #{race.district_name}" : number.to_s
         { "value" => "ward-#{number}", "label" => label }
       end
+  end
+
+  # Mayoral-ballot choices for survey questions whose options_source is
+  # "mayoral_candidates", as [{value,label}] — e.g.
+  # {"value" => "olivia-chow", "label" => "Olivia Chow"}.
+  #
+  # Withdrawn candidates are left out: a vote-intention question should offer
+  # the ballot as it will be, not everyone who ever registered. The value is the
+  # parameterized name rather than the row id so a tally stays readable and
+  # survives a reseed of the candidate tables, which the scrapers rewrite — and
+  # is deduplicated for the same reason, since two rows that parameterize alike
+  # would render as two identical choices holding one tally between them.
+  #
+  # Ordered by surname, the order the name appears in on an Ontario ballot.
+  def mayoral_candidate_options
+    candidates.active
+      .where(election_race_id: races.where(office_type: "mayor").select(:id))
+      .sort_by { |candidate| [ candidate.sort_name, candidate.display_name ] }
+      .map { |candidate| { "value" => candidate.display_name.parameterize, "label" => candidate.display_name } }
+      .uniq { |option| option["value"] }
   end
 end

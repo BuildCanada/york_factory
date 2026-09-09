@@ -98,10 +98,33 @@ class Warehouse::ElectionSurveyTest < ActiveSupport::TestCase
     s = survey
     question(s, question_id: "ward", question_type: "select", options_source: "wards")
 
-    ward_options = [ { "value" => "ward-1", "label" => "1 — Riverside" } ]
-    rendered = s.reload.steps(ward_options: ward_options).first[:questions].first
+    sources = { "wards" => [ { "value" => "ward-1", "label" => "1 — Riverside" } ] }
+    rendered = s.reload.steps(option_sources: sources).first[:questions].first
 
     assert_equal [ "ward-1", "unsure" ], rendered[:options].map { |o| o["value"] }
+    assert_equal "I'm not sure", rendered[:options].last["label"]
+  end
+
+  test "candidate-sourced options are resolved from the passed candidate list" do
+    s = survey
+    question(s, question_id: "mayor_vote", question_type: "select",
+      options_source: "mayoral_candidates")
+
+    sources = { "mayoral_candidates" => [ { "value" => "jane-doe", "label" => "Jane Doe" } ] }
+    rendered = s.reload.steps(option_sources: sources).first[:questions].first
+
+    assert_equal [ "jane-doe", "unsure" ], rendered[:options].map { |o| o["value"] }
+    assert_equal "Not sure", rendered[:options].last["label"]
+  end
+
+  test "a sourced question with no list still offers the unsure choice" do
+    s = survey
+    question(s, question_id: "mayor_vote", question_type: "select",
+      options_source: "mayoral_candidates")
+
+    rendered = s.reload.steps.first[:questions].first
+
+    assert_equal [ "unsure" ], rendered[:options].map { |o| o["value"] }
   end
 
   test "meta must be an object" do

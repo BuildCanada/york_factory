@@ -24,4 +24,10 @@ class Warehouse::ElectionCandidate < Warehouse::Record
 
     full_name
   end
+
+  # Surname, for listing candidates the way a ballot does. Falls back to the
+  # last word of the full name, since scraped rows don't always arrive split.
+  def sort_name
+    (last_name.presence || full_name.to_s.split.last.to_s).downcase
+  end
 end

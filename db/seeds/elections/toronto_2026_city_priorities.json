@@ -52,40 +52,6 @@
       "options_source": "wards"
     },
     {
-      "question_id": "tenure",
-      "step_id": "about-you",
-      "step_title": "About you",
-      "step_intro": null,
-      "step_position": 0,
-      "position": 2,
-      "question_type": "radio",
-      "label": "How long have you lived here?",
-      "help": null,
-      "topic": null,
-      "placeholder": null,
-      "required": true,
-      "rows": null,
-      "options": [
-        {
-          "value": "lt2",
-          "label": "Less than two years"
-        },
-        {
-          "value": "2to10",
-          "label": "Two to ten years"
-        },
-        {
-          "value": "10plus",
-          "label": "More than ten years"
-        },
-        {
-          "value": "life",
-          "label": "My whole life"
-        }
-      ],
-      "options_source": null
-    },
-    {
       "question_id": "housing_intervention",
       "step_id": "housing",
       "step_title": "Housing and growth",
@@ -961,18 +927,35 @@
       "options_source": null
     },
     {
-      "question_id": "name",
+      "question_id": "first_name",
       "step_id": "stay-in-touch",
       "step_title": "Stay in touch",
       "step_intro": null,
       "step_position": 8,
       "position": 0,
       "question_type": "text",
-      "label": "Name",
+      "label": "First name",
       "help": null,
       "topic": null,
-      "placeholder": "First and last name",
-      "required": false,
+      "placeholder": "First name",
+      "required": true,
+      "rows": null,
+      "options": [],
+      "options_source": null
+    },
+    {
+      "question_id": "last_name",
+      "step_id": "stay-in-touch",
+      "step_title": "Stay in touch",
+      "step_intro": null,
+      "step_position": 8,
+      "position": 1,
+      "question_type": "text",
+      "label": "Last name",
+      "help": null,
+      "topic": null,
+      "placeholder": "Last name",
+      "required": true,
       "rows": null,
       "options": [],
       "options_source": null
@@ -983,7 +966,7 @@
       "step_title": "Stay in touch",
       "step_intro": null,
       "step_position": 8,
-      "position": 1,
+      "position": 2,
       "question_type": "email",
       "label": "Email",
       "help": "We'll send you the results for your ward. Nothing else.",
@@ -1000,7 +983,7 @@
       "step_title": "Stay in touch",
       "step_intro": null,
       "step_position": 8,
-      "position": 2,
+      "position": 3,
       "question_type": "yesno",
       "label": "Subscribe to our newsletter",
       "help": null,

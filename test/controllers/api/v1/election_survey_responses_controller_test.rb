@@ -52,6 +52,62 @@ class Api::V1::ElectionSurveyResponsesControllerTest < ActionDispatch::Integrati
     assert_equal "Resident", subscriber.last_name
   end
 
+  # The survey asks for the two parts separately: HubSpot's newsletter form
+  # requires both firstname and lastname, and a single field left optional (or
+  # filled in with one word) produced submissions HubSpot rejected outright.
+  test "records the first and last name the survey collects separately" do
+    submit(email: "split@example.com", first_name: "Rita", last_name: "Resident",
+           survey_slug: SURVEY, postal_code: "M5V 2T6", answers: @answers)
+
+    assert_response :created
+    assert_equal "Rita Resident", JSON.parse(response.body)["name"]
+
+    subscriber = Subscriber.find_by(email: "split@example.com")
+    assert_equal "Rita", subscriber.first_name
+    assert_equal "Resident", subscriber.last_name
+  end
+
+  # A tracker build older than the split still posts one `name`, and must keep
+  # working — otherwise shipping this rejects live submissions until the front
+  # end catches up.
+  test "the explicit parts win over a single name field, which still works alone" do
+    submit(email: "both@example.com", name: "Ignored Entirely",
+           first_name: "Prefer", last_name: "These", survey_slug: SURVEY, answers: @answers)
+    subscriber = Subscriber.find_by(email: "both@example.com")
+    assert_equal "Prefer", subscriber.first_name
+    assert_equal "These", subscriber.last_name
+
+    submit(email: "legacy@example.com", name: "Ollie Old", survey_slug: SURVEY, answers: @answers)
+    legacy = Subscriber.find_by(email: "legacy@example.com")
+    assert_equal "Ollie", legacy.first_name
+    assert_equal "Old", legacy.last_name
+  end
+
+  # The names are questions like any other, so they arrive in the answers bag
+  # too. Reading them from there means the question change doesn't have to land
+  # in step with a tracker deploy that promotes them to top-level params.
+  test "the name questions' answers stand in for the top-level fields" do
+    submit(email: "bagged@example.com", survey_slug: SURVEY,
+           answers: @answers.merge(first_name: "Bagged", last_name: "Name", updates: "yes"))
+
+    assert_response :created
+    assert_equal "Bagged Name", JSON.parse(response.body)["name"]
+
+    subscriber = Subscriber.find_by(email: "bagged@example.com")
+    assert_equal "Bagged", subscriber.first_name
+    assert_equal "Name", subscriber.last_name
+  end
+
+  test "a top-level name field beats the answer to the name question" do
+    submit(email: "toplevel@example.com", first_name: "Top", last_name: "Level",
+           survey_slug: SURVEY,
+           answers: @answers.merge(first_name: "Bag", last_name: "Ged"))
+
+    subscriber = Subscriber.find_by(email: "toplevel@example.com")
+    assert_equal "Top", subscriber.first_name
+    assert_equal "Level", subscriber.last_name
+  end
+
   test "the postal code is stored canonically whatever form it arrives in" do
     submit(email: "unspaced@example.com", name: "Una Unspaced", survey_slug: SURVEY,
            postal_code: "m5v2t6", answers: @answers)

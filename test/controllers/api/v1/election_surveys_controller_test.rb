@@ -89,6 +89,26 @@ class Api::V1::ElectionSurveysControllerTest < ActionDispatch::IntegrationTest
     assert_equal "unsure", ward["options"].last["value"]
   end
 
+  test "show resolves mayoral options from the election's active mayoral candidates" do
+    @survey.questions.create!(
+      question_id: "mayor_vote", step_id: "about-you", step_title: "About you",
+      step_position: 0, position: 1, question_type: "select",
+      label: "Who do you plan to vote for as mayor?", required: true,
+      options_source: "mayoral_candidates"
+    )
+    race = @election.races.create!(office_type: "mayor", district_type: "at_large")
+    race.candidates.create!(full_name: "Bea Zhang", first_name: "Bea", last_name: "Zhang")
+    race.candidates.create!(full_name: "Al Adams", first_name: "Al", last_name: "Adams")
+    race.candidates.create!(full_name: "Gone Away", last_name: "Away", status: "withdrawn")
+
+    get api_v1_election_survey_url("toronto-2026", "city-priorities")
+
+    mayor = body["steps"].first["questions"].last
+    # Surname order, as on the ballot; withdrawn candidates are not offered.
+    assert_equal [ "al-adams", "bea-zhang", "unsure" ], mayor["options"].map { |o| o["value"] }
+    assert_equal "Not sure", mayor["options"].last["label"]
+  end
+
   test "show 404s for an unpublished survey" do
     @election.surveys.create!(
       slug: "candidate-questionnaire", audience: "candidate", version: "1"

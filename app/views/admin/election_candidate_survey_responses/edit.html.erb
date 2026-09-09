@@ -52,7 +52,7 @@
 
   <hr>
 
-  <% @survey.steps(ward_options: @election.ward_options).each do |step| %>
+  <% @survey.steps(option_sources: @election.survey_option_sources).each do |step| %>
     <h3 style="margin-bottom:0.25rem;"><%= step[:title] %></h3>
     <% if step[:intro].present? %>
       <p class="text-muted" style="font-size:0.85rem; margin-top:0;"><%= step[:intro] %></p>

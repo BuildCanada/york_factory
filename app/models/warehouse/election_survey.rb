@@ -45,10 +45,12 @@ class Warehouse::ElectionSurvey < Warehouse::Record
   # property of the survey (step_position, then position) rather than of either
   # caller.
   #
-  # `ward_options` supplies the choices for questions whose options_source is
-  # "wards" — see ElectionSurveyQuestion#options_for. It is passed in rather
-  # than looked up here so this stays a pure read with no boundary dependency.
-  def steps(ward_options: [])
+  # `option_sources` supplies the choices for questions that defer to the
+  # election for them — {"wards" => [...], "mayoral_candidates" => [...]}, see
+  # ElectionSurveyQuestion#options_for and Election#survey_option_sources. It is
+  # passed in rather than looked up here so this stays a pure read with no
+  # boundary dependency.
+  def steps(option_sources: {})
     questions.group_by { |q| [ q.step_position, q.step_id ] }
       .sort_by { |(step_position, step_id), _| [ step_position, step_id ] }
       .map do |(_, step_id), grouped|
@@ -57,7 +59,7 @@ class Warehouse::ElectionSurvey < Warehouse::Record
           id: step_id,
           title: first.step_title,
           intro: first.step_intro.presence,
-          questions: grouped.map { |q| q.as_definition(ward_options: ward_options) }
+          questions: grouped.map { |q| q.as_definition(option_sources: option_sources) }
         }.compact
       end
   end

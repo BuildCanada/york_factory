@@ -19,15 +19,16 @@ module Api
       end
 
       # One survey with its full question set, grouped into steps and ready to
-      # render. Ward-sourced options are resolved here, so the choices track the
-      # election's council races instead of a copy frozen at authoring time.
+      # render. Ward- and candidate-sourced options are resolved here, so the
+      # choices track the election's races and candidate roster instead of a copy
+      # frozen at authoring time.
       def show
         survey = surveys_scope.find_by(slug: params[:slug])
         return render json: { error: "Not found" }, status: :not_found if survey.nil?
 
         render json: {
           data: summary(survey).merge(
-            steps: survey.steps(ward_options: @election.ward_options)
+            steps: survey.steps(option_sources: @election.survey_option_sources)
           )
         }
       end

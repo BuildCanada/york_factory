@@ -95,6 +95,30 @@ module Api
       NEWSLETTER_YES = %w[yes true 1 on].freeze
       NEWSLETTER_NO = %w[no false 0 off].freeze
 
+      # The name questions, for the same reason: their answers land on the
+      # subscriber row and go on to HubSpot, so they are not opaque either.
+      FIRST_NAME_QUESTION_ID = "first_name"
+      LAST_NAME_QUESTION_ID = "last_name"
+
+      # Top-level `first_name`/`last_name` (or a single `name`) if the tracker
+      # sent them, otherwise the answers to the name questions.
+      #
+      # The bag is the fallback rather than the contract so this doesn't depend
+      # on a tracker deploy landing in step with the question change: the
+      # survey posts every answer keyed by question id, so a build that renders
+      # the two new questions submits the names there whether or not it also
+      # promotes them to top-level params. Without this a submission would
+      # carry a name we could see but never record, and the HubSpot newsletter
+      # form — which requires firstname and lastname — would keep rejecting it.
+      def submitted_name_parts
+        first, last = super
+
+        [
+          first.presence || answers_param[FIRST_NAME_QUESTION_ID].to_s.strip.presence,
+          last.presence || answers_param[LAST_NAME_QUESTION_ID].to_s.strip.presence
+        ]
+      end
+
       # The survey asks "Subscribe to our newsletter" outright, so that answer
       # decides the subscription, in both directions.
       #
@@ -133,7 +157,7 @@ module Api
       # email, which makes that a very cheap lookup. Nil when the form didn't
       # collect a name, which the tracker already handles.
       def submitted_display_name
-        split_name(params[:name]).compact_blank.join(" ").presence
+        submitted_name_parts.compact_blank.join(" ").presence
       end
 
       # Answers arrive as a free-form bag keyed by the question ids the tracker

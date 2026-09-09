@@ -24,7 +24,7 @@ module SubscriberUpsertable
     subscriber = Subscriber.where("LOWER(email) = ?", email.downcase).first ||
       Subscriber.new(email: email)
 
-    first, last = split_name(params[:name])
+    first, last = submitted_name_parts
     subscriber.first_name = first if subscriber.first_name.blank? && first.present?
     subscriber.last_name = last if subscriber.last_name.blank? && last.present?
 
@@ -36,6 +36,27 @@ module SubscriberUpsertable
       subscriber[attr] = params[attr] if subscriber[attr].blank? && params[attr].present?
     end
     subscriber
+  end
+
+  # The name on this submission as [first, last].
+  #
+  # Two shapes reach here. Forms that ask for the two parts separately (the
+  # resident survey, since HubSpot's newsletter form requires both firstname
+  # and lastname and a whitespace split can't be trusted to supply them) send
+  # `first_name` and `last_name`. Forms that ask for one line — the vote
+  # pledge, and any tracker build older than the split — send `name`, which is
+  # split on whitespace as before.
+  #
+  # Explicit parts win where both arrive, and each falls back on its own: a
+  # client that sends only `first_name` still gets a last name out of `name`
+  # if it sent one.
+  def submitted_name_parts
+    split_first, split_last = split_name(params[:name])
+
+    [
+      params[:first_name].to_s.strip.presence || split_first,
+      params[:last_name].to_s.strip.presence || split_last
+    ]
   end
 
   def split_name(raw)

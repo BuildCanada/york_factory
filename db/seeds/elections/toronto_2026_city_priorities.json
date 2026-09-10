@@ -52,23 +52,6 @@
       "options_source": null
     },
     {
-      "question_id": "mayor_vote",
-      "step_id": "about-you",
-      "step_title": "About you",
-      "step_intro": null,
-      "step_position": 0,
-      "position": 2,
-      "question_type": "select",
-      "label": "Who do you plan to vote for as mayor?",
-      "help": null,
-      "topic": null,
-      "placeholder": "Select a candidate",
-      "required": true,
-      "rows": null,
-      "options": [],
-      "options_source": "mayoral_candidates"
-    },
-    {
       "question_id": "housing_intervention",
       "step_id": "housing",
       "step_title": "Housing and growth",

@@ -1,10 +1,18 @@
 class Subscriber < ApplicationRecord
   performs :submit_to_hubspot_form
   performs :sync_to_hubspot
+  performs :sync_to_customerio
 
   # Contact fields whose changes trigger a HubSpot form submission. Context
   # columns (source, placement, page_uri, ...) ride along but don't retrigger.
   HUBSPOT_SYNCED_FIELDS = %w[email first_name last_name postal_code].freeze
+
+  # Fields that are Customer.io traits. Wider than the HubSpot set: identify
+  # is a plain upsert of traits, so there's no signup workflow to avoid
+  # retriggering and the opt-in state and pledge stamp are traits like any
+  # other.
+  CUSTOMERIO_SYNCED_FIELDS =
+    (HUBSPOT_SYNCED_FIELDS + %w[source placement newsletter_opt_in pledged_to_vote_at]).freeze
 
   # Vote pledges from the election tracker (rows cascade with the subscriber
   # in the DB).
@@ -36,6 +44,13 @@ class Subscriber < ApplicationRecord
   # newsletter form is what subscribes you — so it goes through the direct sync.
   after_commit :sync_to_hubspot_later, on: :update,
     if: -> { saved_change_to_newsletter_opt_in? && !newsletter_opt_in? }
+
+  # Customer.io runs alongside HubSpot on its own job, so a failure on either
+  # side doesn't hold up the other. Unlike the HubSpot form this isn't gated
+  # on newsletter_opt_in — survey and pledge respondents belong in Customer.io
+  # as people, with their opt-in state carried as a trait.
+  after_commit :sync_to_customerio_later, on: [ :create, :update ],
+    if: -> { saved_changes.keys.intersect?(CUSTOMERIO_SYNCED_FIELDS) }
 
   # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
   # Every pledge submits the dedicated HubSpot pledge form so pledge
@@ -73,6 +88,12 @@ class Subscriber < ApplicationRecord
         pledged_to_vote_at: pledged_to_vote_at
       }.compact_blank.merge(newsletter_subscription: newsletter_opt_in)
     )
+  end
+
+  # Upserts the subscriber as a Customer.io person, keyed by row id so an
+  # email change updates the same profile.
+  def sync_to_customerio
+    CustomerioService.identify_subscriber(self)
   end
 
   private

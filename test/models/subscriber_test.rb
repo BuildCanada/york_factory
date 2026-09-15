@@ -57,6 +57,47 @@ class SubscriberTest < ActiveSupport::TestCase
     HubspotFormsService.define_singleton_method(:submit_subscriber, original) if original
   end
 
+  test "creating a subscriber enqueues a Customer.io identify" do
+    assert_enqueued_with(job: Subscriber::SyncToCustomerioJob) do
+      Subscriber.create!(email: "cio@example.com", first_name: "New")
+    end
+  end
+
+  # The HubSpot form is gated on newsletter_opt_in; Customer.io holds the
+  # person either way, with the opt-in carried as a trait.
+  test "a subscriber who never opted in still enqueues a Customer.io identify" do
+    assert_no_enqueued_jobs(only: Subscriber::SubmitToHubspotFormJob) do
+      assert_enqueued_with(job: Subscriber::SyncToCustomerioJob) do
+        Subscriber.create!(email: "survey-only@example.com", newsletter_opt_in: false)
+      end
+    end
+  end
+
+  test "opting out enqueues a Customer.io identify" do
+    assert_enqueued_with(job: Subscriber::SyncToCustomerioJob) do
+      subscribers(:existing_subscriber).update!(newsletter_opt_in: false)
+    end
+  end
+
+  test "touching a subscriber does not enqueue a Customer.io identify" do
+    assert_no_enqueued_jobs(only: Subscriber::SyncToCustomerioJob) do
+      subscribers(:existing_subscriber).touch
+    end
+  end
+
+  test "sync_to_customerio identifies the subscriber through the service" do
+    received = nil
+    original = CustomerioService.method(:identify_subscriber)
+    CustomerioService.define_singleton_method(:identify_subscriber) { |subscriber| received = subscriber }
+
+    subscriber = subscribers(:existing_subscriber)
+    subscriber.sync_to_customerio
+
+    assert_equal subscriber, received
+  ensure
+    CustomerioService.define_singleton_method(:identify_subscriber, original) if original
+  end
+
   test "creating a subscriber flagged as pledging does not enqueue a subscriber form submission" do
     assert_no_enqueued_jobs(only: Subscriber::SubmitToHubspotFormJob) do
       Subscriber.create!(email: "pledger@example.com", first_name: "New", postal_code: "M5V 1A1", pledging: true)

@@ -47,6 +47,8 @@ class CustomerioService
       postal_code: subscriber.postal_code,
       city: subscriber.city,
       province: subscriber.province,
+      federal_constituency: subscriber.federal_constituency,
+      provincial_constituency: subscriber.provincial_constituency,
       source: subscriber.source,
       placement: subscriber.placement,
       pledged_to_vote_at: subscriber.pledged_to_vote_at,

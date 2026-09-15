@@ -2296,7 +2296,9 @@ CREATE TABLE public.subscribers (
     substack_synced_at timestamp(6) without time zone,
     substack_import_id bigint,
     city character varying,
-    province character varying
+    province character varying,
+    federal_constituency character varying,
+    provincial_constituency character varying
 );
 
 
@@ -10484,6 +10486,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260915000001'),
 ('20260915000000'),
 ('20260908000000'),
 ('20260907220000'),

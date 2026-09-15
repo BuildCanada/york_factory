@@ -113,6 +113,19 @@ class SubscriberTest < ActiveSupport::TestCase
     restore_stubs
   end
 
+  test "sync_to_customerio fills in the federal and provincial ridings" do
+    stub_constituencies("Toronto", "ON")
+    stub_identify
+
+    subscriber = subscribers(:existing_subscriber)
+    subscriber.sync_to_customerio
+
+    assert_equal "Toronto Centre", subscriber.reload.federal_constituency
+    assert_equal "Toronto Centre (provincial)", subscriber.provincial_constituency
+  ensure
+    restore_stubs
+  end
+
   test "sync_to_customerio does not look the city up twice" do
     lookups = 0
     stub_constituencies("Toronto", "ON") { lookups += 1 }
@@ -155,12 +168,15 @@ class SubscriberTest < ActiveSupport::TestCase
 
   test "correcting the postal code clears the city so the next identify refetches it" do
     subscriber = subscribers(:existing_subscriber)
-    subscriber.update_columns(city: "Ottawa", province: "Ontario")
+    subscriber.update_columns(city: "Ottawa", province: "Ontario",
+      federal_constituency: "Ottawa Centre", provincial_constituency: "Ottawa Centre")
 
     subscriber.update!(postal_code: "M5V 1A1")
 
     assert_nil subscriber.city
     assert_nil subscriber.province
+    assert_nil subscriber.federal_constituency
+    assert_nil subscriber.provincial_constituency
   end
 
   test "creating a subscriber flagged as pledging does not enqueue a subscriber form submission" do
@@ -304,8 +320,15 @@ class SubscriberTest < ActiveSupport::TestCase
     @original_fetch ||= ConstituencyService.method(:fetch_constituencies)
     ConstituencyService.define_singleton_method(:fetch_constituencies) do |_postal_code|
       counter&.call
-      { "city" => city, "province" => province_code, "centroid" => { "coordinates" => [ 0, 0 ] },
-        "representatives_centroid" => [] }
+      {
+        "city" => city,
+        "province" => province_code,
+        "centroid" => { "coordinates" => [ 0, 0 ] },
+        "representatives_centroid" => [
+          { "representative_set_name" => "House of Commons", "district_name" => "Toronto Centre" },
+          { "representative_set_name" => "Ontario Legislative Assembly", "district_name" => "Toronto Centre (provincial)" }
+        ]
+      }
     end
   end
 

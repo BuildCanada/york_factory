@@ -52,9 +52,9 @@ class Subscriber < ApplicationRecord
   after_commit :sync_to_customerio_later, on: [ :create, :update ],
     if: -> { saved_changes.keys.intersect?(CUSTOMERIO_SYNCED_FIELDS) }
 
-  # A corrected postal code invalidates the city derived from the old one;
-  # the next identify refills it (postal_code is itself a trigger field).
-  before_save -> { self.city = self.province = nil },
+  # A corrected postal code invalidates everything derived from the old one;
+  # the next identify refills them (postal_code is itself a trigger field).
+  before_save -> { self.city = self.province = self.federal_constituency = self.provincial_constituency = nil },
     if: -> { will_save_change_to_postal_code? && postal_code_was.present? }
 
   # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
@@ -107,9 +107,11 @@ class Subscriber < ApplicationRecord
     CustomerioService.identify_subscriber(self)
   end
 
-  # Derives city and province from the postal code, once. Postal codes don't
-  # move, so a subscriber that already has a city is left alone; one whose
-  # lookup failed has a blank city and is retried on the next identify.
+  # Derives city, province and the federal/provincial ridings from the postal
+  # code, once — they all come back in a single Represent response. Postal
+  # codes don't move, so a subscriber that already has a city is left alone;
+  # one whose lookup failed has a blank city and is retried on the next
+  # identify.
   #
   # Writes with update_columns: this runs inside the identify job, and a
   # normal save would enqueue a second one to report the city it just fetched.
@@ -120,7 +122,15 @@ class Subscriber < ApplicationRecord
     return if constituencies.blank?
 
     formatted = ConstituencyService.format(constituencies)
-    update_columns(city: formatted[:city], province: formatted[:province])
+    # A postal code can straddle two ridings and Represent answers with the
+    # one at its centroid, so treat a riding here as the best available guess
+    # rather than a fact about where someone votes.
+    update_columns(
+      city: formatted[:city],
+      province: formatted[:province],
+      federal_constituency: formatted[:federal_constituency],
+      provincial_constituency: formatted[:provincial_constituency]
+    )
   rescue StandardError => e
     # A postal code Represent doesn't know returns a body without the fields
     # `format` expects. Not worth failing the identify over — the contact is

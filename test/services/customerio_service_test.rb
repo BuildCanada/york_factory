@@ -41,6 +41,8 @@ class CustomerioServiceTest < ActiveSupport::TestCase
     assert_equal "Ottawa Centre", traits[:federal_constituency]
     assert_equal "Ottawa Centre", traits[:provincial_constituency]
     assert_equal true, traits[:newsletter_opt_in]
+    assert_equal false, traits[:unsubscribed]
+    assert_equal subscriber.created_at.to_i, traits[:created_at]
 
     # Basic auth sends the write key as the username with an empty password.
     assert_equal "Basic #{Base64.strict_encode64("write-key:")}", captured_headers["Authorization"]
@@ -63,6 +65,43 @@ class CustomerioServiceTest < ActiveSupport::TestCase
     assert_not traits.key?(:first_name)
     assert_not traits.key?(:postal_code)
     assert_equal false, traits[:newsletter_opt_in]
+    assert_equal true, traits[:unsubscribed]
+  ensure
+    HTTP.singleton_class.remove_method(:post)
+  end
+
+  # Customer.io acts on `unsubscribed`; `newsletter_opt_in` is a custom flag
+  # a campaign has to remember to filter on, so an opt-out has to say both.
+  test "an opted-out subscriber is marked unsubscribed" do
+    captured_payload = nil
+    HTTP.define_singleton_method(:post) do |_url, json:, headers:|
+      captured_payload = json
+      FakeResponse.new(success: true)
+    end
+
+    subscriber = subscribers(:existing_subscriber)
+    subscriber.update!(newsletter_opt_in: false)
+    CustomerioService.new(api_key: "write-key").identify_subscriber(subscriber)
+
+    assert_equal true, captured_payload[:traits][:unsubscribed]
+    assert_equal false, captured_payload[:traits][:newsletter_opt_in]
+  ensure
+    HTTP.singleton_class.remove_method(:post)
+  end
+
+  test "dates are sent as Unix timestamps so date segments can use them" do
+    captured_payload = nil
+    HTTP.define_singleton_method(:post) do |_url, json:, headers:|
+      captured_payload = json
+      FakeResponse.new(success: true)
+    end
+
+    pledged_at = Time.utc(2026, 7, 29, 12, 0)
+    subscriber = subscribers(:existing_subscriber)
+    subscriber.update!(pledged_to_vote_at: pledged_at)
+    CustomerioService.new(api_key: "write-key").identify_subscriber(subscriber)
+
+    assert_equal pledged_at.to_i, captured_payload[:traits][:pledged_to_vote_at]
   ensure
     HTTP.singleton_class.remove_method(:post)
   end

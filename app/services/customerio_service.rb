@@ -36,9 +36,9 @@ class CustomerioService
     user_id = subscriber.id
     raise IdentifyError, "Cannot identify an unsaved subscriber (#{subscriber.email})" if user_id.blank?
 
-    # `newsletter_opt_in` is merged in after compact_blank rather than sitting
-    # in the hash: false is blank, so compacting would drop the very value an
-    # opt-out needs to send and leave Customer.io subscribed.
+    # Dates go as Unix timestamps: `created_at` is one of Customer.io's
+    # reserved attributes and expects one, and a date sent as an ISO-8601
+    # string is stored as a string, which no date-based segment can use.
     traits = {
       email: subscriber.email,
       first_name: subscriber.first_name,
@@ -51,9 +51,9 @@ class CustomerioService
       provincial_constituency: subscriber.provincial_constituency,
       source: subscriber.source,
       placement: subscriber.placement,
-      pledged_to_vote_at: subscriber.pledged_to_vote_at,
-      created_at: subscriber.created_at
-    }.compact_blank.merge(newsletter_opt_in: subscriber.newsletter_opt_in)
+      pledged_to_vote_at: subscriber.pledged_to_vote_at&.to_i,
+      created_at: subscriber.created_at&.to_i
+    }.compact_blank.merge(subscription_traits(subscriber))
 
     response = HTTP.post(@url,
       json: { userId: user_id.to_s, traits: traits },
@@ -69,6 +69,18 @@ class CustomerioService
   end
 
   private
+
+  # Merged in after compact_blank rather than sitting in the traits hash:
+  # false is blank, so compacting would drop the very values an opt-out needs
+  # to send and leave Customer.io subscribed.
+  #
+  # `unsubscribed` is the reserved attribute Customer.io itself acts on, so an
+  # opt-out has to set it — `newsletter_opt_in` alone is a custom flag that
+  # campaigns would have to remember to filter on. It rides along as the
+  # plainer name to segment by.
+  def subscription_traits(subscriber)
+    { newsletter_opt_in: subscriber.newsletter_opt_in, unsubscribed: !subscriber.newsletter_opt_in }
+  end
 
   # Local development must not write to the production Customer.io workspace
   # by default; opt in with ENABLE_CUSTOMERIO_IDENTIFY=1.

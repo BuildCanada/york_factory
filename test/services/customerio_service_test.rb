@@ -23,6 +23,7 @@ class CustomerioServiceTest < ActiveSupport::TestCase
     end
 
     subscriber = subscribers(:existing_subscriber)
+    subscriber.update_columns(city: "Ottawa", province: "Ontario")
     service = CustomerioService.new(api_key: "write-key")
     assert service.identify_subscriber(subscriber)
 
@@ -34,6 +35,8 @@ class CustomerioServiceTest < ActiveSupport::TestCase
     assert_equal "User", traits[:last_name]
     assert_equal "Test User", traits[:name]
     assert_equal "K1A 0A6", traits[:postal_code]
+    assert_equal "Ottawa", traits[:city]
+    assert_equal "Ontario", traits[:province]
     assert_equal true, traits[:newsletter_opt_in]
 
     # Basic auth sends the write key as the username with an empty password.

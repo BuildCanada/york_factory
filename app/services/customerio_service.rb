@@ -45,6 +45,8 @@ class CustomerioService
       last_name: subscriber.last_name,
       name: [ subscriber.first_name, subscriber.last_name ].compact_blank.join(" ").presence,
       postal_code: subscriber.postal_code,
+      city: subscriber.city,
+      province: subscriber.province,
       source: subscriber.source,
       placement: subscriber.placement,
       pledged_to_vote_at: subscriber.pledged_to_vote_at,

@@ -52,6 +52,11 @@ class Subscriber < ApplicationRecord
   after_commit :sync_to_customerio_later, on: [ :create, :update ],
     if: -> { saved_changes.keys.intersect?(CUSTOMERIO_SYNCED_FIELDS) }
 
+  # A corrected postal code invalidates the city derived from the old one;
+  # the next identify refills it (postal_code is itself a trigger field).
+  before_save -> { self.city = self.province = nil },
+    if: -> { will_save_change_to_postal_code? && postal_code_was.present? }
+
   # A vote pledge stamps pledged_to_vote_at (see Warehouse::PledgeToVote).
   # Every pledge submits the dedicated HubSpot pledge form so pledge
   # workflows fire; the timestamp itself goes through the direct CRM sync —
@@ -92,8 +97,45 @@ class Subscriber < ApplicationRecord
 
   # Upserts the subscriber as a Customer.io person, keyed by row id so an
   # email change updates the same profile.
+  #
+  # The location lookup runs here, inside the job, rather than on its own:
+  # a contact should reach Customer.io already carrying a city, and splitting
+  # it into a second job would create every contact bare and fill the city in
+  # a moment later.
   def sync_to_customerio
+    fill_in_location
     CustomerioService.identify_subscriber(self)
+  end
+
+  # Derives city and province from the postal code, once. Postal codes don't
+  # move, so a subscriber that already has a city is left alone; one whose
+  # lookup failed has a blank city and is retried on the next identify.
+  #
+  # Writes with update_columns: this runs inside the identify job, and a
+  # normal save would enqueue a second one to report the city it just fetched.
+  def fill_in_location
+    return if postal_code.blank? || city.present?
+
+    constituencies = ConstituencyService.fetch_constituencies(postal_code)
+    return if constituencies.blank?
+
+    formatted = ConstituencyService.format(constituencies)
+    update_columns(city: formatted[:city], province: formatted[:province])
+  rescue StandardError => e
+    # A postal code Represent doesn't know returns a body without the fields
+    # `format` expects. Not worth failing the identify over — the contact is
+    # still worth having without a city.
+    Rails.logger.warn "Location lookup failed for subscriber #{id} (#{postal_code}): #{e.message}"
+    nil
+  end
+
+  # Enqueues an identify for every subscriber, spread out to stay under the
+  # Represent API's rate limit on the location lookups this triggers. Used to
+  # seed a Customer.io workspace from scratch.
+  def self.backfill_customerio_sync(per_minute: 60)
+    find_each.with_index do |subscriber, index|
+      SyncToCustomerioJob.set(wait: (index / per_minute.to_f).minutes).perform_later(subscriber)
+    end
   end
 
   private

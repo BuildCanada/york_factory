@@ -52,15 +52,15 @@
       "options_source": null
     },
     {
-      "question_id": "housing_intervention",
-      "step_id": "housing",
-      "step_title": "Housing and growth",
+      "question_id": "safety_investment",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
       "step_intro": null,
       "step_position": 1,
       "position": 0,
       "question_type": "radio",
-      "label": "If Toronto could make one major housing intervention this term, which should receive the greatest emphasis?",
-      "context": "Toronto is already trying all three approaches. It has legalized more small apartment buildings, cut some development charges, and committed public money to affordable housing. But housing construction is still well below the city's targets. The question is which approach Toronto should push hardest.",
+      "label": "Which approach should receive the greatest additional investment to improve public safety?",
+      "context": "Toronto increased police spending significantly in 2026. It is also expanding alternatives such as non-police responses to mental-health calls and better management of public spaces. The question is where the next increase in public-safety spending should go.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -68,33 +68,33 @@
       "rows": null,
       "options": [
         {
-          "value": "permission",
-          "label": "Permission",
-          "detail": "Permit substantially more housing as-of-right"
+          "value": "enforcement",
+          "label": "Enforcement",
+          "detail": "Police, bylaw enforcement and a more visible official presence"
         },
         {
-          "value": "cost_and_speed",
-          "label": "Cost and speed",
-          "detail": "Reduce approval times, development charges and other city-imposed costs"
+          "value": "crisis_prevention",
+          "label": "Crisis and prevention services",
+          "detail": "Mental-health response, addiction treatment and youth intervention"
         },
         {
-          "value": "public_delivery",
-          "label": "Public delivery",
-          "detail": "Build or finance substantially more affordable and supportive housing"
+          "value": "public_space_management",
+          "label": "Public-space management",
+          "detail": "Lighting, maintenance, sanitation and active use of streets and parks"
         }
       ],
       "options_source": null
     },
     {
-      "question_id": "housing_city_role",
-      "step_id": "housing",
-      "step_title": "Housing and growth",
+      "question_id": "police_budget",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
       "step_intro": null,
       "step_position": 1,
       "position": 1,
       "question_type": "radio",
-      "label": "What should be Toronto's primary role in delivering affordable and supportive housing?",
-      "context": "Toronto currently builds and buys housing, gives incentives to other builders, and sets the rules for development. Supportive housing also needs ongoing funding for staff and services, not just money to build units. Each approach puts responsibility in a different place: with the city, non-profits, private builders, or other governments.",
+      "label": "Over the next council term, the Toronto Police Service budget should:",
+      "context": "Much of the recent police budget increase pays for salaries and new officers under an approved hiring plan. Keeping the budget flat or reducing it would likely mean changing that plan or moving some responsibilities to other services. Increasing it further would leave less money for other city priorities.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -102,33 +102,30 @@
       "rows": null,
       "options": [
         {
-          "value": "direct_provider",
-          "label": "Direct provider",
-          "detail": "Build, acquire and own significantly more housing"
+          "value": "increase",
+          "label": "Increase above inflation to expand police staffing or services"
         },
         {
-          "value": "partner_financier",
-          "label": "Partner and financier",
-          "detail": "Supply land, funding and incentives to non-profit and private providers"
+          "value": "constant",
+          "label": "Remain approximately constant after inflation"
         },
         {
-          "value": "regulator_enabler",
-          "label": "Regulator and enabler",
-          "detail": "Focus primarily on permitting enough housing and reducing barriers to construction"
+          "value": "decrease",
+          "label": "Decrease after inflation, with some responsibilities and funding transferred to civilian services"
         }
       ],
       "options_source": null
     },
     {
-      "question_id": "housing_density_location",
-      "step_id": "housing",
-      "step_title": "Housing and growth",
+      "question_id": "surveillance_tech",
+      "step_id": "safety",
+      "step_title": "Public safety and public space",
       "step_intro": null,
       "step_position": 1,
       "position": 2,
       "question_type": "radio",
-      "label": "Where should Toronto permit the greatest increase in housing density?",
-      "context": "Toronto now allows up to four homes on most residential lots, but six-unit buildings are allowed in only nine wards. Council has not agreed on whether to expand that citywide. The city is also planning more housing along major streets and around growth centres. The choice is mainly about which neighbourhoods should absorb more growth.",
+      "label": "How should Toronto govern automated licence-plate readers and similar surveillance technology used on public streets?",
+      "context": "Toronto Police already use automated licence-plate readers on hundreds of vehicles. Rules limit who can search the data and how long some records are kept. Oversight mainly comes from the Police Services Board and provincial privacy law. Toronto does not currently have a broader citywide policy covering surveillance technology.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -136,19 +133,19 @@
       "rows": null,
       "options": [
         {
-          "value": "citywide",
-          "label": "Across the city",
-          "detail": "Permit more apartments and multiplexes in nearly every neighbourhood"
+          "value": "permit_broad",
+          "label": "Permit broad use",
+          "detail": "Allow police and approved organizations to deploy them under existing privacy law"
         },
         {
-          "value": "corridors_transit",
-          "label": "Along corridors and transit",
-          "detail": "Concentrate growth on major streets and near rapid transit"
+          "value": "permit_strict",
+          "label": "Permit under strict rules",
+          "detail": "Establish citywide limits on access, retention, auditing and data sharing"
         },
         {
-          "value": "designated_centres",
-          "label": "In designated centres",
-          "detail": "Concentrate most growth downtown and in existing growth centres"
+          "value": "prohibit",
+          "label": "Prohibit broad automated collection",
+          "detail": "Restrict their use to narrowly authorized investigations"
         }
       ],
       "options_source": null
@@ -256,15 +253,15 @@
       "options_source": null
     },
     {
-      "question_id": "safety_investment",
-      "step_id": "safety",
-      "step_title": "Public safety and public space",
+      "question_id": "housing_intervention",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
       "step_intro": null,
       "step_position": 3,
       "position": 0,
       "question_type": "radio",
-      "label": "Which approach should receive the greatest additional investment to improve public safety?",
-      "context": "Toronto increased police spending significantly in 2026. It is also expanding alternatives such as non-police responses to mental-health calls and better management of public spaces. The question is where the next increase in public-safety spending should go.",
+      "label": "If Toronto could make one major housing intervention this term, which should receive the greatest emphasis?",
+      "context": "Toronto is already trying all three approaches. It has legalized more small apartment buildings, cut some development charges, and committed public money to affordable housing. But housing construction is still well below the city's targets. The question is which approach Toronto should push hardest.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -272,33 +269,33 @@
       "rows": null,
       "options": [
         {
-          "value": "enforcement",
-          "label": "Enforcement",
-          "detail": "Police, bylaw enforcement and a more visible official presence"
+          "value": "permission",
+          "label": "Permission",
+          "detail": "Permit substantially more housing as-of-right"
         },
         {
-          "value": "crisis_prevention",
-          "label": "Crisis and prevention services",
-          "detail": "Mental-health response, addiction treatment and youth intervention"
+          "value": "cost_and_speed",
+          "label": "Cost and speed",
+          "detail": "Reduce approval times, development charges and other city-imposed costs"
         },
         {
-          "value": "public_space_management",
-          "label": "Public-space management",
-          "detail": "Lighting, maintenance, sanitation and active use of streets and parks"
+          "value": "public_delivery",
+          "label": "Public delivery",
+          "detail": "Build or finance substantially more affordable and supportive housing"
         }
       ],
       "options_source": null
     },
     {
-      "question_id": "police_budget",
-      "step_id": "safety",
-      "step_title": "Public safety and public space",
+      "question_id": "housing_city_role",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
       "step_intro": null,
       "step_position": 3,
       "position": 1,
       "question_type": "radio",
-      "label": "Over the next council term, the Toronto Police Service budget should:",
-      "context": "Much of the recent police budget increase pays for salaries and new officers under an approved hiring plan. Keeping the budget flat or reducing it would likely mean changing that plan or moving some responsibilities to other services. Increasing it further would leave less money for other city priorities.",
+      "label": "What should be Toronto's primary role in delivering affordable and supportive housing?",
+      "context": "Toronto currently builds and buys housing, gives incentives to other builders, and sets the rules for development. Supportive housing also needs ongoing funding for staff and services, not just money to build units. Each approach puts responsibility in a different place: with the city, non-profits, private builders, or other governments.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -306,30 +303,33 @@
       "rows": null,
       "options": [
         {
-          "value": "increase",
-          "label": "Increase above inflation to expand police staffing or services"
+          "value": "direct_provider",
+          "label": "Direct provider",
+          "detail": "Build, acquire and own significantly more housing"
         },
         {
-          "value": "constant",
-          "label": "Remain approximately constant after inflation"
+          "value": "partner_financier",
+          "label": "Partner and financier",
+          "detail": "Supply land, funding and incentives to non-profit and private providers"
         },
         {
-          "value": "decrease",
-          "label": "Decrease after inflation, with some responsibilities and funding transferred to civilian services"
+          "value": "regulator_enabler",
+          "label": "Regulator and enabler",
+          "detail": "Focus primarily on permitting enough housing and reducing barriers to construction"
         }
       ],
       "options_source": null
     },
     {
-      "question_id": "surveillance_tech",
-      "step_id": "safety",
-      "step_title": "Public safety and public space",
+      "question_id": "housing_density_location",
+      "step_id": "housing",
+      "step_title": "Housing and growth",
       "step_intro": null,
       "step_position": 3,
       "position": 2,
       "question_type": "radio",
-      "label": "How should Toronto govern automated licence-plate readers and similar surveillance technology used on public streets?",
-      "context": "Toronto Police already use automated licence-plate readers on hundreds of vehicles. Rules limit who can search the data and how long some records are kept. Oversight mainly comes from the Police Services Board and provincial privacy law. Toronto does not currently have a broader citywide policy covering surveillance technology.",
+      "label": "Where should Toronto permit the greatest increase in housing density?",
+      "context": "Toronto now allows up to four homes on most residential lots, but six-unit buildings are allowed in only nine wards. Council has not agreed on whether to expand that citywide. The city is also planning more housing along major streets and around growth centres. The choice is mainly about which neighbourhoods should absorb more growth.",
       "help": null,
       "topic": null,
       "placeholder": null,
@@ -337,19 +337,19 @@
       "rows": null,
       "options": [
         {
-          "value": "permit_broad",
-          "label": "Permit broad use",
-          "detail": "Allow police and approved organizations to deploy them under existing privacy law"
+          "value": "citywide",
+          "label": "Across the city",
+          "detail": "Permit more apartments and multiplexes in nearly every neighbourhood"
         },
         {
-          "value": "permit_strict",
-          "label": "Permit under strict rules",
-          "detail": "Establish citywide limits on access, retention, auditing and data sharing"
+          "value": "corridors_transit",
+          "label": "Along corridors and transit",
+          "detail": "Concentrate growth on major streets and near rapid transit"
         },
         {
-          "value": "prohibit",
-          "label": "Prohibit broad automated collection",
-          "detail": "Restrict their use to narrowly authorized investigations"
+          "value": "designated_centres",
+          "label": "In designated centres",
+          "detail": "Concentrate most growth downtown and in existing growth centres"
         }
       ],
       "options_source": null

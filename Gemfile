@@ -90,7 +90,7 @@ gem "commonmarker"
 gem "reverse_markdown"
 
 # CMS: unified LLM interface for translations
-gem "ruby_llm"
+gem "ruby_llm", ">= 2.0.0.rc1"
 
 # Admin: Hotwire for admin pages
 gem "turbo-rails"

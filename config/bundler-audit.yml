@@ -3,3 +3,18 @@
 
 ignore:
   - CVE-THAT-DOES-NOT-APPLY
+
+  # ruby_llm ReDoS in RubyLLM::Utils.underscore. Not reachable here: the regex
+  # runs on a class, agent or tool name, and we define no RubyLLM tools and no
+  # agents, so nothing but developer-authored constants ever reaches it. The
+  # library's one runtime caller (ActiveRecord message_methods) is behind the
+  # acts_as API, which this app does not use — the deprecation warning on boot
+  # fires unconditionally, it is not a sign we do. Every other caller is a Rails
+  # generator. Our whole usage is RubyLLM.chat(model:).ask(prompt).
+  #
+  # The only fix bundler-audit accepts is ruby_llm >= 2.0.0.rc1, a release
+  # candidate whose major version also drops the legacy acts_as API. Revisit
+  # when 2.0 ships final, and drop this ignore if we ever add a RubyLLM tool
+  # or agent.
+  - CVE-2026-67991
+  - GHSA-42r3-x6vx-x49x

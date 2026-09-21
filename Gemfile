@@ -154,3 +154,8 @@ end
 # Poll report generation
 gem "ferrum"
 gem "caxlsx"
+
+group :test do
+  # Minitest 6 provides the stubbing API used by broadcast tests separately.
+  gem "minitest-mock", "~> 5.27"
+end

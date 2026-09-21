@@ -1,4 +1,8 @@
 class User < ApplicationRecord
+  has_many :broadcast_backfill_requests,
+    foreign_key: :requested_by_id,
+    inverse_of: :requested_by,
+    dependent: :destroy
   devise :database_authenticatable, :registerable, :recoverable,
          :trackable, :omniauthable, :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist,
@@ -7,6 +11,7 @@ class User < ApplicationRecord
   has_many :identities, dependent: :destroy
   has_many :saved_searches, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :media_clips, dependent: :destroy
 
   enum :role, {
     member: "member",

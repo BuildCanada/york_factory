@@ -43,3 +43,8 @@ r2_active_storage:
   endpoint: <%= Rails.application.credentials.dig(:r2, :endpoint) %>
   bucket: <%= Rails.application.credentials.dig(:r2, :active_storage_bucket) %>
   force_path_style: true
+
+# Local broadcast source/derived media stays separate from user clip attachments.
+local_archive:
+  service: Disk
+  root: <%= Rails.root.join("storage", "broadcast_archive") %>

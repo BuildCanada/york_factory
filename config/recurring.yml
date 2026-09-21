@@ -10,6 +10,15 @@
 #     schedule: at 5am every day
 
 production:
+  discover_cpac_broadcasts:
+    class: Warehouse::Broadcasts::DiscoverJob
+    schedule: every 15 seconds
+  dispatch_broadcast_captures:
+    class: Warehouse::Broadcasts::DispatchCapturesJob
+    schedule: every 15 seconds
+  recover_broadcast_backfills:
+    class: Warehouse::Broadcasts::RecoverBackfillsJob
+    schedule: every minute
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12

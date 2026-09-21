@@ -1,0 +1,39 @@
+{
+  "viewmode": "f_item_view",
+  "item": [
+    {
+      "program_id": "51",
+      "type": "cpactv",
+      "episodeId": "tv-feed",
+      "videoUrl": "https://media.example.test/tv/master.m3u8",
+      "liveDateTime": "2021-05-04T16:57:03.000Z",
+      "title_en_t": "CPAC TV",
+      "title_fr_t": "CPAC TV",
+      "description_en_t": "Continuous service",
+      "description_fr_t": "Service continu",
+      "url_en_s": "/watch/tv?id=tv-feed",
+      "url_fr_s": "/regarder/tv?id=tv-feed",
+      "testStream": "false"
+    },
+    {
+      "program_id": "6",
+      "type": "live",
+      "episodeId": "event-one",
+      "videoUrl": "https://media.example.test/event/master.m3u8",
+      "liveDateTime": "2026-09-21T15:19:57.000Z",
+      "title_en_t": "Public event",
+      "title_fr_t": "Événement public",
+      "description_en_t": "Live event",
+      "description_fr_t": "Événement en direct",
+      "url_en_s": "/event?id=event-one",
+      "url_fr_s": "/evenement?id=event-one",
+      "testStream": "false"
+    },
+    {
+      "type": "live",
+      "episodeId": "test-feed",
+      "videoUrl": "https://media.example.test/test/master.m3u8",
+      "testStream": "true"
+    }
+  ]
+}

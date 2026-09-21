@@ -1,0 +1,115 @@
+<div class="broadcast-editor">
+  <section class="broadcast-stage card" aria-label="Video viewer and timeline">
+    <div class="broadcast-stage-heading">
+      <span class="broadcast-eyebrow">Recording viewer</span>
+      <span class="badge <%= @recording.state == 'open' ? 'badge-green' : 'badge-blue' %>"><%= @recording.state == "open" ? "Capture in progress" : "Archived recording" %></span>
+    </div>
+    <div class="broadcast-video-frame">
+      <% if @playback.parts.any? %>
+        <video data-broadcast-player-target="video" controls playsinline preload="metadata" crossorigin="anonymous" aria-label="Broadcast video">
+          <% @caption_tracks.each do |track| %>
+            <track kind="subtitles" srclang="<%= track.language %>" label="<%= track.language.upcase %> captions"
+                   src="<%= captions_admin_broadcast_path(@recording, track_id: track.id, audio_track_id: @audio_track&.id, at: broadcast_offset(@at, @recording)) %>">
+          <% end %>
+        </video>
+      <% else %>
+        <div class="broadcast-video-empty"><strong>Video is being prepared</strong><p>Playback appears after a complete part has been processed.</p></div>
+      <% end %>
+    </div>
+    <p data-broadcast-player-target="error" role="alert" class="broadcast-player-error"></p>
+
+    <div class="broadcast-transport" role="group" aria-label="Playback controls">
+      <button type="button" class="btn" data-action="broadcast-player#playPause" data-broadcast-player-target="playButton" aria-label="Play or pause">Play</button>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#skip" data-seconds="-5" aria-label="Back 5 seconds">−5s</button>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#skip" data-seconds="5" aria-label="Forward 5 seconds">+5s</button>
+      <span class="broadcast-time-display" data-broadcast-player-target="currentTime"><%= broadcast_timecode(broadcast_offset(@at, @recording)) %></span>
+      <label class="broadcast-speed">Speed
+        <select data-broadcast-player-target="rate" data-action="change->broadcast-player#rateChanged" class="form-control" aria-label="Playback speed">
+          <% [0.5, 0.75, 1, 1.25, 1.5, 2].each do |rate| %><option value="<%= rate %>" <%= "selected" if rate == 1 %>><%= rate %>×</option><% end %>
+        </select>
+      </label>
+    </div>
+
+    <div class="broadcast-timeline-heading">
+      <div><strong>Trim timeline</strong><span class="text-muted" data-broadcast-player-target="viewportLabel"><%= broadcast_duration(@playback.starts_at - @recording.starts_at) %> – <%= broadcast_duration(@editor_window_end) %></span></div>
+      <div class="btn-group">
+        <button type="button" class="btn btn-sm" data-action="broadcast-player#zoomSelection">Zoom to selection</button>
+        <button type="button" class="btn btn-sm" data-action="broadcast-player#resetZoom">Show window</button>
+      </div>
+    </div>
+    <div class="broadcast-timeline" data-broadcast-player-target="timeline" data-role="seek" data-action="pointerdown->broadcast-player#timelinePointerDown" aria-label="Playback timeline">
+      <div class="broadcast-timeline-grid" aria-hidden="true"></div>
+      <div class="broadcast-selection-range" data-broadcast-player-target="selectionRange" data-role="selection" title="Drag to move the selected clip"></div>
+      <div class="broadcast-playhead" data-broadcast-player-target="playhead" aria-hidden="true"></div>
+      <button type="button" class="broadcast-trim-handle broadcast-trim-in" data-role="start" data-bound="start" role="slider" aria-label="Clip in point" aria-valuemin="0" aria-valuemax="<%= @available_end %>" aria-valuenow="<%= @clip_start %>" data-action="keydown->broadcast-player#handleKeydown"><span>IN</span></button>
+      <button type="button" class="broadcast-trim-handle broadcast-trim-out" data-role="end" data-bound="end" role="slider" aria-label="Clip out point" aria-valuemin="0" aria-valuemax="<%= @available_end %>" aria-valuenow="<%= @clip_end %>" data-action="keydown->broadcast-player#handleKeydown"><span>OUT</span></button>
+    </div>
+    <p class="broadcast-timeline-help">Drag IN / OUT to trim, drag the selection to move it, or click the timeline to seek. Hatched areas have no captured footage.</p>
+
+    <div class="broadcast-fine-controls" role="group" aria-label="Precise playback controls">
+      <span class="text-muted">Fine seek</span>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#skip" data-seconds="-0.1">−0.1s</button>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#skip" data-seconds="0.1">+0.1s</button>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#markStart">Set in <kbd>I</kbd></button>
+      <button type="button" class="btn btn-sm" data-action="broadcast-player#markEnd">Set out <kbd>O</kbd></button>
+    </div>
+
+    <details class="broadcast-recording-options">
+      <summary>Audio, recording navigation &amp; capture details</summary>
+      <%= form_with url: admin_broadcast_path(@recording), method: :get, class: "broadcast-navigation", data: { turbo: false, action: "submit->broadcast-player#preserveSelection" } do |form| %>
+        <%= form.hidden_field :q, value: @subtitle_query %>
+        <%= form.hidden_field :subtitle_language, value: params[:subtitle_language] %>
+        <label>Audio<%= form.select :audio_track_id, @audio_tracks.map { |track| ["#{track.language.upcase} · #{track.role}", track.id] }, { selected: @audio_track&.id, include_blank: @audio_tracks.empty? ? "No audio available" : false }, class: "form-control", aria: { label: "Audio language" } %></label>
+        <label>Recording position (seconds)<%= form.number_field :at, value: broadcast_offset(@at, @recording), min: 0, step: 0.001, class: "form-control", aria: { label: "Offset in recording (seconds)" } %></label>
+        <%= form.submit "Load / refresh", class: "btn" %>
+      <% end %>
+      <p class="text-muted">Available through <%= broadcast_timecode(@available_end) %>. Refresh to include newly processed footage.</p>
+      <% @playback.gaps.each do |from, to| %><p class="broadcast-player-error">Missing footage: <%= broadcast_duration(from - @recording.starts_at) %> – <%= broadcast_duration(to - @recording.starts_at) %>.</p><% end %>
+      <% @caption_latest.each do |track, object| %><p class="text-muted"><%= track.language.upcase %> captions: <%= object ? "processed through #{broadcast_time(object.ends_at)}#{object.metadata['empty'] ? ' (no caption text in latest part)' : ''}" : "waiting for extraction" %>.</p><% end %>
+    </details>
+    <p class="broadcast-shortcuts"><kbd>Space</kbd> play / pause <kbd>←</kbd> <kbd>→</kbd> seek 5s <kbd>Shift</kbd> + arrows seek 0.1s</p>
+  </section>
+
+  <aside class="broadcast-clip-panel card" aria-label="Clip editor">
+    <div class="broadcast-stage-heading"><span class="broadcast-eyebrow">Clip selection</span><span class="badge badge-blue">Up to 30 min</span></div>
+    <h2 class="broadcast-clip-heading">Make your cut</h2>
+    <p class="text-muted">Choose your boundaries here, or start from a subtitle match below.</p>
+    <%= form_with url: admin_media_clips_path(recording_id: @recording.id), scope: :media_clip, data: { action: "submit->broadcast-player#validateExport" } do |form| %>
+      <%= form.hidden_field :audio_track_id, value: @audio_track&.id %>
+      <%= form.hidden_field :start_offset, value: @clip_start, data: { broadcast_player_target: "start" } %>
+      <%= form.hidden_field :end_offset, value: @clip_end, data: { broadcast_player_target: "end" } %>
+      <div class="broadcast-boundary">
+        <label for="clip_in_timecode">IN <span>Start time</span></label>
+        <div><input id="clip_in_timecode" type="text" inputmode="decimal" value="<%= broadcast_timecode(@clip_start) %>" class="form-control broadcast-timecode" data-broadcast-player-target="startTimecode" data-bound="start" data-action="change->broadcast-player#timecodeChanged" aria-describedby="clip_timecode_hint" autocomplete="off"><button type="button" class="btn btn-sm" data-action="broadcast-player#markStart" title="Use the playhead position">Set in</button></div>
+      </div>
+      <div class="broadcast-boundary">
+        <label for="clip_out_timecode">OUT <span>End time</span></label>
+        <div><input id="clip_out_timecode" type="text" inputmode="decimal" value="<%= broadcast_timecode(@clip_end) %>" class="form-control broadcast-timecode" data-broadcast-player-target="endTimecode" data-bound="end" data-action="change->broadcast-player#timecodeChanged" aria-describedby="clip_timecode_hint" autocomplete="off"><button type="button" class="btn btn-sm" data-action="broadcast-player#markEnd" title="Use the playhead position">Set out</button></div>
+      </div>
+      <p id="clip_timecode_hint" class="broadcast-timeline-help">HH:MM:SS.mmm, MM:SS, or seconds.</p>
+      <div class="broadcast-duration"><span>Selected duration</span><strong data-broadcast-player-target="duration"><%= broadcast_timecode(@clip_end - @clip_start) %></strong></div>
+      <p data-broadcast-player-target="selection" role="status" aria-live="polite" class="broadcast-selection-status"></p>
+      <div class="broadcast-preview-controls">
+        <button type="button" class="btn" data-action="broadcast-player#previewSelection" data-broadcast-player-target="previewButton">Preview selection</button>
+        <label><input type="checkbox" data-broadcast-player-target="loop" data-action="change->broadcast-player#toggleLoop"> Loop</label>
+      </div>
+      <hr>
+      <div class="form-group"><%= form.label :title, "Clip title" %><%= form.text_field :title, value: "Clip — #{broadcast_title(@recording)}".first(200), class: "form-control", maxlength: 200, required: true, data: { broadcast_player_target: "title", persist_key: "title", action: "input->broadcast-player#persistentFieldChanged" } %></div>
+      <div class="form-group">
+        <%= form.label :export_mode, "Export quality" %>
+        <%= form.select :export_mode, [["Precise cut · re-encode", "exact"], ["Fast copy · keyframe boundaries", "copy"]], { selected: "exact" }, class: "form-control", data: { broadcast_player_target: "exportMode", persist_key: "exportMode", action: "change->broadcast-player#persistentFieldChanged" } %>
+        <p class="broadcast-timeline-help">Precise cuts follow your selection to video-frame precision. Fast copy is quicker and may expand the boundaries.</p>
+      </div>
+      <fieldset class="broadcast-caption-choices">
+        <legend>Subtitle downloads</legend>
+        <%= hidden_field_tag "media_clip[caption_languages][]", "" %>
+        <% %w[en fr].each do |language| %>
+          <% available = @caption_tracks.any? { |track| track.language == language } %>
+          <label><%= check_box_tag "media_clip[caption_languages][]", language, available, disabled: !available, id: "clip_captions_#{language}", data: { broadcast_player_target: "subtitleChoice", persist_key: "subtitleChoice", action: "change->broadcast-player#persistentFieldChanged" } %> <%= language == "en" ? "English" : "Français" %><%= " (unavailable)" unless available %></label>
+        <% end %>
+      </fieldset>
+      <%= form.submit "Export clip", class: "btn btn-primary broadcast-export", data: { broadcast_player_target: "submit" } %>
+      <p class="broadcast-timeline-help">Your export runs in the background. Captured source video is preserved.</p>
+    <% end %>
+  </aside>
+</div>

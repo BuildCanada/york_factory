@@ -77,15 +77,31 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libgeos-dev libproj-dev libvips
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libgeos-dev libproj-dev libvips ffmpeg
 
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Install Lead search extension in test PostgreSQL
+        run: |
+          docker build -t york-postgres-lead docker/postgres-lead
+          extension_container=$(docker create york-postgres-lead)
+          mkdir -p tmp/lead-extension
+          docker cp "$extension_container:/usr/lib/postgresql/18/lib/tin.so" tmp/lead-extension/tin.so
+          docker cp "$extension_container:/usr/share/postgresql/18/extension/." tmp/lead-extension/sql
+          docker rm "$extension_container"
+          docker cp tmp/lead-extension/tin.so "${{ job.services.postgres.id }}:/usr/lib/postgresql/18/lib/tin.so"
+          for file in tmp/lead-extension/sql/tin*; do
+            docker cp "$file" "${{ job.services.postgres.id }}:/usr/share/postgresql/18/extension/"
+          done
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+
+      - name: Test broadcast editor utilities
+        run: node --experimental-default-type=module --test test/javascript/broadcast_clip_utils_test.js
 
       - name: Run tests
         env:

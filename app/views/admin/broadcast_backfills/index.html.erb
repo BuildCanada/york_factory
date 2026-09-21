@@ -1,0 +1,41 @@
+<div data-controller="broadcast-refresh">
+  <div class="page-header">
+    <div><h1>Historical broadcasts</h1><p class="text-muted">Browse CPAC’s archived programmes and queue media backfills.</p></div>
+    <%= link_to "Live broadcasts and recordings", admin_broadcasts_path, class: "btn" %>
+  </div>
+  <div class="card" style="margin-bottom: 2rem">
+    <h2>Find broadcasts by date</h2>
+    <p class="text-muted">Choose an inclusive date range of up to 366 days. Find listings first to choose individual broadcasts, or queue all broadcasts in the range.</p>
+    <%= form_with url: admin_broadcast_backfills_path, class: "filter-bar" do |form| %>
+      <div><%= form.label :starts_on, "From" %><%= form.date_field :starts_on, required: true, value: Date.yesterday.iso8601, class: "form-control" %></div>
+      <div><%= form.label :ends_on, "Through" %><%= form.date_field :ends_on, required: true, value: Date.yesterday.iso8601, class: "form-control" %></div>
+      <div><%= form.label :mode, "Action" %><%= form.select :mode, [["Find listings only", "discover_only"], ["Find and queue all captures", "discover_and_queue"]], {}, class: "form-control" %></div>
+      <%= form.submit "Queue date range", class: "btn btn-primary" %>
+    <% end %>
+  </div>
+  <h2>Recent requests</h2>
+  <table>
+    <thead><tr><th>Request</th><th>Status</th><th>Discovered</th><th>Queued / completed / failed</th></tr></thead>
+    <tbody>
+      <% @requests.each do |request| %>
+        <tr><td><%= link_to "Request ##{request.id}", admin_broadcast_backfill_path(request) %><div class="text-muted"><%= request.scope == "stream" ? "Individual broadcast" : "#{request.starts_on} – #{request.ends_on}" %></div></td><td><%= request.state.humanize %></td><td><%= request.discovered_count %></td><td><%= request.queued_count %> / <%= request.completed_count %> / <%= request.failed_count %></td></tr>
+      <% end %>
+      <% if @requests.empty? %><tr><td colspan="4">No backfills queued yet.</td></tr><% end %>
+    </tbody>
+  </table>
+  <h2>Discovered historical listings</h2>
+  <%= form_with url: admin_broadcast_backfills_path, method: :get, class: "filter-bar" do |form| %>
+    <%= form.search_field :q, value: params[:q], placeholder: "Search English or French titles…", class: "form-control", aria: { label: "Historical listing title" } %>
+    <%= form.submit "Filter listings", class: "btn" %>
+  <% end %>
+  <table>
+    <thead><tr><th>Broadcast</th><th>Listed date</th><th></th></tr></thead>
+    <tbody>
+      <% @streams.each do |stream| %>
+        <tr><td><strong><%= stream.title_en.presence || stream.title_fr || stream.external_id %></strong><div class="text-muted"><%= stream.title_fr %></div></td><td><%= stream.metadata["provider_published_at"].to_s.first(10).presence || stream.scheduled_start_at&.utc&.strftime("%Y-%m-%d") %></td><td><%= button_to "Queue capture", queue_stream_admin_broadcast_backfills_path(media_stream_id: stream.id), class: "btn btn-sm" %></td></tr>
+      <% end %>
+      <% if @streams.empty? %><tr><td colspan="3">No matching historical listings. Queue a date range to discover them.</td></tr><% end %>
+    </tbody>
+  </table>
+  <%== @pagy.series_nav if @pagy.pages > 1 %>
+</div>

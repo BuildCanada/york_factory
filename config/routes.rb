@@ -202,6 +202,26 @@ Rails.application.routes.draw do
     resources :media_feeds, except: :show do
       patch :toggle, on: :member
     end
+    resources :broadcasts, only: %i[index show] do
+      collection do
+        post :discover
+        get :gap
+      end
+      member do
+        get :subtitle_cues
+        get :playlist, defaults: { format: :m3u8 }
+        get :captions, defaults: { format: :vtt }
+      end
+    end
+    patch "broadcast_streams/:id/toggle", to: "broadcasts#toggle", as: :toggle_broadcast_stream
+    resources :broadcast_backfills, only: %i[index show create] do
+      post :retry, on: :member
+      post :queue_stream, on: :collection
+    end
+    resources :media_clips, only: %i[create show] do
+      get :download, on: :member
+      post :retry_export, on: :member
+    end
 
     namespace :kpis do
       resources :agent_runs, only: [ :index, :show ]

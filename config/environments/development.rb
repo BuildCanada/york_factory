@@ -44,10 +44,10 @@ Rails.application.configure do
   config.action_mailer.delivery_method = :test
 
   # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+  config.action_mailer.default_url_options = { host: "localhost", port: ENV.fetch("PORT", 3000).to_i }
 
   # Host used for absolute URL generation (ActiveStorage blobs embedded in markdown, etc.).
-  Rails.application.routes.default_url_options = { host: "localhost", port: 3000, protocol: "http" }
+  Rails.application.routes.default_url_options = { host: "localhost", port: ENV.fetch("PORT", 3000).to_i, protocol: "http" }
 
 
   # Print deprecation notices to the Rails logger.

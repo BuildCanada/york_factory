@@ -1,0 +1,59 @@
+<div class="page-header">
+  <div><h1><%= broadcast_title(@recording) %></h1><p class="text-muted"><%= broadcast_time(@recording.starts_at) %> · <%= @recording.state.humanize %></p></div>
+  <%= link_to "All broadcasts", admin_broadcasts_path, class: "btn" %>
+</div>
+<% if @recording.metadata["timeline_is_original_broadcast_time"] == false %>
+  <p class="flash flash-alert">This archive provides elapsed media time but no original broadcast timestamp. Displayed dates use CPAC’s publication date as a reference; clip offsets remain relative to the recording.</p>
+<% end %>
+<% if @capture_state&.last_error.present? %><p class="flash flash-alert"><%= @capture_state.last_error.truncate(300) %></p><% end %>
+
+<div class="broadcast-workspace" data-controller="broadcast-player"
+     data-broadcast-player-source-value="<%= playlist_admin_broadcast_path(@recording, audio_track_id: @audio_track&.id, at: broadcast_offset(@at, @recording)) %>"
+     data-broadcast-player-origin-value="<%= broadcast_offset(@playback.starts_at, @recording) %>"
+     data-broadcast-player-seek-value="<%= [@at - @playback.starts_at, 0].max %>"
+     data-broadcast-player-recording-id-value="<%= @recording.id %>"
+     data-broadcast-player-available-end-value="<%= @available_end %>"
+     data-broadcast-player-window-end-value="<%= @editor_window_end %>"
+     data-broadcast-player-gaps-value="<%= @editor_gaps.to_json %>">
+  <%= render "editor" %>
+
+  <section class="broadcast-subtitles" aria-label="Searchable subtitles">
+  <h2><%= @subtitle_query.present? ? "Subtitle search — entire recording" : "Transcript — next 30 minutes" %></h2>
+  <%= form_with url: admin_broadcast_path(@recording), method: :get, class: "filter-bar", data: { turbo: false, action: "submit->broadcast-player#preserveSelection" } do |form| %>
+    <%= form.hidden_field :at, value: broadcast_offset(@at, @recording) %>
+    <%= form.hidden_field :audio_track_id, value: @audio_track&.id %>
+    <%= form.search_field :q, value: @subtitle_query, placeholder: "Find words in this recording…", maxlength: 500, class: "form-control", aria: { label: "Search timestamped subtitles" } %>
+    <%= form.select :subtitle_language, [["Both languages", ""], ["English", "en"], ["Français", "fr"]], { selected: params[:subtitle_language] }, class: "form-control", aria: { label: "Subtitle language" } %>
+    <%= form.submit "Search subtitles", class: "btn" %>
+  <% end %>
+  <p class="text-muted">Use quotes for an exact phrase, or OR for alternatives.</p>
+  <% if @transcript_search_error %><p class="flash flash-alert"><%= @transcript_search_error %></p><% end %>
+  <p class="text-muted">Use a transcript segment as your clip, or select an in point and an out point from different results. Segment boundaries can be refined with playback.</p>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem">
+    <% %w[en fr].each do |language| %>
+      <div class="card">
+        <h2><%= language == "en" ? "English" : "Français" %></h2>
+        <% passages = @passages.select { |passage| passage.track.language == language } %>
+        <% passages.each do |passage| %>
+          <div style="margin-bottom: 1rem">
+            <button type="button" class="btn btn-sm" data-action="broadcast-player#seek" data-offset="<%= broadcast_offset(passage.starts_at, @recording) %>"><%= broadcast_duration(passage.starts_at - @recording.starts_at) %></button>
+            <span class="text-muted">– <%= broadcast_duration(passage.ends_at - @recording.starts_at) %></span>
+            <p class="broadcast-transcript"><%= broadcast_transcript(passage) %></p>
+            <% from = [broadcast_offset(passage.starts_at, @recording), 0].max %>
+            <% to = broadcast_offset([passage.ends_at, @recording.ends_at].compact.min, @recording) %>
+            <button type="button" class="btn btn-sm" data-action="broadcast-player#selectStart" data-offset="<%= from %>">Set clip in</button>
+            <button type="button" class="btn btn-sm" data-action="broadcast-player#selectEnd" data-offset="<%= to %>">Set clip out</button>
+            <button type="button" class="btn btn-sm" data-action="broadcast-player#selectSegment" data-start="<%= from %>" data-end="<%= to %>">Clip this segment</button>
+            <button type="button" class="btn btn-sm" data-action="broadcast-player#loadCues" data-url="<%= subtitle_cues_admin_broadcast_path(@recording, passage_id: passage.id, q: @subtitle_query.presence) %>">Show exact subtitle times</button>
+            <div data-cue-results aria-live="polite"></div>
+          </div>
+        <% end %>
+        <% if passages.empty? %><p class="text-muted"><%= @subtitle_query.present? ? "No matching subtitle segments." : "No captions captured in this window. The service may be unavailable, silent, or still processing." %></p><% end %>
+      </div>
+    <% end %>
+  </div>
+  <%== @transcript_pagy.series_nav if @transcript_pagy.pages > 1 %>
+  </section>
+</div>
+<h2>Your clips from this recording</h2>
+<%= render "admin/media_clips/list", clips: @clips %>

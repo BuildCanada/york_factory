@@ -24,7 +24,7 @@ ENV CHROME_PATH=/usr/bin/chromium CHROME_NO_SANDBOX=1
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y chromium fonts-liberation curl libjemalloc2 libvips postgresql-client libgeos-dev libproj-dev && \
+    apt-get install --no-install-recommends -y chromium fonts-liberation curl ffmpeg libjemalloc2 libvips postgresql-client libgeos-dev libproj-dev && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 

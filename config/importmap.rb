@@ -1,4 +1,5 @@
 pin "application"
+pin "hls.js", to: "https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.mjs"
 pin "@hotwired/turbo-rails", to: "turbo.min.js"
 pin "@hotwired/stimulus", to: "stimulus.min.js"
 pin "sortablejs", to: "https://ga.jspm.io/npm:sortablejs@1.15.6/modular/sortable.esm.js"

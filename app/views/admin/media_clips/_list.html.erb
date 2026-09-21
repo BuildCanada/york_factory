@@ -1,0 +1,9 @@
+<table>
+  <thead><tr><th>Clip</th><th>Mode</th><th>Status</th><th>Created</th><th></th></tr></thead>
+  <tbody>
+    <% clips.each do |clip| %>
+      <tr><td><%= link_to clip.title, admin_media_clip_path(clip) %></td><td><%= clip.export_mode == "exact" ? "Precise cut · re-encode" : "Fast copy" %></td><td><%= clip.state.humanize %></td><td><%= clip.created_at.utc.strftime("%Y-%m-%d %H:%M UTC") %></td><td><%= link_to "Download MP4", download_admin_media_clip_path(clip), class: "btn btn-sm" if clip.state == "ready" %></td></tr>
+    <% end %>
+    <% if clips.empty? %><tr><td colspan="5">No clips yet. Open a recording to select a range.</td></tr><% end %>
+  </tbody>
+</table>

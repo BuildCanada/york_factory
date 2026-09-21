@@ -25,6 +25,13 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 
 
 --
+-- Name: tin; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA tin;
+
+
+--
 -- Name: warehouse; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -57,6 +64,20 @@ CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types and functions';
+
+
+--
+-- Name: tin; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS tin WITH SCHEMA tin;
+
+
+--
+-- Name: EXTENSION tin; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION tin IS 'Lead: TIN-compatible non-production text search';
 
 
 --
@@ -222,6 +243,98 @@ CREATE TABLE public.ar_internal_metadata (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: broadcast_backfill_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.broadcast_backfill_items (
+    id bigint NOT NULL,
+    request_id bigint NOT NULL,
+    media_stream_id bigint NOT NULL,
+    state character varying DEFAULT 'discovered'::character varying NOT NULL,
+    error text,
+    queued_at timestamp with time zone,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT broadcast_backfill_items_state CHECK (((state)::text = ANY (ARRAY[('discovered'::character varying)::text, ('queued'::character varying)::text, ('running'::character varying)::text, ('completed'::character varying)::text, ('failed'::character varying)::text, ('skipped'::character varying)::text])))
+);
+
+
+--
+-- Name: broadcast_backfill_items_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.broadcast_backfill_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: broadcast_backfill_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.broadcast_backfill_items_id_seq OWNED BY public.broadcast_backfill_items.id;
+
+
+--
+-- Name: broadcast_backfill_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.broadcast_backfill_requests (
+    id bigint NOT NULL,
+    requested_by_id bigint NOT NULL,
+    scope character varying NOT NULL,
+    mode character varying NOT NULL,
+    state character varying DEFAULT 'queued'::character varying NOT NULL,
+    starts_on date,
+    ends_on date,
+    discovered_count integer DEFAULT 0 NOT NULL,
+    queued_count integer DEFAULT 0 NOT NULL,
+    completed_count integer DEFAULT 0 NOT NULL,
+    failed_count integer DEFAULT 0 NOT NULL,
+    skipped_count integer DEFAULT 0 NOT NULL,
+    processed_dates integer DEFAULT 0 NOT NULL,
+    orchestration_complete boolean DEFAULT false NOT NULL,
+    lease_token character varying,
+    lease_expires_at timestamp with time zone,
+    error text,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT broadcast_backfill_requests_lease_pair CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL))),
+    CONSTRAINT broadcast_backfill_requests_mode CHECK (((mode)::text = ANY (ARRAY[('discover_only'::character varying)::text, ('discover_and_queue'::character varying)::text]))),
+    CONSTRAINT broadcast_backfill_requests_range CHECK (((((scope)::text = 'date_range'::text) AND (starts_on IS NOT NULL) AND (ends_on IS NOT NULL)) OR (((scope)::text = 'stream'::text) AND (starts_on IS NULL) AND (ends_on IS NULL)))),
+    CONSTRAINT broadcast_backfill_requests_scope CHECK (((scope)::text = ANY (ARRAY[('date_range'::character varying)::text, ('stream'::character varying)::text]))),
+    CONSTRAINT broadcast_backfill_requests_state CHECK (((state)::text = ANY (ARRAY[('queued'::character varying)::text, ('running'::character varying)::text, ('completed'::character varying)::text, ('failed'::character varying)::text])))
+);
+
+
+--
+-- Name: broadcast_backfill_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.broadcast_backfill_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: broadcast_backfill_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.broadcast_backfill_requests_id_seq OWNED BY public.broadcast_backfill_requests.id;
 
 
 --
@@ -665,6 +778,92 @@ CREATE SEQUENCE public.luma_events_id_seq
 --
 
 ALTER SEQUENCE public.luma_events_id_seq OWNED BY public.luma_events.id;
+
+
+--
+-- Name: media_capture_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.media_capture_states (
+    id bigint NOT NULL,
+    media_stream_id bigint NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    next_poll_at timestamp with time zone,
+    lease_token character varying,
+    lease_expires_at timestamp with time zone,
+    cursor jsonb DEFAULT '{}'::jsonb NOT NULL,
+    consecutive_failures integer DEFAULT 0 NOT NULL,
+    last_error text,
+    last_captured_at timestamp with time zone,
+    last_processed_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_capture_states_failures CHECK ((consecutive_failures >= 0)),
+    CONSTRAINT media_capture_states_lease_pair CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))
+);
+
+
+--
+-- Name: media_capture_states_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.media_capture_states_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_capture_states_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.media_capture_states_id_seq OWNED BY public.media_capture_states.id;
+
+
+--
+-- Name: media_clips; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.media_clips (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    media_recording_id bigint NOT NULL,
+    media_track_id bigint,
+    starts_at timestamp with time zone NOT NULL,
+    ends_at timestamp with time zone NOT NULL,
+    actual_starts_at timestamp with time zone,
+    actual_ends_at timestamp with time zone,
+    title character varying NOT NULL,
+    state character varying DEFAULT 'queued'::character varying NOT NULL,
+    error text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_clips_actual_range CHECK (((actual_starts_at IS NULL) OR (actual_ends_at IS NULL) OR (actual_ends_at > actual_starts_at))),
+    CONSTRAINT media_clips_requested_range CHECK ((ends_at > starts_at)),
+    CONSTRAINT media_clips_state CHECK (((state)::text = ANY (ARRAY[('queued'::character varying)::text, ('processing'::character varying)::text, ('ready'::character varying)::text, ('failed'::character varying)::text])))
+);
+
+
+--
+-- Name: media_clips_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.media_clips_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_clips_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.media_clips_id_seq OWNED BY public.media_clips.id;
 
 
 --
@@ -4324,6 +4523,236 @@ ALTER SEQUENCE warehouse.media_feeds_id_seq OWNED BY warehouse.media_feeds.id;
 
 
 --
+-- Name: media_objects; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_objects (
+    id bigint NOT NULL,
+    media_stream_id bigint NOT NULL,
+    media_track_id bigint,
+    kind character varying NOT NULL,
+    identity_key character varying NOT NULL,
+    object_key text NOT NULL,
+    checksum character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    content_type character varying NOT NULL,
+    starts_at timestamp with time zone,
+    ends_at timestamp with time zone,
+    epoch integer DEFAULT 0 NOT NULL,
+    sequence bigint,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_objects_byte_size CHECK ((byte_size >= 0)),
+    CONSTRAINT media_objects_epoch CHECK ((epoch >= 0)),
+    CONSTRAINT media_objects_kind CHECK (((kind)::text = ANY (ARRAY[('source_segment'::character varying)::text, ('init'::character varying)::text, ('manifest'::character varying)::text, ('playback_part'::character varying)::text, ('caption_file'::character varying)::text]))),
+    CONSTRAINT media_objects_time_range CHECK (((starts_at IS NULL) OR (ends_at IS NULL) OR (ends_at > starts_at)))
+);
+
+
+--
+-- Name: media_objects_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_objects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_objects_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_objects_id_seq OWNED BY warehouse.media_objects.id;
+
+
+--
+-- Name: media_recordings; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_recordings (
+    id bigint NOT NULL,
+    media_stream_id bigint NOT NULL,
+    recording_key character varying NOT NULL,
+    starts_at timestamp with time zone NOT NULL,
+    ends_at timestamp with time zone,
+    state character varying DEFAULT 'open'::character varying NOT NULL,
+    title_en text,
+    title_fr text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_recordings_state CHECK (((state)::text = ANY (ARRAY[('open'::character varying)::text, ('finalized'::character varying)::text, ('partial'::character varying)::text]))),
+    CONSTRAINT media_recordings_time_range CHECK (((ends_at IS NULL) OR (ends_at > starts_at)))
+);
+
+
+--
+-- Name: media_recordings_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_recordings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_recordings_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_recordings_id_seq OWNED BY warehouse.media_recordings.id;
+
+
+--
+-- Name: media_streams; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_streams (
+    id bigint NOT NULL,
+    provider character varying NOT NULL,
+    external_id character varying NOT NULL,
+    kind character varying NOT NULL,
+    title_en text,
+    title_fr text,
+    description_en text,
+    description_fr text,
+    page_url_en text,
+    page_url_fr text,
+    manifest_url text,
+    provider_state character varying,
+    scheduled_start_at timestamp with time zone,
+    first_seen_at timestamp with time zone NOT NULL,
+    last_seen_at timestamp with time zone NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_streams_kind CHECK (((kind)::text = ANY (ARRAY[('continuous'::character varying)::text, ('event'::character varying)::text, ('on_demand'::character varying)::text]))),
+    CONSTRAINT media_streams_seen_range CHECK ((last_seen_at >= first_seen_at))
+);
+
+
+--
+-- Name: media_streams_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_streams_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_streams_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_streams_id_seq OWNED BY warehouse.media_streams.id;
+
+
+--
+-- Name: media_tracks; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_tracks (
+    id bigint NOT NULL,
+    media_stream_id bigint NOT NULL,
+    track_key character varying NOT NULL,
+    kind character varying NOT NULL,
+    language character varying DEFAULT 'und'::character varying NOT NULL,
+    role character varying NOT NULL,
+    delivery character varying NOT NULL,
+    parent_track_id bigint,
+    playlist_url text,
+    codec character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    first_seen_at timestamp with time zone NOT NULL,
+    last_seen_at timestamp with time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_tracks_delivery CHECK (((delivery)::text = ANY (ARRAY[('separate'::character varying)::text, ('embedded'::character varying)::text]))),
+    CONSTRAINT media_tracks_kind CHECK (((kind)::text = ANY (ARRAY[('video'::character varying)::text, ('audio'::character varying)::text, ('captions'::character varying)::text]))),
+    CONSTRAINT media_tracks_language CHECK (((language)::text = ANY (ARRAY[('en'::character varying)::text, ('fr'::character varying)::text, ('mul'::character varying)::text, ('und'::character varying)::text]))),
+    CONSTRAINT media_tracks_parent_not_self CHECK (((parent_track_id IS NULL) OR (parent_track_id <> id))),
+    CONSTRAINT media_tracks_seen_range CHECK ((last_seen_at >= first_seen_at))
+);
+
+
+--
+-- Name: media_tracks_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_tracks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_tracks_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_tracks_id_seq OWNED BY warehouse.media_tracks.id;
+
+
+--
+-- Name: media_transcript_passages; Type: TABLE; Schema: warehouse; Owner: -
+--
+
+CREATE TABLE warehouse.media_transcript_passages (
+    id bigint NOT NULL,
+    media_track_id bigint NOT NULL,
+    window_key character varying NOT NULL,
+    starts_at timestamp with time zone NOT NULL,
+    ends_at timestamp with time zone NOT NULL,
+    text text NOT NULL,
+    state character varying DEFAULT 'published'::character varying NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    search_revision integer DEFAULT 0 NOT NULL,
+    search_index_sequence bigint,
+    search_synced_at timestamp with time zone,
+    search_content_hash character varying,
+    search_embedding_model character varying,
+    search_embedding_input_hash character varying,
+    search_embedding_scope character varying,
+    search_embedding_input_tokens integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT media_passages_embedding_scope CHECK (((search_embedding_scope IS NULL) OR ((search_embedding_scope)::text = ANY (ARRAY[('full'::character varying)::text, ('truncated'::character varying)::text])))),
+    CONSTRAINT media_passages_revision CHECK ((search_revision >= 0)),
+    CONSTRAINT media_passages_state CHECK (((state)::text = ANY (ARRAY[('published'::character varying)::text, ('withdrawn'::character varying)::text]))),
+    CONSTRAINT media_passages_time_range CHECK ((ends_at > starts_at))
+);
+
+
+--
+-- Name: media_transcript_passages_id_seq; Type: SEQUENCE; Schema: warehouse; Owner: -
+--
+
+CREATE SEQUENCE warehouse.media_transcript_passages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: media_transcript_passages_id_seq; Type: SEQUENCE OWNED BY; Schema: warehouse; Owner: -
+--
+
+ALTER SEQUENCE warehouse.media_transcript_passages_id_seq OWNED BY warehouse.media_transcript_passages.id;
+
+
+--
 -- Name: metric_aliases; Type: TABLE; Schema: warehouse; Owner: -
 --
 
@@ -5060,6 +5489,20 @@ ALTER TABLE ONLY public.api_keys ALTER COLUMN id SET DEFAULT nextval('public.api
 
 
 --
+-- Name: broadcast_backfill_items id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_items ALTER COLUMN id SET DEFAULT nextval('public.broadcast_backfill_items_id_seq'::regclass);
+
+
+--
+-- Name: broadcast_backfill_requests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_requests ALTER COLUMN id SET DEFAULT nextval('public.broadcast_backfill_requests_id_seq'::regclass);
+
+
+--
 -- Name: builders id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5127,6 +5570,20 @@ ALTER TABLE ONLY public.luma_event_guests ALTER COLUMN id SET DEFAULT nextval('p
 --
 
 ALTER TABLE ONLY public.luma_events ALTER COLUMN id SET DEFAULT nextval('public.luma_events_id_seq'::regclass);
+
+
+--
+-- Name: media_capture_states id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_capture_states ALTER COLUMN id SET DEFAULT nextval('public.media_capture_states_id_seq'::regclass);
+
+
+--
+-- Name: media_clips id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_clips ALTER COLUMN id SET DEFAULT nextval('public.media_clips_id_seq'::regclass);
 
 
 --
@@ -5676,6 +6133,41 @@ ALTER TABLE ONLY warehouse.media_feeds ALTER COLUMN id SET DEFAULT nextval('ware
 
 
 --
+-- Name: media_objects id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_objects ALTER COLUMN id SET DEFAULT nextval('warehouse.media_objects_id_seq'::regclass);
+
+
+--
+-- Name: media_recordings id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_recordings ALTER COLUMN id SET DEFAULT nextval('warehouse.media_recordings_id_seq'::regclass);
+
+
+--
+-- Name: media_streams id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_streams ALTER COLUMN id SET DEFAULT nextval('warehouse.media_streams_id_seq'::regclass);
+
+
+--
+-- Name: media_tracks id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_tracks ALTER COLUMN id SET DEFAULT nextval('warehouse.media_tracks_id_seq'::regclass);
+
+
+--
+-- Name: media_transcript_passages id; Type: DEFAULT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_transcript_passages ALTER COLUMN id SET DEFAULT nextval('warehouse.media_transcript_passages_id_seq'::regclass);
+
+
+--
 -- Name: metric_aliases id; Type: DEFAULT; Schema: warehouse; Owner: -
 --
 
@@ -5842,6 +6334,22 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: broadcast_backfill_items broadcast_backfill_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_items
+    ADD CONSTRAINT broadcast_backfill_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: broadcast_backfill_requests broadcast_backfill_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_requests
+    ADD CONSTRAINT broadcast_backfill_requests_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: builders builders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5919,6 +6427,22 @@ ALTER TABLE ONLY public.luma_event_guests
 
 ALTER TABLE ONLY public.luma_events
     ADD CONSTRAINT luma_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_capture_states media_capture_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_capture_states
+    ADD CONSTRAINT media_capture_states_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_clips media_clips_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_clips
+    ADD CONSTRAINT media_clips_pkey PRIMARY KEY (id);
 
 
 --
@@ -6586,6 +7110,46 @@ ALTER TABLE ONLY warehouse.media_feeds
 
 
 --
+-- Name: media_objects media_objects_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_objects
+    ADD CONSTRAINT media_objects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_recordings media_recordings_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_recordings
+    ADD CONSTRAINT media_recordings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_streams media_streams_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_streams
+    ADD CONSTRAINT media_streams_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_tracks media_tracks_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_tracks
+    ADD CONSTRAINT media_tracks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_transcript_passages media_transcript_passages_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_transcript_passages
+    ADD CONSTRAINT media_transcript_passages_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: metric_aliases metric_aliases_pkey; Type: CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -6783,6 +7347,20 @@ ALTER TABLE ONLY warehouse.election_surveys
 
 ALTER TABLE ONLY warehouse.pledges_to_vote
     ADD CONSTRAINT ux_pledges_to_vote_election_subscriber UNIQUE (election_id, subscriber_id);
+
+
+--
+-- Name: idx_broadcast_backfill_items_request_stream; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_broadcast_backfill_items_request_stream ON public.broadcast_backfill_items USING btree (request_id, media_stream_id);
+
+
+--
+-- Name: idx_media_capture_states_due; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_media_capture_states_due ON public.media_capture_states USING btree (enabled, next_poll_at);
 
 
 --
@@ -7038,6 +7616,34 @@ CREATE UNIQUE INDEX index_api_keys_on_user_id_and_name ON public.api_keys USING 
 
 
 --
+-- Name: index_broadcast_backfill_items_on_request_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_broadcast_backfill_items_on_request_id ON public.broadcast_backfill_items USING btree (request_id);
+
+
+--
+-- Name: index_broadcast_backfill_items_on_request_id_and_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_broadcast_backfill_items_on_request_id_and_state ON public.broadcast_backfill_items USING btree (request_id, state);
+
+
+--
+-- Name: index_broadcast_backfill_requests_on_requested_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_broadcast_backfill_requests_on_requested_by_id ON public.broadcast_backfill_requests USING btree (requested_by_id);
+
+
+--
+-- Name: index_broadcast_backfill_requests_on_state_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_broadcast_backfill_requests_on_state_and_created_at ON public.broadcast_backfill_requests USING btree (state, created_at);
+
+
+--
 -- Name: index_builders_on_slug; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7259,6 +7865,48 @@ CREATE INDEX index_luma_events_on_start_at ON public.luma_events USING btree (st
 --
 
 CREATE INDEX index_luma_events_on_visibility ON public.luma_events USING btree (visibility);
+
+
+--
+-- Name: index_media_capture_states_on_lease_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_media_capture_states_on_lease_expires_at ON public.media_capture_states USING btree (lease_expires_at);
+
+
+--
+-- Name: index_media_capture_states_on_media_stream_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_media_capture_states_on_media_stream_id ON public.media_capture_states USING btree (media_stream_id);
+
+
+--
+-- Name: index_media_clips_on_media_recording_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_media_clips_on_media_recording_id ON public.media_clips USING btree (media_recording_id);
+
+
+--
+-- Name: index_media_clips_on_media_track_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_media_clips_on_media_track_id ON public.media_clips USING btree (media_track_id);
+
+
+--
+-- Name: index_media_clips_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_media_clips_on_user_id ON public.media_clips USING btree (user_id);
+
+
+--
+-- Name: index_media_clips_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_media_clips_on_user_id_and_created_at ON public.media_clips USING btree (user_id, created_at);
 
 
 --
@@ -8452,6 +9100,97 @@ CREATE INDEX idx_media_feeds_due ON warehouse.media_feeds USING btree (enabled, 
 
 
 --
+-- Name: idx_media_objects_object_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_objects_object_key ON warehouse.media_objects USING btree (object_key);
+
+
+--
+-- Name: idx_media_objects_stream_identity; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_objects_stream_identity ON warehouse.media_objects USING btree (media_stream_id, identity_key);
+
+
+--
+-- Name: idx_media_objects_stream_kind_time; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_objects_stream_kind_time ON warehouse.media_objects USING btree (media_stream_id, kind, starts_at);
+
+
+--
+-- Name: idx_media_objects_track_time; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_objects_track_time ON warehouse.media_objects USING btree (media_track_id, starts_at, ends_at);
+
+
+--
+-- Name: idx_media_passages_search_sync; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_passages_search_sync ON warehouse.media_transcript_passages USING btree (search_synced_at, search_index_sequence);
+
+
+--
+-- Name: idx_media_passages_tin_text; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_passages_tin_text ON warehouse.media_transcript_passages USING tin (text) WHERE ((state)::text = 'published'::text);
+
+
+--
+-- Name: idx_media_passages_track_time; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_passages_track_time ON warehouse.media_transcript_passages USING btree (media_track_id, starts_at, ends_at);
+
+
+--
+-- Name: idx_media_passages_track_window; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_passages_track_window ON warehouse.media_transcript_passages USING btree (media_track_id, window_key);
+
+
+--
+-- Name: idx_media_recordings_stream_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_recordings_stream_key ON warehouse.media_recordings USING btree (media_stream_id, recording_key);
+
+
+--
+-- Name: idx_media_recordings_stream_time; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_recordings_stream_time ON warehouse.media_recordings USING btree (media_stream_id, starts_at, ends_at);
+
+
+--
+-- Name: idx_media_streams_kind_schedule; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX idx_media_streams_kind_schedule ON warehouse.media_streams USING btree (kind, scheduled_start_at);
+
+
+--
+-- Name: idx_media_streams_provider_external; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_streams_provider_external ON warehouse.media_streams USING btree (provider, external_id);
+
+
+--
+-- Name: idx_media_tracks_stream_key; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_media_tracks_stream_key ON warehouse.media_tracks USING btree (media_stream_id, track_key);
+
+
+--
 -- Name: idx_metric_aliases_canonical_measure; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -8921,6 +9660,13 @@ CREATE UNIQUE INDEX index_media_feeds_on_name ON warehouse.media_feeds USING btr
 
 
 --
+-- Name: index_media_tracks_on_parent_track_id; Type: INDEX; Schema: warehouse; Owner: -
+--
+
+CREATE INDEX index_media_tracks_on_parent_track_id ON warehouse.media_tracks USING btree (parent_track_id);
+
+
+--
 -- Name: index_organization_aliases_on_alias_name_and_valid_from; Type: INDEX; Schema: warehouse; Owner: -
 --
 
@@ -9208,11 +9954,27 @@ ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
 
 
 --
+-- Name: media_capture_states fk_rails_1e855b1d57; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_capture_states
+    ADD CONSTRAINT fk_rails_1e855b1d57 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
+
+
+--
 -- Name: trade_barriers_agreement_histories fk_rails_2a21dba64b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.trade_barriers_agreement_histories
     ADD CONSTRAINT fk_rails_2a21dba64b FOREIGN KEY (agreement_id) REFERENCES public.trade_barriers_agreements(id);
+
+
+--
+-- Name: media_clips fk_rails_2e4c402c4d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_clips
+    ADD CONSTRAINT fk_rails_2e4c402c4d FOREIGN KEY (media_recording_id) REFERENCES warehouse.media_recordings(id);
 
 
 --
@@ -9229,6 +9991,14 @@ ALTER TABLE ONLY public.api_keys
 
 ALTER TABLE ONLY public.metrics_social_metric_observations
     ADD CONSTRAINT fk_rails_3b90d71d76 FOREIGN KEY (social_entity_id) REFERENCES public.metrics_social_entities(id) ON DELETE CASCADE;
+
+
+--
+-- Name: broadcast_backfill_items fk_rails_3cca3c0860; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_items
+    ADD CONSTRAINT fk_rails_3cca3c0860 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
 
 
 --
@@ -9309,6 +10079,14 @@ ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
 
 ALTER TABLE ONLY public.notification_batches
     ADD CONSTRAINT fk_rails_6e71670cf3 FOREIGN KEY (saved_search_id) REFERENCES public.saved_searches(id);
+
+
+--
+-- Name: broadcast_backfill_items fk_rails_71d2e209bc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_items
+    ADD CONSTRAINT fk_rails_71d2e209bc FOREIGN KEY (request_id) REFERENCES public.broadcast_backfill_requests(id);
 
 
 --
@@ -9408,6 +10186,14 @@ ALTER TABLE ONLY public.metrics_social_media_ads
 
 
 --
+-- Name: media_clips fk_rails_a73d6ca240; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_clips
+    ADD CONSTRAINT fk_rails_a73d6ca240 FOREIGN KEY (media_track_id) REFERENCES warehouse.media_tracks(id);
+
+
+--
 -- Name: memos fk_rails_a7adfa8924; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9445,6 +10231,14 @@ ALTER TABLE ONLY public.oauth_access_grants
 
 ALTER TABLE ONLY public.active_storage_attachments
     ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: media_clips fk_rails_c9bfeef05f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.media_clips
+    ADD CONSTRAINT fk_rails_c9bfeef05f FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -9509,6 +10303,14 @@ ALTER TABLE ONLY public.metrics_social_media_posts
 
 ALTER TABLE ONLY public.metrics_social_media_post_metric_snapshots
     ADD CONSTRAINT fk_rails_e39476749f FOREIGN KEY (social_media_post_id) REFERENCES public.metrics_social_media_posts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: broadcast_backfill_requests fk_rails_e3e360f35b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_backfill_requests
+    ADD CONSTRAINT fk_rails_e3e360f35b FOREIGN KEY (requested_by_id) REFERENCES public.users(id);
 
 
 --
@@ -9920,6 +10722,14 @@ ALTER TABLE ONLY warehouse.fiscal_authorities
 
 
 --
+-- Name: media_objects fk_rails_1ab6834233; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_objects
+    ADD CONSTRAINT fk_rails_1ab6834233 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
+
+
+--
 -- Name: lobbying_activities fk_rails_1e146f8e23; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
@@ -10000,11 +10810,27 @@ ALTER TABLE ONLY warehouse.fiscal_authorities
 
 
 --
+-- Name: media_tracks fk_rails_858977f634; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_tracks
+    ADD CONSTRAINT fk_rails_858977f634 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
+
+
+--
 -- Name: lobbying_activities fk_rails_8ce58f15fd; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.lobbying_activities
     ADD CONSTRAINT fk_rails_8ce58f15fd FOREIGN KEY (lineage_entry_id) REFERENCES warehouse.lineage_entries(id);
+
+
+--
+-- Name: media_recordings fk_rails_8f29d646b0; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_recordings
+    ADD CONSTRAINT fk_rails_8f29d646b0 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
 
 
 --
@@ -10048,11 +10874,35 @@ ALTER TABLE ONLY warehouse.standard_object_expenditures
 
 
 --
+-- Name: media_transcript_passages fk_rails_d4cdc76065; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_transcript_passages
+    ADD CONSTRAINT fk_rails_d4cdc76065 FOREIGN KEY (media_track_id) REFERENCES warehouse.media_tracks(id);
+
+
+--
 -- Name: standard_object_expenditures fk_rails_e3fb24df7c; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
 --
 
 ALTER TABLE ONLY warehouse.standard_object_expenditures
     ADD CONSTRAINT fk_rails_e3fb24df7c FOREIGN KEY (organization_id) REFERENCES warehouse.organizations(id);
+
+
+--
+-- Name: media_tracks fk_rails_f07845570c; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_tracks
+    ADD CONSTRAINT fk_rails_f07845570c FOREIGN KEY (parent_track_id) REFERENCES warehouse.media_tracks(id);
+
+
+--
+-- Name: media_objects fk_rails_f106fd9876; Type: FK CONSTRAINT; Schema: warehouse; Owner: -
+--
+
+ALTER TABLE ONLY warehouse.media_objects
+    ADD CONSTRAINT fk_rails_f106fd9876 FOREIGN KEY (media_track_id) REFERENCES warehouse.media_tracks(id);
 
 
 --
@@ -10486,6 +11336,9 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260921000003'),
+('20260921000002'),
+('20260921000001'),
 ('20260915000001'),
 ('20260915000000'),
 ('20260908000000'),

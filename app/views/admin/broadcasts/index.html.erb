@@ -1,0 +1,68 @@
+<div data-controller="broadcast-refresh">
+  <div class="page-header">
+    <div><h1>Broadcasts</h1><p class="text-muted">Live capture, bilingual transcripts, and clips. Times shown in UTC.</p></div>
+    <div><%= link_to "Historical backfills", admin_broadcast_backfills_path, class: "btn" %>
+    <%= button_to "Discover CPAC streams", discover_admin_broadcasts_path, class: "btn btn-primary" %></div>
+  </div>
+
+  <%= form_with url: admin_broadcasts_path, method: :get, class: "filter-bar", data: { turbo: false } do |form| %>
+    <%= form.hidden_field :stream_id, value: params[:stream_id] if params[:stream_id].present? %>
+    <%= form.hidden_field :date, value: params[:date] if params[:date].present? %>
+    <%= form.search_field :q, value: params[:q], placeholder: "Search the transcript archive…", class: "form-control", maxlength: 500, aria: { label: "Transcript search" } %>
+    <%= form.select :language, [["English", "en"], ["Français", "fr"]], { selected: params[:language] }, class: "form-control", style: "max-width: 10rem", aria: { label: "Search language" } %>
+    <%= form.submit "Search", class: "btn" %>
+  <% end %>
+  <p class="text-muted">Use quotes for an exact phrase, or OR for alternatives.</p>
+  <% if @search_error %><p class="flash flash-alert"><%= @search_error %></p><% end %>
+  <% if @hits %>
+    <h2>Transcript matches</h2>
+    <% @hits.each do |passage, recording| %>
+      <div class="card" style="margin-bottom: .75rem">
+        <%= link_to "#{broadcast_title(recording)} · #{broadcast_time(passage.starts_at)}", admin_broadcast_path(recording, at: broadcast_offset(passage.starts_at, recording), q: params[:q], subtitle_language: params[:language].presence || "en") %>
+        <p class="broadcast-transcript"><%= broadcast_transcript(passage) %></p>
+      </div>
+    <% end %>
+    <% if @hits.empty? && !@search_error %><p class="text-muted">No transcript matches for these filters.</p><% end %>
+    <%== @search_pagy.series_nav if @search_pagy&.pages.to_i > 1 %>
+  <% end %>
+
+  <h2 style="margin-top: 2rem">Streams</h2>
+  <table>
+    <thead><tr><th>Stream</th><th>Source status</th><th>Capture</th><th>Last captured / processed</th><th></th></tr></thead>
+    <tbody>
+      <% @streams.each do |stream| %>
+        <% state = @capture_states[stream.id] %>
+        <tr>
+          <td><strong><%= broadcast_title(stream) %></strong><div class="text-muted"><%= stream.provider.upcase %> · <%= stream.kind.humanize %></div></td>
+          <td><%= stream.provider_state %><div class="text-muted"><%= broadcast_time(stream.scheduled_start_at) if stream.provider_state == "prelive" %></div></td>
+          <td><span class="badge badge-<%= state&.enabled? ? 'green' : 'yellow' %>"><%= state&.enabled? ? 'Enabled' : 'Paused' %></span>
+            <% if state&.last_error.present? %><p style="max-width: 28rem; color: var(--red)"><%= state.last_error.truncate(250) %></p><% end %>
+          </td>
+          <td><%= broadcast_time(state&.last_captured_at) %><br><span class="text-muted"><%= broadcast_time(state&.last_processed_at) %></span></td>
+          <td><%= button_to(state&.enabled? ? "Pause" : "Start capture", admin_toggle_broadcast_stream_path(stream), method: :patch, class: "btn btn-sm") %></td>
+        </tr>
+      <% end %>
+      <% if @streams.empty? %><tr><td colspan="5">Discover CPAC streams to get started. Captures are paused until enabled.</td></tr><% end %>
+    </tbody>
+  </table>
+
+  <h2>Recordings</h2>
+  <%= form_with url: admin_broadcasts_path, method: :get, class: "filter-bar" do |form| %>
+    <%= form.collection_select :stream_id, (@streams.to_a + [@selected_stream].compact).uniq, :id, :title_en, { include_blank: "All streams", selected: params[:stream_id] }, class: "form-control", aria: { label: "Stream filter" } %>
+    <%= form.date_field :date, value: params[:date], class: "form-control", aria: { label: "Capture date" } %>
+    <%= form.submit "Filter", class: "btn" %>
+  <% end %>
+  <table>
+    <thead><tr><th>Recording</th><th>Started</th><th>State</th></tr></thead>
+    <tbody>
+      <% @recordings.each do |recording| %>
+        <tr><td><%= link_to broadcast_title(recording), admin_broadcast_path(recording) %></td><td><%= broadcast_time(recording.starts_at) %></td><td><%= recording.state.humanize %></td></tr>
+      <% end %>
+      <% if @recordings.empty? %><tr><td colspan="3">No captured recordings for this filter.</td></tr><% end %>
+    </tbody>
+  </table>
+  <%== @pagy.series_nav if @pagy.pages > 1 %>
+
+  <h2>Your recent clips</h2>
+  <%= render "admin/media_clips/list", clips: @clips %>
+</div>

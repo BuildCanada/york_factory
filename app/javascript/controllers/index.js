@@ -1,5 +1,11 @@
 import { application } from "controllers/application"
 
+import BroadcastPlayerController from "controllers/broadcast_player_controller"
+application.register("broadcast-player", BroadcastPlayerController)
+
+import BroadcastRefreshController from "controllers/broadcast_refresh_controller"
+application.register("broadcast-refresh", BroadcastRefreshController)
+
 import TabsController from "controllers/tabs_controller"
 application.register("tabs", TabsController)
 

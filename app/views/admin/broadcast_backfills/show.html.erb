@@ -1,0 +1,37 @@
+<div data-controller="broadcast-refresh">
+  <div class="page-header">
+    <div><h1>Backfill request #<%= @request.id %></h1><p class="text-muted"><%= @request.scope == "stream" ? "Individual broadcast" : "#{@request.starts_on} – #{@request.ends_on}" %> · <%= @request.mode.humanize %></p></div>
+    <%= link_to "Historical broadcasts", admin_broadcast_backfills_path, class: "btn" %>
+  </div>
+  <p><strong><%= @request.state.humanize %></strong> · <%= @request.discovered_count %> discovered · <%= @request.queued_count %> queued · <%= @request.completed_count %> completed · <%= @request.failed_count %> failed · <%= @request.skipped_count %> skipped</p>
+  <% if @request.scope == "date_range" %><p class="text-muted"><%= @request.processed_dates %> of <%= (@request.ends_on - @request.starts_on).to_i + 1 %> listing dates checked.</p><% end %>
+  <% if @request.error.present? %><p class="flash flash-alert"><%= @request.error.truncate(1000) %></p><% end %>
+  <% if Array(@request.metadata["listing_errors"]).any? %>
+    <details class="card" style="margin-bottom: 1rem">
+      <summary>Listings that could not be read (<%= @request.metadata["listing_errors"].size %>)</summary>
+      <% @request.metadata["listing_errors"].each do |error| %>
+        <p><strong><%= error["external_id"].presence || error["url"] %></strong>: <%= error["error"].to_s.truncate(500) %></p>
+      <% end %>
+    </details>
+  <% end %>
+  <% if @request.state == "failed" %><%= button_to "Retry failed work", retry_admin_broadcast_backfill_path(@request), class: "btn" %><% end %>
+  <p class="text-muted">Completed means source media has been archived. Playback and searchable subtitles may still be processing.</p>
+  <table>
+    <thead><tr><th>Broadcast</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% @items.each do |item| %>
+        <% stream = item.media_stream %>
+        <tr>
+          <td><strong><%= stream.title_en.presence || stream.title_fr || stream.external_id %></strong><div class="text-muted"><%= stream.title_fr %></div></td>
+          <td><%= item.state == "skipped" ? "Discovered (not queued)" : item.state.humanize %><% if item.error.present? %><p style="color: var(--red); max-width: 36rem"><%= item.error.truncate(500) %></p><% end %></td>
+          <td>
+            <% if item.state.in?(%w[discovered failed skipped]) %><%= button_to "Queue capture", queue_stream_admin_broadcast_backfills_path(media_stream_id: stream.id), class: "btn btn-sm" %><% end %>
+            <%= link_to "Recordings", admin_broadcasts_path(stream_id: stream.id), class: "btn btn-sm" %>
+          </td>
+        </tr>
+      <% end %>
+      <% if @items.empty? %><tr><td colspan="3">Listings will appear as discovery progresses.</td></tr><% end %>
+    </tbody>
+  </table>
+  <%== @pagy.series_nav if @pagy.pages > 1 %>
+</div>

@@ -1,0 +1,20 @@
+<div <%= 'data-controller="broadcast-refresh"'.html_safe if @clip.state.in?(%w[queued processing]) %>>
+  <div class="page-header"><h1><%= @clip.title %></h1><%= link_to "Recording", admin_broadcast_path(@clip.media_recording_id), class: "btn" %></div>
+  <div class="card">
+    <p>Status: <strong><%= @clip.state.humanize %></strong></p>
+    <p>Export mode: <strong><%= @clip.export_mode == "exact" ? "Precise cut · re-encode" : "Fast copy" %></strong></p>
+    <p>Requested: <%= @clip.starts_at.utc.iso8601(3) %> – <%= @clip.ends_at.utc.iso8601(3) %></p>
+    <% if @clip.actual_starts_at && @clip.actual_ends_at %>
+      <p>Actual exported boundaries: <%= @clip.actual_starts_at.utc.iso8601(3) %> – <%= @clip.actual_ends_at.utc.iso8601(3) %></p>
+    <% elsif @clip.state.in?(%w[queued processing]) %>
+      <p class="text-muted">Actual exported boundaries will appear when processing finishes.</p>
+    <% end %>
+    <% if @clip.error.present? %><p class="flash flash-alert"><%= @clip.error %></p><% end %>
+    <%= button_to "Retry export", retry_export_admin_media_clip_path(@clip), class: "btn" if @clip.state == "failed" %>
+    <% if @clip.state == "ready" %>
+      <video controls preload="metadata" style="display: block; width: 100%; max-width: 960px; margin-bottom: 1rem" src="<%= download_admin_media_clip_path(@clip, disposition: "inline") %>"></video>
+      <%= link_to "Download MP4", download_admin_media_clip_path(@clip), class: "btn btn-primary" %>
+      <% @clip.captions_attachments.each do |attachment| %><%= link_to attachment.filename.to_s, download_admin_media_clip_path(@clip, caption_id: attachment.id), class: "btn" %><% end %>
+    <% end %>
+  </div>
+</div>

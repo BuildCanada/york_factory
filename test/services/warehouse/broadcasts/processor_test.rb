@@ -22,9 +22,9 @@ class Warehouse::Broadcasts::ProcessorTest < ActiveJob::TestCase
   end
 
   setup do
-    @ffmpeg = ENV.fetch("FFMPEG_BIN", "/opt/homebrew/bin/ffmpeg")
-    @ffprobe = ENV.fetch("FFPROBE_BIN", "/opt/homebrew/bin/ffprobe")
-    skip "ffmpeg is not installed" unless File.executable?(@ffmpeg) && File.executable?(@ffprobe)
+    @ffmpeg = ENV.fetch("FFMPEG_BIN") { ENV.fetch("PATH").split(File::PATH_SEPARATOR).map { File.join(_1, "ffmpeg") }.find { File.executable?(_1) } }
+    @ffprobe = ENV.fetch("FFPROBE_BIN") { ENV.fetch("PATH").split(File::PATH_SEPARATOR).map { File.join(_1, "ffprobe") }.find { File.executable?(_1) } }
+    skip "ffmpeg is not installed" unless @ffmpeg && @ffprobe && File.executable?(@ffmpeg) && File.executable?(@ffprobe)
 
     @now = Time.utc(2026, 9, 21, 15)
     @storage = LocalStorage.new
@@ -77,6 +77,16 @@ class Warehouse::Broadcasts::ProcessorTest < ActiveJob::TestCase
     assert_includes captured, "-data_field"
     assert_equal "second", captured[captured.index("-data_field") + 1]
     assert_includes captured, "movie='/tmp/carrier.ts'[out0+subcc]"
+  end
+
+  test "unusable probe output is classified for bounded job retries" do
+    [ "not json", '{"format":{"duration":"not a number"}}', '{"format":{"duration":"0"}}' ].each do |body|
+      command = Object.new
+      command.define_singleton_method(:run) { |*| Struct.new(:stdout).new(body) }
+      assert_raises(Warehouse::Broadcasts::Processor::InvalidOutput) do
+        processor(command:).send(:probe_media, "/tmp/broadcast-test.ts")
+      end
+    end
   end
 
   test "advances through more complete windows than one bounded batch" do
@@ -142,6 +152,8 @@ class Warehouse::Broadcasts::ProcessorTest < ActiveJob::TestCase
       recording = @stream.recordings.create!(
         recording_key: "event", starts_at: @now, ends_at: @now + 9.seconds, state: "finalized"
       )
+      @stream.tracks.create!(track_key: "captions:en:obsolete", kind: "captions", language: "en", role: "captions",
+        delivery: "embedded", parent_track: @video, first_seen_at: @now, last_seen_at: @now)
       captions = @stream.tracks.create!(
         track_key: "captions:en", kind: "captions", language: "en", role: "captions",
         delivery: "embedded", first_seen_at: @now, last_seen_at: @now

@@ -100,8 +100,17 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Test broadcast editor utilities
-        run: node --experimental-default-type=module --test test/javascript/broadcast_clip_utils_test.js
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: test/javascript/package-lock.json
+
+      - name: Test broadcast editor JavaScript
+        run: |
+          npm ci --prefix test/javascript
+          npm test --prefix test/javascript
 
       - name: Run tests
         env:

@@ -4,6 +4,8 @@ require "json"
 module Warehouse
   module Broadcasts
     class ClipExporter
+      class CoverageError < ArgumentError; end
+
       COVERAGE_TOLERANCE = 0.1.seconds
       MAX_PARTS = 100
       MAX_DURATION = 30.minutes
@@ -86,19 +88,19 @@ module Warehouse
       end
 
       def validate_coverage!(objects, starts_at, ends_at, label)
-        raise ArgumentError, "missing #{label} coverage at clip start" if objects.empty? || objects.first.starts_at > starts_at + COVERAGE_TOLERANCE
+        raise CoverageError, "missing #{label} coverage at clip start" if objects.empty? || objects.first.starts_at > starts_at + COVERAGE_TOLERANCE
 
         cursor = starts_at
         previous = nil
         objects.each do |object|
           if previous && object.starts_at < previous.ends_at - COVERAGE_TOLERANCE
-            raise ArgumentError, "overlapping #{label} coverage near #{object.starts_at.iso8601}"
+            raise CoverageError, "overlapping #{label} coverage near #{object.starts_at.iso8601}"
           end
-          raise ArgumentError, "missing #{label} coverage near #{cursor.iso8601}" if object.starts_at > cursor + COVERAGE_TOLERANCE
+          raise CoverageError, "missing #{label} coverage near #{cursor.iso8601}" if object.starts_at > cursor + COVERAGE_TOLERANCE
           cursor = [ cursor, object.ends_at ].max
           previous = object
         end
-        raise ArgumentError, "missing #{label} coverage at clip end" if cursor < ends_at - COVERAGE_TOLERANCE
+        raise CoverageError, "missing #{label} coverage at clip end" if cursor < ends_at - COVERAGE_TOLERANCE
       end
 
       def assemble_parts(parts, directory)
@@ -241,10 +243,7 @@ module Warehouse
       end
 
       def export_captions(directory, actual_starts_at, actual_ends_at)
-        requested_caption_tracks.index_with do |track|
-          objects = track.media_objects.where(kind: "caption_file")
-            .where("starts_at < ? AND ends_at > ?", actual_ends_at, actual_starts_at).order(:starts_at, :id).to_a
-          validate_coverage!(objects, actual_starts_at, actual_ends_at, "#{track.language} captions")
+        requested_caption_objects(actual_starts_at, actual_ends_at).to_h do |track, objects|
           cues = objects.flat_map do |object|
             WebVtt.parse(storage.download(key: object.object_key)).filter_map do |cue|
               absolute_start = object.starts_at + cue.start_seconds
@@ -258,16 +257,31 @@ module Warehouse
           end
           path = File.join(directory, "captions-#{track.language}.vtt")
           File.binwrite(path, WebVtt.render(cues.sort_by(&:start_seconds)))
-          path
+          [ track, path ]
         end
       end
 
-      def requested_caption_tracks
+      def requested_caption_objects(starts_at, ends_at)
         available = stream.tracks.where(kind: "captions", language: %w[en fr]).order(:language, :id).to_a
         metadata = clip.metadata.to_h
         languages = metadata.key?("caption_languages") ? Array(metadata["caption_languages"]) : available.map(&:language)
-        languages.map do |language|
-          available.find { |track| track.language == language } || raise(ArgumentError, "#{language} captions are unavailable")
+        languages.uniq.to_h do |language|
+          candidates = available.select { |track| track.language == language }
+          raise ArgumentError, "#{language} captions are unavailable" if candidates.empty?
+
+          selection = candidates.lazy.filter_map do |track|
+            objects = track.media_objects.where(kind: "caption_file")
+              .where("starts_at < ? AND ends_at > ?", ends_at, starts_at).order(:starts_at, :id).to_a
+            begin
+              validate_coverage!(objects, starts_at, ends_at, "#{language} captions")
+              [ track, objects ]
+            rescue CoverageError
+              # A prior carrier can have stale or incomplete caption coverage.
+              # Only select a track covering the entire actual export interval.
+              nil
+            end
+          end.first
+          selection || raise(CoverageError, "missing #{language} captions coverage for the exported interval")
         end
       end
 

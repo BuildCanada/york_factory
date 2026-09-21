@@ -7,7 +7,12 @@ module Warehouse
         duration: 30.minutes,
         on_conflict: :discard
 
-      retry_on Warehouse::Broadcasts::Command::TimedOut, wait: :polynomially_longer, attempts: 4
+      # A final capture disables polling, so failures must schedule their own
+      # retry rather than depend on a later capture to revisit derived media.
+      retry_on Command::Error, Processor::InvalidOutput,
+        Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError,
+        ActiveStorage::FileNotFoundError,
+        wait: :polynomially_longer, attempts: 4
 
       def perform(media_stream_id)
         stream = Warehouse::MediaStream.find(media_stream_id)

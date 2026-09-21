@@ -6,6 +6,8 @@ require "tempfile"
 module Warehouse
   module Broadcasts
     class Processor
+      class InvalidOutput < StandardError; end
+
       Window = Data.define(:starts_at, :ends_at, :carrier_objects) do
         def duration
           ends_at - starts_at
@@ -362,17 +364,17 @@ module Warehouse
         format = probe.fetch("format")
         start = Float(format.fetch("start_time", 0))
         duration = Float(format.fetch("duration"))
-        raise ArgumentError, "ffprobe reported an empty output" unless duration.positive?
+        raise InvalidOutput, "ffprobe reported an empty output" unless duration.positive?
 
         { start: [ start, 0 ].max, finish: [ start, 0 ].max + duration, probe: }
-      rescue JSON::ParserError, KeyError, TypeError
-        raise ArgumentError, "ffprobe did not return usable timing for #{File.basename(path)}"
+      rescue JSON::ParserError, KeyError, TypeError, ArgumentError
+        raise InvalidOutput, "ffprobe did not return usable timing for #{File.basename(path)}"
       end
 
       def validate_output_timing!(window, starts_at, ends_at)
-        raise ArgumentError, "remuxed part has no duration" unless ends_at > starts_at
+        raise InvalidOutput, "remuxed part has no duration" unless ends_at > starts_at
         if starts_at > window.starts_at + 2.seconds || ends_at > window.ends_at + 3.seconds
-          raise ArgumentError, "remuxed part timing falls outside its source window"
+          raise InvalidOutput, "remuxed part timing falls outside its source window"
         end
       end
 

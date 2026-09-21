@@ -1,0 +1,12 @@
+{
+  "name": "york-factory-javascript-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import ./register_loader.js --test ./*_test.js"
+  },
+  "devDependencies": {
+    "@hotwired/stimulus": "3.2.2",
+    "jsdom": "26.1.0"
+  }
+}

@@ -41,7 +41,7 @@ Identity is `(provider, episodeId)`, not the manifest URL. The adapter selects o
 
 ## Playback, captions, and search
 
-Processing normally closes a part after roughly 60 seconds of captured media. Source acquisition follows the HLS target duration. Caption search and archived playback therefore lag the provider by approximately a part plus processing time; these are not sub-second outputs. Finalized short tails and interrupted intervals are handled separately.
+Processing normally closes a part after roughly 60 seconds of captured media. Source acquisition follows the HLS target duration. Caption search and archived playback therefore lag the provider by approximately a part plus processing time; these are not sub-second outputs. Finalized short tails and interrupted intervals are handled separately. Processing retries storage/network failures, failed media commands, and invalid probe/output timing up to four attempts with backoff, including after capture polling has stopped. Exhausted failures remain visible in the job dashboard.
 
 Playback is an authenticated, bounded 32-minute HLS snapshot (two minutes of lead-in plus a full 30-minute clip) assembled from remuxed MPEG-TS parts. Language-specific derived parts repeat video bytes to keep V1 language switching simple; source video is captured once. This intentionally replaces the original proposal's more complex fragmented-MP4 packaging. The player preserves gap intervals and shows unavailable footage. Refresh a playback window to include newer parts. Corrected remux recipes rebuild from retained source segments and atomically supersede older playback parts; playback and new clip exports use the replacements while original rows and bytes remain available for provenance.
 
@@ -100,7 +100,7 @@ Search timestamped subtitles on the recording page in either or both languages. 
 
 The recording editor includes a draggable IN/OUT timeline, selection zoom, typed timecodes, playback speed, 0.1-second fine seeking, and selection preview with optional looping. Space toggles playback, I/O set boundaries, and arrow keys seek (Shift for fine seeking). Clip drafts retain the title, boundaries, export mode, and subtitle choices in the browser tab. Missing footage and selections longer than 30 minutes block export.
 
-Select an audio language, choose English/French subtitle files, and export. Precise cuts re-encode H.264/AAC at video-frame precision by default. Fast copy remains available; keyframe alignment can expand its interval. The clip page shows export progress, requested and actual boundaries, video playback, and downloads. Subtitle sidecars are intersected with the exported range and rebased to zero.
+Select an audio language, choose English/French subtitle files, and export. Precise cuts re-encode H.264/AAC at video-frame precision by default. Fast copy remains available; keyframe alignment can expand its interval. The clip page shows export progress, requested and actual boundaries, video playback, and downloads. Subtitle sidecars are intersected with the exported range and rebased to zero. For each language, export selects a caption track with complete coverage of the actual exported interval, including any keyframe expansion; obsolete or gapped tracks are skipped.
 
 Missing source/playback coverage or requested subtitle coverage fails with a visible error rather than silently skipping footage. A failed export can be retried after processing catches up. Multi-recording editing, burned-in subtitles, and a general provider onboarding UI are deferred.
 
@@ -129,4 +129,11 @@ RAILS_ENV=test CONDUCTOR_WORKSPACE_NAME=cpac PARALLEL_WORKERS=1 bin/rails test \
   test/services/search test/models/concerns/searchable_test.rb
 ```
 
-Tests cover paginated historical discovery, backfill progress/recovery, subtitle-based clip selection, manifest parsing/discovery, source identity, lease fencing, replay, bilingual cue timing, transactional transcript search, remuxing/export, coverage gaps, and admin/clip access. Real FFmpeg tests require `ffmpeg` and `ffprobe` on `PATH`. No cloud credentials are needed for the isolated suite.
+Install and run the scoped JavaScript suite separately:
+
+```sh
+npm ci --prefix test/javascript
+npm test --prefix test/javascript
+```
+
+Tests cover paginated historical discovery, backfill progress/recovery, subtitle-based clip selection, manifest parsing/discovery, source identity, lease fencing, replay, bilingual cue timing, transactional transcript search, remuxing/export, coverage gaps, admin/clip access, and broadcast editor DOM behavior. Real FFmpeg tests require `ffmpeg` and `ffprobe` on `PATH`. No cloud credentials are needed for the isolated suite.

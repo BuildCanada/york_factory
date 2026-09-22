@@ -39,6 +39,7 @@ env:
     - R2_BUCKET
     - R2_ACTIVE_STORAGE_BUCKET
   clear:
+    CPAC_CAPTURE_ENABLED: "true"
     SOLID_QUEUE_IN_PUMA: false
     RAILS_LOG_LEVEL: info
     CORS_ORIGINS: "https://www.buildcanada.com,https://buildcanada.com,https://yorkfactory.buildcanada.com"

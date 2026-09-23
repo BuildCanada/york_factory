@@ -32,7 +32,7 @@ This PR adds CPAC discovery/capture, historical backfills, bilingual transcript 
 
 ## Enable and verify
 
-- Keep `CPAC_CAPTURE_ENABLED` unset initially. Discovery runs every 15 seconds, but newly discovered streams remain paused. Enable one stream in `/admin/broadcasts`, check video and both subtitle languages, and export a short clip. If automatic capture of all newly discovered TV/event streams is desired later, add `CPAC_CAPTURE_ENABLED: "true"` to Kamal's clear environment and redeploy. It does not override existing manual pauses.
+- Kamal sets `CPAC_CAPTURE_ENABLED: "true"` in production. Discovery runs every 15 seconds and enables capture for newly discovered TV/event streams. This does not override existing stream pause settings; enable previously discovered streams individually in `/admin/broadcasts` as needed. Verify video, both subtitle languages, and a short clip export after deployment.
 - Do not set `BROADCAST_STORAGE_SERVICE=local_archive` in production; that option is deliberately restricted to development/test.
 - Confirm the existing worker and recurring scheduler are running. Discovery and capture recovery run every 15 seconds; historical backfill recovery runs every minute. Existing jobs and broadcasts share the default queue. No Solid Queue version or fiber configuration change is included.
 - Allow outbound HTTPS to CPAC and the CDN hosts accepted by the provider adapter, plus R2. The browser also loads the pinned HLS.js import from jsDelivr; account for that origin if a Content Security Policy is configured.

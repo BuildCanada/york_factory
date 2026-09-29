@@ -12,8 +12,7 @@ module Oauth
   # - `resource` (RFC 8707) is required and must be one of the client's
   #   resources; it becomes the token's audience;
   # - the consent screen shows the client, its domain, where it redirects and
-  #   the scopes in plain words, and asks which account usage is billed to;
-  # - read:persons is granted only if that account accepted the data terms.
+  #   the scopes in plain words, and asks which account usage is billed to.
   #
   # Every authorization response carries `iss` (RFC 9207).
   class AuthorizationsController < Doorkeeper::AuthorizationsController
@@ -22,13 +21,9 @@ module Oauth
 
     helper_method :consent
 
-    Consent = Data.define(:application, :resource_kind, :scopes, :accounts, :account, :persons_available) do
+    Consent = Data.define(:application, :resource_kind, :scopes, :accounts, :account) do
       def scope_rows
-        scopes.map do |scope|
-          available = scope != "read:persons" || persons_available
-          { scope:, description: Settings::SCOPE_DESCRIPTIONS.fetch(scope, scope), available:,
-            note: (Settings::PERSONS_NOTE if scope == "read:persons") }
-        end
+        scopes.map { |scope| { scope:, description: Settings::SCOPE_DESCRIPTIONS.fetch(scope, scope) } }
       end
 
       def resource_label = resource_kind == :mcp ? "the Build Canada MCP server" : "the Build Canada data API"
@@ -122,17 +117,9 @@ module Oauth
       requested.uniq
     end
 
-    # What the token gets: the requested scopes, minus read:persons if the
-    # chosen account can't hold it. Unknown scopes are left in, so Doorkeeper
-    # answers invalid_scope for them.
-    def granted_scope
-      scopes = requested_scopes
-      scopes -= [ "read:persons" ] if chosen_account && !persons_available?(chosen_account)
-      scopes = Settings::DEFAULT_SCOPES if scopes.empty?
-      scopes.join(" ")
-    end
-
-    def persons_available?(account) = Keys::Policy.new(account, current_resource_owner).grantable?("read:persons")
+    # What the token gets: the requested scopes. Unknown scopes are left in,
+    # so Doorkeeper answers invalid_scope for them.
+    def granted_scope = requested_scopes.join(" ")
 
     def consent
       @consent ||= Consent.new(
@@ -140,8 +127,7 @@ module Oauth
         resource_kind: Settings::RESOURCE_PATHS.key(URI.parse(requested_resource.to_s).path),
         scopes: requested_scopes & Settings::SCOPES,
         accounts: billable_accounts,
-        account: chosen_account,
-        persons_available: persons_available?(chosen_account)
+        account: chosen_account
       )
     end
 

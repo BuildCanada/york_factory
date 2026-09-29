@@ -35,13 +35,7 @@
     <p>It will be able to:</p>
     <ul>
       <% consent.scope_rows.each do |row| %>
-        <li class="<%= 'text-muted' unless row[:available] %>">
-          <%= row[:description] %>
-          <% if row[:note] %><strong><%= row[:note] %></strong><% end %>
-          <% unless row[:available] %>
-            <br><em>Not granted: <%= consent.account.name %> hasn't accepted the data terms for people data. Accept them in the developer console first.</em>
-          <% end %>
-        </li>
+        <li><%= row[:description] %></li>
       <% end %>
     </ul>
     <p class="small text-muted">It can't change anything, and it never sees your password. You can revoke it any time under Developers, Authorized apps.</p>

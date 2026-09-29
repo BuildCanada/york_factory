@@ -204,19 +204,14 @@ class McpOauthFlowTest < ActionDispatch::IntegrationTest
     assert_match 'error="invalid_token"', response.headers["WWW-Authenticate"]
   end
 
-  test "read:persons is granted only when the account accepted the data terms" do
-    scope = "read:public read:persons usage:read"
-    tokens = oauth_tokens_for(@member, scope:)
+  test "people data comes with read:public, with no data-terms step" do
+    tokens = oauth_tokens_for(@member, scope: "read:public usage:read")
     assert_equal "read:public usage:read", tokens["scope"]
 
-    account = Account.personal_for!(@member)
-    account.update!(terms_accepted_at: Time.current)
-    get "/oauth/authorize", params: authorize_params(client_id: tokens["client_id"], pkce: pkce_pair, scope:)
-    assert_match Oauth::Settings::PERSONS_NOTE, response.body
-    pkce = pkce_pair
-    query = authorize!(client_id: tokens["client_id"], pkce:, scope:)
-    granted = exchange_code!(client_id: tokens["client_id"], code: query["code"], pkce:)
-    assert_equal "read:persons read:public usage:read", granted["scope"].split.sort.join(" ")
+    get "/oauth/authorize", params: authorize_params(client_id: tokens["client_id"], pkce: pkce_pair, scope: "read:public")
+    assert_match "people named in public records", response.body
+    assert_match "never a street address", response.body
+    assert_no_match "data terms", response.body
   end
 
   test "usage is billed to an organization account the user manages, chosen at consent" do

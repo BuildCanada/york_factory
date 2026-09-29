@@ -40,7 +40,7 @@ Doorkeeper.configure do
   # limited to (these match Oauth::Settings::SCOPES, which can't be
   # referenced while initializers run).
   default_scopes :public
-  optional_scopes "read:public", "read:persons", "usage:read"
+  optional_scopes "read:public", "usage:read"
 
   # First-party tokens last 2 hours; public-API tokens 1 hour
   # (Oauth::Settings::ACCESS_TOKEN_LIFETIME). Refresh tokens rotate on every

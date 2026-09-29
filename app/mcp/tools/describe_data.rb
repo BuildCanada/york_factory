@@ -75,7 +75,7 @@ module Mcp
         elsif key.include?("/")
           dataset = expect_ok!(get(ctx, "/v1/datasets/#{ERB::Util.url_encode(key)}", "getDataset", as_of:)).body
           result.merge!("kind" => "dataset", "datasets" => [ dataset["data"] ], "release" => release_of(dataset), "caveats" => dataset.dig("data", "caveats"))
-        elsif catalog.definition(normal) && normal.match?(PublicApi::V1::DictionaryController::TERM)
+        elsif normal.match?(PublicApi::V1::DictionaryController::TERM) && catalog.dictionary(as_of.presence&.to_i).definition(normal)
           term = expect_ok!(get(ctx, "/v1/dictionary/#{normal}", "getDictionaryTerm")).body
           result.merge!("kind" => "term", "terms" => [ term["data"] ])
         elsif catalog.caveat_texts.key?(normal)

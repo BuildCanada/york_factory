@@ -87,7 +87,8 @@ class McpToolsTest < PublicApiTestCase
     codes = sc.dig("summary", "meta", "caveats").map { |c| c["code"] }
     assert_includes codes, "not_cross_source_total"
     assert_includes codes, "agreement_value_not_paid"
-    assert_equal 5, sc.dig("top_records", "data").size
+    # Latest revisions only, so the archive copy of G1 is left out (#140, c8fef70).
+    assert_equal 4, sc.dig("top_records", "data").size
     assert_equal "880000.00", sc.dig("top_records", "data", 0, "amount")
     assert_equal "Build Canada data release 11, https://data.buildcanada.com/v1/entities/#{DIAMOND_VALLEY}/spending/summary?role=recipient&as_of=11", sc["citations"].first
     assert_equal sc.dig("top_records", "data").map { |r| r["cite"] }, sc["citations"].drop(1)
@@ -147,7 +148,7 @@ class McpToolsTest < PublicApiTestCase
     sc = call_tool("describe_data", { topic: "fiscal_year" }, token: @key)["structuredContent"]
     assert_equal [ "term", [ "fiscal_year" ] ], [ sc["kind"], sc["terms"].map { |t| t["term"] } ]
     sc = call_tool("describe_data", { topic: "agreement_value_not_paid" }, token: @key)["structuredContent"]
-    assert_equal [ "caveat", "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid" ], [ sc["kind"], sc.dig("caveats", 0, "docs") ]
+    assert_equal [ "caveat", "https://data.buildcanada.com/api/caveats#agreement_value_not_paid" ], [ sc["kind"], sc.dig("caveats", 0, "docs") ]
     assert_equal "1", response.headers["BC-Usage-Units"], "a lookup without a /v1 call still costs 1 unit"
     assert_equal "caveats", call_tool("describe_data", { topic: "caveats" }, token: @key).dig("structuredContent", "kind")
     assert_equal "datasets", call_tool("describe_data", { topic: "datasets" }, token: @key).dig("structuredContent", "kind")

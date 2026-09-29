@@ -1,0 +1,58 @@
+title: Release
+description: >-
+  A published registry release: the public version unit. It pins the roster captures and
+  the spending Iceberg snapshots it was built from, so every answer given `as_of` this
+  release is reproducible forever. Releases are immutable once published.
+type: object
+required: [id, number, published_at, inputs, counts, checks, changes, links]
+properties:
+  id:
+    $ref: ReleaseGid.yaml
+    description: The release's global ID.
+  number:
+    $ref: ReleaseNumber.yaml
+    description: The release number, the value `as_of` takes.
+  published_at:
+    $ref: Timestamp.yaml
+    description: When the release was published. A timestamp `as_of` at or after this and before the next release resolves to it.
+  build_versions:
+    type: object
+    additionalProperties:
+      type: string
+    description: The rule and builder versions the release was built with, such as registry-build and resolution versions.
+    examples: [{registry_build: registry-build-v4, resolution: resolution-v5}]
+  inputs:
+    type: array
+    description: Every input the release pinned. Present on /releases/{release} and /releases/latest; empty in list pages.
+    items:
+      $ref: ReleaseInput.yaml
+  counts:
+    type: object
+    description: Row counts the release published, keyed by table, such as entities, identifiers, relationships, spending_records, spending_parties and linked_parties.
+    additionalProperties:
+      type: integer
+      minimum: 0
+    examples: [{entities: 184223, spending_parties: 12301877, linked_parties: 8410022}]
+  checks:
+    type: array
+    description: The blocking and warning checks the release ran. A release publishes only when every blocking check passed.
+    items:
+      $ref: ReleaseCheck.yaml
+  changes:
+    type: array
+    description: The release's changelog entries. Person corrections are counted, never named.
+    items:
+      $ref: ReleaseChange.yaml
+  links:
+    type: object
+    description: Relative links for the release.
+    required: [self, exports]
+    properties:
+      self:
+        type: string
+        description: This release.
+        examples: [/v1/releases/11]
+      exports:
+        type: string
+        description: The release's bulk files.
+        examples: ['/v1/exports?release=11']

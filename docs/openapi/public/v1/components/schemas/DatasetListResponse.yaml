@@ -1,0 +1,16 @@
+title: DatasetListResponse
+description: "A page of datasets. The standard list envelope: items in `data`, the cursor for the next page in `meta.next_cursor` and `links.next`."
+type: object
+required: [data, meta, links]
+properties:
+  data:
+    type: array
+    description: A page of datasets.
+    items:
+      $ref: Dataset.yaml
+  meta:
+    $ref: ListMeta.yaml
+    description: The release that answered, the resolved as_of, the request ID, caveats and pagination.
+  links:
+    $ref: PageLinks.yaml
+    description: Links for this page and the next.

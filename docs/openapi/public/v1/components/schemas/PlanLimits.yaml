@@ -1,0 +1,30 @@
+title: PlanLimits
+description: The limits of the caller's plan. Units are request units; see each operation's x-bc-units.
+type: object
+required: [rate_per_minute, burst, monthly_units, monthly_units_used]
+properties:
+  rate_per_minute:
+    type: integer
+    minimum: 0
+    description: Units per minute the key may spend.
+    examples: [120]
+  burst:
+    type: integer
+    minimum: 0
+    description: The token bucket size, the most units spendable at once.
+    examples: [240]
+  monthly_units:
+    type: [integer, 'null']
+    minimum: 0
+    description: Units per calendar month (UTC), or null when unlimited. Anonymous callers have a daily allowance instead (daily_units).
+    examples: [100000]
+  daily_units:
+    type: [integer, 'null']
+    minimum: 0
+    description: Anonymous callers only. Units per UTC day per IP.
+    examples: [null]
+  monthly_units_used:
+    type: integer
+    minimum: 0
+    description: Units used so far this month (or today, for anonymous callers). Up to a minute behind.
+    examples: [38760]

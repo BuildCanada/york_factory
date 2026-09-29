@@ -1,0 +1,98 @@
+# /dictionary/{term}
+get:
+  operationId: getDictionaryTerm
+  summary: Get a dictionary term
+  description: |-
+    One definition with its allowed values, what a blank means, known gaps, and every
+    asset's note on how it differs. Call this before interpreting a field you have not
+    seen; `amount` and `fiscal_year` differ by source.
+  tags:
+  - Dictionary
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: dictionary
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: release
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: term
+    in: path
+    required: true
+    description: The term's name.
+    schema:
+      type: string
+      pattern: "^[a-z][a-z0-9_]*$"
+    example: fiscal_year
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  responses:
+    '200':
+      description: The term.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Release:
+          "$ref": "../components/headers.yaml#/BCRelease"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/DictionaryTermResponse.yaml"
+          examples:
+            fiscal_year:
+              summary: fiscal_year
+              value:
+                data:
+                  term: fiscal_year
+                  meaning: >-
+                    Four-digit year identifying the Government of Canada fiscal year (April to March)
+                    the record belongs to.
+                  type: int32
+                  units:
+                  values: []
+                  blank_means: The source gives no parseable year.
+                  known_gaps: Derived per source (see the per-asset notes). Aggregated contracts publish
+                    a calendar year here.
+                  asset_notes:
+                    sources/ca/tbs/proactive_grants: >-
+                      The fiscal year (April to March) containing agreement_start_date, named by the calendar
+                      year it starts in.
+                  links:
+                    self: "/v1/dictionary/fiscal_year"
+                    docs: https://data.buildcanada.com/docs/dictionary/fiscal_year
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1/dictionary/fiscal_year?as_of=11"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

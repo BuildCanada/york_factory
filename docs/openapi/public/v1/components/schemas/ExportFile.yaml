@@ -1,0 +1,65 @@
+title: ExportFile
+description: >-
+  One bulk file or table: a Parquet file on files.buildcanada.com with its digest, row
+  count and size, and the Iceberg table it comes from. Use bulk files for anything that
+  would take more than a few thousand API calls.
+type: object
+required: [release, table, format, url, sha256, rows, bytes]
+properties:
+  release:
+    description: The release the file belongs to, or null for a daily table not pinned by a release.
+    oneOf:
+      - $ref: ReleaseNumber.yaml
+      - type: 'null'
+  table:
+    type: string
+    description: The exported table, such as spending.proactive_grants or entities.entities.
+    examples: [spending.proactive_grants]
+  format:
+    type: string
+    enum: [parquet]
+    description: The file format.
+    examples: [parquet]
+  url:
+    type: string
+    format: uri
+    description: Where to download the file.
+    examples: ['https://files.buildcanada.com/releases/11/spending.proactive_grants.parquet']
+  sha256:
+    $ref: Sha256.yaml
+    description: SHA-256 of the file.
+  rows:
+    type: integer
+    minimum: 0
+    description: Rows in the file.
+    examples: [1313276]
+  bytes:
+    type: integer
+    minimum: 0
+    description: Size of the file in bytes.
+    examples: [412883920]
+  iceberg:
+    description: The Iceberg table and snapshot the file was written from, for query engines using the R2 Data Catalog.
+    oneOf:
+      - type: object
+        required: [catalog_uri, namespace, table, snapshot_id]
+        properties:
+          catalog_uri:
+            type: string
+            format: uri
+            description: The Iceberg REST catalog URI.
+            examples: ['https://catalog.cloudflarestorage.com/buildcanada/fact-factory']
+          namespace:
+            type: string
+            description: The Iceberg namespace.
+            examples: [spending]
+          table:
+            type: string
+            description: The Iceberg table name.
+            examples: [proactive_grants]
+          snapshot_id:
+            type: string
+            pattern: '^[0-9]+$'
+            description: The snapshot the release pinned.
+            examples: ['2534519102996296639']
+      - type: 'null'

@@ -1,0 +1,21 @@
+title: ReleaseCheck
+description: The result of one release check.
+type: object
+required: [name, blocking, passed]
+properties:
+  name:
+    type: string
+    description: The check's name, as in fact-factory's RUNBOOK, such as api_columns_allowlisted.
+    examples: [api_columns_allowlisted]
+  blocking:
+    type: boolean
+    description: True when a failure stops the release from publishing.
+    examples: [true]
+  passed:
+    type: boolean
+    description: Whether the check passed.
+    examples: [true]
+  detail:
+    type: [string, 'null']
+    description: The check's measured value or failure detail.
+    examples: [null]

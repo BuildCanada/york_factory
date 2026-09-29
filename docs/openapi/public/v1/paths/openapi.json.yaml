@@ -1,0 +1,69 @@
+# /openapi.json
+get:
+  operationId: getOpenapi
+  summary: This OpenAPI document
+  description: |-
+    The OpenAPI 3.1 document for /v1, as JSON. It is the contract: request and response
+    validation, SDKs, docs and MCP tool schemas are generated from it. Fields name their
+    data dictionary term in `x-bc-dictionary`; operations give their cost in `x-bc-units`.
+  tags:
+  - Discovery
+  x-fern-sdk-method-name: openapi
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters: []
+  responses:
+    '200':
+      description: The OpenAPI document.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            type: object
+            description: An OpenAPI 3.1 document.
+            required:
+            - openapi
+            - info
+            - paths
+            properties:
+              openapi:
+                type: string
+                description: The OpenAPI version.
+                examples:
+                - 3.1.1
+              info:
+                type: object
+                description: The document's info object.
+              paths:
+                type: object
+                description: The operations.
+          examples:
+            document:
+              summary: The start of the document
+              value:
+                openapi: 3.1.1
+                info:
+                  title: Build Canada Data API
+                  version: 1.0.0-alpha.1
+                paths: {}
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"

@@ -1,0 +1,102 @@
+title: Problem
+description: >-
+  An RFC 9457 problem detail, served as application/problem+json for every error. `type`
+  is a documentation page (with a Markdown twin at the same URL plus `.md`); `code` is the
+  stable machine-readable name to branch on. Members after `code` appear only for the
+  codes that use them. Clients must tolerate new codes and new members.
+type: object
+required: [type, title, status, code, instance]
+properties:
+  type:
+    type: string
+    format: uri
+    description: URI of the problem type's documentation page, `https://data.buildcanada.com/problems/<code with hyphens>`.
+    examples: ['https://data.buildcanada.com/problems/rate-limited']
+  title:
+    type: string
+    description: A short, fixed summary of the problem type. It does not change between occurrences.
+    examples: [Rate limit exceeded]
+  status:
+    type: integer
+    minimum: 300
+    maximum: 599
+    description: The HTTP status code, repeated for clients that lose it.
+    examples: [429]
+  detail:
+    type: string
+    description: What went wrong in this occurrence and what to do next, in plain words.
+    examples: ['Key bc_live_7Hq2… used 120 of 120 request units in the current 60-second window.']
+  instance:
+    type: string
+    description: The request ID of the failed request. Quote it in support requests.
+    examples: [req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C]
+  code:
+    type: string
+    enum:
+      - invalid_parameter
+      - unauthenticated
+      - insufficient_scope
+      - not_found
+      - not_yet_published
+      - redirected
+      - release_mismatch
+      - retired
+      - query_too_broad
+      - rate_limited
+      - quota_exceeded
+      - release_building
+      - internal_error
+    description: >-
+      Stable problem code. invalid_parameter (400), unauthenticated (401),
+      insufficient_scope (403), not_found and not_yet_published (404), redirected (301),
+      release_mismatch (409), retired (410), query_too_broad (422), rate_limited and
+      quota_exceeded (429), release_building (503), internal_error (500).
+    examples: [rate_limited]
+  docs:
+    type: string
+    format: uri
+    description: The concept page that explains the rule behind this problem.
+    examples: ['https://data.buildcanada.com/docs/concepts/rate-limits.md']
+  errors:
+    type: array
+    description: invalid_parameter only. One entry per rejected parameter.
+    items:
+      $ref: ProblemParameterError.yaml
+  required_scope:
+    type: string
+    description: insufficient_scope only. The scope the operation needs.
+    examples: ['read:persons']
+  retry_after_seconds:
+    type: integer
+    minimum: 0
+    description: rate_limited, quota_exceeded and release_building only. Seconds to wait before retrying; equals the Retry-After header.
+    examples: [17]
+  plan:
+    type: string
+    description: rate_limited and quota_exceeded only. The caller's plan.
+    examples: [free]
+  upgrade_url:
+    type: string
+    format: uri
+    description: rate_limited and quota_exceeded only. Where to raise the limit.
+    examples: ['https://auth.buildcanada.com/developers/plan']
+  bulk_url:
+    type: string
+    format: uri
+    description: rate_limited and quota_exceeded only. Bulk files that answer high-volume needs without the API.
+    examples: ['https://data.buildcanada.com/v1/exports']
+  location:
+    type: string
+    description: redirected only. The survivor's URL, equal to the Location header.
+    examples: ['/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11']
+  earliest_release:
+    $ref: ReleaseNumber.yaml
+    description: not_yet_published only. The earliest release the API serves.
+  cursor_release:
+    $ref: ReleaseNumber.yaml
+    description: release_mismatch only. The release the cursor was issued for. Repeat the request with that `as_of`, or drop the cursor.
+  sunset:
+    type: string
+    format: date
+    description: retired only. The date the operation or field stopped being served.
+    examples: ['2028-01-31']

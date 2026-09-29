@@ -1,0 +1,178 @@
+openapi: 3.1.1
+info:
+  title: Build Canada Data API
+  version: 1.0.0-alpha.1
+  summary: Cited, reproducible public data on Canadian governments, organizations and federal spending.
+  description: |
+    Read-only access to everything fact-factory publishes: the entity registry
+    (jurisdictions, government organizations, Indigenous governments, charities and other
+    organizations), their identifiers, relationships and lineage, and federal spending
+    rows linked to them.
+
+    Three rules shape the API:
+
+    1. **Every fact carries its citation.** Fact-bearing objects have `provenance` (the
+       asset, release, pinned snapshot, captured file and row) and a ready-to-paste `cite`.
+    2. **Every answer is reproducible.** Pass `as_of=<release>` and the same URL returns the
+       same bytes forever. Omit it and the response names the release it used.
+    3. **Caveats are data.** `meta.caveats[]` carries machine-readable warnings, such as
+       `not_cross_source_total`. Act on them. Amounts from different spending sources
+       overlap: never add them.
+
+    Conventions: responses are `{data, meta, links}`; lists use cursor pagination
+    (`limit`, `cursor`, `meta.next_cursor`); errors are RFC 9457 `application/problem+json`
+    with a stable `code`; money is a decimal string with an ISO 4217 `currency`; IDs are
+    `gid://buildcanada/<Type>/<key>`. Each operation's cost in request units is in
+    `x-bc-units`; each data field names its data dictionary term in `x-bc-dictionary`.
+
+    No key is needed to start: anonymous callers get 30 units a minute and 1,000 a day
+    with the read:public scope. Get a free key at https://auth.buildcanada.com/developers.
+    Agents: start at https://data.buildcanada.com/llms.txt, or connect the MCP server at
+    https://data.buildcanada.com/mcp.
+  termsOfService: https://data.buildcanada.com/docs/terms
+  contact:
+    name: Build Canada data team
+    url: https://data.buildcanada.com/docs
+    email: data@buildcanada.com
+  license:
+    name: API responses carry each source's licence; Build Canada's own data is OGL-Canada-2.0
+    url: https://open.canada.ca/en/open-government-licence-canada
+  x-bc-status: prelaunch
+servers:
+  - url: https://data.buildcanada.com/v1
+    description: Production
+    x-fern-server-name: Production
+  - url: https://data.staging.buildcanada.com/v1
+    description: Staging (bc_stg_ keys)
+    x-fern-server-name: Staging
+security:
+  - ApiKey: []
+  - OAuth2: ['read:public']
+  - {}
+tags:
+  - name: Discovery
+    description: The index, this document, and who you are.
+  - name: Releases
+    description: >-
+      Registry releases, the public version unit. Each pins the roster captures and
+      spending snapshots it was built from; `as_of=<number>` reproduces it forever.
+  - name: Datasets
+    description: What each published dataset means, covers and is licensed under, with bulk links.
+  - name: Dictionary
+    description: The shared data dictionary. Every data field names its term.
+  - name: Search
+    description: Find entities by identifier or name, with the kind of match stated.
+  - name: Entities
+    description: >-
+      The entity registry: parties with stable IDs, their external identifiers, dated
+      relationships and lineage.
+  - name: Spending
+    description: >-
+      Federal spending rows, each source with its own meaning of amount, and entity
+      summaries under fixed rules. Never add amounts across sources.
+  - name: Bulk
+    description: Parquet files and Iceberg tables for whole releases.
+x-tagGroups:
+  - name: Start
+    tags: [Discovery, Releases, Datasets, Dictionary]
+  - name: Data
+    tags: [Search, Entities, Spending, Bulk]
+paths:
+  /:
+    $ref: paths/index.yaml
+  /openapi.json:
+    $ref: paths/openapi.json.yaml
+  /me:
+    $ref: paths/me.yaml
+  /me/usage:
+    $ref: paths/me@usage.yaml
+  /releases:
+    $ref: paths/releases.yaml
+  /releases/latest:
+    $ref: paths/releases@latest.yaml
+  /releases/{release}:
+    $ref: paths/releases@{release}.yaml
+  /datasets:
+    $ref: paths/datasets.yaml
+  /datasets/{asset_key}:
+    $ref: paths/datasets@{asset_key}.yaml
+  /dictionary:
+    $ref: paths/dictionary.yaml
+  /dictionary/{term}:
+    $ref: paths/dictionary@{term}.yaml
+  /search:
+    $ref: paths/search.yaml
+  /entities:
+    $ref: paths/entities.yaml
+  /entities/{id}:
+    $ref: paths/entities@{id}.yaml
+  /entities/{id}/identifiers:
+    $ref: paths/entities@{id}@identifiers.yaml
+  /entities/{id}/relationships:
+    $ref: paths/entities@{id}@relationships.yaml
+  /entities/{id}/lineage:
+    $ref: paths/entities@{id}@lineage.yaml
+  /entities/{id}/spending:
+    $ref: paths/entities@{id}@spending.yaml
+  /entities/{id}/spending/summary:
+    $ref: paths/entities@{id}@spending@summary.yaml
+  /entities/{id}/spending/unlinked:
+    $ref: paths/entities@{id}@spending@unlinked.yaml
+  /identifiers/{namespace}/{value}:
+    $ref: paths/identifiers@{namespace}@{value}.yaml
+  /spending:
+    $ref: paths/spending.yaml
+  /spending/sources:
+    $ref: paths/spending@sources.yaml
+  /spending/{id}:
+    $ref: paths/spending@{id}.yaml
+  /exports:
+    $ref: paths/exports.yaml
+components:
+  securitySchemes:
+    ApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: bc_live_<secret>_<crc6>
+      description: >-
+        An API key from https://auth.buildcanada.com/developers, sent as
+        `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the
+        scopes its owner granted it (read:public always; read:persons after verification;
+        usage:read by default). Keys are shown once; the console shows only the first 12
+        characters.
+    OAuth2:
+      type: oauth2
+      description: >-
+        OAuth 2.1 authorization code flow with PKCE (S256 only; `plain` is refused) and
+        RFC 8707 resource indicators: send `resource=https://data.buildcanada.com/mcp` or
+        `https://data.buildcanada.com/v1`. Clients register by Client ID Metadata Document
+        (preferred) or dynamic client registration at
+        https://auth.buildcanada.com/oauth/register. Access tokens last one hour; refresh
+        tokens rotate. Metadata: https://auth.buildcanada.com/.well-known/oauth-authorization-server.
+      x-bc-pkce: S256
+      x-bc-resource-indicators: true
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.buildcanada.com/oauth/authorize
+          tokenUrl: https://auth.buildcanada.com/oauth/token
+          refreshUrl: https://auth.buildcanada.com/oauth/token
+          scopes:
+            'read:public': Read organizations, spending, releases, datasets, the dictionary and exports.
+            'read:persons': Read person entities and their public roles (phase 2). Never includes street addresses.
+            'usage:read': Read your account's usage (/v1/me/usage).
+            'keys:manage': Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys).
+  schemas:
+    Problem:
+      $ref: components/schemas/Problem.yaml
+    Meta:
+      $ref: components/schemas/Meta.yaml
+    ListMeta:
+      $ref: components/schemas/ListMeta.yaml
+    Caveat:
+      $ref: components/schemas/Caveat.yaml
+    Provenance:
+      $ref: components/schemas/Provenance.yaml
+    Entity:
+      $ref: components/schemas/Entity.yaml
+    SpendingRecord:
+      $ref: components/schemas/SpendingRecord.yaml

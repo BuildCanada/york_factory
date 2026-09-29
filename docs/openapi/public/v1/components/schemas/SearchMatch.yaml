@@ -1,0 +1,28 @@
+title: SearchMatch
+description: How a search result matched the query.
+type: object
+x-bc-record: true
+required: [kind, score, matched_on]
+properties:
+  kind:
+    type: string
+    enum: [identifier, exact, fuzzy]
+    description: >-
+      identifier: the query is an identifier the entity holds (a BN9, BN15, band number,
+      LEI, corporation number). exact: a name or alias equals the query after
+      normalization. fuzzy: trigram similarity, only with mode=fuzzy. Treat fuzzy as a
+      candidate to check, not a match.
+    x-bc-dictionary: match_kind
+    examples: [exact]
+  score:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: 1 for identifier and exact matches; the trigram similarity for fuzzy ones.
+    x-bc-dictionary: match_score
+    examples: [1]
+  matched_on:
+    type: string
+    description: What matched, such as `name`, `alias:<the alias>` or `identifier:<namespace>`.
+    x-bc-dictionary: matched_on
+    examples: [name]

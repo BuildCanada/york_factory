@@ -1,0 +1,28 @@
+title: Capture
+description: >-
+  The exact source file a fact was parsed from, as Build Canada retrieved and retained it.
+  The bytes are content-addressed: `url` serves the same bytes forever.
+type: object
+x-bc-record: true
+required: [sha256, url, source_url, retrieved_at]
+properties:
+  sha256:
+    $ref: Sha256.yaml
+    description: SHA-256 of the exact source bytes.
+    x-bc-dictionary: source_sha256
+  url:
+    type: string
+    format: uri
+    description: Where Build Canada serves the retained bytes, `https://files.buildcanada.com/sha256/<first two characters>/<digest>`.
+    x-bc-dictionary: capture_url
+    examples: ['https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21']
+  source_url:
+    type: string
+    format: uri
+    description: The URL the publisher served the file from when it was retrieved.
+    x-bc-dictionary: source_url
+    examples: ['https://open.canada.ca/data/dataset/432527ab-7aac-45b5-81d6-7597107a7013/resource/1d15a62f-5656-49ad-8c88-f40ce689d831']
+  retrieved_at:
+    $ref: Timestamp.yaml
+    description: When Build Canada retrieved the file.
+    x-bc-dictionary: retrieved_at

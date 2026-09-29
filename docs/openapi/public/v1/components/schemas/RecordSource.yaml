@@ -1,0 +1,30 @@
+title: RecordSource
+description: >-
+  The registry's record of where one row version came from. `origin` is `roster` for a row
+  built from a roster file, or `resolution` for a row created by entity resolution.
+type: object
+x-bc-record: true
+required: [origin]
+properties:
+  origin:
+    type: string
+    enum: [roster, resolution]
+    description: Whether the version came from a roster capture or from entity resolution.
+    x-bc-dictionary: source
+  source_key:
+    type: [string, 'null']
+    description: The roster's collector key, for roster rows.
+    x-bc-dictionary: source_key
+    examples: [ca-ab/municipal_affairs/municipalities]
+  capture_sha256:
+    description: SHA-256 of the roster capture, for roster rows.
+    x-bc-dictionary: source_sha256
+    oneOf:
+      - $ref: Sha256.yaml
+      - type: 'null'
+  row_number:
+    type: [integer, 'null']
+    minimum: 1
+    description: 1-based row in the roster capture, for roster rows.
+    x-bc-dictionary: row_number
+    examples: [212]

@@ -123,15 +123,26 @@ module ExplainPublicApi
   def report(title)
     puts "\n## #{title}\n\n| Query | ms (warm) | Plan |\n|---|---:|---|"
     queries.each do |label, query|
-      statements = capture(&query)
-      query.call # warm the cache once
+      statements = capture { attempt(&query) }
+      attempt(&query) # warm the cache once
       statements.each_with_index do |sql, i|
-        plan = FactFactoryRecord.connection.select_values("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{sql}")
+        plan = begin
+          FactFactoryRecord.connection.select_values("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{sql}")
+        rescue ActiveRecord::QueryCanceled
+          puts "| #{label}#{statements.size > 1 ? " (#{i + 1})" : ''} | > statement timeout | (422 query_too_broad) |"
+          next
+        end
         ms = plan.grep(/Execution Time/).first.to_s[/[\d.]+/].to_f
         shape = plan.grep(/(Scan|Join|Sort|Aggregate|Limit)/).first(4).map { |l| l.strip.sub(/\s+\(cost.*/, "").sub(/^->\s*/, "") }.join(" / ")
         puts "| #{label}#{statements.size > 1 ? " (#{i + 1})" : ''} | #{format("%.2f", ms)} | #{shape.gsub('|', '\\|')} |"
       end
     end
+  end
+
+  def attempt
+    yield
+  rescue ActiveRecord::QueryCanceled
+    nil
   end
 
   def capture

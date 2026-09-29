@@ -364,7 +364,6 @@ Rails.application.routes.draw do
   # (docs/public-interface-design.md §4.4).
   get "developers", to: "developers/overview#show", as: :developers
   namespace :developers do
-    resource :terms, only: :create
     resources :authorized_apps, only: %i[index destroy]
     resource :account_switch, only: :create
     resources :keys do

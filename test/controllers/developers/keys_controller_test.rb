@@ -11,14 +11,14 @@ class Developers::KeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/developers/keys"
   end
 
-  test "overview shows the plan, the terms and a quickstart" do
+  test "overview shows the plan and a quickstart, with no data-terms gate" do
     get developers_path
 
     assert_response :success
     assert_select "h2", text: /#{Regexp.escape(@user.name)}/
     assert_select ".card .value", text: "Free"
     assert_select "pre", text: /Authorization: Bearer/
-    assert_select "button", text: "Accept the data terms"
+    assert_select "button", text: "Accept the data terms", count: 0
   end
 
   test "creating a key shows its secret once, then only its prefix" do
@@ -45,15 +45,12 @@ class Developers::KeysControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", text: "Spending dashboard"
   end
 
-  test "read:persons can't be chosen before the terms are accepted" do
+  test "read:persons is no longer a scope; people data comes with read:public" do
     post developers_keys_path, params: { api_key: { name: "People", scopes: %w[read:public read:persons] } }
     assert_response :unprocessable_entity
-    assert_select ".flash-alert", text: /read:persons needs the data terms/
 
-    post developers_terms_path
-    post developers_keys_path, params: { api_key: { name: "People", scopes: %w[read:public read:persons] } }
+    post developers_keys_path, params: { api_key: { name: "People", scopes: %w[read:public] } }
     assert_response :created
-    assert AuditEvent.exists?(action: "account.terms_accepted")
   end
 
   test "with Bifrost down, creation fails cleanly and stores nothing" do

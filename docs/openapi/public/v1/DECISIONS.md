@@ -4,7 +4,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## Scope
 
-1. **Phase 1 only.** WS-A's scope is "every phase 1 operation in §3.2", and WS-L and WS-M add the phase 2 and 3 resources to the spec themselves. So corporations, persons, documents, network, paths, StatCan and `/v1/keys` are not in the spec, not even as stubs. Where later phases matter, enums and descriptions say what arrives later: `search types`, `Predicate`, `EntityClass.person` and the `keys:manage` scope. (There is no `read:persons` scope; see 34.) Stub operations would have become promises in the SDKs.
+1. **Phase 1 only.** WS-A's scope is "every phase 1 operation in §3.2", and WS-L and WS-M add the phase 2 and 3 resources to the spec themselves. So corporations, persons, documents, network, paths, StatCan and `/v1/keys` are not in the spec, not even as stubs. Where later phases matter, enums and descriptions say what arrives later: `search types`, `Predicate`, `EntityClass.person` and the `keys:manage` scope. (There is no `read:persons` scope; see 39.) Stub operations would have become promises in the SDKs.
 2. **25 operations.** These are §3.2's phase 1 rows, plus `GET /entities/{id}/spending/unlinked`. §3.4's `linked_only` caveat links to that operation, but the catalogue leaves it out. `GET /v1/changelog` (§9) is left out. It isn't in §3.2, and each release's `changes[]` covers the data stream for now.
 3. **Discovery paths are relative to the server.** The server URL is `https://data.buildcanada.com/v1`, so the index is `GET /` and the spec is `GET /openapi.json`. `/.well-known/oauth-protected-resource` lives outside `/v1` and belongs to WS-F.
 
@@ -42,7 +42,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 24. **`parties[]`** is always on `GET /spending/{id}`, and on list items only with `expand=parties`, to keep list pages small.
 25. **Lineage.** `/lineage` takes `direction=predecessors|successors` (default predecessors) and `max_depth` (1 to 10, default 10). It returns steps nearest first.
 26. **Relationships.** `/relationships` takes `direction=out|in|both` (default both). Each item says its direction relative to the requested entity.
-27. **Search limits.** `/search` pages are 20 by default and 50 at most. These began as the §8.1 person caps; since 34 they are general page limits, the same for every class. The minimum query is 2 characters, and 422 `query_too_broad` otherwise.
+27. **Search limits.** `/search` pages are 20 by default and 50 at most. These began as the §8.1 person caps; since 39 they are general page limits, the same for every class. The minimum query is 2 characters, and 422 `query_too_broad` otherwise.
 28. **Identifier resolution.** `/identifiers/{namespace}/{value}` returns every holder (`matches[]`) rather than picking one, because a BN can be shared after an amalgamation. It returns 404 when nothing holds the identifier.
 29. **Units.** `x-bc-units` is `{base, large_page?, count_exact?}`. `count_exact` is **added** to the base, following §3.1's "+2 units". The test checks the base units against §6.1.
 30. **Caching.** `x-bc-cache` is `release` for release-pinned data (ETag, immutable when pinned, 304), `short` for `/`, `/openapi.json`, `/releases` and `/releases/latest`, and `none` for `/me*`.
@@ -52,7 +52,9 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## People data
 
-34. **Person data is `read:public` (decided 2026-09-29).** Brendan: "Remove many of the restrictions on people, we have already protected their personal information a lot by restricting addresses." So:
+34 to 38 are WS-D's contract changes, on #140.
+
+39. **Person data is `read:public` (decided 2026-09-29).** Brendan: "Remove many of the restrictions on people, we have already protected their personal information a lot by restricting addresses." So:
     - There is no `read:persons` scope. Person entities, individuals' names, the persons endpoints and person results in MCP are read with `read:public`, anonymously wherever the rest of the API is anonymous. The scope is gone from `x-bc-scopes`, `Me.scopes` and the OAuth scopes, and is not kept as an alias: nothing has launched, so no client holds it.
     - There is no data-terms acceptance step before a key can read people.
     - Persons are listed, searched and filtered like other entities (`class=person` on `/entities` and `/search`, when person entities exist).
@@ -61,4 +63,4 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## URLs
 
-35. **Developer docs live at `https://data.buildcanada.com/api` (decided 2026-09-29).** `data.buildcanada.com/` is kept for a future public interactive site, so nothing the API names sits at the root any more. Every docs URL moves under `/api`: pages and Markdown twins (`/docs/...` becomes `/api/...`, including `termsOfService`, `externalDocs`, caveat anchors at `/api/caveats#<code>` and dictionary term pages at `/api/dictionary/<term>`), problem type URIs (`/problems/<code>` becomes `/api/problems/<code>`) and `llms.txt` (`/api/llms.txt`). The API itself stays at `/v1`, MCP at `/mcp`, and OAuth metadata at `/.well-known/...`. Problem type URIs are identifiers, so this is a breaking change once launched; before launch it is not (see 10).
+40. **Developer docs live at `https://data.buildcanada.com/api` (decided 2026-09-29).** `data.buildcanada.com/` is kept for a future public interactive site, so nothing the API names sits at the root any more. Every docs URL moves under `/api`: pages and Markdown twins (`/docs/...` becomes `/api/...`, including `termsOfService`, `externalDocs`, caveat anchors at `/api/caveats#<code>` and dictionary term pages at `/api/dictionary/<term>`), problem type URIs (`/problems/<code>` becomes `/api/problems/<code>`) and `llms.txt` (`/api/llms.txt`). The API itself stays at `/v1`, MCP at `/mcp`, and OAuth metadata at `/.well-known/...`. Problem type URIs are identifiers, so this is a breaking change once launched; before launch it is not (see 10).

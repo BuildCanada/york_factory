@@ -53,6 +53,305 @@
       "file": "app/models/warehouse/spending/scrapers/base.rb",
       "line": 82,
       "note": "Canonical ordering clauses are fixed string literals at the only two internal call sites; source_id is adapter-quoted and no request or user input reaches this SQL"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "136d3e6c8c631da5f30417db9b826033695f35a5e131d34a7af474f18296bfab",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 71,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingRecord.find_by_sql([\"SELECT r.*, r.id AS source_row_id FROM api.spending_records r WHERE r.spending_key = :key AND #{current(\"r\")} LIMIT 1\", { :key => spending_key, :n => release }])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "find"
+      },
+      "user_input": "current(\"r\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "15c314312d525078fd8e86fcee195b01b51189826ff64dcce8194017d4361ba5",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 67,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Identifier.find_by_sql([(\"SELECT i.* FROM api.identifiers i WHERE #{\"i.entity_id = :id AND #{current(\"i\")} AND i.namespace = :namespace AND (i.namespace, i.value, i.row_id) > (:a_ns, :a_value, :a_row)\"} ORDER BY i.namespace, i.value, i.row_id\" + \" LIMIT :limit\"), binds(:limit => (limit.to_i + 1), :id => entity_id, :namespace => namespace, :a_ns => after[0], :a_value => after[1], :a_row => after[2])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "identifiers"
+      },
+      "user_input": "current(\"i\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "1da3a1fe0c01ffb2879096b4d8c72645554d7244331c202f93962988052407e1",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 135,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Relationship.find_by_sql([\"WITH RECURSIVE walk(entity_id, depth, row_id, path) AS (\\n  SELECT r.#{far}, 1, r.row_id, ARRAY[CAST(:id AS text), r.#{far}]\\n  FROM api.relationships r\\n  WHERE r.predicate = 'succeeded_by' AND r.#{near} = :id AND r.#{far} IS NOT NULL AND #{current(\"r\")}\\n  UNION ALL\\n  SELECT r.#{far}, w.depth + 1, r.row_id, w.path || r.#{far}\\n  FROM walk w\\n  JOIN api.relationships r ON r.predicate = 'succeeded_by' AND r.#{near} = w.entity_id AND #{current(\"r\")}\\n  WHERE w.depth < :max_depth AND r.#{far} IS NOT NULL AND NOT r.#{far} = ANY(w.path)\\n), steps AS (\\n  SELECT DISTINCT ON (w.row_id) w.row_id, w.depth, w.entity_id AS step_entity_id FROM walk w ORDER BY w.row_id, w.depth\\n)\\nSELECT s.* FROM (\\n  SELECT r.*, st.depth, st.step_entity_id FROM steps st JOIN api.relationships r ON r.row_id = st.row_id\\n) s\\nWHERE #{(\"TRUE\" or \"(s.depth, s.row_id) > (:a_depth, :a_row)\")}\\nORDER BY s.depth, s.row_id\\nLIMIT :limit\\n\", binds(:limit => (limit + 1), :id => entity_id, :max_depth => max_depth, :a_depth => after[0], :a_row => after[1])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "lineage"
+      },
+      "user_input": "far",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "248d72d3a283450a40e696619381b649edb42f998663a03b8fbdc0ae055eb212",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 195,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingParty.find_by_sql([\"SELECT p.* FROM api.spending_parties p WHERE #{(where << \"p.row_id > :after\").join(\" AND \")} ORDER BY p.row_id LIMIT :limit\", values.merge(:limit => (limit + 1))])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "unlinked"
+      },
+      "user_input": "(where << \"p.row_id > :after\").join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "290ffc6a5272fdb6e34ecf3db04fa20018c0ce63a381101dbe7a29230528ddd2",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 46,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT e.* FROM api.entities e WHERE #{((where << \"(e.name, e.entity_id) > (:after_name, :after_id)\") or (where << \"e.entity_id > :after_id\")).join(\" AND \")} ORDER BY #{(\"e.name, e.entity_id\" or \"e.entity_id\")} LIMIT :limit\", ])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "page"
+      },
+      "user_input": "((where << \"(e.name, e.entity_id) > (:after_name, :after_id)\") or (where << \"e.entity_id > :after_id\")).join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "2fa7c5f2f66e28593cfdd5661fc5e89269162c678d1e262b8acdf76db3682417",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 78,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Identifier.find_by_sql([\"SELECT i.* FROM api.identifiers i\\nJOIN api.entities e ON e.entity_id = i.entity_id AND #{current(\"e\")} AND #{visible(\"e\")}\\nWHERE i.namespace = :namespace AND i.value = :value AND #{current(\"i\")}\\nORDER BY i.entity_id, i.row_id\\n\", binds(:namespace => namespace, :value => value)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "holders"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "361ed61132d06d0028f0d24c8a56d61a374783b5f327034e2b9664d859ca5b4b",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 101,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Relationship.find_by_sql([\"SELECT s.* FROM (#{\"#{\"SELECT r.*, 'out' AS direction FROM api.relationships r WHERE r.subject_id = :id AND r.predicate IN (:predicates) AND #{current(\"r\")}\"} UNION ALL #{\"SELECT r.*, 'in' AS direction FROM api.relationships r WHERE r.object_id = :id AND r.predicate IN (:predicates) AND #{current(\"r\")}\"}\"}) s WHERE #{\"TRUE AND #{valid_on_condition(\"s\")} AND (s.row_id, s.direction) > (:a_row, :a_direction)\"} ORDER BY s.row_id, s.direction LIMIT :limit\", binds(:limit => (limit + 1), :id => entity_id, :predicates => ((Array(predicates) or [\"governs\", \"located_within\", \"covers\", \"party_to\", \"administrative_part_of\", \"reports_to_minister\", \"owned_by\", \"controlled_by\", \"member_of\", \"succeeded_by\"]) & [\"governs\", \"located_within\", \"covers\", \"party_to\", \"administrative_part_of\", \"reports_to_minister\", \"owned_by\", \"controlled_by\", \"member_of\", \"succeeded_by\"]), :valid_on => valid_on, :a_row => after[0], :a_direction => after[1])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "relationships"
+      },
+      "user_input": "current(\"r\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "588a8963092261ab75dd7cca3eee6d7fa68b28094073bd60ffa9794924e6004b",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 212,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingRecord.find_by_sql([\"SELECT DISTINCT ON (r.asset_key, r.acquisition, r.id) r.*, r.id AS source_row_id FROM api.spending_records r WHERE (r.asset_key, r.acquisition, r.id) IN (#{parties.map do\n [p.asset_key, p.acquisition, p.spending_row_id]\n end.uniq.map do\n \"(#{t.map do\n SpendingRecord.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")}) AND #{current(\"r\")} ORDER BY r.asset_key, r.acquisition, r.id, r.resource_id, r.source_occurrence\", { :n => release }])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "records_for"
+      },
+      "user_input": "parties.map do\n [p.asset_key, p.acquisition, p.spending_row_id]\n end.uniq.map do\n \"(#{t.map do\n SpendingRecord.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "5b638542a515646b834732779c5b459700501737bcc032d41bf1ca49901e9fbb",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 29,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current(\"e\")} AND #{visible(\"e\")}\", binds(:ids => entity_ids.compact.uniq)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "refs"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "6c00f8b4836256589006cb0390194e07a3271c5a259909c4d341a54846659154",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 85,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingParty.find_by_sql([\"SELECT p.* FROM api.spending_parties p WHERE (p.asset_key, p.acquisition, p.spending_row_id) IN (#{records.map do\n [r.asset_key, r.acquisition, r.source_row_id]\n end.uniq.map do\n \"(#{t.map do\n SpendingParty.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")}) AND #{current(\"p\")} ORDER BY p.field, p.position, p.occurrence_id\", { :n => release }])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "parties"
+      },
+      "user_input": "records.map do\n [r.asset_key, r.acquisition, r.source_row_id]\n end.uniq.map do\n \"(#{t.map do\n SpendingParty.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "77927a09e9c0974413e257ed1489c2c545874d1b8333506ce3ed7feb8a033dd4",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 61,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingRecord.find_by_sql([\"SELECT r.*, r.id AS source_row_id FROM api.spending_records r WHERE #{(where << keyset(column, direction, after, values)).join(\" AND \")} ORDER BY #{(\"#{column} #{direction} NULLS LAST, r.spending_key\" or \"r.spending_key\")} LIMIT :limit\", values.merge(:n => release, :limit => (limit + 1))])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "page"
+      },
+      "user_input": "(where << keyset(column, direction, after, values)).join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "acc38e411e45e6b56b704d045004addf3c69f931213c16383a846b5a94c23e32",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "script/public_api/explain.rb",
+      "line": 127,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "FactFactoryRecord.connection.select_values(\"EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{sql}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ExplainPublicApi",
+        "method": "report"
+      },
+      "user_input": "sql",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "Developer benchmark script (script/public_api/explain.rb): EXPLAINs SQL captured from the query objects against a generated local database. Never run in production."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "b48796cadcb340460b6a07df0c7ba9b9cca058fb25cd68c020cb8450bc7c7cb4",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 21,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT * FROM api.entities e WHERE e.entity_id = :id AND #{current(\"e\")} LIMIT 1\", binds(:id => entity_id)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "find"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API read model queries (WS-D). Interpolated fragments are fixed SQL: the release condition (FactFactoryRecord.in_release), whitelisted column and sort names, and tuple lists built with connection.quote. Every caller value is a named bind or quoted. The connection is read-only (default_transaction_read_only, api_reader role)."
     }
   ],
   "updated": "2026-08-07",

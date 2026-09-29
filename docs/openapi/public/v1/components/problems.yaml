@@ -45,7 +45,10 @@ Unauthorized:
             code: unauthenticated
             docs: https://data.buildcanada.com/docs/concepts/errors.md
 Forbidden:
-  description: 'insufficient_scope: the key or token lacks the scope in `required_scope`.'
+  description: >-
+    insufficient_scope: the key or token lacks the scope in `required_scope`. account_suspended: the account that
+    owns the key is suspended. ip_not_allowed and origin_not_allowed: the key is restricted to other IP addresses
+    or origins.
   headers:
     WWW-Authenticate:
       "$ref": headers.yaml#/WWWAuthenticate
@@ -153,7 +156,9 @@ Conflict:
             docs: https://data.buildcanada.com/docs/concepts/errors.md
             cursor_release: 10
 UnprocessableEntity:
-  description: 'query_too_broad: the query would exceed the search or graph limits. Narrow it, or use bulk files.'
+  description: >-
+    query_too_broad: the query would exceed the search, graph or grouping limits, or took longer than the
+    statement timeout. Narrow it, or use bulk files.
   headers:
     RateLimit:
       "$ref": headers.yaml#/RateLimit

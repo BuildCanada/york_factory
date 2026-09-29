@@ -1,5 +1,5 @@
 # Spectral ruleset for the public data API contract (docs/openapi/public/v1).
-# Run bin/openapi-lint. It lints the bundled public/v1/openapi.json, because Spectral
+# Run bin/openapi-lint. It lints the bundled docs/openapi/dist/v1/openapi.json, because Spectral
 # mis-validates path items that $ref other files; the bundle is what clients see anyway.
 # Rules starting bc- encode the conventions in docs/openapi/public/v1/README.md.
 # The x-bc-dictionary rule lives in bin/openapi-check-dictionary: Spectral's resolver drops

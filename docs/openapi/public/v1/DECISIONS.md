@@ -10,7 +10,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## File layout and tooling
 
-4. **Path.** The spec is at `docs/openapi/public/v1/openapi.yaml`, which is the design's path. The task brief suggested `openapi/v1.yaml`, but the design wins. The bundle is `public/v1/openapi.json`, as the design specifies. WS-D decides how the `data.` host routes `/v1/openapi.json`. Rails' static file server would serve it with the production one-year cache header, so WS-D should serve it through a route with `max-age=300` instead.
+4. **Path.** The spec is at `docs/openapi/public/v1/openapi.yaml`, which is the design's path. The task brief suggested `openapi/v1.yaml`, but the design wins. The bundle was `public/v1/openapi.json`, as the design specifies. Rails' static file server would serve it with the production one-year cache header, ahead of any route. **WS-D moved it** to `docs/openapi/dist/v1/openapi.json` and serves it through a route (`GET /v1/openapi.json`, `max-age=300`, rate-limited like every operation).
 5. **Two linters.** Spectral runs `.spectral.yaml` on the **bundle**. Spectral 6.16 rejects valid OpenAPI 3.1 path items that `$ref` another file. Redocly lints the **split source**, so errors point at the right file and line, and it checks every example. Redocly's CLI also does the bundling.
 6. **The dictionary rule is in Ruby, not Spectral.** Spectral's resolver drops keywords next to a `$ref`, and that is where `x-bc-dictionary` sits on most fields. `bin/openapi-check-dictionary` reads the source YAML instead.
 7. **Where dictionary terms come from.** The design checks terms against `catalog/dictionary.json` (WS-K2), which doesn't exist yet. `dictionary-terms.json` is a synced list of term names from fact-factory `6b102fe:docs/data-dictionary.yaml`. `bin/openapi-sync-dictionary` refreshes it from either format.
@@ -49,3 +49,11 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 31. **Problems.** `internal_error` (500) is added to §3.9's codes. Problems carry `bulk_url` on 429s ("bulk links in 429s", §8.2), `earliest_release` on `not_yet_published`, `cursor_release` on `release_mismatch`, and `location` on 301.
 32. **`GET /me`** works anonymously and reports plan `anonymous` with a daily allowance. `/me/usage` needs `usage:read` and a real caller.
 33. **Staging** is `https://data.staging.buildcanada.com/v1`, with `bc_stg_` keys. The design names the key prefix but not the host. **Review:** check that the DNS name is right.
+
+## Changes WS-D made while implementing the contract (1.0.0-alpha.2)
+
+34. **Three auth problem codes.** `account_suspended`, `ip_not_allowed` and `origin_not_allowed` (403) are in the `Problem.code` enum. WS-E's `PublicApiAuthentication` answers with them, and they say more than `insufficient_scope` would.
+35. **403 on every keyed operation.** Any key can meet a suspended account, an IP or origin restriction, or (for person entities) `read:persons`. The contract had 403 on `/me/usage` only. `/openapi.json` also declares 400, 401 and 403, because it authenticates like the rest.
+36. **422 where a query can outgrow its limits.** `listEntities`, `listSpending`, `listEntitySpending` and `getEntitySpendingSummary` declare 422 `query_too_broad`. It is the answer to a statement timeout (design §8.2), and to `group_by=counterparty` on an entity with more than 50,000 linked rows. That summary is computed live, because the read model's summary table has no counterparty.
+37. **Review: `fields` against `required`.** A `fields=` projection leaves out properties that `Entity` and `SpendingRecord` require, so a projected response fails its own schema. WS-D's tests check projected items field by field. The contract should say that `fields` responses are partial (for example, a `Partial<Entity>` schema, or a note on each operation), so SDK generators don't reject them.
+

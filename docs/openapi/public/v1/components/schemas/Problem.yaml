@@ -36,6 +36,9 @@ properties:
       - invalid_parameter
       - unauthenticated
       - insufficient_scope
+      - account_suspended
+      - ip_not_allowed
+      - origin_not_allowed
       - not_found
       - not_yet_published
       - redirected
@@ -48,7 +51,7 @@ properties:
       - internal_error
     description: >-
       Stable problem code. invalid_parameter (400), unauthenticated (401),
-      insufficient_scope (403), not_found and not_yet_published (404), redirected (301),
+      insufficient_scope, account_suspended, ip_not_allowed and origin_not_allowed (403), not_found and not_yet_published (404), redirected (301),
       release_mismatch (409), retired (410), query_too_broad (422), rate_limited and
       quota_exceeded (429), release_building (503), internal_error (500).
     examples: [rate_limited]

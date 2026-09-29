@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "Build Canada Data API",
-    "version": "1.0.0-alpha.1",
+    "version": "1.0.0-alpha.2",
     "summary": "Cited, reproducible public data on Canadian governments, organizations and federal spending.",
     "description": "Read-only access to everything fact-factory publishes: the entity registry\n(jurisdictions, government organizations, Indigenous governments, charities and other\norganizations), their identifiers, relationships and lineage, and federal spending\nrows linked to them.\n\nThree rules shape the API:\n\n1. **Every fact carries its citation.** Fact-bearing objects have `provenance` (the\n   asset, release, pinned snapshot, captured file and row) and a ready-to-paste `cite`.\n2. **Every answer is reproducible.** Pass `as_of=<release>` and the same URL returns the\n   same bytes forever. Omit it and the response names the release it used.\n3. **Caveats are data.** `meta.caveats[]` carries machine-readable warnings, such as\n   `not_cross_source_total`. Act on them. Amounts from different spending sources\n   overlap: never add them.\n\nConventions: responses are `{data, meta, links}`; lists use cursor pagination\n(`limit`, `cursor`, `meta.next_cursor`); errors are RFC 9457 `application/problem+json`\nwith a stable `code`; money is a decimal string with an ISO 4217 `currency`; IDs are\n`gid://buildcanada/<Type>/<key>`. Each operation's cost in request units is in\n`x-bc-units`; each data field names its data dictionary term in `x-bc-dictionary`.\n\nNo key is needed to start: anonymous callers get 30 units a minute and 1,000 a day\nwith the read:public scope. Get a free key at https://auth.buildcanada.com/developers.\nAgents: start at https://data.buildcanada.com/llms.txt, or connect the MCP server at\nhttps://data.buildcanada.com/mcp.\n",
     "termsOfService": "https://data.buildcanada.com/docs/terms",
@@ -169,6 +169,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
@@ -270,6 +273,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -415,6 +427,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -744,6 +759,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
             "$ref": "#/components/responses/Conflict"
           },
@@ -900,6 +918,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -1076,6 +1097,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -1277,6 +1301,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -1463,6 +1490,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -1625,6 +1655,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -1765,6 +1798,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -2025,6 +2061,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -2267,11 +2306,17 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -2473,6 +2518,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -2640,6 +2688,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -2884,6 +2935,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -3100,6 +3154,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3389,11 +3446,17 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -3602,8 +3665,14 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -3804,6 +3873,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -3976,6 +4048,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -4429,11 +4504,17 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -4614,6 +4695,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -4871,6 +4955,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -5032,6 +5119,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -5136,6 +5226,9 @@
               "invalid_parameter",
               "unauthenticated",
               "insufficient_scope",
+              "account_suspended",
+              "ip_not_allowed",
+              "origin_not_allowed",
               "not_found",
               "not_yet_published",
               "redirected",
@@ -5147,7 +5240,7 @@
               "release_building",
               "internal_error"
             ],
-            "description": "Stable problem code. invalid_parameter (400), unauthenticated (401), insufficient_scope (403), not_found and not_yet_published (404), redirected (301), release_mismatch (409), retired (410), query_too_broad (422), rate_limited and quota_exceeded (429), release_building (503), internal_error (500).",
+            "description": "Stable problem code. invalid_parameter (400), unauthenticated (401), insufficient_scope, account_suspended, ip_not_allowed and origin_not_allowed (403), not_found and not_yet_published (404), redirected (301), release_mismatch (409), retired (410), query_too_broad (422), rate_limited and quota_exceeded (429), release_building (503), internal_error (500).",
             "examples": [
               "rate_limited"
             ]
@@ -9444,6 +9537,42 @@
           }
         }
       },
+      "Forbidden": {
+        "description": "insufficient_scope: the key or token lacks the scope in `required_scope`. account_suspended: the account that owns the key is suspended. ip_not_allowed and origin_not_allowed: the key is restricted to other IP addresses or origins.",
+        "headers": {
+          "WWW-Authenticate": {
+            "$ref": "#/components/headers/WWWAuthenticate"
+          },
+          "RateLimit": {
+            "$ref": "#/components/headers/RateLimit"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimitPolicy"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "insufficient_scope": {
+                "summary": "Missing usage:read",
+                "value": {
+                  "type": "https://data.buildcanada.com/problems/insufficient-scope",
+                  "title": "Insufficient scope",
+                  "status": 403,
+                  "detail": "This key does not have the usage:read scope.",
+                  "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
+                  "code": "insufficient_scope",
+                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "required_scope": "usage:read"
+                }
+              }
+            }
+          }
+        }
+      },
       "TooManyRequests": {
         "description": "rate_limited: wait `retry_after_seconds`. quota_exceeded: the month is spent; upgrade or use bulk files.",
         "headers": {
@@ -9553,42 +9682,6 @@
           }
         }
       },
-      "Forbidden": {
-        "description": "insufficient_scope: the key or token lacks the scope in `required_scope`.",
-        "headers": {
-          "WWW-Authenticate": {
-            "$ref": "#/components/headers/WWWAuthenticate"
-          },
-          "RateLimit": {
-            "$ref": "#/components/headers/RateLimit"
-          },
-          "RateLimit-Policy": {
-            "$ref": "#/components/headers/RateLimitPolicy"
-          }
-        },
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            },
-            "examples": {
-              "insufficient_scope": {
-                "summary": "Missing usage:read",
-                "value": {
-                  "type": "https://data.buildcanada.com/problems/insufficient-scope",
-                  "title": "Insufficient scope",
-                  "status": 403,
-                  "detail": "This key does not have the usage:read scope.",
-                  "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
-                  "code": "insufficient_scope",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
-                  "required_scope": "usage:read"
-                }
-              }
-            }
-          }
-        }
-      },
       "Conflict": {
         "description": "release_mismatch: the cursor was issued for another release than `as_of`.",
         "headers": {
@@ -9685,7 +9778,7 @@
         }
       },
       "UnprocessableEntity": {
-        "description": "query_too_broad: the query would exceed the search or graph limits. Narrow it, or use bulk files.",
+        "description": "query_too_broad: the query would exceed the search, graph or grouping limits, or took longer than the statement timeout. Narrow it, or use bulk files.",
         "headers": {
           "RateLimit": {
             "$ref": "#/components/headers/RateLimit"

@@ -14,7 +14,7 @@ require "erb"
 class PublicV1SpecTest < Minitest::Test
   ROOT = File.expand_path("../..", __dir__)
   SOURCE_DIR = File.join(ROOT, "docs/openapi/public/v1")
-  BUNDLE = File.join(ROOT, "public/v1/openapi.json")
+  BUNDLE = File.join(ROOT, "docs/openapi/dist/v1/openapi.json")
   METHODS = %w[get put post delete patch].freeze
 
   def self.doc

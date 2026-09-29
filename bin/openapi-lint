@@ -12,5 +12,5 @@ fi
 
 "$root/bin/openapi-bundle" --check
 (cd "$tools" && npx --no-install redocly lint --config redocly.yaml public/v1/openapi.yaml)
-(cd "$tools" && npx --no-install spectral lint --ruleset ../../.spectral.yaml --fail-severity warn ../../public/v1/openapi.json)
+(cd "$tools" && npx --no-install spectral lint --ruleset ../../.spectral.yaml --fail-severity warn dist/v1/openapi.json)
 "$root/bin/openapi-check-dictionary"

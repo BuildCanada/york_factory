@@ -1,0 +1,52 @@
+# Caveat codes and their text (docs/public-interface-design.md §3.4 and §7.2).
+# Agents act on the code; the text follows Accept-Language. Every code has an
+# anchor at https://data.buildcanada.com/docs/caveats#<code>. %{name} fills in
+# from the response.
+not_cross_source_total:
+  en: Sources overlap. Never add amounts across sources.
+  fr: Les sources se recoupent. N'additionnez jamais les montants de sources différentes.
+agreement_value_not_paid:
+  en: proactive_grants amounts are agreement values, not money paid.
+  fr: Les montants de proactive_grants sont des valeurs d'accord, pas des sommes versées.
+contract_value_not_paid:
+  en: proactive_contracts amounts are reported contract values, not payments made.
+  fr: Les montants de proactive_contracts sont des valeurs de contrat déclarées, pas des paiements.
+measure_ambiguous:
+  en: transfer_payments amounts are aggregate payments or current-year expenditure; the source does not record which.
+  fr: Les montants de transfer_payments sont des paiements cumulés ou des dépenses de l'exercice; la source ne précise pas lesquels.
+commitment_not_spending:
+  en: global_affairs_projects amounts are commitments, not spending.
+  fr: Les montants de global_affairs_projects sont des engagements, pas des dépenses.
+calendar_year_not_fiscal:
+  en: aggregated_contracts publishes a calendar year in fiscal_year.
+  fr: aggregated_contracts publie une année civile dans fiscal_year.
+latest_revision_only:
+  en: Only the highest-ranked revision per canonical_id is summed.
+  fr: Seule la révision la plus récente de chaque canonical_id est additionnée.
+revisions_listed:
+  en: Rows sharing a canonical_id are revisions of one agreement. Never add them together; filter with latest_revision_only=true.
+  fr: Les lignes qui partagent un canonical_id sont des révisions d'un même accord. Ne les additionnez jamais; filtrez avec latest_revision_only=true.
+linked_only:
+  en: "Only linked occurrences are counted. %{count} unlinked occurrences with this name: %{url}."
+  fr: "Seules les occurrences liées sont comptées. %{count} occurrences non liées portent ce nom : %{url}."
+proposed_included:
+  en: Some rows are here only through a proposed link, which is not yet active. Check each party's link_status; never treat proposed as linked.
+  fr: Certaines lignes n'apparaissent que par un lien proposé, pas encore actif. Vérifiez le link_status de chaque partie; un lien proposé n'est pas un lien.
+aggregates_excluded:
+  en: "%{count} aggregate rows (is_aggregated) were left out of every group."
+  fr: "%{count} lignes agrégées (is_aggregated) ont été exclues de tous les groupes."
+amount_missing:
+  en: Rows with a blank amount are counted in amount_missing, never as zero.
+  fr: Les lignes sans montant sont comptées dans amount_missing, jamais comme zéro.
+archive_overlaps_live:
+  en: Rows with acquisition archive_import come from an external archive and may repeat live rows.
+  fr: Les lignes dont acquisition vaut archive_import proviennent d'une archive externe et peuvent répéter des lignes courantes.
+raw_unavailable:
+  en: The original source record (raw) is not in the API's read model yet. It is null here; the bulk Parquet files carry it.
+  fr: L'enregistrement source original (raw) n'est pas encore dans le modèle de lecture de l'API. Il vaut null ici; les fichiers Parquet le contiennent.
+coverage_partial:
+  en: "%{detail}"
+  fr: "%{detail}"
+dictionary_not_pinned:
+  en: The data dictionary is served as of today, not as of the pinned release.
+  fr: Le dictionnaire de données est servi tel qu'il est aujourd'hui, pas tel qu'à la version demandée.

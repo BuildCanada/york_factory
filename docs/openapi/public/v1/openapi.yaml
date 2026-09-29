@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: Build Canada Data API
-  version: 1.0.0-alpha.1
+  version: 1.0.0-alpha.2
   summary: Cited, reproducible public data on Canadian governments, organizations and federal spending.
   description: |
     Read-only access to everything fact-factory publishes: the entity registry

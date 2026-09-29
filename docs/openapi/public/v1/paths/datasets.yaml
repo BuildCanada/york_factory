@@ -128,6 +128,8 @@ get:
       "$ref": "../components/problems.yaml#/BadRequest"
     '401':
       "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
     '404':
       "$ref": "../components/problems.yaml#/NotFound"
     '409':

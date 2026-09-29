@@ -59,6 +59,23 @@ Keys are `bc_live_<secret>_<crc6>`; only an HMAC digest is stored. `Keys::Issue`
 `PublicApiAuthentication` concern wraps it for public API controllers. Bifrost (`BifrostClient`) is called only on
 create, rotate and revoke, and is faked in tests (`test/support/fake_bifrost.rb`).
 
+## Public data API (/v1)
+```
+GET /v1, /v1/openapi.json, /v1/me, /v1/me/usage       → discovery
+GET /v1/releases[/latest|/{n}], /v1/datasets[/{asset}] → releases and dataset metadata
+GET /v1/dictionary[/{term}], /v1/search, /v1/exports   → dictionary, entity search, bulk files
+GET /v1/entities[/{id}[/identifiers|/relationships|/lineage|/spending[/summary|/unlinked]]]
+GET /v1/identifiers/{namespace}/{value}, /v1/spending[/sources|/{id}]
+```
+The contract is `docs/openapi/public/v1` (bundled to `docs/openapi/dist/v1/openapi.json` by `bin/openapi-bundle`);
+`PublicApi::Spec` loads it, and `PublicApi::V1::BaseController` takes each operation's parameters, scopes, units
+(`x-bc-units`, reported in `BC-Usage-Units`) and cache class from it. Data comes from fact-factory's `api` read model
+through a separate, read-only connection (`FactFactoryRecord`, database `fact_factory_api`); the query objects in
+`app/queries/fact_factory` are shared with the MCP server. `PublicApi::RateLimiter` limits units per key or IP
+(Solid Cache, or in-process) until the data-edge Worker signs requests. Tests load fact-factory's vendored schema
+(`db/fact_factory_api/api_schema.sql`) and fixture rows into their own database and validate every response against
+the contract. `script/public_api/explain.rb` checks query plans at representative size.
+
 ## Geo API
 ```
 GET /api/v1/geo/boundaries       → search boundaries by type, province, name
@@ -101,6 +118,12 @@ GET /api/v1/geo/crosswalk/:type/:uid → population-weighted crosswalk lookup
   - `BIFROST_CUSTOMERS` / `bifrost.customers` — `false` to skip creating one Bifrost customer per account
   - `EDGE_URL`, `EDGE_HMAC_SECRET` / `edge.url`, `edge.hmac_secret` — the data-edge Worker; key pushes are skipped when unset
   - `PUBLIC_API_ANONYMOUS` — `false` turns off anonymous `read:public` access
+- Public data API (/v1):
+  - `FACT_FACTORY_API_DATABASE_URL` — fact-factory's `api` read model as the `api_reader` role, on a replica (port 5432, not PgBouncer). **Required in production.**
+  - `FACT_FACTORY_API_STATEMENT_TIMEOUT` — statement timeout on that connection (default `5s`)
+  - `PUBLIC_API_HOSTS` — hosts that serve /v1 (default `data.buildcanada.com,data.staging.buildcanada.com` in production, any host elsewhere)
+  - `PUBLIC_API_RATE_LIMIT_STORE` — `cache` (Rails.cache, the default), `memory` (per process) or `off`
+  - `PUBLIC_API_REQUIRE_EDGE` — `true` refuses /v1 requests the data-edge Worker did not sign (`EDGE_HMAC_SECRET`); off until WS-H
 - Mailer/SES config is read from Rails credentials under `mailer`:
   - `mailer.smtp_address` — SES SMTP endpoint (defaults to `email-smtp.ca-central-1.amazonaws.com`)
   - `mailer.smtp_username`, `mailer.smtp_password` — SES SMTP credentials (IAM SMTP user)

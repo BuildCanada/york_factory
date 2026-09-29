@@ -4,6 +4,7 @@
   <div class="btn-group">
     <a href="<%= developers_path %>" class="btn<%= ' btn-primary' if controller_name == 'overview' %>">Overview</a>
     <a href="<%= developers_keys_path %>" class="btn<%= ' btn-primary' if controller_name == 'keys' %>">API keys</a>
+    <a href="<%= developers_authorized_apps_path %>" class="btn<%= ' btn-primary' if controller_name == 'authorized_apps' %>">Authorized apps</a>
     <% if accounts_for_switcher.size > 1 %>
       <%= form_with url: developers_account_switch_path, method: :post, class: "btn-group" do |form| %>
         <%= form.select :account_id, options_from_collection_for_select(accounts_for_switcher, :id, :name, current_account.id), {}, class: "form-control", "aria-label": "Account" %>

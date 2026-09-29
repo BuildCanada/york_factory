@@ -365,7 +365,7 @@ CREATE TABLE public.audit_events (
     user_agent character varying,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT audit_events_actor_kind CHECK (((actor_kind)::text = ANY (ARRAY[('user'::character varying)::text, ('admin'::character varying)::text, ('system'::character varying)::text])))
+    CONSTRAINT audit_events_actor_kind CHECK (((actor_kind)::text = ANY ((ARRAY['user'::character varying, 'admin'::character varying, 'system'::character varying, 'client'::character varying])::text[])))
 );
 
 
@@ -2216,7 +2216,11 @@ CREATE TABLE public.oauth_access_grants (
     redirect_uri text NOT NULL,
     scopes character varying DEFAULT ''::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    revoked_at timestamp(6) without time zone
+    revoked_at timestamp(6) without time zone,
+    code_challenge character varying,
+    code_challenge_method character varying,
+    resource character varying,
+    account_id bigint
 );
 
 
@@ -2253,7 +2257,9 @@ CREATE TABLE public.oauth_access_tokens (
     scopes character varying,
     created_at timestamp(6) without time zone NOT NULL,
     revoked_at timestamp(6) without time zone,
-    previous_refresh_token character varying DEFAULT ''::character varying NOT NULL
+    previous_refresh_token character varying DEFAULT ''::character varying NOT NULL,
+    resource character varying,
+    account_id bigint
 );
 
 
@@ -2290,7 +2296,19 @@ CREATE TABLE public.oauth_applications (
     confidential boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    trusted boolean DEFAULT false NOT NULL
+    trusted boolean DEFAULT false NOT NULL,
+    client_type character varying DEFAULT 'first_party'::character varying NOT NULL,
+    account_id bigint,
+    metadata_url text,
+    resource_uris text[] DEFAULT '{}'::text[] NOT NULL,
+    logo_url text,
+    client_uri text,
+    reviewed_at timestamp(6) without time zone,
+    disabled_at timestamp(6) without time zone,
+    metadata_fetched_at timestamp(6) without time zone,
+    metadata_expires_at timestamp(6) without time zone,
+    registration_ip inet,
+    CONSTRAINT oauth_applications_client_type CHECK (((client_type)::text = ANY ((ARRAY['first_party'::character varying, 'registered'::character varying, 'dynamic'::character varying, 'metadata_document'::character varying])::text[])))
 );
 
 
@@ -8385,10 +8403,24 @@ CREATE UNIQUE INDEX index_oauth_access_grants_on_token ON public.oauth_access_gr
 
 
 --
+-- Name: index_oauth_access_tokens_on_account_id_and_application_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_oauth_access_tokens_on_account_id_and_application_id ON public.oauth_access_tokens USING btree (account_id, application_id);
+
+
+--
 -- Name: index_oauth_access_tokens_on_application_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_oauth_access_tokens_on_application_id ON public.oauth_access_tokens USING btree (application_id);
+
+
+--
+-- Name: index_oauth_access_tokens_on_previous_refresh_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_oauth_access_tokens_on_previous_refresh_token ON public.oauth_access_tokens USING btree (previous_refresh_token) WHERE ((previous_refresh_token)::text <> ''::text);
 
 
 --
@@ -8410,6 +8442,20 @@ CREATE INDEX index_oauth_access_tokens_on_resource_owner_id ON public.oauth_acce
 --
 
 CREATE UNIQUE INDEX index_oauth_access_tokens_on_token ON public.oauth_access_tokens USING btree (token);
+
+
+--
+-- Name: index_oauth_applications_on_client_type_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_oauth_applications_on_client_type_and_created_at ON public.oauth_applications USING btree (client_type, created_at);
+
+
+--
+-- Name: index_oauth_applications_on_metadata_url; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_oauth_applications_on_metadata_url ON public.oauth_applications USING btree (metadata_url) WHERE (metadata_url IS NOT NULL);
 
 
 --
@@ -10218,6 +10264,14 @@ ALTER TABLE ONLY public.polls
 
 
 --
+-- Name: oauth_access_grants fk_rails_0e4706738d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_access_grants
+    ADD CONSTRAINT fk_rails_0e4706738d FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
 -- Name: metrics_social_entities fk_rails_13254b8ef3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10239,6 +10293,14 @@ ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
 
 ALTER TABLE ONLY public.media_capture_states
     ADD CONSTRAINT fk_rails_1e855b1d57 FOREIGN KEY (media_stream_id) REFERENCES warehouse.media_streams(id);
+
+
+--
+-- Name: oauth_applications fk_rails_211c1cecac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_applications
+    ADD CONSTRAINT fk_rails_211c1cecac FOREIGN KEY (account_id) REFERENCES public.accounts(id);
 
 
 --
@@ -10439,6 +10501,14 @@ ALTER TABLE ONLY public.account_memberships
 
 ALTER TABLE ONLY public.accounts
     ADD CONSTRAINT fk_rails_8ea5f06199 FOREIGN KEY (personal_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: oauth_access_tokens fk_rails_90b645246c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_access_tokens
+    ADD CONSTRAINT fk_rails_90b645246c FOREIGN KEY (account_id) REFERENCES public.accounts(id);
 
 
 --
@@ -11648,6 +11718,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260929000001'),
 ('20260928000003'),
 ('20260928000002'),
 ('20260928000001'),

@@ -69,7 +69,8 @@ class PublicApiDiscoveryTest < PublicApiTestCase
     api_get "/v1/me/usage", key: key_with(%w[read:public])
     problem = assert_problem("getUsage", 403, "insufficient_scope")
     assert_equal "usage:read", problem["required_scope"]
-    assert_equal %(Bearer error="insufficient_scope", scope="usage:read"), response.headers["WWW-Authenticate"]
+    assert_equal %(Bearer error="insufficient_scope", scope="usage:read", resource_metadata="http://www.example.com/.well-known/oauth-protected-resource/v1"),
+      response.headers["WWW-Authenticate"]
 
     api_get "/v1/me/usage", key: key_with(%w[read:public usage:read]), granularity: "hour"
     assert_conforms("getUsage", status: 200)

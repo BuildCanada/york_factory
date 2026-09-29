@@ -28,25 +28,59 @@ Doorkeeper.configure do
     current_user&.superadmin? || redirect_to(new_user_session_url)
   end
 
-  # Authorization code only — TradingPost is a confidential server-side app.
-  grant_flows %w[authorization_code]
+  # Authorization code with refresh tokens. TradingPost is a confidential
+  # server-side app; MCP clients are public clients using PKCE
+  # (docs/public-interface-design.md §4.6). There is no client_credentials
+  # flow: machines use API keys.
+  grant_flows %w[authorization_code refresh_token]
 
-  # A single baseline scope so clients needn't request one explicitly.
-  # Authorization is driven by the resource owner's role (exposed via
-  # GET /api/v1/me), not by OAuth scopes.
+  # TradingPost asks for no scope and gets `public`; authorization is driven
+  # by the user's role (GET /api/v1/me), not by OAuth scopes. Public-API
+  # clients ask for the data API scopes, which their applications are
+  # limited to (these match Oauth::Settings::SCOPES, which can't be
+  # referenced while initializers run).
   default_scopes :public
+  optional_scopes "read:public", "read:persons", "usage:read"
 
-  # Short-lived access tokens; refresh tokens let users stay authenticated.
+  # First-party tokens last 2 hours; public-API tokens 1 hour
+  # (Oauth::Settings::ACCESS_TOKEN_LIFETIME). Refresh tokens rotate on every
+  # use; Oauth::TokensController revokes a public-API refresh token as soon
+  # as it is used and expires it after 30 idle days.
   access_token_expires_in 2.hours
+  custom_access_token_expires_in do |context|
+    client = context.client
+    application = client.respond_to?(:application) ? client.application : client
+    Oauth::Settings::ACCESS_TOKEN_LIFETIME if application.respond_to?(:public_api?) && application.public_api?
+  end
   use_refresh_token
+
+  # PKCE (RFC 7636): S256 only, as OAuth 2.1 and MCP 2026-07-28 require;
+  # `plain` is refused. Required for public clients; Oauth::AuthorizationsController
+  # also requires it for every public-API client.
+  pkce_code_challenge_methods %w[S256]
+  force_pkce
+
+  # The RFC 8707 resource (the token's audience) and the account billed for
+  # usage, chosen at consent, travel from the grant to the token and on
+  # through refreshes. Oauth::AuthorizationsController sets and checks them;
+  # first-party apps get neither.
+  custom_access_token_attributes %i[resource account_id]
 
   # Trusted (first-party) apps skip the user-facing authorization prompt.
   skip_authorization do |_resource_owner, client|
-    client.application.trusted?
+    client.application.trusted? && !client.application.disabled?
   end
 
-  # SSL required for redirect URIs in production.
-  force_ssl_in_redirect_uri !Rails.env.development?
+  # A disabled application can't be authorized (an admin kill switch).
+  authorize_resource_owner_for_client do |client, _resource_owner|
+    application = client.respond_to?(:application) ? client.application : client
+    !application.disabled?
+  end
+
+  # HTTPS redirect URIs, except on localhost (loopback redirects for native
+  # MCP clients, RFC 8252 §7.3). Development allows plain http anywhere.
+  force_ssl_in_redirect_uri { |uri| !Rails.env.development? && !Oauth::RedirectUriPolicy.loopback_host?(uri.host) }
+  forbid_redirect_uri { |uri| Oauth::RedirectUriPolicy::FORBIDDEN_SCHEMES.excluding("http", "https").include?(uri.scheme.to_s.downcase) }
 
   # --- removed boilerplate below ---
   # You can use your own model classes if you need to extend (or even override) default
@@ -546,4 +580,12 @@ Doorkeeper.configure do
   # WWW-Authenticate Realm (default: "Doorkeeper").
   #
   # realm "Doorkeeper"
+end
+
+# Public-API behaviour for the Doorkeeper models (resource, account, client
+# types). to_prepare so the concerns are re-included after a code reload.
+Rails.application.config.to_prepare do
+  Doorkeeper::Application.include(Oauth::ApplicationExtension)
+  Doorkeeper::AccessToken.include(Oauth::AccessTokenExtension)
+  Doorkeeper::AccessGrant.include(Oauth::AccessGrantExtension)
 end

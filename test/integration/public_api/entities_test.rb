@@ -232,7 +232,8 @@ class PublicApiEntitiesTest < PublicApiTestCase
     api_get "/v1/entities/#{PERSON}", key: key_with(%w[read:public])
     problem = assert_problem("getEntity", 403, "insufficient_scope")
     assert_equal "read:persons", problem["required_scope"]
-    assert_equal %(Bearer error="insufficient_scope", scope="read:persons"), response.headers["WWW-Authenticate"]
+    assert_equal %(Bearer error="insufficient_scope", scope="read:persons", resource_metadata="http://www.example.com/.well-known/oauth-protected-resource/v1"),
+      response.headers["WWW-Authenticate"]
 
     api_get "/v1/entities/#{PERSON}", key: persons_key
     assert_conforms("getEntity", status: 200)

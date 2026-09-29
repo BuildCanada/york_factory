@@ -76,6 +76,24 @@ through a separate, read-only connection (`FactFactoryRecord`, database `fact_fa
 (`db/fact_factory_api/api_schema.sql`) and fixture rows into their own database and validate every response against
 the contract. `script/public_api/explain.rb` checks query plans at representative size.
 
+## OAuth 2.1 for MCP (MCP authorization spec 2026-07-28)
+```
+/.well-known/oauth-protected-resource[/mcp|/v1] → RFC 9728 metadata (data.buildcanada.com)
+/.well-known/oauth-authorization-server        → RFC 8414 metadata (auth.buildcanada.com)
+/oauth/authorize, /oauth/token, /oauth/revoke   → Doorkeeper, extended by Oauth::AuthorizationsController / Oauth::TokensController
+/oauth/register                                 → RFC 7591 dynamic registration (public clients, rate-limited)
+/mcp                                            → WWW-Authenticate challenge; WS-G's MCP server goes here
+/developers/authorized_apps                     → authorized OAuth clients, with revoke
+```
+Doorkeeper serves TradingPost (`first_party` apps, unchanged) and public-API clients (`dynamic`, or `metadata_document`
+when the client_id is an HTTPS Client ID Metadata Document URL, fetched by `Oauth::ClientMetadataDocument` through the
+SSRF-guarded `Oauth::SafeFetch`). Public-API tokens need PKCE S256 and an RFC 8707 `resource` (their audience), last
+1 hour, rotate refresh tokens on every use (reuse revokes the authorization; 30 idle days expire them), and belong to
+the account chosen at consent. `Keys::Authenticate` is the one verification path for API keys and OAuth tokens; it
+returns a `Keys::Caller` (kind, account, user, scopes, plan). CMS routes refuse public-API tokens. `Oauth::Settings`
+holds hosts and lifetimes: `OAUTH_ISSUER` / `oauth.issuer` and `PUBLIC_DATA_ORIGIN` / `oauth.data_origin` override
+the production hosts (for staging); elsewhere both default to the request's origin.
+
 ## Geo API
 ```
 GET /api/v1/geo/boundaries       → search boundaries by type, province, name

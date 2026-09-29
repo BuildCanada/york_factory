@@ -1,11 +1,31 @@
 Rails.application.routes.draw do
-  # OAuth provider — auth.buildcanada.com in production, /oauth/* in dev/test
-  if Rails.env.production?
-    constraints subdomain: "auth" do
-      use_doorkeeper
+  # OAuth provider — auth.buildcanada.com in production, /oauth/* in dev/test.
+  # The authorization and token endpoints are extended for MCP 2026-07-28
+  # (RFC 8707 resources, RFC 9207 iss, Client ID Metadata Documents, refresh
+  # rotation); RFC 7591 registration and RFC 8414 metadata sit beside them
+  # (docs/public-interface-design.md §4.6).
+  oauth_server = lambda do
+    use_doorkeeper do
+      controllers authorizations: "oauth/authorizations", tokens: "oauth/tokens"
     end
+    post "oauth/register", to: "oauth/registrations#create", as: :oauth_registration
+    get ".well-known/oauth-authorization-server", to: "well_known#authorization_server", as: :oauth_authorization_server_metadata
+  end
+
+  # The MCP server (WS-G) and the RFC 9728 metadata for it and the REST API,
+  # on data.buildcanada.com in production.
+  data_resources = lambda do
+    get ".well-known/oauth-protected-resource(/:resource_path)", to: "well_known#protected_resource",
+      as: :oauth_protected_resource_metadata, constraints: { resource_path: /mcp|v1/ }
+    post "mcp", to: "mcp#create", as: :mcp
+  end
+
+  if Rails.env.production?
+    constraints(subdomain: "auth", &oauth_server)
+    constraints(subdomain: "data", &data_resources)
   else
-    use_doorkeeper
+    oauth_server.call
+    data_resources.call
   end
 
   # Sign in with LinkedIn (browser OmniAuth → Devise session) is used by the
@@ -383,6 +403,7 @@ Rails.application.routes.draw do
   get "developers", to: "developers/overview#show", as: :developers
   namespace :developers do
     resource :terms, only: :create
+    resources :authorized_apps, only: %i[index destroy]
     resource :account_switch, only: :create
     resources :keys do
       post :rotate, on: :member

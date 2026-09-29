@@ -18,6 +18,7 @@ class Developers::KeysControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: /#{Regexp.escape(@user.name)}/
     assert_select ".card .value", text: "Free"
     assert_select "pre", text: /Authorization: Bearer/
+    assert_select "a[href=?]", "https://data.buildcanada.com/api"
     assert_select "button", text: "Accept the data terms", count: 0
   end
 

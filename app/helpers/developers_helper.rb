@@ -16,4 +16,7 @@ module DevelopersHelper
   end
 
   def api_base_url = "https://data.buildcanada.com/v1"
+
+  # The developer docs. data.buildcanada.com/ itself is kept for a future public site.
+  def api_docs_url = "https://data.buildcanada.com/api"
 end

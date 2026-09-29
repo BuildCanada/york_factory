@@ -23,7 +23,7 @@
 module PublicApiAuthentication
   extend ActiveSupport::Concern
 
-  PROBLEM_BASE = "https://data.buildcanada.com/problems".freeze
+  PROBLEM_BASE = "https://data.buildcanada.com/api/problems".freeze
 
   FAILURES = {
     missing: [ 401, "unauthenticated", "Authentication required", "Send an API key or OAuth access token as Authorization: Bearer …" ],

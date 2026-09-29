@@ -12,7 +12,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 base_ref="${1:-origin/main}"
 spec="public/v1/openapi.json"
-base="$(mktemp -t openapi-base).json"
+base="$(mktemp -d "${TMPDIR:-/tmp}/openapi-base.XXXXXX")/openapi.json"
 
 if ! git -C "$root" cat-file -e "$base_ref:$spec" 2>/dev/null; then
   echo "No $spec on $base_ref; nothing to compare."

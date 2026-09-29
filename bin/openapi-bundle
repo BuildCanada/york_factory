@@ -17,7 +17,7 @@ fi
 
 target="$out"
 if [ "${1:-}" = "--check" ]; then
-  target="$(mktemp -t openapi-bundle).json"
+  target="$(mktemp -d "${TMPDIR:-/tmp}/openapi-bundle.XXXXXX")/openapi.json"
 fi
 
 mkdir -p "$(dirname "$out")"

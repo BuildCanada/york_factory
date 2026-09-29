@@ -14,6 +14,7 @@ class PublicApiTestCase < ActionDispatch::IntegrationTest
     FactFactory::ReleaseQuery.reset!
     FactFactory::DatasetQuery.reset!
     FactFactory::SearchQuery.reset!
+    PublicApi::Catalog.reset!
   end
 
   teardown { PublicApi::RateLimiter.reset_store! }

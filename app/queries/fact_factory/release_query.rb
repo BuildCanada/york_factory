@@ -6,6 +6,15 @@ module FactFactory
   class ReleaseQuery
     POINTER_TTL = Rails.env.test? ? 0 : 30
 
+    # The tables Release.counts reports, from api.releases.counts.totals
+    # (every table's rows as of the release).
+    TOTALS = {
+      "entities" => "entities", "identifiers" => "identifiers", "relationships" => "relationships",
+      "spending_records" => "spending_records", "spending_parties" => "spending_parties",
+      "linked_parties" => "spending_parties_linked", "proposed_parties" => "spending_parties_proposed",
+      "spending_summary" => "spending_summary", "spending_counterparties" => "spending_counterparties", "captures" => "captures"
+    }.freeze
+
     class << self
       def served
         now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -47,27 +56,30 @@ module FactFactory
         spending_snapshots(number).dig(label, "snapshot_id")
       end
 
-      # Rows per table in a release. api.releases.counts records what each
-      # build added and closed, not totals, so the totals are the running sum
-      # over every served release up to this one (spending records are the
-      # pinned snapshots' row counts). Immutable per release, so memoized.
+      # Rows per table in a release. Immutable per release, so memoized.
       def counts(number)
         @counts ||= {}
         @counts[number] ||= begin
-          totals = Hash.new(0)
-          Release.where("release_id <= ?", number).order(:release_id).pluck(:counts).each do |counts|
-            %w[entities identifiers relationships spending_parties entity_names].each do |table|
-              step = counts[table]
-              totals[table] += step.to_i if step.is_a?(Integer)
-              totals[table] += step.fetch("added", 0).to_i - step.fetch("closed", 0).to_i if step.is_a?(Hash)
-            end
-          end
-          release = find(number)
-          totals["spending_records"] = (release&.spending_snapshots || {}).values.sum { |s| s["rows"].to_i }
-          totals["spending_summary"] = release&.counts&.dig("spending_summary").to_i
-          totals.delete("entity_names")
-          totals.transform_values { |v| [ v, 0 ].max }
+          totals = find(number)&.counts&.dig("totals")
+          totals.is_a?(Hash) ? TOTALS.filter_map { |name, key| [ name, [ totals[key].to_i, 0 ].max ] if totals.key?(key) }.to_h : summed_counts(number)
         end
+      end
+
+      # A release built before counts.totals: the running sum of what each
+      # served build added and closed, and the pinned snapshots' rows.
+      def summed_counts(number)
+        totals = Hash.new(0)
+        Release.where("release_id <= ?", number).order(:release_id).pluck(:counts).each do |counts|
+          %w[entities identifiers relationships spending_parties].each do |table|
+            step = counts[table]
+            totals[table] += step.to_i if step.is_a?(Integer)
+            totals[table] += step.fetch("added", 0).to_i - step.fetch("closed", 0).to_i if step.is_a?(Hash)
+          end
+        end
+        release = find(number)
+        totals["spending_records"] = (release&.spending_snapshots || {}).values.sum { |s| s["rows"].to_i }
+        totals["spending_summary"] = release&.counts&.dig("spending_summary").to_i
+        totals.transform_values { |v| [ v, 0 ].max }
       end
     end
   end

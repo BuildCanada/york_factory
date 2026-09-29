@@ -10,10 +10,10 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", as_of: "10"
     assert_equal DV_ROWS - [ G1_A1 ], keys
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", latest_revision_only: "true", source: "proactive_grants"
-    assert_equal [ G1_A1, G_AGGREGATE, G_BLANK, G_ARCHIVE ], keys
+    assert_equal [ G1_A1, G_AGGREGATE, G_BLANK ], keys, "not the archive copy of an older revision"
     api_get "/v1/entities/#{HERITAGE}/spending", role: "payer", count: "exact"
     assert_conforms("listEntitySpending", status: 200)
-    assert_equal 11, body.dig("meta", "count")
+    assert_equal 12, body.dig("meta", "count")
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", role: "payer"
     assert_empty body["data"]
   end
@@ -62,20 +62,21 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     assert_equal %w[source fiscal_year], body.dig("meta", "group_by")
   end
 
-  test "group_by=counterparty, computed live, agrees with the read model's summary" do
+  test "group_by=counterparty, from the read model's counterparty summary, agrees with its summary" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", group_by: "source"
     precomputed = body["data"].to_h { |r| [ r["source"], r.values_at("records", "amount", "amount_missing") ] }
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", group_by: "counterparty"
     assert_conforms("getEntitySpendingSummary", status: 200)
     assert(body["data"].all? { |r| r.dig("counterparty", "id") == "gid://buildcanada/Entity/#{HERITAGE}" })
-    live = body["data"].to_h { |r| [ r["source"], r.values_at("records", "amount", "amount_missing") ] }
-    assert_equal precomputed, live
+    split = body["data"].to_h { |r| [ r["source"], r.values_at("records", "amount", "amount_missing") ] }
+    assert_equal precomputed, split
     assert_equal 1, body.dig("meta", "aggregated_rows_excluded")
 
-    FactFactory::SpendingQuery.stub_const(:COUNTERPARTY_ROW_LIMIT, 2) do
-      api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", group_by: "counterparty"
-      assert_problem("getEntitySpendingSummary", 422, "query_too_broad")
-    end
+    api_get "/v1/entities/#{HERITAGE}/spending/summary", role: "payer", group_by: "counterparty,fiscal_year", source: "proactive_grants"
+    assert_conforms("getEntitySpendingSummary", status: 200)
+    rows = body["data"].map { |r| [ r.dig("counterparty", "id")&.split("/")&.last, r["fiscal_year"], r["records"], r["amount"] ] }
+    assert_includes rows, [ DIAMOND_VALLEY, "2024-25", 1, "150000.00" ], "the latest amendment only, and not the aggregate"
+    assert_includes rows, [ nil, "2024-25", 2, "35000.00" ], "rows with no linked recipient: a person's and a proposed one"
   end
 
   test "unlinked occurrences with the entity's name, for a reader to check" do
@@ -104,15 +105,3 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
 
   def keys = ids.map { |id| id.split("/").last }
 end
-
-module ConstStub
-  # Replaces a constant for the block (Minitest's stub covers methods only).
-  def stub_const(name, value)
-    old = const_get(name)
-    silence_warnings { const_set(name, value) }
-    yield
-  ensure
-    silence_warnings { const_set(name, old) }
-  end
-end
-FactFactory::SpendingQuery.extend(ConstStub)

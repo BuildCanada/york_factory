@@ -48,5 +48,5 @@ coverage_partial:
   en: "%{detail}"
   fr: "%{detail}"
 dictionary_not_pinned:
-  en: The data dictionary is served as of today, not as of the pinned release.
-  fr: Le dictionnaire de données est servi tel qu'il est aujourd'hui, pas tel qu'à la version demandée.
+  en: This release was built before the read model recorded its data dictionary, so the newest dictionary is served instead.
+  fr: Cette version a été construite avant que le modèle de lecture n'enregistre son dictionnaire de données; le dictionnaire le plus récent est servi à la place.

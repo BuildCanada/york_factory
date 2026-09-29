@@ -18,7 +18,15 @@ require "json"
 # - spending: revisions, an aggregate row, a blank amount, an archive copy,
 #   linked, proposed and unlinked occurrences, two currencies, and the privacy
 #   rules: an individual recipient's full postal code (which must leave as its
-#   FSA) and an address key in entity attributes (which must never leave).
+#   FSA) and an address key in entity attributes (which must never leave);
+# - is_latest_revision as fact-factory sets it, per slice: G1_A0 gets a new
+#   version with false in release 11, when G1_A1 outranks it, while the
+#   archive copy of G1_A0 stays the latest of the archive slice; an archive
+#   row with no live copy (G_ARCHIVE_ONLY);
+# - the per-release tables #27 added: the counterparty summary (built by
+#   fact-factory's own COUNTERPARTY_SQL), captures, the data dictionary each
+#   release was built with (release 10 predates is_latest_revision's
+#   definition), datasets and counts.totals.
 module FactFactoryApiFixtures
   DIAMOND_VALLEY = "01J9ZK4T6M8Q2R5V7X3B1N0C4D".freeze
   HERITAGE = "01J9ZK3A1B2C3D4E5F6G7H8J9K".freeze
@@ -38,6 +46,10 @@ module FactFactoryApiFixtures
 
   ROSTER_SHA = "388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea".freeze
   GRANTS_SHA = "0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21".freeze
+  # A capture whose retrieval time fact-factory did not record: no capture in provenance.
+  CONTRACTS_SHA = "c0a7c2a1c3d09f7b3a1ad2d6e1c9b4a0f2e8d7c6b5a4938271605f4e3d2c1b0a".freeze
+  # The data dictionary each release was built with (fact-factory `dictionary export`).
+  DICTIONARIES = { 10 => "fact_factory_dictionary_7a570c2.json", 11 => "fact_factory_dictionary_6b3034e.json" }.freeze
   SNAPSHOTS = {
     10 => { GRANTS => "2400000000000000001", TRANSFERS => "7718203349911205548", CONTRACTS => "8800000000000000001",
             GAC => "9900000000000000001", "#{GRANTS}@archive_import" => "1100000000000000001" },
@@ -54,6 +66,7 @@ module FactFactoryApiFixtures
   G_BLANK = "K3M9Q2W7XA4B8C1D5E6F0G2H3Q".freeze
   G_ARCHIVE = "K3M9Q2W7XA4B8C1D5E6F0G2H3R".freeze
   G_PROPOSED = "K3M9Q2W7XA4B8C1D5E6F0G2H3S".freeze
+  G_ARCHIVE_ONLY = "K3M9Q2W7XA4B8C1D5E6F0G2H3T".freeze
   T1 = "T7M9Q2W7XA4B8C1D5E6F0G2H3J".freeze
   T2 = "T7M9Q2W7XA4B8C1D5E6F0G2H3K".freeze
   C1 = "C7M9Q2W7XA4B8C1D5E6F0G2H3J".freeze
@@ -72,7 +85,10 @@ module FactFactoryApiFixtures
       "relationships" => relationships,
       "spending_records" => spending_records,
       "spending_parties" => spending_parties,
-      "release_exports" => release_exports
+      "release_exports" => release_exports,
+      "captures" => captures,
+      "dictionary" => dictionary,
+      "datasets" => datasets
     }
   end
 
@@ -174,7 +190,7 @@ module FactFactoryApiFixtures
       recipient_refs: [], research_org: nil, principal_investigator: nil, recipient_business_number: nil, recipient_type: nil,
       recipient_city: nil, recipient_postal_code: nil, province: "AB", country: "CA", amount: nil, currency: "CAD",
       commitments_json: nil, fiscal_year: nil, date: nil, date_raw: nil, is_aggregated: false, value_consistent: nil,
-      revision_rank: nil, source_url: "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", source_sha256: GRANTS_SHA,
+      revision_rank: nil, is_latest_revision: true, source_url: "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", source_sha256: GRANTS_SHA,
       parser_version: "spending-iceberg-v5", snapshot_id: SNAPSHOTS.fetch(from).fetch(acquisition == "live" ? asset_key : "#{asset_key}@#{acquisition}"),
       content_sha256: sha("record-content", spending_key), release_from: from, release_to: to
     }.merge(attrs)
@@ -184,8 +200,12 @@ module FactFactoryApiFixtures
     g1 = { canonical_id: sha("canonical", "g1"), title: "Canada Cultural Spaces Fund", program: "Canada Cultural Spaces Fund",
            recipient: "Town of Diamond Valley", recipient_city: "Diamond Valley", recipient_postal_code: "T0L 0H0",
            recipient_type: "G", record_type: "contribution", fiscal_year: 2024 }
+    g1a0 = { **g1, amount: "125000.00", date: "2024-06-01", date_raw: "2024-06-01", revision_rank: [ 0 ] }
     [
-      record(G1_A0, GRANTS, "g1a0", **g1, amount: "125000.00", date: "2024-06-01", date_raw: "2024-06-01", revision_rank: [ 0 ]),
+      # Amendment 0: the latest revision in release 10; release 11's snapshot adds amendment 1, which outranks it, so
+      # fact-factory gives it a new version with is_latest_revision false.
+      record(G1_A0, GRANTS, "g1a0", to: 11, **g1a0),
+      record(G1_A0, GRANTS, "g1a0", from: 11, **g1a0, is_latest_revision: false, content_sha256: sha("record-content", G1_A0, 11)),
       record(G1_A1, GRANTS, "g1a1", from: 11, **g1, amount: "150000.00", date: "2024-09-01", date_raw: "2024-09-01", revision_rank: [ 1 ]),
       record(G2, GRANTS, "g2", title: "Community foundation operating grant", recipient: "Diamond Valley Community Foundation",
         recipient_postal_code: "T0L 1A0", amount: "50000.00", fiscal_year: 2023, date: "2023-05-01", revision_rank: [ 0 ],
@@ -198,7 +218,12 @@ module FactFactoryApiFixtures
         amount: "1000.00", fiscal_year: 2024, revision_rank: [ 0 ]),
       record(G_BLANK, GRANTS, "gblank", title: "Heritage signage", recipient: "Town of Diamond Valley", amount: nil, fiscal_year: 2025,
         revision_rank: [ 0 ]),
+      # The archive's copy of amendment 0: the latest of the archive slice (fact-factory sets the flag per slice), but not
+      # of the table, where the live amendments outrank or repeat it.
       record(G_ARCHIVE, GRANTS, "g1a0", acquisition: "archive_import", **g1, amount: "125000.00", date: "2024-06-01", revision_rank: [ 0 ]),
+      # An agreement only the archive has: the latest revision of its canonical_id in the whole table.
+      record(G_ARCHIVE_ONLY, GRANTS, "garch", acquisition: "archive_import", title: "Museum exhibit grant", recipient: "Some Museum",
+        revision_rank: [ 0 ]),
       record(G_PROPOSED, GRANTS, "gprop", title: "Rink roof", recipient: "Diamond Valley (Town)", amount: "30000.00", fiscal_year: 2024,
         revision_rank: [ 0 ]),
       record(T1, TRANSFERS, "t1", record_type: "transfer_payment", payer_code: nil, recipient: "TOWN OF DIAMOND VALLEY", amount: "880000.00",
@@ -206,7 +231,8 @@ module FactFactoryApiFixtures
       record(T2, TRANSFERS, "t2", record_type: "transfer_payment", payer_code: nil, recipient: "Town of Diamond Valley", amount: "12000.00",
         fiscal_year: 2023, canonical_id: sha("external", "t2")),
       record(C1, CONTRACTS, "c1", record_type: "contract", title: "Hall rental", recipient: "Diamond Valley Community Foundation",
-        recipient_postal_code: "T0L 1A0", amount: "20000.00", fiscal_year: 2024, value_consistent: true, revision_rank: [ 0 ]),
+        recipient_postal_code: "T0L 1A0", amount: "20000.00", fiscal_year: 2024, value_consistent: true, revision_rank: [ 0 ],
+        source_sha256: CONTRACTS_SHA, source_url: "https://open.canada.ca/data/dataset/d8f85d91/resource/fa4ff6c4"),
       record(GAC1, GAC, "gac1", record_type: "project", payer: "Global Affairs Canada", payer_code: "dfatd-maecd", currency: nil,
         recipients: [ "Org A", "Org B" ], recipient_refs: [ "XM-DAC-1", nil ], commitments_json: { "CAD" => 100.0, "USD" => 50.5 },
         fiscal_year: 2024, date: "2024-04-15")
@@ -239,6 +265,8 @@ module FactFactoryApiFixtures
       heritage.(G_BLANK), party(G_BLANK, "recipient", "Town of Diamond Valley", entity_id: DIAMOND_VALLEY),
       party(G_ARCHIVE, "payer", "Canadian Heritage", entity_id: HERITAGE),
       party(G_ARCHIVE, "recipient", "Town of Diamond Valley", entity_id: DIAMOND_VALLEY),
+      party(G_ARCHIVE_ONLY, "payer", "Canadian Heritage", entity_id: HERITAGE),
+      party(G_ARCHIVE_ONLY, "recipient", "Some Museum", reason: "no_candidate"),
       heritage.(G_PROPOSED),
       party(G_PROPOSED, "recipient", "Diamond Valley (Town)", reason: "proposed", method: "exact_name", candidates: [ DIAMOND_VALLEY ]),
       party(T1, "payer", "Canadian Heritage", entity_id: HERITAGE, method: "payer_name"),
@@ -284,6 +312,52 @@ module FactFactoryApiFixtures
   def tables_for_counts
     { "entities" => entities, "identifiers" => identifiers, "relationships" => relationships, "spending_parties" => spending_parties,
       "entity_names" => entity_names }
+  end
+
+  # ---------- per-release tables (#27, 6b3034e) ----------
+
+  # api.captures: one row per capture a served spending row cites. The contracts capture has no recorded retrieval.
+  def captures
+    [
+      { sha256: GRANTS_SHA, object_key: "sha256/0d/#{GRANTS_SHA}", source_url: "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f",
+        retrieved_at: "2026-09-19T04:12:09Z", bytes: 81_234_567, first_release_id: 10 },
+      { sha256: CONTRACTS_SHA, object_key: "sha256/c0/#{CONTRACTS_SHA}", source_url: "https://open.canada.ca/data/dataset/d8f85d91/resource/fa4ff6c4",
+        retrieved_at: nil, bytes: 1_024, first_release_id: 10 }
+    ]
+  end
+
+  def dictionary_export(release) = JSON.parse(File.read(File.expand_path("../../fixtures/files/#{DICTIONARIES.fetch(release)}", __dir__)))
+
+  # api.dictionary: one row per definition and asset entry, as build_dictionary writes them.
+  def dictionary
+    DICTIONARIES.keys.flat_map do |n|
+      words = dictionary_export(n)
+      %w[definitions assets].flat_map do |section|
+        words.fetch(section).map { |name, body| { release_id: n, section:, name:, body:, dictionary_sha256: words.dig("source", "sha256") } }
+      end
+    end
+  end
+
+  # api.datasets: each spending slice and registry table as the release serves it (build_datasets).
+  def datasets
+    measures = { GRANTS => "agreement_value", TRANSFERS => "payments_or_expenditure", CONTRACTS => "contract_value", GAC => "commitment" }
+    [ 10, 11 ].flat_map do |n|
+      live = ->(r) { r[:release_from] <= n && (r[:release_to].nil? || r[:release_to] > n) }
+      slices = SNAPSHOTS.fetch(n).map do |label, snapshot_id|
+        asset, acquisition = label.split("@")
+        acquisition ||= "live"
+        rows = spending_records.select { |r| live.(r) && r[:asset_key] == asset && r[:acquisition] == acquisition }
+        years = rows.filter_map { |r| r[:fiscal_year] }
+        { release_id: n, asset_key: asset, acquisition:, source_key: rows.first&.dig(:source_key), snapshot_id:, rows: rows.size,
+          fiscal_year_min: years.min, fiscal_year_max: years.max, measure: measures[asset] }
+      end
+      registry = { "entities" => "entities/entities", "identifiers" => "entities/identifiers", "relationships" => "entities/relationships",
+                   "spending_parties" => "entities/mention_occurrences" }.map do |table, asset|
+        { release_id: n, asset_key: asset, acquisition: "registry", source_key: nil, snapshot_id: nil,
+          rows: tables_for_counts[table].count(&live), fiscal_year_min: nil, fiscal_year_max: nil, measure: nil }
+      end
+      slices + registry
+    end
   end
 
   def release_exports

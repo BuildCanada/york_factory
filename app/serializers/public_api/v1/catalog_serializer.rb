@@ -13,24 +13,26 @@ module PublicApi
 
       module_function
 
-      # Every dataset the API describes, in asset-key order: the spending
-      # sources and the registry tables.
+      # Every dataset the release serves (api.datasets) that the API
+      # describes (config/public_api/datasets.yml), in asset-key order: the
+      # spending sources and the registry tables.
       def datasets(ctx)
         query = FactFactory::DatasetQuery.new(release: ctx.release)
-        spending = Catalog.sources.values.map { |s| spending_dataset(s, ctx, query) }
-        registry = Catalog.registry_datasets.values.map { |d| registry_dataset(d, ctx, query) }
+        spending = Catalog.sources.values.select { |s| query.served?(s.asset) }.map { |s| spending_dataset(s, ctx, query) }
+        registry = Catalog.registry_datasets.values.select { |d| query.served?(d.asset) }.map { |d| registry_dataset(d, ctx, query) }
         (spending + registry).sort_by { |d| d[:asset_key] }
       end
 
       def spending_dataset(source, ctx, query)
         from, to = query.fiscal_years(source.asset)
-        terms = (SPENDING_TERMS + Catalog.asset_notes(source.asset).keys).uniq.select { |t| Catalog.definition(t) }.sort
+        dictionary = ctx.dictionary
+        terms = (SPENDING_TERMS + dictionary.asset_notes(source.asset).keys).uniq.select { |t| dictionary.definition(t) }.sort
         {
           asset_key: source.asset, title: source.title, record_meaning: source.record_meaning, publisher: source.publisher,
           license: source.license,
           freshness: { latest_retrieved_at: nil, cadence: source.cadence },
           coverage: {
-            rows: query.spending_rows(source.asset),
+            rows: query.rows(source.asset),
             from_fiscal_year: Format.fiscal_year(from), to_fiscal_year: Format.fiscal_year(to),
             known_gaps: source.known_gaps
           },
@@ -48,15 +50,16 @@ module PublicApi
         {
           asset_key: d.asset, title: d.title, record_meaning: d.record_meaning, publisher: d.publisher, license: d.license,
           freshness: { latest_retrieved_at: nil, cadence: d.cadence },
-          coverage: { rows: FactFactory::ReleaseQuery.counts(ctx.release)[d.table], from_fiscal_year: nil, to_fiscal_year: nil, known_gaps: [] },
-          dictionary_terms: REGISTRY_TERMS.fetch(d.table, []).select { |t| Catalog.definition(t) },
+          coverage: { rows: query.rows(d.asset), from_fiscal_year: nil, to_fiscal_year: nil, known_gaps: [] },
+          dictionary_terms: REGISTRY_TERMS.fetch(d.table, []).select { |t| ctx.dictionary.definition(t) },
           caveats: [],
           bulk: query.exports(table: FactFactory::DatasetQuery::EXPORT_TABLES[d.table]).map { |e| ReleaseSerializer.export(e, query) },
           links: { self: ctx.pin("/v1/datasets/#{ERB::Util.url_encode(d.asset)}"), records: d.records && ctx.pin(d.records) }
         }
       end
 
-      def term(name, definition, notes: false)
+      # `dictionary` adds the per-asset notes.
+      def term(name, definition, dictionary: nil)
         values = case definition["values"]
         when Hash then definition["values"].map { |value, meaning| { value: scalar(value), meaning: meaning&.to_s } }
         when Array then definition["values"].map { |value| { value: scalar(value), meaning: nil } }
@@ -66,7 +69,7 @@ module PublicApi
           term: name, meaning: definition["meaning"].to_s, type: definition["type"]&.to_s, units: definition["units"]&.to_s,
           values:, blank_means: definition["blank_means"]&.to_s, known_gaps: definition["known_gaps"]&.to_s
         }
-        data[:asset_notes] = Catalog.notes_for_term(name) if notes
+        data[:asset_notes] = dictionary.notes_for_term(name) if dictionary
         data[:links] = { self: "/v1/dictionary/#{name}", docs: "#{Catalog::DICTIONARY_DOCS}/#{name}" }
         data
       end

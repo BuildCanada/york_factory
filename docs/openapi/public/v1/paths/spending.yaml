@@ -91,7 +91,7 @@ get:
   - name: latest_revision_only
     in: query
     required: false
-    description: Only the highest-ranked revision of each canonical_id, as summaries count them.
+    description: 'Only rows whose is_latest_revision is true: the highest-ranked revision of each canonical_id, live rows outranking archive_import copies.'
     schema:
       type: boolean
       default: false

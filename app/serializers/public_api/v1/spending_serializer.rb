@@ -19,7 +19,7 @@ module PublicApi
 
       # `parties` are the row's SpendingParty rows (always loaded, for the
       # postal code rule); they are shown only when `show_parties`.
-      def record(r, ctx, parties:, latest:, entities:, show_parties:, raw: false)
+      def record(r, ctx, parties:, latest:, entities:, show_parties:, raw: false, capture: nil)
         source = Catalog.source(r.source_key)
         data = {
           id: Format.gid("SpendingRecord", r.spending_key),
@@ -51,7 +51,7 @@ module PublicApi
           amount: Format.amount(r.amount),
           currency: r.currency.to_s.match?(/\A[A-Z]{3}\z/) ? r.currency : nil,
           measure: Catalog::MEASURES.fetch(r.source_key),
-          amount_note: source&.amount_note.to_s,
+          amount_note: source&.amount_note(ctx.dictionary).to_s,
           commitments: commitments(r.commitments_json),
           value_consistent: r.value_consistent,
           fiscal_year: Format.fiscal_year(r.fiscal_year),
@@ -62,7 +62,7 @@ module PublicApi
         }
         data[:parties] = parties.map { |p| party(p, entities) } if show_parties
         data[:raw] = nil if raw
-        data[:provenance] = provenance(r, ctx, source)
+        data[:provenance] = provenance(r, ctx, source, capture)
         data[:cite] = cite(r, ctx, source)
         data
       end
@@ -124,14 +124,27 @@ module PublicApi
       end
 
       # The release answering, with the Iceberg snapshot it pinned for the
-      # row's slice: that snapshot holds the row as served.
-      def provenance(r, ctx, source)
+      # row's slice (that snapshot holds the row as served), and the captured
+      # source file (api.captures). Spending rows carry no row number yet, so
+      # there is no locator (fact-factory SUCKS.md, "CSV rows have no location
+      # in the source file").
+      def provenance(r, ctx, source, capture = nil)
         snapshot = FactFactory::ReleaseQuery.snapshot_for(ctx.release, asset_key: r.asset_key, acquisition: r.acquisition) || r.snapshot_id
         {
           asset: r.asset_key, release: ctx.release, snapshot_id: snapshot.to_s.match?(/\A\d+\z/) ? snapshot.to_s : nil,
-          recorded_at: nil, capture: nil, locator: nil, source: nil, parser_version: r.parser_version,
+          recorded_at: nil, capture: capture_object(capture), locator: nil, source: nil, parser_version: r.parser_version,
           license: source&.license
         }
+      end
+
+      # A Capture, when the capture has everything the contract requires: its
+      # source URL and when it was retrieved (blank when fact-factory recorded
+      # no retrieval for those bytes).
+      def capture_object(capture)
+        return nil unless capture && capture.retrieved_at && capture.source_url.present? && Format.sha256(capture.sha256)
+
+        { sha256: capture.sha256, url: "#{FactFactory::DatasetQuery::FILES_BASE}/#{capture.object_key}", source_url: capture.source_url,
+          retrieved_at: Format.timestamp(capture.retrieved_at) }
       end
 
       def cite(r, ctx, source)
@@ -152,8 +165,8 @@ module PublicApi
       def source_object(source, ctx, snapshot_id:)
         {
           source: source.key, asset: source.asset, title: source.title, publisher: source.publisher,
-          measure: source.measure, record_types: source.record_types, amount_note: source.amount_note,
-          fiscal_year_note: source.fiscal_year_note, revisions_note: source.revisions_note, license: source.license,
+          measure: source.measure, record_types: source.record_types, amount_note: source.amount_note(ctx.dictionary),
+          fiscal_year_note: source.fiscal_year_note(ctx.dictionary), revisions_note: source.revisions_note(ctx.dictionary), license: source.license,
           snapshot_id: snapshot_id.to_s,
           caveats: source.caveats.map { |code| Catalog.caveat(code, locale: ctx.locale) },
           links: {

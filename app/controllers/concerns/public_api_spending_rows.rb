@@ -13,12 +13,13 @@ module PublicApiSpendingRows
   def serialize_records(records, show_parties:)
     parties = spending_query.parties(records)
     latest = spending_query.latest_revisions(records)
+    captures = spending_query.captures(records)
     linked = parties.values.flatten.filter_map(&:entity_id)
     entities = show_parties ? entity_query.refs(linked) : {}
     records.map do |r|
       row_parties = parties.fetch([ r.asset_key, r.acquisition, r.source_row_id ], [])
       item = PublicApi::V1::SpendingSerializer.record(r, context, parties: row_parties, latest: latest.fetch(r.spending_key, true),
-        entities:, show_parties:, raw: expand?("raw"))
+        capture: captures[r.source_sha256], entities:, show_parties:, raw: expand?("raw"))
       project(item)
     end
   end

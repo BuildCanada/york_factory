@@ -17,6 +17,9 @@ module FactFactoryApiDatabase
   # fact-factory's own SUMMARY_SQL, vendored: the summary rows the API serves
   # are built by the read model's rules, not a copy of them.
   SUMMARY = Rails.root.join("db/fact_factory_api/summary.sql")
+  # And its COUNTERPARTY_SQL, for api.spending_counterparties.
+  COUNTERPARTIES = Rails.root.join("db/fact_factory_api/counterparties.sql")
+  DICTIONARIES = FactFactoryApiFixtures::DICTIONARIES.values.map { |f| Rails.root.join("test/fixtures/files", f) }
 
   module_function
 
@@ -32,7 +35,7 @@ module FactFactoryApiDatabase
   end
 
   def digest
-    Digest::SHA256.hexdigest([ SCHEMA, SUMMARY, FIXTURES, __FILE__ ].map { |f| File.read(f) }.join)
+    Digest::SHA256.hexdigest([ SCHEMA, SUMMARY, COUNTERPARTIES, FIXTURES, __FILE__, *DICTIONARIES ].map { |f| File.read(f) }.join)
   end
 
   def loaded?(conn)
@@ -48,12 +51,32 @@ module FactFactoryApiDatabase
       trigram(c)
       FactFactoryApiFixtures.tables.each { |table, rows| insert(c, table, rows) }
       # The release as a literal, as psycopg2 sends it: a server-side $1 gets a generic plan.
-      [ 10, 11 ].each { |n| c.exec(File.read(SUMMARY).gsub("$1", n.to_s)) }
+      [ 10, 11 ].each do |n|
+        c.exec(File.read(SUMMARY).gsub("$1", n.to_s))
+        c.exec(File.read(COUNTERPARTIES).gsub("$1", n.to_s))
+        totals(c, n)
+      end
       c.exec("CREATE TABLE IF NOT EXISTS public.york_factory_fixture_state (digest text NOT NULL)")
       c.exec("TRUNCATE public.york_factory_fixture_state")
       c.exec_params("INSERT INTO public.york_factory_fixture_state VALUES ($1)", [ digest ])
     end
     conn.exec("ANALYZE")
+  end
+
+  # counts.totals as fact-factory's read_model.totals writes it: every table's
+  # rows as of the release, and the linked and proposed spending parties.
+  def totals(c, n)
+    count = ->(sql) { c.exec(sql).getvalue(0, 0).to_i }
+    found = %w[entities identifiers relationships spending_parties entity_names spending_records].to_h do |table|
+      [ table, count.("SELECT count(*) FROM api.#{table} WHERE api.in_release(release_from, release_to, #{n})") ]
+    end
+    %w[spending_summary spending_counterparties dictionary datasets].each do |table|
+      found[table] = count.("SELECT count(*) FROM api.#{table} WHERE release_id = #{n}")
+    end
+    found["spending_parties_linked"] = count.("SELECT count(*) FROM api.spending_parties WHERE entity_id IS NOT NULL AND api.in_release(release_from, release_to, #{n})")
+    found["spending_parties_proposed"] = count.("SELECT count(*) FROM api.spending_parties WHERE reason = 'proposed' AND api.in_release(release_from, release_to, #{n})")
+    found["captures"] = count.("SELECT count(*) FROM api.captures")
+    c.exec_params("UPDATE api.releases SET counts = jsonb_set(counts, '{totals}', $1::jsonb) WHERE release_id = $2", [ JSON.generate(found), n ])
   end
 
   # As fact-factory's ensure_schema: the trigram index where pg_trgm exists.

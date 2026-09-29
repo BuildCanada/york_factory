@@ -1,6 +1,7 @@
 module FactFactory
-  # Release facts about datasets: row counts, fiscal-year coverage and bulk
-  # files (api.release_exports). Immutable per release, so memoized.
+  # Release facts about datasets: which datasets a release serves, their rows
+  # and fiscal-year coverage (api.datasets), and bulk files
+  # (api.release_exports). Immutable per release, so memoized.
   class DatasetQuery
     FILES_BASE = "https://files.buildcanada.com".freeze
     # The api table each registry export is (fact-factory serve/exports.py),
@@ -27,24 +28,23 @@ module FactFactory
       @release = release
     end
 
-    # [first fiscal year, last fiscal year] of a spending asset's rows in the
-    # release. Two ordered probes of the (asset_key, fiscal_year) index, not a
-    # scan of the table.
-    def fiscal_years(asset_key)
-      self.class.memo(:fiscal_years, release, asset_key) do
-        %w[ASC DESC].map do |direction|
-          sql = "SELECT r.fiscal_year FROM api.spending_records r WHERE r.asset_key = :asset AND r.fiscal_year IS NOT NULL " \
-            "AND #{FactFactoryRecord.in_release('r')} ORDER BY r.fiscal_year #{direction} LIMIT 1"
-          SpendingRecord.connection.select_value(SpendingRecord.sanitize_sql_array([ sql, { asset: asset_key, n: release } ]))&.to_i
-        end
-      end
+    # {asset_key => [Dataset]}: the slices of each dataset the release serves
+    # (a spending table's live and archive_import slices, or one registry
+    # table).
+    def served
+      self.class.memo(:served, release) { Dataset.where(release_id: release).order(:asset_key, :acquisition).to_a.group_by(&:asset_key) }
     end
 
-    # Rows of each spending asset in the release: the pinned snapshots' rows.
-    def spending_rows(asset_key)
-      ReleaseQuery.spending_snapshots(release).sum do |label, state|
-        label.split("@").first == asset_key ? state["rows"].to_i : 0
-      end
+    def served?(asset_key) = served.key?(asset_key)
+
+    # Rows of a dataset in the release, over its slices.
+    def rows(asset_key) = served.fetch(asset_key, []).sum { |d| d.rows.to_i }
+
+    # [first fiscal year, last fiscal year] of a spending dataset's served
+    # rows, over its slices.
+    def fiscal_years(asset_key)
+      slices = served.fetch(asset_key, [])
+      [ slices.filter_map(&:fiscal_year_min).min, slices.filter_map(&:fiscal_year_max).max ]
     end
 
     # The release's Parquet files (not its manifest), optionally one table's.

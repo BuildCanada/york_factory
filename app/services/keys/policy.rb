@@ -25,7 +25,6 @@ module Keys
 
     def grantable?(scope)
       case scope
-      when "read:persons" then @account.terms_accepted? && @account.plan_definition.persons
       # cms:drafts acts as the key's user, so only a personal account's own user gets it.
       when "cms:drafts" then @account.personal? && @account.personal_user_id == @user&.id
       else ApiKey::SCOPES.key?(scope)
@@ -42,8 +41,7 @@ module Keys
       api_key.scopes.each do |scope|
         next if !ApiKey::SCOPES.key?(scope) || grantable?(scope)
 
-        reason = scope == "read:persons" ? "needs the data terms accepted on the developer overview" : "isn't available to this account"
-        api_key.errors.add(:scopes, "#{scope} #{reason}")
+        api_key.errors.add(:scopes, "#{scope} isn't available to this account")
       end
     end
 

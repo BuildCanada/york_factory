@@ -18,7 +18,7 @@
       <% next if scope == "cms:drafts" && !grantable %>
       <label class="checkbox">
         <%= check_box_tag "api_key[scopes][]", scope, api_key.scopes.include?(scope), id: "scope_#{scope.parameterize}", disabled: !grantable %>
-        <span><span class="mono"><%= scope %></span> &mdash; <%= description %><% unless grantable %> <span class="text-muted">(accept the data terms on the overview first)</span><% end %></span>
+        <span><span class="mono"><%= scope %></span> &mdash; <%= description %></span>
       </label>
     <% end %>
   </div>

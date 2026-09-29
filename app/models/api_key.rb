@@ -6,8 +6,9 @@
 # Keys::Revoke; verify presented keys through Keys::Verify.
 class ApiKey < ApplicationRecord
   SCOPES = {
-    "read:public" => "Organizations, spending, documents, StatCan, releases, datasets and exports",
-    "read:persons" => "People: directors, significant control and person networks (city, province and FSA only; never a street address)",
+    # People are included: person entities, individuals' names and roles. A
+    # person's address is only ever city, province and FSA, never a street address.
+    "read:public" => "Organizations, people, spending, documents, StatCan, releases, datasets and exports",
     "usage:read" => "Your own usage (/v1/me/usage)",
     "cms:drafts" => "Build Canada CMS draft-memo routes, acting as you"
   }.freeze

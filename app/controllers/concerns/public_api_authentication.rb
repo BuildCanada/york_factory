@@ -9,8 +9,8 @@
 #     before_action -> { authenticate_public_api!(scopes: ["read:public"]) }
 #   end
 #
-#   class PublicApi::V1::PersonsController < PublicApi::V1::BaseController
-#     before_action -> { require_api_scope!("read:persons") }
+#   class PublicApi::V1::UsageController < PublicApi::V1::BaseController
+#     before_action -> { require_api_scope!("usage:read") }
 #   end
 module PublicApiAuthentication
   extend ActiveSupport::Concern

@@ -5,11 +5,11 @@ class PublicApiAuthenticationTest < ActionDispatch::IntegrationTest
     include PublicApiAuthentication
 
     before_action -> { authenticate_public_api!(scopes: [ "read:public" ]) }
-    before_action -> { require_api_scope!("read:persons") }, only: :persons
+    before_action -> { require_api_scope!("usage:read") }, only: :usage
 
     def show = render(json: { key_id: current_api_caller.api_key&.id, anonymous: current_api_caller.anonymous? })
 
-    def persons = render(json: { ok: true })
+    def usage = render(json: { ok: true })
   end
 
   setup { @issued = issue_key(scopes: %w[read:public]) }
@@ -32,12 +32,12 @@ class PublicApiAuthenticationTest < ActionDispatch::IntegrationTest
 
   test "a missing scope is a 403 problem with WWW-Authenticate" do
     with_probe_routes do
-      get "/probe/persons", headers: { "Authorization" => "Bearer #{@issued.raw_key}" }
+      get "/probe/usage", headers: { "Authorization" => "Bearer #{@issued.raw_key}" }
       assert_response :forbidden
       assert_equal "application/problem+json", response.media_type
       assert_equal "insufficient_scope", response.parsed_body["code"]
-      assert_equal "read:persons", response.parsed_body["required_scope"]
-      assert_equal %(Bearer error="insufficient_scope", scope="read:persons"), response.headers["WWW-Authenticate"]
+      assert_equal "usage:read", response.parsed_body["required_scope"]
+      assert_equal %(Bearer error="insufficient_scope", scope="usage:read"), response.headers["WWW-Authenticate"]
     end
   end
 
@@ -60,7 +60,7 @@ class PublicApiAuthenticationTest < ActionDispatch::IntegrationTest
     with_routing do |set|
       set.draw do
         get "/probe", to: "public_api_authentication_test/probe#show"
-        get "/probe/persons", to: "public_api_authentication_test/probe#persons"
+        get "/probe/usage", to: "public_api_authentication_test/probe#usage"
       end
       yield
     end

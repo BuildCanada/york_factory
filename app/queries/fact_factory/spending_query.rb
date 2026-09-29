@@ -23,13 +23,12 @@ module FactFactory
     # whole (fact-factory serve/allowlist.RECIPIENT_FIELDS).
     POSTAL_FIELDS = %w[recipient vendor_name].freeze
     EXCLUDED_REASONS = %w[excluded_individual excluded_aggregate excluded_unknown].freeze
-    # Counterparty summaries are computed live; past this many linked rows the
-    # query is refused (422 query_too_broad) rather than risk the timeout.
-    COUNTERPARTY_ROW_LIMIT = 50_000
 
     # The text `q` searches: title, description, program and the party names
-    # as published. One expression, so WS-B can index exactly it:
-    #   CREATE INDEX ... ON api.spending_records USING gin (to_tsvector('simple', <TEXT>))
+    # as published. fact-factory indexes exactly this expression
+    # (api_spending_records_text in serve/api_schema.sql), so change both
+    # together; test/queries/fact_factory/spending_query_test.rb checks they
+    # match.
     TEXT = "coalesce(r.title, '') || ' ' || coalesce(r.description, '') || ' ' || coalesce(r.program, '') || ' ' || " \
       "coalesce(r.payer, '') || ' ' || coalesce(r.recipient, '') || ' ' || coalesce(r.research_org, '') || ' ' || " \
       "coalesce(r.principal_investigator, '') || ' ' || coalesce(r.recipients::text, '')".freeze
@@ -85,13 +84,14 @@ module FactFactory
       SpendingParty.find_by_sql([ sql, { n: release } ]).group_by { |p| [ p.asset_key, p.acquisition, p.spending_row_id ] }
     end
 
-    # {spending_key => true/false}: whether each row is the highest-ranked
-    # revision of its canonical_id, the only revision summaries count.
+    # {spending_key => true/false}: whether each row is the latest revision
+    # of its canonical_id in the table (see #latest), what
+    # latest_revision_only keeps.
     def latest_revisions(records)
       return {} if records.empty?
 
       keys = records.map(&:spending_key)
-      sql = "SELECT r.spending_key, NOT EXISTS (#{beaten_by('r')}) AS latest FROM api.spending_records r " \
+      sql = "SELECT r.spending_key, #{latest('r')} AS latest FROM api.spending_records r " \
         "WHERE r.spending_key IN (:keys) AND #{current('r')}"
       SpendingRecord.connection.select_rows(SpendingRecord.sanitize_sql_array([ sql, { keys:, n: release } ]))
         .to_h { |key, latest| [ key, ActiveModel::Type::Boolean.new.cast(latest) ] }
@@ -124,62 +124,40 @@ module FactFactory
       select_all(sql, values)
     end
 
-    # The same summary split by counterparty, computed live under the same
-    # rules as fact-factory's SUMMARY_SQL, for one entity.
+    # The same summary split by counterparty, from api.spending_counterparties,
+    # which fact-factory builds per release under the same rules (the other
+    # side's linked entity on each counted row; blank when none is linked).
     def counterparty_summary(entity_id, role:, by_year:, sources: nil, fiscal_year: nil)
-      counter_role = role == "payer" ? "recipient" : "payer"
-      values = { n: release, entity: entity_id, fields: ENTITY_FIELDS.fetch(role), counter_fields: ENTITY_FIELDS.fetch(counter_role) }
-      linked_rows = select_value(<<~SQL, values).to_i
-        SELECT count(DISTINCT (p.asset_key, p.spending_row_id)) FROM api.spending_parties p
-        WHERE p.entity_id = :entity AND p.acquisition = 'live' AND p.field IN (:fields) AND #{current('p')}
-      SQL
-      return :too_broad if linked_rows > COUNTERPARTY_ROW_LIMIT
-
-      filters = [ "TRUE" ]
+      where = [ "c.release_id = :n", "c.entity_id = :entity", "c.role = :role" ]
+      values = { n: release, entity: entity_id, role: }
       if sources
-        filters << "r.source_key IN (:sources)"
+        where << "c.source_key IN (:sources)"
         values[:sources] = sources
       end
       unless fiscal_year.nil?
-        filters << "r.fiscal_year = :fiscal_year"
+        where << "c.fiscal_year = :fiscal_year"
         values[:fiscal_year] = fiscal_year
       end
-      year = by_year ? "r.fiscal_year" : "NULL::integer"
+      year = by_year ? "c.fiscal_year" : "NULL::integer"
       sql = <<~SQL
-        WITH mine AS (
-          SELECT DISTINCT p.asset_key, p.spending_row_id AS id FROM api.spending_parties p
-          WHERE p.entity_id = :entity AND p.acquisition = 'live' AND p.field IN (:fields) AND #{current('p')}
-        ), live AS (
-          SELECT DISTINCT ON (r.asset_key, r.id) r.asset_key, r.source_key, r.id, r.canonical_id, r.revision_rank,
-            r.fiscal_year, r.currency, r.amount, coalesce(r.is_aggregated, false) AS is_aggregated
-          FROM api.spending_records r
-          WHERE r.acquisition = 'live' AND #{current('r')} AND (r.asset_key, r.canonical_id) IN (
-            SELECT r2.asset_key, r2.canonical_id FROM api.spending_records r2 JOIN mine m ON m.asset_key = r2.asset_key AND m.id = r2.id
-            WHERE r2.acquisition = 'live' AND #{current('r2')})
-          ORDER BY r.asset_key, r.id, r.resource_id, r.source_occurrence
-        ), ranked AS (
-          SELECT live.*, (revision_rank IS NULL OR row_number() OVER (
-            PARTITION BY asset_key, canonical_id ORDER BY revision_rank DESC NULLS LAST, id DESC) = 1) AS latest
-          FROM live
-        ), counter AS (
-          SELECT DISTINCT p.asset_key, p.spending_row_id AS id, p.entity_id FROM api.spending_parties p
-          JOIN mine m ON m.asset_key = p.asset_key AND m.id = p.spending_row_id
-          WHERE p.acquisition = 'live' AND p.field IN (:counter_fields) AND p.entity_id IS NOT NULL AND #{current('p')}
-        )
-        SELECT r.source_key, r.asset_key, #{year} AS fiscal_year, r.currency, c.entity_id AS counterparty_id,
-          count(*) FILTER (WHERE r.latest AND NOT r.is_aggregated) AS records,
-          count(DISTINCT r.canonical_id) FILTER (WHERE r.latest AND NOT r.is_aggregated) AS agreements,
-          sum(r.amount) FILTER (WHERE r.latest AND NOT r.is_aggregated) AS amount,
-          count(*) FILTER (WHERE r.latest AND NOT r.is_aggregated AND r.amount IS NULL) AS amount_missing,
-          count(*) FILTER (WHERE r.is_aggregated) AS aggregated_excluded
-        FROM mine m
-        JOIN ranked r ON r.asset_key = m.asset_key AND r.id = m.id
-        LEFT JOIN counter c ON c.asset_key = r.asset_key AND c.id = r.id
-        WHERE #{filters.join(' AND ')}
-        GROUP BY r.source_key, r.asset_key, #{year}, r.currency, c.entity_id
-        ORDER BY r.source_key, #{year} NULLS LAST, r.currency NULLS LAST, c.entity_id NULLS LAST
+        SELECT c.source_key, c.asset_key, #{year} AS fiscal_year, c.currency, c.measure, c.counterparty_id,
+          sum(c.record_count)::bigint AS records, sum(c.agreement_count)::bigint AS agreements,
+          sum(c.amount) AS amount, sum(c.amount_missing_count)::bigint AS amount_missing,
+          sum(c.aggregated_excluded)::bigint AS aggregated_excluded
+        FROM api.spending_counterparties c WHERE #{where.join(' AND ')}
+        GROUP BY c.source_key, c.asset_key, #{year}, c.currency, c.measure, c.counterparty_id
+        ORDER BY c.source_key, #{year} NULLS LAST, c.currency NULLS LAST, c.counterparty_id NULLS LAST
       SQL
       select_all(sql, values)
+    end
+
+    # {sha256 => Capture} for the captures the rows were parsed from
+    # (api.captures, immutable, so not versioned by release).
+    def captures(records)
+      digests = records.filter_map(&:source_sha256).uniq
+      return {} if digests.empty?
+
+      Capture.where(sha256: digests).index_by(&:sha256)
     end
 
     # Unlinked occurrences in `role` whose normalized name is one of the
@@ -242,7 +220,7 @@ module FactFactory
         values[:q] = filters["q"]
       end
       where << "NOT coalesce(r.is_aggregated, false)" if filters["include_aggregated"] == false
-      where << "NOT EXISTS (#{beaten_by('r')})" if filters["latest_revision_only"]
+      where << latest("r") if filters["latest_revision_only"]
       { "payer" => FIELDS["payer"], "recipient" => FIELDS["recipient"] }.each do |param, fields|
         next unless filters[param]
 
@@ -263,6 +241,21 @@ module FactFactory
     def linked_party(param, _fields)
       "EXISTS (SELECT 1 FROM api.spending_parties p WHERE p.entity_id = :#{param}_entity AND p.field IN (:#{param}_fields) " \
         "AND p.asset_key = r.asset_key AND p.acquisition = r.acquisition AND p.spending_row_id = r.id AND #{current('p')})"
+    end
+
+    # Whether `r` is the latest revision of its canonical_id in the table, not
+    # only in its slice. fact-factory's is_latest_revision is set per slice
+    # (asset_key and acquisition), so an archive_import copy of an older
+    # revision is the latest of the archive slice. Live data wins: an archive
+    # row counts only when no live row of the release has its canonical_id,
+    # so an agreement only the archive has still shows. The (asset_key,
+    # canonical_id, release_from) index serves the probe. A row loaded before
+    # the flag existed (NULL) is ranked live, as before.
+    def latest(table_alias)
+      r = table_alias
+      "coalesce(#{r}.is_latest_revision, NOT EXISTS (#{beaten_by(r)})) AND (#{r}.acquisition = 'live' OR NOT EXISTS (" \
+        "SELECT 1 FROM api.spending_records l WHERE l.asset_key = #{r}.asset_key AND l.canonical_id = #{r}.canonical_id " \
+        "AND l.acquisition = 'live' AND #{current('l')}))"
     end
 
     # Rows that outrank `r` within its (asset_key, acquisition, canonical_id):

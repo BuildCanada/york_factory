@@ -40,10 +40,6 @@ module PublicApi
         else
           spending_query.summary(entity.entity_id, role:, by_year:, sources:, fiscal_year:)
         end
-        if rows == :too_broad
-          raise Problem.new(:query_too_broad, "This entity has more than #{FactFactory::SpendingQuery::COUNTERPARTY_ROW_LIMIT} linked rows; group_by=counterparty is limited to fewer. Narrow it with source or fiscal_year, or use the bulk files.")
-        end
-
         counterparties = entity_query.refs(rows.map { |r| r["counterparty_id"] })
         data = rows.map { |r| SpendingSerializer.summary_row(r, counterparty: counterparties[r["counterparty_id"]]) }
         unlinked = spending_query.unlinked_count(entity.entity_id, role:, sources:, fiscal_year:)

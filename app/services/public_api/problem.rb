@@ -4,9 +4,9 @@ module PublicApi
   # base controller renders it as application/problem+json with the request's
   # ID as `instance`.
   class Problem < StandardError
-    TYPE_BASE = "https://data.buildcanada.com/problems".freeze
-    ERRORS_DOCS = "https://data.buildcanada.com/docs/concepts/errors.md".freeze
-    LIMITS_DOCS = "https://data.buildcanada.com/docs/concepts/rate-limits.md".freeze
+    TYPE_BASE = "https://data.buildcanada.com/api/problems".freeze
+    ERRORS_DOCS = "https://data.buildcanada.com/api/concepts/errors.md".freeze
+    LIMITS_DOCS = "https://data.buildcanada.com/api/concepts/rate-limits.md".freeze
     UPGRADE_URL = "https://auth.buildcanada.com/developers/plan".freeze
     BULK_URL = "https://data.buildcanada.com/v1/exports".freeze
 

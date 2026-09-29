@@ -132,9 +132,7 @@ module PublicApi
 
       def latest_release = releases.last&.number
 
-      def context = @context ||= Context.new(release:, locale:, persons: persons?)
-
-      def persons? = current_api_caller&.scope?("read:persons") || false
+      def context = @context ||= Context.new(release:, locale:)
 
       def locale
         preferred = request.headers["Accept-Language"].to_s.split(",").first.to_s.strip.downcase
@@ -214,7 +212,7 @@ module PublicApi
           headers["ETag"] = etag
           headers["BC-Release"] = release.to_s
         end
-        headers["Cache-Control"] = cache_control(cache, pinned:, payload:)
+        headers["Cache-Control"] = cache_control(cache, pinned:)
         if etag && etag_matches?(etag)
           @units = 0
           apply_headers(headers)
@@ -231,21 +229,11 @@ module PublicApi
         @as_of ? @as_of.pinned : false
       end
 
-      def cache_control(cache, pinned:, payload:)
-        return PRIVATE_CACHE if cache == "none" || parameters["count"] == "exact" || person_data?(payload[:data])
+      def cache_control(cache, pinned:)
+        return PRIVATE_CACHE if cache == "none" || parameters["count"] == "exact"
         return SHORT_CACHE if cache == "short"
 
         pinned ? PINNED_CACHE : LATEST_CACHE
-      end
-
-      # A response carrying a person entity is never shared through a cache:
-      # another caller may lack read:persons.
-      def person_data?(value)
-        case value
-        when Hash then value[:entity_class] == "person" || value.values.any? { |v| person_data?(v) }
-        when Array then value.any? { |v| person_data?(v) }
-        else false
-        end
       end
 
       def etag_for(payload, release)

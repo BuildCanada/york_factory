@@ -1,7 +1,7 @@
 require "test_helper"
 
 class PublicApiSpendingTest < PublicApiTestCase
-  ALL_11 = [ C1, GAC1, G1_A0, G1_A1, G2, G_PERSON, G_AGGREGATE, G_BLANK, G_ARCHIVE, G_PROPOSED, T1, T2 ].freeze
+  ALL_11 = [ C1, GAC1, G1_A0, G1_A1, G2, G_PERSON, G_AGGREGATE, G_BLANK, G_ARCHIVE, G_PROPOSED, G_ARCHIVE_ONLY, T1, T2 ].freeze
 
   test "spending rows list by spending key, with the caveats that apply" do
     assert_equal ALL_11.sort, ALL_11
@@ -15,9 +15,9 @@ class PublicApiSpendingTest < PublicApiTestCase
   end
 
   test "sorting by amount or date puts blanks last in both directions, and pages stably" do
-    by_amount = [ T1, G1_A1, G1_A0, G_ARCHIVE, G2, G_PROPOSED, C1, T2, G_PERSON, G_AGGREGATE, GAC1, G_BLANK ]
+    by_amount = [ T1, G1_A1, G1_A0, G_ARCHIVE, G2, G_PROPOSED, C1, T2, G_PERSON, G_AGGREGATE, GAC1, G_BLANK, G_ARCHIVE_ONLY ]
     assert_equal by_amount, page_through("/v1/spending", sort: "-amount", limit: 3)
-    ascending = [ G_AGGREGATE, G_PERSON, T2, C1, G_PROPOSED, G2, G1_A0, G_ARCHIVE, G1_A1, T1, GAC1, G_BLANK ]
+    ascending = [ G_AGGREGATE, G_PERSON, T2, C1, G_PROPOSED, G2, G1_A0, G_ARCHIVE, G1_A1, T1, GAC1, G_BLANK, G_ARCHIVE_ONLY ]
     assert_equal ascending, page_through("/v1/spending", sort: "amount", limit: 4), "ties by spending key"
     by_date = [ G2, GAC1, G1_A0, G_ARCHIVE, G1_A1 ]
     assert_equal by_date + (ALL_11 - by_date), page_through("/v1/spending", sort: "date", limit: 2)
@@ -32,7 +32,10 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_equal [ G_PERSON, G_AGGREGATE ], page_through("/v1/spending", amount_max: "5000.00")
     assert_equal [ G1_A0, G1_A1, G_ARCHIVE ], page_through("/v1/spending", q: "cultural spaces")
     assert_equal [ G2, C1 ].sort, page_through("/v1/spending", q: "diamond valley community foundation")
-    assert_equal ALL_11 - [ G1_A0 ], page_through("/v1/spending", latest_revision_only: "true")
+    assert_equal ALL_11 - [ G1_A0, G_ARCHIVE ], page_through("/v1/spending", latest_revision_only: "true"),
+      "the archive copy of an older revision is not the latest; an agreement only the archive has is"
+    assert_equal ALL_11 - [ G1_A1, G_ARCHIVE ], page_through("/v1/spending", latest_revision_only: "true", as_of: "10"),
+      "in release 10, the archive's copy of the live latest revision is left out too"
     assert_equal ALL_11 - [ G_AGGREGATE ], page_through("/v1/spending", include_aggregated: "false")
   end
 
@@ -58,7 +61,7 @@ class PublicApiSpendingTest < PublicApiTestCase
   test "count=exact counts at 2 more units, and pages over 50 cost 2" do
     api_get "/v1/spending", count: "exact"
     assert_conforms("listSpending", status: 200)
-    assert_equal 12, body.dig("meta", "count")
+    assert_equal 13, body.dig("meta", "count")
     assert_equal "3", response.headers["BC-Usage-Units"]
     api_get "/v1/spending", count: "exact", limit: 200
     assert_equal "4", response.headers["BC-Usage-Units"]
@@ -74,7 +77,9 @@ class PublicApiSpendingTest < PublicApiTestCase
     refute data["is_latest_revision"], "amendment 1 outranks it in release 11"
     assert_equal({ "payer" => "linked", "recipient" => "linked" }, data["parties"].to_h { |p| [ p["field"], p["link_status"] ] })
     assert_equal "gid://buildcanada/Entity/#{DIAMOND_VALLEY}", data["parties"].find { |p| p["field"] == "recipient" }["entity_id"]
-    assert_equal({ "asset" => GRANTS, "release" => 11, "snapshot_id" => SNAPSHOTS[11][GRANTS], "recorded_at" => nil, "capture" => nil,
+    capture = { "sha256" => GRANTS_SHA, "url" => "https://files.buildcanada.com/sha256/0d/#{GRANTS_SHA}",
+                "source_url" => "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", "retrieved_at" => "2026-09-19T04:12:09Z" }
+    assert_equal({ "asset" => GRANTS, "release" => 11, "snapshot_id" => SNAPSHOTS[11][GRANTS], "recorded_at" => nil, "capture" => capture,
                    "locator" => nil, "source" => nil, "parser_version" => "spending-iceberg-v5", "license" => "OGL-Canada-2.0" }, data["provenance"])
     assert_equal "Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, source file sha256 0d9b2894. " \
       "Build Canada data release 11, gid://buildcanada/SpendingRecord/#{G1_A0}.", data["cite"]
@@ -87,6 +92,22 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_problem("getSpendingRecord", 404, "not_found")
     get "/v1/spending/gid%3A%2F%2Fbuildcanada%2FSpendingRecord%2F#{G1_A1}"
     assert_conforms("getSpendingRecord", status: 200)
+  end
+
+  test "is_latest_revision is the table's, not the slice's: live data outranks the archive" do
+    { G_ARCHIVE => false, G_ARCHIVE_ONLY => true, G1_A1 => true, T1 => true }.each do |key, latest|
+      api_get "/v1/spending/#{key}"
+      assert_conforms("getSpendingRecord", status: 200)
+      assert_equal latest, body.dig("data", "is_latest_revision"), key
+    end
+    api_get "/v1/spending", latest_revision_only: "true", source: "proactive_grants", limit: 50
+    assert(body["data"].all? { |r| r["is_latest_revision"] })
+  end
+
+  test "a capture with no recorded retrieval time is not served as one" do
+    api_get "/v1/spending/#{C1}"
+    assert_conforms("getSpendingRecord", status: 200)
+    assert_nil body.dig("data", "provenance", "capture")
   end
 
   test "an individual recipient's postal code is served as its FSA only, everywhere" do

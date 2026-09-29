@@ -70,7 +70,7 @@ class PublicApiCatalogTest < PublicApiTestCase
     assert_includes keys, GRANTS
     assert_includes keys, "entities/entities"
     grants = body["data"].find { |d| d["asset_key"] == GRANTS }
-    assert_equal 8, grants.dig("coverage", "rows"), "live and archive rows of the pinned snapshots"
+    assert_equal 9, grants.dig("coverage", "rows"), "live and archive rows of the pinned snapshots"
     assert_equal "2023-24", grants.dig("coverage", "from_fiscal_year")
     assert_equal "2025-26", grants.dig("coverage", "to_fiscal_year")
     assert_includes grants["caveats"].map { |c| c["code"] }, "agreement_value_not_paid"
@@ -97,7 +97,7 @@ class PublicApiCatalogTest < PublicApiTestCase
     get "/v1/datasets/sources/ca/tbs/proactive_grants", params: { as_of: "10" }
     assert_conforms("getDataset", status: 200)
     assert_equal 10, body.dig("meta", "release")
-    assert_equal 7, body.dig("data", "coverage", "rows")
+    assert_equal 8, body.dig("data", "coverage", "rows")
     get "/v1/datasets/sources%2Fnothing"
     assert_problem("getDataset", 404, "not_found")
   end
@@ -117,8 +117,22 @@ class PublicApiCatalogTest < PublicApiTestCase
     assert_problem("getDictionaryTerm", 404, "not_found")
   end
 
-  test "a pinned dictionary says it is not versioned by release, and is not cached as immutable" do
+  test "the dictionary is the one the release was built with, pinned and cached like the data" do
+    api_get "/v1/dictionary/is_latest_revision"
+    assert_conforms("getDictionaryTerm", status: 200)
+    assert_empty body.dig("meta", "caveats")
+    api_get "/v1/dictionary/is_latest_revision", as_of: "10"
+    assert_problem("getDictionaryTerm", 404, "not_found")
     api_get "/v1/dictionary/amount", as_of: "10"
+    assert_conforms("getDictionaryTerm", status: 200)
+    assert_empty body.dig("meta", "caveats")
+    assert_cache_control "max-age=31536000, public, immutable"
+  end
+
+  test "a release built before api.dictionary gets the newest dictionary, and says so" do
+    FactFactory::DictionaryEntry.stub(:where, ->(conditions) { conditions == { release_id: 10 } ? FactFactory::DictionaryEntry.none : FactFactory::DictionaryEntry.unscoped.where(conditions) }) do
+      api_get "/v1/dictionary/is_latest_revision", as_of: "10"
+    end
     assert_conforms("getDictionaryTerm", status: 200)
     assert_equal [ "dictionary_not_pinned" ], body.dig("meta", "caveats").map { |c| c["code"] }
     assert_cache_control "public, max-age=300, stale-while-revalidate=3600"
@@ -134,7 +148,7 @@ class PublicApiCatalogTest < PublicApiTestCase
       cursor = next_cursor or break
     end
     assert_equal seen.uniq, seen
-    assert_equal PublicApi::Catalog.definitions.keys.grep(/\A[a-z][a-z0-9_]*\z/).sort, seen.sort
+    assert_equal PublicApi::Catalog.dictionary(11).definitions.keys.grep(/\A[a-z][a-z0-9_]*\z/).sort, seen.sort
   end
 
   test "exports list a release's Parquet files, not its manifest" do

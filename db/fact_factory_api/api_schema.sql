@@ -1,4 +1,4 @@
--- VENDORED from BuildCanada/fact-factory, src/fact_factory/serve/api_schema.sql at 7a570c2
+-- VENDORED from BuildCanada/fact-factory, src/fact_factory/serve/api_schema.sql at 6b3034e
 -- (PR #27, branch api-read-model). fact-factory owns this schema; york_factory only reads it.
 -- The tests load it into their own database (test/support/fact_factory_api_database.rb), and
 -- script/public_api/explain.rb into a benchmark one. To refresh after the read model changes:
@@ -84,6 +84,8 @@ CREATE TABLE IF NOT EXISTS api.entities (
 );
 CREATE INDEX IF NOT EXISTS api_entities_entity ON api.entities (entity_id, release_from);
 CREATE INDEX IF NOT EXISTS api_entities_class ON api.entities (entity_class, subtype, jurisdiction, release_from);
+-- Entity lists sorted by name, with entity_id as the cursor tie-break (york_factory EntityQuery).
+CREATE INDEX IF NOT EXISTS api_entities_name ON api.entities (name, entity_id);
 CREATE INDEX IF NOT EXISTS api_entities_redirected ON api.entities (redirected_to) WHERE redirected_to IS NOT NULL;
 CREATE INDEX IF NOT EXISTS api_entities_release_from ON api.entities (release_from);
 CREATE INDEX IF NOT EXISTS api_entities_release_to ON api.entities (release_to) WHERE release_to IS NOT NULL;
@@ -187,6 +189,12 @@ CREATE INDEX IF NOT EXISTS api_spending_parties_occurrence ON api.spending_parti
 CREATE INDEX IF NOT EXISTS api_spending_parties_release_from ON api.spending_parties (release_from);
 CREATE INDEX IF NOT EXISTS api_spending_parties_release_to ON api.spending_parties (release_to)
   WHERE release_to IS NOT NULL;
+-- Unlinked occurrences whose normalized name is one of an entity's names (/entities/{id}/spending/unlinked).
+CREATE INDEX IF NOT EXISTS api_spending_parties_unlinked_name ON api.spending_parties (normalized_name, release_from)
+  WHERE entity_id IS NULL;
+-- Rows an entity is proposed for (include_proposed): the first candidate of a proposed occurrence.
+CREATE INDEX IF NOT EXISTS api_spending_parties_proposed ON api.spending_parties ((candidates->>0), release_from)
+  WHERE reason = 'proposed';
 
 -- One version of one spending source row, from the Iceberg snapshot the release pinned. Typed
 -- columns only: raw_json, raw_xml and extra_json stay in the Iceberg table. recipient_postal_code
@@ -229,6 +237,7 @@ CREATE TABLE IF NOT EXISTS api.spending_records (
   is_aggregated boolean,
   value_consistent boolean,
   revision_rank jsonb,
+  is_latest_revision boolean,
   source_url text,
   source_sha256 text,
   parser_version text,
@@ -246,6 +255,16 @@ CREATE INDEX IF NOT EXISTS api_spending_records_release_to ON api.spending_recor
   WHERE release_to IS NOT NULL;
 CREATE INDEX IF NOT EXISTS api_spending_records_current ON api.spending_records (asset_key, acquisition, spending_key)
   WHERE release_to IS NULL;
+-- Every revision of an agreement (latest-revision ranking, summaries, /spending/{key} revisions).
+CREATE INDEX IF NOT EXISTS api_spending_records_canonical ON api.spending_records (asset_key, canonical_id, release_from);
+-- sort=-amount with spending_key as the cursor tie-break.
+CREATE INDEX IF NOT EXISTS api_spending_records_amount ON api.spending_records (amount DESC NULLS LAST, spending_key);
+-- Full-text `q`: exactly york_factory's FactFactory::SpendingQuery::TEXT, so the planner uses it for
+-- to_tsvector('simple', <TEXT>) @@ plainto_tsquery('simple', :q). Change both together.
+CREATE INDEX IF NOT EXISTS api_spending_records_text ON api.spending_records USING gin (to_tsvector('simple',
+  coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(program, '') || ' ' ||
+  coalesce(payer, '') || ' ' || coalesce(recipient, '') || ' ' || coalesce(research_org, '') || ' ' ||
+  coalesce(principal_investigator, '') || ' ' || coalesce(recipients::text, '')));
 
 -- Entity x role x source x fiscal year x currency, per release, under the fixed aggregation rules
 -- (serve.read_model.SUMMARY_SQL): linked live occurrences only, never summed across sources, the
@@ -269,6 +288,66 @@ CREATE TABLE IF NOT EXISTS api.spending_summary (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS api_spending_summary_key ON api.spending_summary
   (release_id, entity_id, role, asset_key, coalesce(fiscal_year, -1), coalesce(currency, ''));
+
+-- The same summary split by counterparty: for an entity's payer or recipient rows, the linked
+-- entity on the other side of each row (counterparty_id, blank when none is linked). Rebuilt for
+-- every release, so group_by=counterparty is a lookup, not a live aggregation.
+CREATE TABLE IF NOT EXISTS api.spending_counterparties (
+  release_id integer NOT NULL,
+  entity_id text NOT NULL,
+  role text NOT NULL,
+  counterparty_id text,
+  asset_key text NOT NULL,
+  source_key text NOT NULL,
+  fiscal_year integer,
+  currency text,
+  measure text NOT NULL,
+  record_count integer NOT NULL,
+  agreement_count integer NOT NULL,
+  amount numeric(38, 6),
+  amount_missing_count integer NOT NULL,
+  aggregated_excluded integer NOT NULL,
+  revisions_excluded integer NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS api_spending_counterparties_key ON api.spending_counterparties
+  (release_id, entity_id, role, coalesce(counterparty_id, ''), asset_key, coalesce(fiscal_year, -1), coalesce(currency, ''));
+
+-- One retained source capture a served spending row was parsed from (immutable, by sha256): where
+-- it is (object_key, under the public base URL), where it came from and when it was retrieved.
+CREATE TABLE IF NOT EXISTS api.captures (
+  sha256 text PRIMARY KEY,
+  object_key text NOT NULL,
+  source_url text,
+  retrieved_at timestamptz,
+  bytes bigint,
+  first_release_id integer NOT NULL
+);
+
+-- The data dictionary (docs/data-dictionary.yaml) as each release was built with it: one row per
+-- definition or asset entry.
+CREATE TABLE IF NOT EXISTS api.dictionary (
+  release_id integer NOT NULL,
+  section text NOT NULL,
+  name text NOT NULL,
+  body jsonb NOT NULL,
+  dictionary_sha256 text NOT NULL,
+  PRIMARY KEY (release_id, section, name)
+);
+
+-- One dataset (a spending slice or a registry table) as served in a release: its pinned snapshot,
+-- rows and fiscal-year coverage.
+CREATE TABLE IF NOT EXISTS api.datasets (
+  release_id integer NOT NULL,
+  asset_key text NOT NULL,
+  acquisition text NOT NULL,
+  source_key text,
+  snapshot_id text,
+  rows bigint NOT NULL,
+  fiscal_year_min integer,
+  fiscal_year_max integer,
+  measure text,
+  PRIMARY KEY (release_id, asset_key, acquisition)
+);
 
 -- One bulk file of one release (serve.exports): the Parquet exports and their manifest.
 CREATE TABLE IF NOT EXISTS api.release_exports (

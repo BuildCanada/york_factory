@@ -64,17 +64,15 @@ class PublicApiSearchTest < PublicApiTestCase
     assert_equal "q", assert_problem("searchEntities", 400, "invalid_parameter").dig("errors", 0, "parameter")
   end
 
-  test "persons appear only with read:persons, only by name" do
+  test "persons are searched like any entity, anonymously, by name or identifier" do
     api_get "/v1/search", q: "Jane Q. Example"
-    assert_empty body["data"]
-    api_get "/v1/search", q: "999999999", key: persons_key
-    assert_empty body["data"], "never by identifier"
-    api_get "/v1/search", q: "Jane Q. Example", key: persons_key
     assert_conforms("searchEntities", status: 200)
     assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], ids_of_hits
-    assert_cache_control "private, no-store"
-    api_get "/v1/search", q: "Jane", class: "person"
-    assert_problem("searchEntities", 401, "unauthenticated")
+    api_get "/v1/search", q: "999999999"
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], ids_of_hits
+    api_get "/v1/search", q: "Jane Q. Example", class: "person"
+    assert_conforms("searchEntities", status: 200)
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], ids_of_hits
   end
 
   test "an identifier resolves to every entity holding it" do
@@ -89,7 +87,8 @@ class PublicApiSearchTest < PublicApiTestCase
     api_get "/v1/identifiers/ca.cra.bn9/000000000"
     assert_problem("resolveIdentifier", 404, "not_found")
     api_get "/v1/identifiers/ca.cra.bn9/999999999"
-    assert_problem("resolveIdentifier", 404, "not_found")
+    assert_conforms("resolveIdentifier", status: 200)
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], body.dig("data", "matches").map { |m| m.dig("entity", "id") }, "a person's identifier resolves too"
   end
 
   private

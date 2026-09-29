@@ -56,7 +56,7 @@ WWWAuthenticate:
   description: >-
     RFC 6750 challenge. On 401 it names the protected-resource metadata
     (`Bearer resource_metadata="https://data.buildcanada.com/.well-known/oauth-protected-resource"`);
-    on 403 it names the missing scope (`Bearer error="insufficient_scope", scope="read:persons"`).
+    on 403 it names the missing scope (`Bearer error="insufficient_scope", scope="usage:read"`).
   schema:
     type: string
   example: Bearer resource_metadata="https://data.buildcanada.com/.well-known/oauth-protected-resource"

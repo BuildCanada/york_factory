@@ -211,7 +211,10 @@ properties:
     examples: [[0]]
   is_latest_revision:
     type: boolean
-    description: True when this is the highest-ranked revision of its canonical_id, the only revision summaries count.
+    description: >-
+      True when this is the highest-ranked revision of its canonical_id in the table. Live rows outrank
+      archive_import copies: an archive_import row is the latest only when no live row has its canonical_id.
+      Summaries count the live latest revisions only.
     x-bc-dictionary: is_latest_revision
     examples: [true]
   parties:

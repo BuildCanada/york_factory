@@ -4,11 +4,11 @@
     "title": "Build Canada Data API",
     "version": "1.0.0-alpha.2",
     "summary": "Cited, reproducible public data on Canadian governments, organizations and federal spending.",
-    "description": "Read-only access to everything fact-factory publishes: the entity registry\n(jurisdictions, government organizations, Indigenous governments, charities and other\norganizations), their identifiers, relationships and lineage, and federal spending\nrows linked to them.\n\nThree rules shape the API:\n\n1. **Every fact carries its citation.** Fact-bearing objects have `provenance` (the\n   asset, release, pinned snapshot, captured file and row) and a ready-to-paste `cite`.\n2. **Every answer is reproducible.** Pass `as_of=<release>` and the same URL returns the\n   same bytes forever. Omit it and the response names the release it used.\n3. **Caveats are data.** `meta.caveats[]` carries machine-readable warnings, such as\n   `not_cross_source_total`. Act on them. Amounts from different spending sources\n   overlap: never add them.\n\nConventions: responses are `{data, meta, links}`; lists use cursor pagination\n(`limit`, `cursor`, `meta.next_cursor`); errors are RFC 9457 `application/problem+json`\nwith a stable `code`; money is a decimal string with an ISO 4217 `currency`; IDs are\n`gid://buildcanada/<Type>/<key>`. Each operation's cost in request units is in\n`x-bc-units`; each data field names its data dictionary term in `x-bc-dictionary`.\n\nNo key is needed to start: anonymous callers get 30 units a minute and 1,000 a day\nwith the read:public scope. Get a free key at https://auth.buildcanada.com/developers.\nAgents: start at https://data.buildcanada.com/llms.txt, or connect the MCP server at\nhttps://data.buildcanada.com/mcp.\n",
-    "termsOfService": "https://data.buildcanada.com/docs/terms",
+    "description": "Read-only access to everything fact-factory publishes: the entity registry\n(jurisdictions, government organizations, Indigenous governments, charities and other\norganizations), their identifiers, relationships and lineage, and federal spending\nrows linked to them.\n\nThree rules shape the API:\n\n1. **Every fact carries its citation.** Fact-bearing objects have `provenance` (the\n   asset, release, pinned snapshot, captured file and row) and a ready-to-paste `cite`.\n2. **Every answer is reproducible.** Pass `as_of=<release>` and the same URL returns the\n   same bytes forever. Omit it and the response names the release it used.\n3. **Caveats are data.** `meta.caveats[]` carries machine-readable warnings, such as\n   `not_cross_source_total`. Act on them. Amounts from different spending sources\n   overlap: never add them.\n\nConventions: responses are `{data, meta, links}`; lists use cursor pagination\n(`limit`, `cursor`, `meta.next_cursor`); errors are RFC 9457 `application/problem+json`\nwith a stable `code`; money is a decimal string with an ISO 4217 `currency`; IDs are\n`gid://buildcanada/<Type>/<key>`. Each operation's cost in request units is in\n`x-bc-units`; each data field names its data dictionary term in `x-bc-dictionary`.\n\nNo key is needed to start: anonymous callers get 30 units a minute and 1,000 a day\nwith the read:public scope. Get a free key at https://auth.buildcanada.com/developers.\nAgents: start at https://data.buildcanada.com/api/llms.txt, or connect the MCP server at\nhttps://data.buildcanada.com/mcp.\n",
+    "termsOfService": "https://data.buildcanada.com/api/terms",
     "contact": {
       "name": "Build Canada data team",
-      "url": "https://data.buildcanada.com/docs",
+      "url": "https://data.buildcanada.com/api",
       "email": "data@buildcanada.com"
     },
     "license": {
@@ -79,7 +79,7 @@
       "get": {
         "operationId": "getIndex",
         "summary": "API index",
-        "description": "The front door. Names the latest release and links to every collection, the OpenAPI\ndocument, the docs, llms.txt and the MCP server. Start here, or at\nhttps://data.buildcanada.com/llms.txt.",
+        "description": "The front door. Names the latest release and links to every collection, the OpenAPI\ndocument, the docs, llms.txt and the MCP server. Start here, or at\nhttps://data.buildcanada.com/api/llms.txt.",
         "tags": [
           "Discovery"
         ],
@@ -136,8 +136,8 @@
                         "latest_release": 11,
                         "links": {
                           "openapi": "/v1/openapi.json",
-                          "docs": "https://data.buildcanada.com/docs",
-                          "llms_txt": "https://data.buildcanada.com/llms.txt",
+                          "docs": "https://data.buildcanada.com/api",
+                          "llms_txt": "https://data.buildcanada.com/api/llms.txt",
                           "mcp": "https://data.buildcanada.com/mcp",
                           "releases": "/v1/releases",
                           "datasets": "/v1/datasets",
@@ -365,7 +365,6 @@
                         "plan": "free",
                         "scopes": [
                           "read:public",
-                          "read:persons",
                           "usage:read"
                         ],
                         "limits": {
@@ -1242,12 +1241,12 @@
                             {
                               "code": "agreement_value_not_paid",
                               "text": "proactive_grants amounts are agreement values, not money paid.",
-                              "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                              "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                             },
                             {
                               "code": "not_cross_source_total",
                               "text": "Sources overlap. Never add amounts across sources.",
-                              "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                              "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                             }
                           ],
                           "bulk": [
@@ -1436,12 +1435,12 @@
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           },
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           }
                         ],
                         "bulk": [
@@ -1623,7 +1622,7 @@
                           "known_gaps": null,
                           "links": {
                             "self": "/v1/dictionary/record_type",
-                            "docs": "https://data.buildcanada.com/docs/dictionary/record_type"
+                            "docs": "https://data.buildcanada.com/api/dictionary/record_type"
                           }
                         }
                       ],
@@ -1772,7 +1771,7 @@
                         },
                         "links": {
                           "self": "/v1/dictionary/fiscal_year",
-                          "docs": "https://data.buildcanada.com/docs/dictionary/fiscal_year"
+                          "docs": "https://data.buildcanada.com/api/dictionary/fiscal_year"
                         }
                       },
                       "meta": {
@@ -3243,7 +3242,7 @@
             "name": "latest_revision_only",
             "in": "query",
             "required": false,
-            "description": "Only the highest-ranked revision of each canonical_id.",
+            "description": "Only rows whose is_latest_revision is true: the highest-ranked revision of each canonical_id, live rows outranking archive_import copies.",
             "schema": {
               "type": "boolean",
               "default": false
@@ -3412,12 +3411,12 @@
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           },
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           }
                         ],
                         "limit": 50,
@@ -3616,22 +3615,22 @@
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           },
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           },
                           {
                             "code": "latest_revision_only",
                             "text": "Only the highest-ranked revision per canonical_id is summed.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#latest_revision_only"
+                            "docs": "https://data.buildcanada.com/api/caveats#latest_revision_only"
                           },
                           {
                             "code": "linked_only",
                             "text": "Only linked occurrences are counted. 38 unlinked occurrences with this name: /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#linked_only"
+                            "docs": "https://data.buildcanada.com/api/caveats#linked_only"
                           }
                         ],
                         "role": "recipient",
@@ -4186,7 +4185,7 @@
             "name": "latest_revision_only",
             "in": "query",
             "required": false,
-            "description": "Only the highest-ranked revision of each canonical_id, as summaries count them.",
+            "description": "Only rows whose is_latest_revision is true: the highest-ranked revision of each canonical_id, live rows outranking archive_import copies.",
             "schema": {
               "type": "boolean",
               "default": false
@@ -4366,12 +4365,12 @@
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           },
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           }
                         ],
                         "limit": 50,
@@ -4473,12 +4472,12 @@
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           },
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           }
                         ],
                         "limit": 50,
@@ -4633,7 +4632,7 @@
                             {
                               "code": "agreement_value_not_paid",
                               "text": "proactive_grants amounts are agreement values, not money paid.",
-                              "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                              "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                             }
                           ],
                           "links": {
@@ -4670,7 +4669,7 @@
                           {
                             "code": "not_cross_source_total",
                             "text": "Sources overlap. Never add amounts across sources.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+                            "docs": "https://data.buildcanada.com/api/caveats#not_cross_source_total"
                           }
                         ],
                         "limit": 50,
@@ -4933,7 +4932,7 @@
                           {
                             "code": "agreement_value_not_paid",
                             "text": "proactive_grants amounts are agreement values, not money paid.",
-                            "docs": "https://data.buildcanada.com/docs/caveats#agreement_value_not_paid"
+                            "docs": "https://data.buildcanada.com/api/caveats#agreement_value_not_paid"
                           }
                         ]
                       },
@@ -5147,7 +5146,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "bc_live_<secret>_<crc6>",
-        "description": "An API key from https://auth.buildcanada.com/developers, sent as `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the scopes its owner granted it (read:public always; read:persons after verification; usage:read by default). Keys are shown once; the console shows only the first 12 characters."
+        "description": "An API key from https://auth.buildcanada.com/developers, sent as `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the scopes its owner granted it (read:public always; usage:read by default). Keys are shown once; the console shows only the first 12 characters."
       },
       "OAuth2": {
         "type": "oauth2",
@@ -5160,8 +5159,7 @@
             "tokenUrl": "https://auth.buildcanada.com/oauth/token",
             "refreshUrl": "https://auth.buildcanada.com/oauth/token",
             "scopes": {
-              "read:public": "Read organizations, spending, releases, datasets, the dictionary and exports.",
-              "read:persons": "Read person entities and their public roles (phase 2). Never includes street addresses.",
+              "read:public": "Read organizations, persons, spending, releases, datasets, the dictionary and exports. A person's address is only ever city, province and FSA.",
               "usage:read": "Read your account's usage (/v1/me/usage).",
               "keys:manage": "Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys)."
             }
@@ -5185,9 +5183,9 @@
           "type": {
             "type": "string",
             "format": "uri",
-            "description": "URI of the problem type's documentation page, `https://data.buildcanada.com/problems/<code with hyphens>`.",
+            "description": "URI of the problem type's documentation page, `https://data.buildcanada.com/api/problems/<code with hyphens>`.",
             "examples": [
-              "https://data.buildcanada.com/problems/rate-limited"
+              "https://data.buildcanada.com/api/problems/rate-limited"
             ]
           },
           "title": {
@@ -5250,7 +5248,7 @@
             "format": "uri",
             "description": "The concept page that explains the rule behind this problem.",
             "examples": [
-              "https://data.buildcanada.com/docs/concepts/rate-limits.md"
+              "https://data.buildcanada.com/api/concepts/rate-limits.md"
             ]
           },
           "errors": {
@@ -5264,7 +5262,7 @@
             "type": "string",
             "description": "insufficient_scope only. The scope the operation needs.",
             "examples": [
-              "read:persons"
+              "usage:read"
             ]
           },
           "retry_after_seconds": {
@@ -5419,7 +5417,7 @@
       },
       "Caveat": {
         "title": "Caveat",
-        "description": "A machine-readable warning about how to read the data in this response. Agents should act on `code`, not on `text`; `text` is prose for people and follows Accept-Language. Every code has an anchor on https://data.buildcanada.com/docs/caveats. New codes may be added at any time; treat an unknown code as a warning to show the reader.",
+        "description": "A machine-readable warning about how to read the data in this response. Agents should act on `code`, not on `text`; `text` is prose for people and follows Accept-Language. Every code has an anchor on https://data.buildcanada.com/api/caveats. New codes may be added at any time; treat an unknown code as a warning to show the reader.",
         "type": "object",
         "required": [
           "code",
@@ -5446,7 +5444,7 @@
             "format": "uri",
             "description": "The caveat's documentation anchor, with a Markdown twin at the same URL plus `.md`.",
             "examples": [
-              "https://data.buildcanada.com/docs/caveats#not_cross_source_total"
+              "https://data.buildcanada.com/api/caveats#not_cross_source_total"
             ]
           }
         }
@@ -6178,7 +6176,7 @@
           },
           "is_latest_revision": {
             "type": "boolean",
-            "description": "True when this is the highest-ranked revision of its canonical_id, the only revision summaries count.",
+            "description": "True when this is the highest-ranked revision of its canonical_id in the table. Live rows outrank archive_import copies: an archive_import row is the latest only when no live row has its canonical_id. Summaries count the live latest revisions only.",
             "x-bc-dictionary": "is_latest_revision",
             "examples": [
               true
@@ -6285,7 +6283,7 @@
                 "format": "uri",
                 "description": "The documentation site.",
                 "examples": [
-                  "https://data.buildcanada.com/docs"
+                  "https://data.buildcanada.com/api"
                 ]
               },
               "llms_txt": {
@@ -6293,7 +6291,7 @@
                 "format": "uri",
                 "description": "The agent index of the docs.",
                 "examples": [
-                  "https://data.buildcanada.com/llms.txt"
+                  "https://data.buildcanada.com/api/llms.txt"
                 ]
               },
               "mcp": {
@@ -6656,7 +6654,6 @@
               "type": "string",
               "enum": [
                 "read:public",
-                "read:persons",
                 "usage:read",
                 "keys:manage"
               ]
@@ -7653,7 +7650,7 @@
                 "format": "uri",
                 "description": "The term's documentation page, with a Markdown twin.",
                 "examples": [
-                  "https://data.buildcanada.com/docs/dictionary/fiscal_year"
+                  "https://data.buildcanada.com/api/dictionary/fiscal_year"
                 ]
               }
             }
@@ -7713,7 +7710,7 @@
       },
       "EntityClass": {
         "title": "EntityClass",
-        "description": "What kind of party an entity is. `person` is reserved: release 1 to 11 have no person entities, and persons will need the read:persons scope. New classes may be added.",
+        "description": "What kind of party an entity is. Release 1 to 11 have no `person` entities yet. When they arrive, persons are listed, searched and filtered like any other class, under read:public. A person entity is our clustering of records, not a legal identity. New classes may be added.",
         "type": "string",
         "enum": [
           "jurisdiction",
@@ -8128,7 +8125,7 @@
       },
       "Predicate": {
         "title": "Predicate",
-        "description": "The kind of relationship, read as \"subject <predicate> object\": governs, located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by, controlled_by, member_of, succeeded_by. Person predicates (director_of, has_significant_control_over) arrive in phase 2 under read:persons. New predicates may be added.",
+        "description": "The kind of relationship, read as \"subject <predicate> object\": governs, located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by, controlled_by, member_of, succeeded_by. Person predicates (director_of, has_significant_control_over) arrive in phase 2 under read:public. New predicates may be added.",
         "type": "string",
         "enum": [
           "governs",
@@ -9432,7 +9429,7 @@
         "example": 61240
       },
       "WWWAuthenticate": {
-        "description": "RFC 6750 challenge. On 401 it names the protected-resource metadata (`Bearer resource_metadata=\"https://data.buildcanada.com/.well-known/oauth-protected-resource\"`); on 403 it names the missing scope (`Bearer error=\"insufficient_scope\", scope=\"read:persons\"`).",
+        "description": "RFC 6750 challenge. On 401 it names the protected-resource metadata (`Bearer resource_metadata=\"https://data.buildcanada.com/.well-known/oauth-protected-resource\"`); on 403 it names the missing scope (`Bearer error=\"insufficient_scope\", scope=\"usage:read\"`).",
         "schema": {
           "type": "string"
         },
@@ -9489,13 +9486,13 @@
               "invalid_parameter": {
                 "summary": "A malformed fiscal year",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/invalid-parameter",
+                  "type": "https://data.buildcanada.com/api/problems/invalid-parameter",
                   "title": "Invalid parameter",
                   "status": 400,
                   "detail": "fiscal_year must be a fiscal year label.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "invalid_parameter",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "errors": [
                     {
                       "parameter": "fiscal_year",
@@ -9524,13 +9521,13 @@
               "unauthenticated": {
                 "summary": "No key on an operation that needs one",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/unauthenticated",
+                  "type": "https://data.buildcanada.com/api/problems/unauthenticated",
                   "title": "Authentication required",
                   "status": 401,
                   "detail": "This operation needs an API key or OAuth token. Get a free key at https://auth.buildcanada.com/developers.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "unauthenticated",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md"
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md"
                 }
               }
             }
@@ -9559,13 +9556,13 @@
               "insufficient_scope": {
                 "summary": "Missing usage:read",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/insufficient-scope",
+                  "type": "https://data.buildcanada.com/api/problems/insufficient-scope",
                   "title": "Insufficient scope",
                   "status": 403,
                   "detail": "This key does not have the usage:read scope.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "insufficient_scope",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "required_scope": "usage:read"
                 }
               }
@@ -9595,13 +9592,13 @@
               "rate_limited": {
                 "summary": "Per-minute rate spent",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/rate-limited",
+                  "type": "https://data.buildcanada.com/api/problems/rate-limited",
                   "title": "Rate limit exceeded",
                   "status": 429,
                   "detail": "Key bc_live_7Hq2… used 120 of 120 request units in the current 60-second window.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "rate_limited",
-                  "docs": "https://data.buildcanada.com/docs/concepts/rate-limits.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/rate-limits.md",
                   "retry_after_seconds": 17,
                   "plan": "free",
                   "upgrade_url": "https://auth.buildcanada.com/developers/plan",
@@ -9611,13 +9608,13 @@
               "quota_exceeded": {
                 "summary": "Monthly units spent",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/quota-exceeded",
+                  "type": "https://data.buildcanada.com/api/problems/quota-exceeded",
                   "title": "Monthly quota exceeded",
                   "status": 429,
                   "detail": "Account acct_42 used 100,000 of 100,000 units this month. The quota resets on 2026-10-01.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "quota_exceeded",
-                  "docs": "https://data.buildcanada.com/docs/concepts/rate-limits.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/rate-limits.md",
                   "retry_after_seconds": 172800,
                   "plan": "free",
                   "upgrade_url": "https://auth.buildcanada.com/developers/plan",
@@ -9639,13 +9636,13 @@
               "internal_error": {
                 "summary": "Unexpected failure",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/internal-error",
+                  "type": "https://data.buildcanada.com/api/problems/internal-error",
                   "title": "Internal error",
                   "status": 500,
                   "detail": "Something went wrong on our side. Quote req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C if it happens again.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "internal_error",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md"
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md"
                 }
               }
             }
@@ -9668,13 +9665,13 @@
               "release_building": {
                 "summary": "Release swap in progress",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/release-building",
+                  "type": "https://data.buildcanada.com/api/problems/release-building",
                   "title": "Release building",
                   "status": 503,
                   "detail": "Release 12 is being published. Retry in 30 seconds, or pin as_of=11.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "release_building",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "retry_after_seconds": 30
                 }
               }
@@ -9701,13 +9698,13 @@
               "release_mismatch": {
                 "summary": "Cursor from release 10 with as_of=11",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/release-mismatch",
+                  "type": "https://data.buildcanada.com/api/problems/release-mismatch",
                   "title": "Cursor from another release",
                   "status": 409,
                   "detail": "This cursor belongs to release 10. Repeat with as_of=10, or drop the cursor to start again.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "release_mismatch",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "cursor_release": 10
                 }
               }
@@ -9751,25 +9748,25 @@
               "not_found": {
                 "summary": "Unknown ID",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/not-found",
+                  "type": "https://data.buildcanada.com/api/problems/not-found",
                   "title": "Not found",
                   "status": 404,
                   "detail": "No entity 01J9ZK4T6M8Q2R5V7X3B1N0C4E in release 11.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "not_found",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md"
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md"
                 }
               },
               "not_yet_published": {
                 "summary": "as_of before our history",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/not-yet-published",
+                  "type": "https://data.buildcanada.com/api/problems/not-yet-published",
                   "title": "Not yet published",
                   "status": 404,
                   "detail": "as_of 2020-01-01 is before release 1, published 2026-09-20.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "not_yet_published",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "earliest_release": 1
                 }
               }
@@ -9796,13 +9793,13 @@
               "query_too_broad": {
                 "summary": "A search query that is too short",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/query-too-broad",
+                  "type": "https://data.buildcanada.com/api/problems/query-too-broad",
                   "title": "Query too broad",
                   "status": 422,
                   "detail": "q must have at least 2 characters other than spaces and punctuation.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "query_too_broad",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md"
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md"
                 }
               }
             }
@@ -9831,13 +9828,13 @@
               "redirected": {
                 "summary": "A merged duplicate",
                 "value": {
-                  "type": "https://data.buildcanada.com/problems/redirected",
+                  "type": "https://data.buildcanada.com/api/problems/redirected",
                   "title": "Entity redirected",
                   "status": 301,
                   "detail": "Entity 01J9ZK4T6M8Q2R5V7X3B1N0C4D was merged into 01JB2C3D4E5F6G7H8J9K0M1N2P in release 11.",
                   "instance": "req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C",
                   "code": "redirected",
-                  "docs": "https://data.buildcanada.com/docs/concepts/errors.md",
+                  "docs": "https://data.buildcanada.com/api/concepts/errors.md",
                   "location": "/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11"
                 }
               }

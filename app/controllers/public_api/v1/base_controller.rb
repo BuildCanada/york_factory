@@ -24,8 +24,8 @@ module PublicApi
       LATEST_CACHE = "public, max-age=300, stale-while-revalidate=3600".freeze
       SHORT_CACHE = "public, max-age=30".freeze
       PRIVATE_CACHE = "private, no-store".freeze
-      UPGRADE_URL = "https://auth.buildcanada.com/developers/plan".freeze
-      BULK_URL = "https://data.buildcanada.com/v1/exports".freeze
+      UPGRADE_URL = Problem::UPGRADE_URL
+      BULK_URL = Problem::BULK_URL
 
       class_attribute :operation_ids, instance_writer: false, default: {}
 
@@ -60,7 +60,7 @@ module PublicApi
       # anything else; until the Worker exists it is off, and Rails limits
       # requests itself.
       def require_edge
-        return if edge_verified? || !ActiveModel::Type::Boolean.new.cast(ENV.fetch("PUBLIC_API_REQUIRE_EDGE", "false"))
+        return if internal_api_request? || edge_verified? || !ActiveModel::Type::Boolean.new.cast(ENV.fetch("PUBLIC_API_REQUIRE_EDGE", "false"))
 
         raise Problem.new(:unauthenticated, "Call the API at https://data.buildcanada.com/v1.")
       end
@@ -74,8 +74,10 @@ module PublicApi
         )
       end
 
+      # The MCP server charges its own calls (Mcp::Meter), so an in-process
+      # call from it is not charged twice.
       def limit_rate
-        return if edge_verified?
+        return if internal_api_request? || edge_verified?
 
         @limiter = RateLimiter.new
         return unless @limiter.enabled?
@@ -97,18 +99,7 @@ module PublicApi
         operation.units_for(limit:, count_exact: count)
       end
 
-      def rate_problem(result)
-        plan = current_api_caller.plan.name
-        who = current_api_caller.anonymous? ? "Your IP address" : "Key #{current_api_caller.api_key&.token_prefix}…"
-        if result.code == "quota_exceeded"
-          period = result.allowance.name == "day" ? "today" : "this month"
-          detail = "#{who} used #{result.allowance_used} of #{result.allowance.quota} request units #{period}."
-        else
-          detail = "#{who} used #{result.minute_used} of #{result.minute.quota} request units in the current 60-second window."
-        end
-        Problem.new(result.code, detail, headers: { "Retry-After" => result.retry_after.to_s },
-          retry_after_seconds: result.retry_after, plan: plan == "paid" ? "paid" : plan, upgrade_url: UPGRADE_URL, bulk_url: BULK_URL)
-      end
+      def rate_problem(result) = Problem.rate_limited(result, caller: current_api_caller)
 
       def parse_parameters
         @parameters = Parameters.parse(operation, query: request.query_parameters, path: request.path_parameters.except(:controller, :action, :format))

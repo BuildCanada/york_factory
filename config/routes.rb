@@ -18,6 +18,7 @@ Rails.application.routes.draw do
     get ".well-known/oauth-protected-resource(/:resource_path)", to: "well_known#protected_resource",
       as: :oauth_protected_resource_metadata, constraints: { resource_path: /mcp|v1/ }
     post "mcp", to: "mcp#create", as: :mcp
+    match "mcp", to: "mcp#method_not_allowed", via: %i[get delete put patch]
   end
 
   if Rails.env.production?

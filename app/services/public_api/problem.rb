@@ -7,6 +7,8 @@ module PublicApi
     TYPE_BASE = "https://data.buildcanada.com/problems".freeze
     ERRORS_DOCS = "https://data.buildcanada.com/docs/concepts/errors.md".freeze
     LIMITS_DOCS = "https://data.buildcanada.com/docs/concepts/rate-limits.md".freeze
+    UPGRADE_URL = "https://auth.buildcanada.com/developers/plan".freeze
+    BULK_URL = "https://data.buildcanada.com/v1/exports".freeze
 
     CODES = {
       "invalid_parameter" => [ 400, "Invalid parameter" ],
@@ -47,6 +49,22 @@ module PublicApi
     end
 
     def self.not_found(detail) = new(:not_found, detail)
+
+    # 429 rate_limited or quota_exceeded, from a refused PublicApi::RateLimiter
+    # charge. Shared by /v1 and /mcp.
+    def self.rate_limited(result, caller:)
+      plan = caller.plan.name
+      who = caller.anonymous? ? "Your IP address" : "Key #{caller.api_key&.token_prefix}…"
+      who = "This OAuth authorization" if caller.oauth?
+      if result.code == "quota_exceeded"
+        period = result.allowance.name == "day" ? "today" : "this month"
+        detail = "#{who} used #{result.allowance_used} of #{result.allowance.quota} request units #{period}."
+      else
+        detail = "#{who} used #{result.minute_used} of #{result.minute.quota} request units in the current 60-second window."
+      end
+      new(result.code, detail, headers: { "Retry-After" => result.retry_after.to_s },
+        retry_after_seconds: result.retry_after, plan: plan == "paid" ? "paid" : plan, upgrade_url: UPGRADE_URL, bulk_url: BULK_URL)
+    end
 
     def body(instance:)
       docs = %w[rate_limited quota_exceeded].include?(code) ? LIMITS_DOCS : ERRORS_DOCS

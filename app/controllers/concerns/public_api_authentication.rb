@@ -25,6 +25,12 @@ module PublicApiAuthentication
 
   PROBLEM_BASE = "https://data.buildcanada.com/problems".freeze
 
+  # The Rack env key under which the MCP server (Mcp::Api) hands a /v1
+  # controller the Keys::Caller it has already authenticated, when it calls
+  # the controller in process. Rack env keys without an HTTP_ prefix can't be
+  # set by a client, so this can only come from our own code.
+  INTERNAL_CALLER_ENV = "buildcanada.public_api.internal_caller".freeze
+
   FAILURES = {
     missing: [ 401, "unauthenticated", "Authentication required", "Send an API key or OAuth access token as Authorization: Bearer …" ],
     malformed: [ 401, "unauthenticated", "Invalid API key", "The key is malformed or mistyped (its checksum doesn't match)." ],
@@ -57,6 +63,11 @@ module PublicApiAuthentication
   # tokens are accepted only if they were issued for that resource.
   def authenticate_public_api!(scopes: [], resource: :rest, anonymous: PublicApiAuthentication.anonymous_allowed?)
     @public_api_resource = resource
+    if (internal = internal_api_caller)
+      @current_api_caller = internal
+      return require_api_scope!(*scopes)
+    end
+
     raw = public_api_bearer_token
     if raw.blank? && anonymous
       @current_api_caller = Keys::Caller.anonymous
@@ -73,6 +84,14 @@ module PublicApiAuthentication
 
     @current_api_caller = result.caller
   end
+
+  # The caller of an in-process call from the MCP server, or nil.
+  def internal_api_caller
+    caller = request.env[INTERNAL_CALLER_ENV]
+    caller if caller.is_a?(Keys::Caller)
+  end
+
+  def internal_api_request? = !internal_api_caller.nil?
 
   def require_api_scope!(*scopes)
     missing = scopes.map(&:to_s).reject { |scope| current_api_caller&.scope?(scope) }

@@ -77,6 +77,8 @@ gem "mobility", "~> 1.3"
 # Public data API: validates /v1 request parameters against the OpenAPI 3.1
 # contract at runtime, and every example and test response against it in tests.
 gem "json_schemer", "~> 2.5"
+# The MCP server at /mcp (docs: app/mcp): the official Ruby SDK, which speaks MCP 2026-07-28.
+gem "mcp", "~> 1.6"
 
 # CMS: lightweight pagination
 gem "pagy", "~> 43.4"

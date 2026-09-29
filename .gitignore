@@ -44,3 +44,5 @@ CanadianPostalCodes202403.csv
 /reports/node_modules/
 /test/javascript/node_modules/
 /docs/openapi/node_modules/
+/script/mcp/e2e/node_modules/
+/script/mcp/e2e/package-lock.json

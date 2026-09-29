@@ -1,0 +1,10 @@
+{
+  "name": "york-factory-mcp-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end check of /mcp with the official MCP TypeScript SDK clients: v1 (initialize handshake) and v2 (MCP 2026-07-28).",
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.2.0",
+    "@modelcontextprotocol/sdk": "1.31.0"
+  }
+}

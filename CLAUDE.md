@@ -82,7 +82,7 @@ the contract. `script/public_api/explain.rb` checks query plans at representativ
 /.well-known/oauth-authorization-server        → RFC 8414 metadata (auth.buildcanada.com)
 /oauth/authorize, /oauth/token, /oauth/revoke   → Doorkeeper, extended by Oauth::AuthorizationsController / Oauth::TokensController
 /oauth/register                                 → RFC 7591 dynamic registration (public clients, rate-limited)
-/mcp                                            → WWW-Authenticate challenge; WS-G's MCP server goes here
+/mcp                                            → the MCP server (below)
 /developers/authorized_apps                     → authorized OAuth clients, with revoke
 ```
 Doorkeeper serves TradingPost (`first_party` apps, unchanged) and public-API clients (`dynamic`, or `metadata_document`
@@ -93,6 +93,24 @@ the account chosen at consent. `Keys::Authenticate` is the one verification path
 returns a `Keys::Caller` (kind, account, user, scopes, plan). CMS routes refuse public-API tokens. `Oauth::Settings`
 holds hosts and lifetimes: `OAUTH_ISSUER` / `oauth.issuer` and `PUBLIC_DATA_ORIGIN` / `oauth.data_origin` override
 the production hosts (for staging); elsewhere both default to the request's origin.
+
+## MCP server (/mcp, MCP 2026-07-28)
+```
+POST /mcp  → JSON-RPC over Streamable HTTP, stateless, JSON responses (GET/DELETE are 405)
+tools      → search_entities, get_entity, entity_spending, search_spending, describe_data
+resources  → buildcanada://releases/latest|{n}, spending/sources, datasets[/{asset_key}], entities/{id}, dictionary/{term}, guides/{slug}
+prompts    → investigate_recipient(name), follow_the_money(person_or_org)
+```
+Built on the official `mcp` gem, which serves both the stateless 2026-07-28 lifecycle (`_meta` envelope, `server/discover`)
+and the `initialize` handshake (2025-11-25 and earlier). The code is `app/mcp` (namespace `Mcp`, pushed to Zeitwerk in
+`config/initializers/mcp.rb`); `McpController` authenticates (API key or OAuth token for the `/mcp` resource; anonymous
+callers get the 401 challenge) and builds `Mcp::Server` per request. Tools don't query the read model themselves:
+`Mcp::Api` calls the `/v1` controllers in process through the router, passing the authenticated `Keys::Caller` in the Rack
+env (`PublicApiAuthentication::INTERNAL_CALLER_ENV`), so a tool's `structuredContent` is exactly the REST response.
+`outputSchema`s are generated from the OpenAPI components (`Mcp::Schemas`), and every one also allows
+`{ error: <problem> }`, the shape of a tool error (`isError: true`). `Mcp::Meter` charges each wrapped operation's units
+to `PublicApi::RateLimiter`; protocol messages are free. Tests: `test/integration/mcp`; end to end with the TypeScript SDK
+clients: `script/mcp/e2e`.
 
 ## Geo API
 ```

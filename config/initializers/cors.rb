@@ -27,6 +27,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource "/oauth/revoke", headers: :any, methods: [ :post, :options ]
     resource "/oauth/register", headers: :any, methods: [ :post, :options ]
     resource "/mcp", headers: :any, methods: [ :post, :options ],
-      expose: %w[WWW-Authenticate Mcp-Protocol-Version]
+      expose: %w[WWW-Authenticate Mcp-Protocol-Version BC-Usage-Units BC-Operation BC-Request-Id RateLimit RateLimit-Policy BC-Quota-Remaining Retry-After]
   end
 end

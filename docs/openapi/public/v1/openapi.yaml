@@ -27,12 +27,12 @@ info:
 
     No key is needed to start: anonymous callers get 30 units a minute and 1,000 a day
     with the read:public scope. Get a free key at https://auth.buildcanada.com/developers.
-    Agents: start at https://data.buildcanada.com/llms.txt, or connect the MCP server at
+    Agents: start at https://data.buildcanada.com/api/llms.txt, or connect the MCP server at
     https://data.buildcanada.com/mcp.
-  termsOfService: https://data.buildcanada.com/docs/terms
+  termsOfService: https://data.buildcanada.com/api/terms
   contact:
     name: Build Canada data team
-    url: https://data.buildcanada.com/docs
+    url: https://data.buildcanada.com/api
     email: data@buildcanada.com
   license:
     name: API responses carry each source's licence; Build Canada's own data is OGL-Canada-2.0

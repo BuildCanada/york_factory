@@ -78,7 +78,7 @@ get:
                   known_gaps:
                   links:
                     self: "/v1/dictionary/record_type"
-                    docs: https://data.buildcanada.com/docs/dictionary/record_type
+                    docs: https://data.buildcanada.com/api/dictionary/record_type
                 meta:
                   release: 11
                   as_of: '11'

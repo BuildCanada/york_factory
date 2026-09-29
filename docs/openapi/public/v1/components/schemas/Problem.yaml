@@ -10,8 +10,8 @@ properties:
   type:
     type: string
     format: uri
-    description: URI of the problem type's documentation page, `https://data.buildcanada.com/problems/<code with hyphens>`.
-    examples: ['https://data.buildcanada.com/problems/rate-limited']
+    description: URI of the problem type's documentation page, `https://data.buildcanada.com/api/problems/<code with hyphens>`.
+    examples: ['https://data.buildcanada.com/api/problems/rate-limited']
   title:
     type: string
     description: A short, fixed summary of the problem type. It does not change between occurrences.
@@ -56,7 +56,7 @@ properties:
     type: string
     format: uri
     description: The concept page that explains the rule behind this problem.
-    examples: ['https://data.buildcanada.com/docs/concepts/rate-limits.md']
+    examples: ['https://data.buildcanada.com/api/concepts/rate-limits.md']
   errors:
     type: array
     description: invalid_parameter only. One entry per rejected parameter.

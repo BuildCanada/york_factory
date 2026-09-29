@@ -77,7 +77,7 @@ get:
                   caveats:
                   - code: agreement_value_not_paid
                     text: proactive_grants amounts are agreement values, not money paid.
-                    docs: https://data.buildcanada.com/docs/caveats#agreement_value_not_paid
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
                   links:
                     dataset: "/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11"
                     records: "/v1/spending?source=proactive_grants&as_of=11"
@@ -106,7 +106,7 @@ get:
                   caveats:
                   - code: not_cross_source_total
                     text: Sources overlap. Never add amounts across sources.
-                    docs: https://data.buildcanada.com/docs/caveats#not_cross_source_total
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
                   limit: 50
                   next_cursor:
                   count:

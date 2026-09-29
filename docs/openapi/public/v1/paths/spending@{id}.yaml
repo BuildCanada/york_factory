@@ -176,7 +176,7 @@ get:
                   caveats:
                   - code: agreement_value_not_paid
                     text: proactive_grants amounts are agreement values, not money paid.
-                    docs: https://data.buildcanada.com/docs/caveats#agreement_value_not_paid
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
                 links:
                   self: "/v1/spending/K3M9Q2W7XA4B8C1D5E6F0G2H3J?as_of=11"
     '304':

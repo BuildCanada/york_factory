@@ -9,4 +9,4 @@
   Global Affairs projects.
 - Every tool result lists what to cite in `citations`, and its text ends with them.
 
-More: https://data.buildcanada.com/docs/concepts/provenance.md
+More: https://data.buildcanada.com/api/concepts/provenance.md

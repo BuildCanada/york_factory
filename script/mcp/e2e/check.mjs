@@ -19,7 +19,9 @@ export async function exercise(client, label) {
   const semantics = await client.callTool({ name: "describe_data", arguments: { topic: "spending semantics" } });
   check(semantics.structuredContent?.kind === "spending_semantics", "describe_data spending semantics");
   const person = await client.callTool({ name: "get_entity", arguments: { id: "01JD0000000000000000000PRS" } });
-  check(person.isError === true && person.structuredContent?.error?.code === "insufficient_scope", "a person without read:persons is a structured insufficient_scope (and passes SDK schema validation)");
+  check(!person.isError && person.structuredContent?.entity?.data?.entity_class === "person", "get_entity returns a person under read:public");
+  const missing = await client.callTool({ name: "get_entity", arguments: { id: "01JD0000000000000000000ZZZ" } });
+  check(missing.isError === true && missing.structuredContent?.error?.code === "not_found", "an unknown entity is a structured not_found (and passes SDK schema validation)");
   const bad = await client.callTool({ name: "search_spending", arguments: { fiscal_year: "2024-26" } });
   check(bad.isError === true && bad.structuredContent?.error?.code === "invalid_parameter", "a contract-refused argument is a structured invalid_parameter");
   const resources = (await client.listResources()).resources.map(r => r.uri);

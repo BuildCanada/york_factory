@@ -25,7 +25,7 @@ module Mcp
         name: NAME,
         title: "Build Canada data",
         version:,
-        website_url: "https://data.buildcanada.com/docs/mcp",
+        website_url: "https://data.buildcanada.com/api/mcp",
         instructions: INSTRUCTIONS,
         tools: TOOLS,
         prompts: Prompts.all,

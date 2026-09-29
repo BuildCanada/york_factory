@@ -14,7 +14,7 @@ module Mcp
     #   def self.perform(ctx, **arguments) -> { ...structured result... }
     #   def self.summary(result) -> String (without the citations)
     #
-    # and may declare `required_scopes "read:persons"`.
+    # and may declare `required_scopes "usage:read"`.
     class Base < MCP::Tool
       # Raised by a tool to fail with a problem (a Hash of RFC 9457 members).
       class Failure < StandardError
@@ -70,7 +70,7 @@ module Mcp
         def insufficient_scope(scopes)
           scope = scopes.join(" ")
           { code: "insufficient_scope", title: "Insufficient scope", status: 403, required_scope: scope,
-            type: "https://data.buildcanada.com/problems/insufficient-scope",
+            type: "https://data.buildcanada.com/api/problems/insufficient-scope",
             detail: "This tool needs #{scope}. Reconnect and approve #{scope}, or use an API key that has it " \
                     "(https://auth.buildcanada.com/developers)." }
         end

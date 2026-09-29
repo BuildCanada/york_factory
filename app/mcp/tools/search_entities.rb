@@ -5,14 +5,14 @@ module Mcp
       tool_name "search_entities"
       title "Search entities"
       description <<~TEXT.squish
-        Find a Canadian organization, government body, jurisdiction or Indigenous government in the Build Canada entity
-        registry, by identifier or by name. Use it first, to turn a name into the entity ID the other tools take.
+        Find a Canadian organization, government body, jurisdiction, Indigenous government or person in the Build
+        Canada entity registry, by identifier or by name. Use it first, to turn a name into the entity ID the other tools take.
         An identifier (a CRA business number BN9 or BN15, a corporation number, a First Nations band number, an LEI,
         a StatCan census code) matches exactly; otherwise names and aliases match after normalization. Each result
         has match.kind: identifier or exact are matches; with fuzzy=true, fuzzy results are similar names to check,
         not matches, so say so if you rely on one. Results are best first; prefer a precise name with its place
         ("Town of Diamond Valley", jurisdiction "ca-ab"). There is no address or postal code search. Persons are
-        found only with the read:persons scope. Returns entity references (id, name, class, subtype, jurisdiction,
+        searched like any other entity. Returns entity references (id, name, class, subtype, jurisdiction,
         status) and the release that answered: pass that release as as_of on later calls. Costs 3 request units.
       TEXT
       input_schema(
@@ -21,7 +21,7 @@ module Mcp
             "A name (\"Canadian Heritage\") or an identifier (\"107511586\", a BN9). At least 2 letters or digits."),
           class: Schemas.parameter("searchEntities", "class", description:
             "Only this kind of entity: government_org (departments, agencies, municipalities), organization " \
-            "(charities, companies, non-profits), jurisdiction, government_enterprise, indigenous_government, or person (needs read:persons)."),
+            "(charities, companies, non-profits), jurisdiction, government_enterprise, indigenous_government, or person."),
           jurisdiction: Schemas.parameter("searchEntities", "jurisdiction", description:
             "Only entities in this jurisdiction: \"ca\" for federal, \"ca-ab\" for Alberta, \"ca-on\" for Ontario, and so on."),
           fuzzy: { type: "boolean", default: false, description:

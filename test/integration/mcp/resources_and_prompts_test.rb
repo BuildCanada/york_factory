@@ -38,9 +38,10 @@ class McpResourcesAndPromptsTest < PublicApiTestCase
     %W[buildcanada://nope https://example.com buildcanada://entities/#{UNKNOWN} buildcanada://guides/nope].each do |uri|
       assert_equal(-32602, read(uri).dig("error", "code"), uri)
     end
-    body = read("buildcanada://entities/#{PERSON}")
+    # A merged entity is a 301 problem on /v1, so a JSON-RPC error carrying it here.
+    body = read("buildcanada://entities/#{DUP}")
     assert_equal(-32000, body.dig("error", "code"))
-    assert_equal "insufficient_scope", body.dig("error", "data", "problem", "code")
+    assert_equal "redirected", body.dig("error", "data", "problem", "code")
   end
 
   test "prompts plan an investigation with the tools" do

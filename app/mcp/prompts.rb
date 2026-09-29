@@ -35,7 +35,7 @@ module Mcp
         name: "follow_the_money",
         title: "Follow the money",
         description: "Trace who funds an organization, and whom a department or agency funds, with citations.",
-        arguments: [ MCP::Prompt::Argument.new(name: "person_or_org", description: "An organization, department or agency (persons need read:persons tools, phase 2).", required: true) ]
+        arguments: [ MCP::Prompt::Argument.new(name: "person_or_org", description: "An organization, department, agency or person.", required: true) ]
       ) do |args, server_context: nil|
         Prompts.message(<<~TEXT)
           Follow the federal money around "#{Prompts.arg(args, :person_or_org)}", using the Build Canada tools.
@@ -48,8 +48,8 @@ module Mcp
              group_by to see who funds it.
           4. For the largest counterparties, call entity_spending on them, and search_spending with payer and
              recipient set, to show the individual agreements.
-          5. Persons (directors, significant control) are not available yet: say so if the question needs them, and
-             never infer anything about a private individual.
+          5. A person entity is Build Canada's clustering of records, not a legal identity: say which records it
+             groups. A role's observed_from is when a filing first showed it, not the appointment date.
           6. Report per source, never adding across sources, name each measure, and end with the citations.
         TEXT
       end

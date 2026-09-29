@@ -51,40 +51,35 @@ class McpAuthAndLimitsTest < PublicApiTestCase
 
   # ---------- scopes and privacy ----------
 
-  test "a person needs read:persons: a structured insufficient_scope, then the person with the scope" do
-    error = assert_tool_error(call_tool("get_entity", { id: PERSON }, token: key), "insufficient_scope")
-    assert_equal "read:persons", error["required_scope"]
-    assert_equal 403, error["status"]
-    error = assert_tool_error(call_tool("search_entities", { query: "Jane Example", class: "person" }, token: key, era: :legacy), "insufficient_scope")
-    assert_equal "read:persons", error["required_scope"]
-    # Without the scope a person is simply not found by name.
-    assert_empty call_tool("search_entities", { query: "Jane Q. Example" }, token: key).dig("structuredContent", "data")
-
-    result = call_tool("get_entity", { id: PERSON }, token: persons_key)
+  test "persons come with read:public: get_entity and search_entities, by name, identifier or class" do
+    result = call_tool("get_entity", { id: PERSON }, token: key)
     refute result["isError"]
     assert_equal "person", result.dig("structuredContent", "entity", "data", "entity_class")
-    # Persons are found by name only, never by identifier (§3.7).
-    assert_empty call_tool("search_entities", { query: "999999999" }, token: persons_key).dig("structuredContent", "data")
+
+    person_ids = ->(r) { r.dig("structuredContent", "data").map { |h| h.dig("entity", "id") } }
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], person_ids.(call_tool("search_entities", { query: "Jane Q. Example" }, token: key))
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], person_ids.(call_tool("search_entities", { query: "999999999" }, token: key))
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ],
+      person_ids.(call_tool("search_entities", { query: "Jane Q. Example", class: "person" }, token: key, era: :legacy))
   end
 
-  test "an OAuth token carries its scopes: read:persons comes by consent and data terms" do
-    Account.personal_for!(users(:member)).update!(terms_accepted_at: Time.current)
-    tokens = oauth_tokens_for(users(:member), scope: "read:public read:persons")
+  test "an OAuth token with read:public reads a person" do
+    tokens = oauth_tokens_for(users(:member), scope: "read:public")
     refute call_tool("get_entity", { id: PERSON }, token: tokens["access_token"])["isError"]
   end
 
   test "a tool that declares a scope refuses callers without it, before doing anything" do
     tool = Class.new(Mcp::Tools::GetEntity) do
-      tool_name "persons_probe"
-      required_scopes "read:persons"
+      tool_name "usage_probe"
+      required_scopes "usage:read"
     end
-    caller = Keys::Caller.for(issued.api_key)
+    caller = Keys::Caller.for(issue_key(user: users(:member), scopes: %w[read:public]).api_key)
     meter = Mcp::Meter.new(caller:, ip: "203.0.113.1")
     api = Minitest::Mock.new # never called
     context = Mcp::Context.new(caller:, api:, meter:, locale: "en", request_id: "req_test")
     response = tool.call(server_context: { mcp: context }, id: PERSON).to_h
     assert response[:isError]
-    assert_equal({ "code" => "insufficient_scope", "required_scope" => "read:persons" },
+    assert_equal({ "code" => "insufficient_scope", "required_scope" => "usage:read" },
       response.dig(:structuredContent, :error).slice("code", "required_scope"))
     assert_equal 1, meter.units
   end

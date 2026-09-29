@@ -15,8 +15,6 @@ module PublicApi
 
       def index
         check_fields!(EntitySerializer::ENTITY_FIELDS)
-        return unless refuse_person_listing!(parameters["class"])
-
         filters = parameters.values.slice("class", "subtype", "jurisdiction", "status", "valid_on")
         sort = parameters["sort"]
         rows = entity_query.page(filters:, sort:, limit:, after:)

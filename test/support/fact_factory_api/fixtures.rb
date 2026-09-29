@@ -13,8 +13,9 @@ require "json"
 #   amendment in release 11; entity NEW exists only in release 11;
 # - redirects (DUP -> FOUNDATION), lineage (BLACK_DIAMOND and TURNER_VALLEY
 #   amalgamated into DIAMOND_VALLEY), relationships in and out;
-# - read:persons gating (PERSON, and its director_of relationship, never served
-#   in phase 1);
+# - a person entity (PERSON), served under read:public like any entity, and
+#   its director_of relationship, not served until the contract has phase 2's
+#   predicates;
 # - spending: revisions, an aggregate row, a blank amount, an archive copy,
 #   linked, proposed and unlinked occurrences, two currencies, and the privacy
 #   rules: an individual recipient's full postal code (which must leave as its

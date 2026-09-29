@@ -13,8 +13,8 @@ module PublicApi
   # - config/public_api/caveats.yml has caveat text in English and French.
   module Catalog
     ROOT = Rails.root.join("config/public_api")
-    CAVEAT_DOCS = "https://data.buildcanada.com/docs/caveats".freeze
-    DICTIONARY_DOCS = "https://data.buildcanada.com/docs/dictionary".freeze
+    CAVEAT_DOCS = "https://data.buildcanada.com/api/caveats".freeze
+    DICTIONARY_DOCS = "https://data.buildcanada.com/api/dictionary".freeze
 
     # What `amount` measures per source (fact-factory serve/read_model.MEASURES).
     MEASURES = {

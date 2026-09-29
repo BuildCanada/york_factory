@@ -12,10 +12,9 @@ module FactFactory
     # `score_key` is the score exactly as the database compares it, for cursors.
     Hit = Data.define(:entity_id, :kind, :score, :score_key, :matched_on, :rank)
 
-    def initialize(release:, persons: false)
+    def initialize(release:)
       @release = release
-      @persons = persons
-      @entities = EntityQuery.new(release:, persons:)
+      @entities = EntityQuery.new(release:)
     end
 
     # A query with fewer than 2 letters or digits is too broad (DECISIONS 27).
@@ -26,7 +25,7 @@ module FactFactory
         n: @release, ident: identifier_value(q), key: Names.match_key(q), normalized: Names.normalize(q),
         threshold: FUZZY_THRESHOLD, candidates: FUZZY_CANDIDATES
       }
-      filters = [ @entities.current("e"), @entities.visible("e") ]
+      filters = [ @entities.current("e") ]
       if entity_class
         filters << "e.entity_class = :entity_class"
         values[:entity_class] = entity_class
@@ -43,13 +42,11 @@ module FactFactory
         page_filter = "(h.rank, -h.score, h.entity_id) > (:a_rank, -CAST(:a_score AS double precision), :a_id)"
         values.merge!(a_rank: after[0], a_score: after[1], a_id: after[2])
       end
-      # Persons are found by name only (§3.7), never by identifier.
-      person_rule = @persons ? "AND NOT (e.entity_class = 'person' AND h.kind = 'identifier')" : ""
       sql = <<~SQL
         WITH hits AS (#{arms.join(' UNION ALL ')}),
         best AS (
           SELECT DISTINCT ON (h.entity_id) h.* FROM hits h
-          JOIN api.entities e ON e.entity_id = h.entity_id AND #{filters.join(' AND ')} #{person_rule}
+          JOIN api.entities e ON e.entity_id = h.entity_id AND #{filters.join(' AND ')}
           ORDER BY h.entity_id, h.rank, h.score DESC, h.matched_on
         )
         SELECT h.* FROM best h WHERE #{page_filter}

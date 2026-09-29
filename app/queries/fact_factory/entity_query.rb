@@ -2,31 +2,30 @@ module FactFactory
   # Entities, identifiers, relationships and lineage as of one release. Shared
   # by the REST controllers and the MCP server (WS-G), so the two can't drift.
   #
-  # Person entities (entity_class person, phase 2) are visible only to callers
-  # with read:persons (`persons: true`); everywhere else they are left out.
+  # Person entities (entity_class person, phase 2) are served like any other
+  # class, under read:public (decided 2026-09-29).
   class EntityQuery
     # The phase 1 predicates (the contract's Predicate enum). Person
-    # predicates (director_of, has_significant_control_over) come with
-    # read:persons in phase 2 and are never served here.
+    # predicates (director_of, has_significant_control_over) arrive with
+    # phase 2's contract and are not served until the enum has them.
     PREDICATES = %w[governs located_within covers party_to administrative_part_of reports_to_minister owned_by controlled_by member_of succeeded_by].freeze
 
     attr_reader :release
 
-    def initialize(release:, persons: false)
+    def initialize(release:)
       @release = release
-      @persons = persons
     end
 
     def find(entity_id)
       Entity.find_by_sql([ "SELECT * FROM api.entities e WHERE e.entity_id = :id AND #{current('e')} LIMIT 1", binds(id: entity_id) ]).first
     end
 
-    # {entity_id => Entity} for the ones current in the release and visible.
+    # {entity_id => Entity} for the ones current in the release.
     def refs(entity_ids)
       ids = entity_ids.compact.uniq
       return {} if ids.empty?
 
-      Entity.find_by_sql([ "SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current('e')} AND #{visible('e')}", binds(ids:) ])
+      Entity.find_by_sql([ "SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current('e')}", binds(ids:) ])
         .index_by(&:entity_id)
     end
 
@@ -71,7 +70,7 @@ module FactFactory
     def holders(namespace, value)
       sql = <<~SQL
         SELECT i.* FROM api.identifiers i
-        JOIN api.entities e ON e.entity_id = i.entity_id AND #{current('e')} AND #{visible('e')}
+        JOIN api.entities e ON e.entity_id = i.entity_id AND #{current('e')}
         WHERE i.namespace = :namespace AND i.value = :value AND #{current('i')}
         ORDER BY i.entity_id, i.row_id
       SQL
@@ -137,16 +136,12 @@ module FactFactory
 
     def current(table_alias) = FactFactoryRecord.in_release(table_alias)
 
-    def visible(table_alias) = @persons ? "TRUE" : "#{table_alias}.entity_class <> 'person'"
-
     private
 
     def binds(**values) = values.merge(n: release)
 
-    # Lists never include persons, whatever the scope: a person is found by
-    # name through search (docs/public-interface-design.md §8.1).
     def list_conditions(filters)
-      where = [ current("e"), "e.entity_class <> 'person'" ]
+      where = [ current("e") ]
       values = {}
       { "class" => "entity_class", "subtype" => "subtype", "jurisdiction" => "jurisdiction", "status" => "status" }.each do |param, column|
         next if filters[param].nil?

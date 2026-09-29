@@ -51,18 +51,16 @@ class Keys::AuthenticateTest < ActiveSupport::TestCase
   end
 
   test "missing scopes are reported together" do
-    result = Keys::Authenticate.call(token(scopes: "usage:read").token, resource: MCP, scopes: %w[read:public read:persons])
+    result = Keys::Authenticate.call(token(scopes: "usage:read").token, resource: MCP, scopes: %w[read:public cms:drafts])
     assert_equal :insufficient_scope, result.error
-    assert_equal %w[read:public read:persons], result.missing_scopes
+    assert_equal %w[read:public cms:drafts], result.missing_scopes
     assert_equal :oauth, result.caller.kind
   end
 
-  test "read:persons counts only while the account may hold it" do
+  test "a token keeps only scopes OAuth clients may hold" do
     access = token(scopes: "read:public read:persons")
-    assert_not Keys::Authenticate.call(access.token, resource: MCP).caller.scope?("read:persons")
-
-    @account.update!(terms_accepted_at: Time.current)
-    assert Keys::Authenticate.call(access.token, resource: MCP).caller.scope?("read:persons")
+    caller = Keys::Authenticate.call(access.token, resource: MCP).caller
+    assert_equal %w[read:public], caller.scopes
   end
 
   test "revoked, expired, unknown and orphaned tokens are refused" do

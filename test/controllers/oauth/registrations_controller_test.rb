@@ -28,7 +28,7 @@ class Oauth::RegistrationsControllerTest < ActionDispatch::IntegrationTest
   test "defaults the scope to every public-API scope" do
     register(redirect_uris: [ "https://claude.ai/api/mcp/auth_callback" ])
     assert_response :created
-    assert_equal "read:public read:persons usage:read", response.parsed_body["scope"]
+    assert_equal "read:public usage:read", response.parsed_body["scope"]
     assert_equal "claude.ai", response.parsed_body["client_name"]
   end
 

@@ -89,11 +89,9 @@ class Keys::IssueTest < ActiveSupport::TestCase
     assert_match(/allows 5 active keys/, result.api_key.errors[:base].to_sentence)
   end
 
-  test "read:persons needs the data terms" do
+  test "read:persons is not a scope" do
     refute issue(scopes: %w[read:public read:persons]).ok?
-
-    @account.update!(terms_accepted_at: Time.current)
-    assert issue(scopes: %w[read:public read:persons]).ok?
+    refute_includes Keys::Policy.new(@account, @user).grantable_scopes, "read:persons"
   end
 
   test "a suspended account can't issue keys" do

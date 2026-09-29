@@ -19,18 +19,17 @@ module Oauth
 
     # Scopes OAuth clients may ask for. keys:manage (phase 2) and cms:drafts
     # (the CMS, acting as the user) are not offered to third-party clients.
-    SCOPES = %w[read:public read:persons usage:read].freeze
+    # People data comes with read:public (decided 2026-09-29).
+    SCOPES = %w[read:public usage:read].freeze
     # What a client gets when it asks for nothing, and the scope named in a
-    # 401 challenge. read:persons is asked for by step-up, when a tool needs it.
+    # 401 challenge.
     DEFAULT_SCOPES = %w[read:public usage:read].freeze
 
     # Plain-word descriptions for the consent screen.
     SCOPE_DESCRIPTIONS = {
-      "read:public" => "Read Build Canada's public data: organizations, spending, documents, releases and datasets.",
-      "read:persons" => "Read people named in public records, such as corporate directors and people with significant control: their names, public roles, city, province and postal area.",
+      "read:public" => "Read Build Canada's public data: organizations, people named in public records, spending, documents, releases and datasets. A person's address is only ever city, province and postal area, never a street address.",
       "usage:read" => "See your account's API usage."
     }.freeze
-    PERSONS_NOTE = "Never includes a street address.".freeze
 
     ACCESS_TOKEN_LIFETIME = 1.hour
     # A refresh token not used for this long stops working. Each refresh

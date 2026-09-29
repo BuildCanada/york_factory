@@ -23,7 +23,7 @@ module Oauth
 
     TIMEOUT = 5
     MAX_BYTES = 64 * 1024
-    USER_AGENT = "BuildCanada-OAuth/1.0 (+https://data.buildcanada.com/docs/mcp)".freeze
+    USER_AGENT = "BuildCanada-OAuth/1.0 (+https://data.buildcanada.com/api/mcp)".freeze
 
     # Addresses no fetch may reach, beyond IPAddr's private/loopback/link-local.
     BLOCKED_RANGES = %w[

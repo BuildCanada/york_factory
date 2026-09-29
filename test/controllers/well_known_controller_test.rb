@@ -9,7 +9,7 @@ class WellKnownControllerTest < ActionDispatch::IntegrationTest
       body = response.parsed_body
       assert_equal "http://www.example.com/mcp", body["resource"]
       assert_equal [ "http://www.example.com" ], body["authorization_servers"]
-      assert_equal %w[read:public read:persons usage:read], body["scopes_supported"]
+      assert_equal %w[read:public usage:read], body["scopes_supported"]
       assert_equal %w[header], body["bearer_methods_supported"]
       assert_match "public", response.headers["Cache-Control"]
     end

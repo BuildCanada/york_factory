@@ -91,6 +91,7 @@ properties:
       Roster-specific details, such as institutional_form for federal bodies or
       category_code for charities. Keys differ by roster and are documented on the
       dataset page of the entity's provenance asset. Only allowlisted keys are served.
+      Address attributes (such as a school board's `addresses`) are not served in v1.
     x-bc-dictionary: attributes
     additionalProperties: true
     examples: [{municipality_type_raw: Town}]

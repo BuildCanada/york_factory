@@ -31,8 +31,8 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 16. **Datasets are keyed by the percent-encoded asset key** in the path (`/datasets/sources%2Fca%2Ftbs%2Fproactive_grants`), because keys contain slashes. Every list item carries `links.self`, so clients rarely have to build one.
 17. **`values` in `DictionaryTerm`** is always an array of `{value, meaning}`. The YAML dictionary uses both lists and maps.
 18. **Enums in responses.** They use `enum` so agents and docs can read them. The versioning policy says new values are additive, so the SDK generators must be configured to tolerate unknown values (WS-J).
-19. **Entity `attributes`** is an open object, and only keys allowlisted by WS-B are served. The school-board `addresses` attribute should not be allowlisted without a decision. **Review.**
-20. **`recipient_postal_code` is served as the source publishes it**, including for individual recipients. The government publishes it and bulk Parquet already carries it. It is a postal code, not a street address. D9's persons rule (FSA only) covers person entities, not spending rows. **Review:** you could truncate it to the FSA when a recipient occurrence's `party_kind` is `individual`.
+19. **Entity `attributes`** is an open object, and only keys allowlisted by WS-B are served. **Decided 2026-09-29:** the school-board `addresses` attribute, and any other address attribute, is not served in v1. It is deferred until someone decides whether organization street addresses belong in the API. WS-B must leave it off the `api.entities` allowlist.
+20. **`recipient_postal_code` follows the persons rule (decided 2026-09-29).** People are shown by city, province and FSA only. When a row's recipient occurrence is an individual (`party_kind` is `individual`), the API serves only the FSA: the first 3 characters, uppercased. The same reduction applies to the postal code inside `raw` (`expand=raw`) and in the bulk exports. Organizations keep the full postal code as published. WS-B applies this in `api.spending_records`, and WS-K in the exports.
 
 ## Behaviour the spec fixes for WS-D
 

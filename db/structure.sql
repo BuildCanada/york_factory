@@ -164,6 +164,8 @@ CREATE TABLE public.accounts (
     terms_accepted_at timestamp with time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    stripe_subscription_id character varying,
+    stripe_subscription_item_id character varying,
     CONSTRAINT accounts_kind CHECK (((kind)::text = ANY (ARRAY[('personal'::character varying)::text, ('organization'::character varying)::text]))),
     CONSTRAINT accounts_personal_has_user CHECK ((((kind)::text <> 'personal'::text) OR (personal_user_id IS NOT NULL))),
     CONSTRAINT accounts_plan CHECK (((plan)::text = ANY (ARRAY[('anonymous'::character varying)::text, ('free'::character varying)::text, ('internal'::character varying)::text, ('partner'::character varying)::text, ('paid'::character varying)::text]))),
@@ -386,6 +388,46 @@ CREATE SEQUENCE public.audit_events_id_seq
 --
 
 ALTER SEQUENCE public.audit_events_id_seq OWNED BY public.audit_events.id;
+
+
+--
+-- Name: billing_usage_records; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.billing_usage_records (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    period_start date NOT NULL,
+    period_end date NOT NULL,
+    units bigint NOT NULL,
+    meter character varying DEFAULT 'api_units'::character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    idempotency_key character varying NOT NULL,
+    external_id character varying,
+    reported_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT billing_usage_records_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'reported'::character varying, 'skipped'::character varying])::text[])))
+);
+
+
+--
+-- Name: billing_usage_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.billing_usage_records_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: billing_usage_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.billing_usage_records_id_seq OWNED BY public.billing_usage_records.id;
 
 
 --
@@ -2983,6 +3025,188 @@ CREATE SEQUENCE public.trade_barriers_themes_id_seq
 --
 
 ALTER SEQUENCE public.trade_barriers_themes_id_seq OWNED BY public.trade_barriers_themes.id;
+
+
+--
+-- Name: usage_daily; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_daily (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    api_key_id bigint,
+    operation character varying NOT NULL,
+    day date NOT NULL,
+    requests bigint DEFAULT 0 NOT NULL,
+    units bigint DEFAULT 0 NOT NULL,
+    cache_hits bigint DEFAULT 0 NOT NULL,
+    errors_4xx bigint DEFAULT 0 NOT NULL,
+    errors_5xx bigint DEFAULT 0 NOT NULL,
+    throttled bigint DEFAULT 0 NOT NULL,
+    rolled_up_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: usage_daily_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.usage_daily_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: usage_daily_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.usage_daily_id_seq OWNED BY public.usage_daily.id;
+
+
+--
+-- Name: usage_hourly; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_hourly (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    api_key_id bigint,
+    operation character varying NOT NULL,
+    hour_start timestamp with time zone NOT NULL,
+    requests bigint DEFAULT 0 NOT NULL,
+    units bigint DEFAULT 0 NOT NULL,
+    cache_hits bigint DEFAULT 0 NOT NULL,
+    errors_4xx bigint DEFAULT 0 NOT NULL,
+    errors_5xx bigint DEFAULT 0 NOT NULL,
+    throttled bigint DEFAULT 0 NOT NULL,
+    p95_ms double precision,
+    rolled_up_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: usage_hourly_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.usage_hourly_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: usage_hourly_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.usage_hourly_id_seq OWNED BY public.usage_hourly.id;
+
+
+--
+-- Name: usage_quota_notices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_quota_notices (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    period character varying NOT NULL,
+    threshold integer NOT NULL,
+    units bigint NOT NULL,
+    quota bigint NOT NULL,
+    sent_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: usage_quota_notices_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.usage_quota_notices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: usage_quota_notices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.usage_quota_notices_id_seq OWNED BY public.usage_quota_notices.id;
+
+
+--
+-- Name: usage_reconciliations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_reconciliations (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    day date NOT NULL,
+    rollup_units bigint NOT NULL,
+    edge_units bigint NOT NULL,
+    drift double precision NOT NULL,
+    alerted boolean DEFAULT false NOT NULL,
+    checked_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: usage_reconciliations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.usage_reconciliations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: usage_reconciliations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.usage_reconciliations_id_seq OWNED BY public.usage_reconciliations.id;
+
+
+--
+-- Name: usage_rollup_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_rollup_runs (
+    id bigint NOT NULL,
+    window_start timestamp with time zone NOT NULL,
+    window_end timestamp with time zone NOT NULL,
+    source character varying NOT NULL,
+    hourly_rows integer DEFAULT 0 NOT NULL,
+    daily_rows integer DEFAULT 0 NOT NULL,
+    finished_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: usage_rollup_runs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.usage_rollup_runs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: usage_rollup_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.usage_rollup_runs_id_seq OWNED BY public.usage_rollup_runs.id;
 
 
 --
@@ -5653,6 +5877,13 @@ ALTER TABLE ONLY public.audit_events ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
+-- Name: billing_usage_records id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.billing_usage_records ALTER COLUMN id SET DEFAULT nextval('public.billing_usage_records_id_seq'::regclass);
+
+
+--
 -- Name: broadcast_backfill_items id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6063,6 +6294,41 @@ ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories ALTER COLUMN id SE
 --
 
 ALTER TABLE ONLY public.trade_barriers_themes ALTER COLUMN id SET DEFAULT nextval('public.trade_barriers_themes_id_seq'::regclass);
+
+
+--
+-- Name: usage_daily id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_daily ALTER COLUMN id SET DEFAULT nextval('public.usage_daily_id_seq'::regclass);
+
+
+--
+-- Name: usage_hourly id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_hourly ALTER COLUMN id SET DEFAULT nextval('public.usage_hourly_id_seq'::regclass);
+
+
+--
+-- Name: usage_quota_notices id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_quota_notices ALTER COLUMN id SET DEFAULT nextval('public.usage_quota_notices_id_seq'::regclass);
+
+
+--
+-- Name: usage_reconciliations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_reconciliations ALTER COLUMN id SET DEFAULT nextval('public.usage_reconciliations_id_seq'::regclass);
+
+
+--
+-- Name: usage_rollup_runs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_rollup_runs ALTER COLUMN id SET DEFAULT nextval('public.usage_rollup_runs_id_seq'::regclass);
 
 
 --
@@ -6519,6 +6785,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.audit_events
     ADD CONSTRAINT audit_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: billing_usage_records billing_usage_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.billing_usage_records
+    ADD CONSTRAINT billing_usage_records_pkey PRIMARY KEY (id);
 
 
 --
@@ -7015,6 +7289,46 @@ ALTER TABLE ONLY public.trade_barriers_jurisdiction_histories
 
 ALTER TABLE ONLY public.trade_barriers_themes
     ADD CONSTRAINT trade_barriers_themes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage_daily usage_daily_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_daily
+    ADD CONSTRAINT usage_daily_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage_hourly usage_hourly_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_hourly
+    ADD CONSTRAINT usage_hourly_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage_quota_notices usage_quota_notices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_quota_notices
+    ADD CONSTRAINT usage_quota_notices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage_reconciliations usage_reconciliations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_reconciliations
+    ADD CONSTRAINT usage_reconciliations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage_rollup_runs usage_rollup_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_rollup_runs
+    ADD CONSTRAINT usage_rollup_runs_pkey PRIMARY KEY (id);
 
 
 --
@@ -7881,6 +8195,27 @@ CREATE INDEX index_audit_events_on_subject ON public.audit_events USING btree (s
 
 
 --
+-- Name: index_billing_usage_records_on_account_id_and_period_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_billing_usage_records_on_account_id_and_period_start ON public.billing_usage_records USING btree (account_id, period_start);
+
+
+--
+-- Name: index_billing_usage_records_on_idempotency_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_billing_usage_records_on_idempotency_key ON public.billing_usage_records USING btree (idempotency_key);
+
+
+--
+-- Name: index_billing_usage_records_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_billing_usage_records_on_status ON public.billing_usage_records USING btree (status);
+
+
+--
 -- Name: index_broadcast_backfill_items_on_request_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8606,6 +8941,90 @@ CREATE INDEX index_trade_barriers_agreements_on_theme_id ON public.trade_barrier
 --
 
 CREATE UNIQUE INDEX index_trade_barriers_themes_on_name ON public.trade_barriers_themes USING btree (name);
+
+
+--
+-- Name: index_usage_daily_on_account_id_and_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_daily_on_account_id_and_day ON public.usage_daily USING btree (account_id, day);
+
+
+--
+-- Name: index_usage_daily_on_api_key_id_and_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_daily_on_api_key_id_and_day ON public.usage_daily USING btree (api_key_id, day);
+
+
+--
+-- Name: index_usage_daily_on_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_daily_on_day ON public.usage_daily USING btree (day);
+
+
+--
+-- Name: index_usage_daily_on_group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_usage_daily_on_group ON public.usage_daily USING btree (account_id, COALESCE(api_key_id, (0)::bigint), operation, day);
+
+
+--
+-- Name: index_usage_daily_on_operation_and_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_daily_on_operation_and_day ON public.usage_daily USING btree (operation, day);
+
+
+--
+-- Name: index_usage_hourly_on_api_key_id_and_hour_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_hourly_on_api_key_id_and_hour_start ON public.usage_hourly USING btree (api_key_id, hour_start);
+
+
+--
+-- Name: index_usage_hourly_on_group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_usage_hourly_on_group ON public.usage_hourly USING btree (account_id, COALESCE(api_key_id, (0)::bigint), operation, hour_start);
+
+
+--
+-- Name: index_usage_hourly_on_hour_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_hourly_on_hour_start ON public.usage_hourly USING btree (hour_start);
+
+
+--
+-- Name: index_usage_quota_notices_once; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_usage_quota_notices_once ON public.usage_quota_notices USING btree (account_id, period, threshold);
+
+
+--
+-- Name: index_usage_reconciliations_on_account_id_and_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_usage_reconciliations_on_account_id_and_day ON public.usage_reconciliations USING btree (account_id, day);
+
+
+--
+-- Name: index_usage_reconciliations_on_alerted_and_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_reconciliations_on_alerted_and_day ON public.usage_reconciliations USING btree (alerted, day);
+
+
+--
+-- Name: index_usage_rollup_runs_on_finished_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_usage_rollup_runs_on_finished_at ON public.usage_rollup_runs USING btree (finished_at);
 
 
 --
@@ -10234,6 +10653,22 @@ ALTER TABLE ONLY public.metrics_social_media_ad_campaigns
 
 
 --
+-- Name: usage_hourly fk_rails_1d1b5ebc35; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_hourly
+    ADD CONSTRAINT fk_rails_1d1b5ebc35 FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: usage_daily fk_rails_1dd0954b2e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_daily
+    ADD CONSTRAINT fk_rails_1dd0954b2e FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: media_capture_states fk_rails_1e855b1d57; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10303,6 +10738,14 @@ ALTER TABLE ONLY public.saved_search_matches
 
 ALTER TABLE ONLY public.saved_search_matches
     ADD CONSTRAINT fk_rails_4d2d65163a FOREIGN KEY (saved_search_id) REFERENCES public.saved_searches(id);
+
+
+--
+-- Name: usage_quota_notices fk_rails_536ae4faed; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_quota_notices
+    ADD CONSTRAINT fk_rails_536ae4faed FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
 
 
 --
@@ -10455,6 +10898,14 @@ ALTER TABLE ONLY public.metrics_social_media_account_metric_snapshots
 
 ALTER TABLE ONLY public.metrics_instagram_stats
     ADD CONSTRAINT fk_rails_91c7fda134 FOREIGN KEY (social_media_account_id) REFERENCES public.metrics_social_media_accounts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: billing_usage_records fk_rails_98f15b2a85; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.billing_usage_records
+    ADD CONSTRAINT fk_rails_98f15b2a85 FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE RESTRICT;
 
 
 --
@@ -10631,6 +11082,14 @@ ALTER TABLE ONLY public.metrics_meta_media_insights
 
 ALTER TABLE ONLY public.api_keys
     ADD CONSTRAINT fk_rails_f4470e16d5 FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- Name: usage_reconciliations fk_rails_fd724a5804; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_reconciliations
+    ADD CONSTRAINT fk_rails_fd724a5804 FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
 
 
 --
@@ -11648,6 +12107,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260929000001'),
 ('20260928000003'),
 ('20260928000002'),
 ('20260928000001'),

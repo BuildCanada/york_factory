@@ -1,0 +1,32 @@
+<%# locals: (report:, freshness:) %>
+<% days = report.daily(days: 30) %>
+<% labels = ->(d) { d.day.strftime("%b %-d") } %>
+<%= usage_column_chart(days.map { |d| [ labels.(d), d.units ] }, title: "Units by day, last 30 days", unit: "units") %>
+<%= usage_column_chart(days.map { |d| [ labels.(d), d.errors ] }, title: "Errors (4xx and 5xx) by day", unit: "errors") %>
+<% if days.sum(&:throttled).positive? %>
+  <%= usage_column_chart(days.map { |d| [ labels.(d), d.throttled ] }, title: "Rate-limited (429) requests by day", unit: "requests") %>
+<% end %>
+
+<% operations = report.operations(days: 30) %>
+<div class="label">Top operations, last 30 days</div>
+<% if operations.empty? %>
+  <p class="text-muted mb-2">No requests yet.</p>
+<% else %>
+  <% top = operations.map(&:units).max.to_i.nonzero? || 1 %>
+  <table class="mb-2">
+    <thead><tr><th>Operation</th><th>Units</th><th style="width: 35%"></th><th>Requests</th><th>Errors</th><th>429s</th></tr></thead>
+    <tbody>
+      <% operations.each do |op| %>
+        <tr>
+          <td class="mono"><%= op.operation %></td>
+          <td><%= number_with_delimiter(op.units) %></td>
+          <td><div class="usage-hbar" style="width: <%= (op.units * 100.0 / top).round(1) %>%" title="<%= number_with_delimiter(op.units) %> units"></div></td>
+          <td><%= number_with_delimiter(op.requests) %></td>
+          <td><%= number_with_delimiter(op.errors) %></td>
+          <td><%= number_with_delimiter(op.throttled) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+<p class="text-muted"><%= freshness ? "Rolled up #{developer_time(freshness)}; about a minute behind the edge." : "Usage is recorded once metering is live." %></p>

@@ -386,7 +386,9 @@ Rails.application.routes.draw do
     resource :account_switch, only: :create
     resources :keys do
       post :rotate, on: :member
+      get :live, on: :member
     end
+    resource :usage, only: :show, controller: "usage"
   end
 
   # Called by the data-edge Worker (HMAC-signed, see Edge::Signature).

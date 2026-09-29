@@ -1,10 +1,11 @@
 module Developers
   class KeysController < BaseController
-    before_action :require_key_manager!, except: %i[index show]
-    before_action :set_key, only: %i[show edit update destroy rotate]
+    before_action :require_key_manager!, except: %i[index show live]
+    before_action :set_key, only: %i[show edit update destroy rotate live]
 
     def index
       @api_keys = @account.api_keys.includes(:rotated_to).order(created_at: :desc)
+      @key_hours = Usage::Report.key_hours(@account)
     end
 
     def new
@@ -36,6 +37,13 @@ module Developers
 
     def show
       load_key_detail
+    end
+
+    # The key's live panel (last hour by minute, and the edge's bucket and
+    # quota), fetched by the key page every 10 seconds.
+    def live
+      load_live_usage
+      render partial: "developers/keys/live", locals: { api_key: @api_key, minutes: @minutes, edge: @edge_usage }
     end
 
     def edit
@@ -98,6 +106,17 @@ module Developers
     def load_key_detail
       key_ids = [ @api_key.id, @api_key.rotated_from_id ].compact
       @audit_events = AuditEvent.where(subject_type: "ApiKey", subject_id: key_ids).recent.includes(:actor_user).limit(100)
+      @report = Usage::Report.new(account: @account, api_key: @api_key)
+      @quota = Usage::Quota.new(@account)
+      load_live_usage
+    end
+
+    def load_live_usage
+      now = Time.current.utc.beginning_of_minute + 1.minute
+      live = Usage::Live.new
+      @live_configured = live.configured?
+      @minutes = live.minutes(account: @account, api_key: @api_key, from: now - 60.minutes, to: now)
+      @edge_usage = Edge::UsageClient.new.key(@api_key) if @api_key.usable?
     end
 
     def key_params

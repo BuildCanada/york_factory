@@ -88,7 +88,7 @@ class PublicApiDiscoveryTest < PublicApiTestCase
 
   test "a bad key is 401 and a revoked one says so" do
     issued = issue_key(scopes: %w[read:public])
-    api_get "/v1/entities", key: "#{issued.raw_key.chop}x"
+    api_get "/v1/entities", key: issued.raw_key.chop + (issued.raw_key.end_with?("x") ? "y" : "x")
     assert_problem("listEntities", 401, "unauthenticated")
     refute response.headers.key?("RateLimit"), "a failed authentication is not charged"
 

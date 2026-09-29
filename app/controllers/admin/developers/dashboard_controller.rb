@@ -9,6 +9,10 @@ module Admin
         @live_key_count = ApiKey.live.count
         @bifrost_key_count = ApiKey.live.bifrost.count
         @recently_used = ApiKey.live.where.not(last_used_at: nil).includes(:account).order(last_used_at: :desc).limit(10)
+        @consumers = Usage::Consumers.new.top(limit: 25)
+        @daily_units = Usage::Daily.where(day: (Time.current.utc.to_date - 29)..).group(:day).sum(:units)
+        @rollup = Usage::RollupRun.latest
+        @drifted = Usage::Reconciliation.drifted.where(day: (Time.current.utc.to_date - 7)..).includes(:account).order(day: :desc).limit(20)
         @reconciliation = AuditEvent.where(action: "admin.bifrost_reconciled").recent.first
         @mass_rotation = AuditEvent.where(action: "admin.mass_rotation").recent.first
       end

@@ -1,0 +1,17 @@
+<%# locals: (api_key:, minutes:, edge:) %>
+<div id="live-usage" data-live-url="<%= live_developers_key_path(api_key) %>">
+  <% if minutes.any? %>
+    <% by_minute = minutes.index_by { |m| m[:bucket_start] } %>
+    <% last = Time.current.utc.beginning_of_minute %>
+    <% points = (0...60).map { |i| last - (59 - i).minutes }.map { |t| [ t.strftime("%H:%M"), by_minute[t]&.dig(:units).to_i ] } %>
+    <%= usage_column_chart(points, title: "Units by minute, last hour (live)", unit: "units", label_every: 10) %>
+  <% else %>
+    <p class="text-muted mb-2">No requests in the last hour<%= " (live metering isn't configured here)" unless Usage::Live.new.configured? %>.</p>
+  <% end %>
+  <% if edge %>
+    <p class="text-muted">
+      At the edge now: <%= number_with_delimiter(edge.dig("rate", "remaining").to_i) %> units available of a <%= number_with_delimiter(edge.dig("limits", "burst").to_i) %> burst<% if edge.dig("quota", "remaining") %>, <%= number_with_delimiter(edge.dig("quota", "remaining").to_i) %> left this period<% end %>.
+    </p>
+  <% end %>
+  <p class="text-muted">Updated <%= developer_time(Time.current) %>.</p>
+</div>

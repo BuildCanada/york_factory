@@ -1,0 +1,60 @@
+<%= render "admin/developers/nav" %>
+
+<div class="grid">
+  <div class="card"><div class="label">Accounts</div><div class="value"><%= number_with_delimiter(@account_count) %></div></div>
+  <div class="card"><div class="label">Suspended</div><div class="value"><%= number_with_delimiter(@suspended_count) %></div></div>
+  <div class="card"><div class="label">Live keys</div><div class="value"><%= number_with_delimiter(@live_key_count) %></div></div>
+  <div class="card"><div class="label">Bifrost-issued</div><div class="value"><%= number_with_delimiter(@bifrost_key_count) %></div></div>
+</div>
+
+<h2>Top consumers and anomaly flags</h2>
+<p class="text-muted" style="margin-bottom: 1.5rem;">Units, 429s and anomaly flags per key appear here once usage metering (WS-I) is live. Until then, the most recently used keys:</p>
+<table>
+  <thead><tr><th>Key</th><th>Account</th><th>Last used</th><th>From</th></tr></thead>
+  <tbody>
+    <% @recently_used.each do |api_key| %>
+      <tr>
+        <td class="mono"><%= api_key.token_prefix %>…</td>
+        <td><a href="<%= admin_developers_account_path(api_key.account) %>"><%= api_key.account.name %></a></td>
+        <td class="text-muted"><%= developer_time(api_key.last_used_at) %></td>
+        <td class="mono"><%= api_key.last_used_ip %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Bifrost reconciliation</h2>
+<% if @reconciliation %>
+  <% report = @reconciliation.metadata %>
+  <p style="margin-bottom: 0.75rem;">
+    Last run <%= developer_time(@reconciliation.created_at) %>: <%= report["checked"] %> data-api virtual keys checked,
+    <%= Array(report["deactivated"]).size %> deactivated, <%= Array(report["failed"]).size %> failed,
+    <%= Array(report["missing_in_bifrost"]).size %> live keys missing or inactive in Bifrost.
+  </p>
+  <% if Array(report["missing_in_bifrost"]).any? %>
+    <table>
+      <thead><tr><th>Missing in Bifrost</th><th>Account</th><th>Virtual key</th></tr></thead>
+      <tbody>
+        <% report["missing_in_bifrost"].each do |row| %>
+          <tr><td class="mono"><%= row["prefix"] %>…</td><td><%= row["account_id"] %></td><td class="mono"><%= row["vk_id"] %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% else %>
+  <p class="text-muted" style="margin-bottom: 0.75rem;">Not run yet. It runs nightly.</p>
+<% end %>
+<%= button_to "Run reconciliation now", admin_developers_reconcile_path, method: :post, class: "btn btn-sm", form: { style: "margin-bottom: 2rem;" } %>
+
+<% if current_user.superadmin? %>
+  <h2>Mass rotation</h2>
+  <p class="text-muted" style="margin-bottom: 0.75rem;">
+    For a Bifrost breach: every live Bifrost-issued key stops working in 7 days, and owners are emailed to rotate.
+    <% if @mass_rotation %>Last run <%= developer_time(@mass_rotation.created_at) %> (<%= @mass_rotation.metadata["keys"] %> keys: <%= @mass_rotation.metadata["reason"] %>).<% end %>
+  </p>
+  <%= form_with url: admin_developers_mass_rotation_path, method: :post, style: "display: flex; gap: 0.5rem; margin-bottom: 2rem;" do |form| %>
+    <%= form.text_field :reason, class: "form-control", placeholder: "Reason", required: true %>
+    <%= form.text_field :confirm, class: "form-control", placeholder: "Type ROTATE ALL", required: true, autocomplete: "off" %>
+    <%= form.submit "Rotate all Bifrost keys", class: "btn btn-sm btn-danger" %>
+  <% end %>
+<% end %>

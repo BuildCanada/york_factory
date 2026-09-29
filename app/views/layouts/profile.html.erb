@@ -28,6 +28,7 @@
     .topbar-right a { font-size: 0.85rem; }
     .topbar-nav { display: flex; gap: 0.75rem; }
     .main-content { max-width: 600px; margin: 2rem auto; padding: 0 1.5rem; }
+    .main-content.wide { max-width: 980px; }
     .page-header { margin-bottom: 1.25rem; }
     .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
     .btn:hover { background: var(--border); text-decoration: none; }
@@ -49,20 +50,35 @@
     .api-key-form { margin-bottom: 2rem; }
     h2 { margin-bottom: 0.75rem; font-size: 1rem; }
     table { width: 100%; border-collapse: collapse; background: var(--surface); }
-    th, td { padding: 0.6rem; border: 1px solid var(--border); text-align: left; font-size: 0.8rem; }
+    th, td { padding: 0.6rem; border: 1px solid var(--border); text-align: left; font-size: 0.8rem; vertical-align: top; }
+    .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: var(--border); color: var(--text); }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-yellow { background: rgba(234,179,8,0.15); color: #eab308; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; }
+    .card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .value { font-size: 1.3rem; font-weight: 700; margin-top: 0.2rem; }
+    section { margin-bottom: 2rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; overflow-x: auto; font-size: 0.8rem; margin-bottom: 1rem; }
+    dl.details { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    dl.details dt { color: var(--muted); }
+    .checkbox { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.4rem; font-size: 0.85rem; text-transform: none; letter-spacing: normal; color: var(--text); }
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; }
+    .danger-zone { border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; padding: 1rem; }
   </style>
 </head>
 <body>
   <div class="topbar">
     <a href="/profile" class="topbar-brand">Build Canada</a>
     <div class="topbar-right">
-      <nav class="topbar-nav"><a href="<%= profile_path %>">Profile</a><a href="<%= profile_api_keys_path %>">API Keys</a></nav>
+      <nav class="topbar-nav"><a href="<%= profile_path %>">Profile</a><a href="<%= developers_path %>">Developers</a><a href="<%= developers_keys_path %>">API Keys</a></nav>
       <span><%= current_user.name || current_user.email %></span>
       <%= button_to "Logout", destroy_user_session_path, method: :delete, style: "background: none; border: none; color: var(--accent); font-size: inherit; cursor: pointer; padding: 0;" %>
     </div>
   </div>
 
-  <main class="main-content">
+  <main class="main-content <%= content_for(:main_class) %>">
     <% if flash[:notice] %>
       <div class="flash flash-notice"><%= flash[:notice] %></div>
     <% end %>

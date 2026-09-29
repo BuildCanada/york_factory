@@ -1,0 +1,50 @@
+<%= render "admin/developers/nav" %>
+
+<h2><%= @account.name %> (<%= @account.kind %>)</h2>
+<% if @account.suspended? %>
+  <div class="flash flash-alert" style="margin-bottom: 1rem;">Suspended <%= developer_time(@account.suspended_at) %>: <%= @account.suspended_reason %></div>
+<% end %>
+<% if @account.errors.any? %>
+  <div class="flash flash-alert" style="margin-bottom: 1rem;"><%= @account.errors.full_messages.to_sentence %></div>
+<% end %>
+
+<div class="grid">
+  <div class="card"><div class="label">Effective plan</div><div class="value"><%= @account.effective_plan_name.titleize %></div></div>
+  <div class="card"><div class="label">Data terms</div><div class="value"><%= @account.terms_accepted? ? "Accepted" : "Not accepted" %></div></div>
+  <div class="card"><div class="label">Live keys</div><div class="value"><%= @account.live_key_count %> / <%= @account.plan_definition.key_limit %></div></div>
+</div>
+
+<h2>Plan</h2>
+<%= form_with model: @account, url: admin_developers_account_path(@account), method: :patch, style: "display: flex; gap: 0.5rem; align-items: end; margin-bottom: 2rem;" do |form| %>
+  <div><%= form.label :plan, "Base plan" %><%= form.select :plan, Plan::NAMES.map { |n| [ n.titleize, n ] }, {}, class: "form-control" %></div>
+  <div><%= form.label :plan_override, "Override" %><%= form.select :plan_override, [ [ "None", "" ] ] + Plan::NAMES.map { |n| [ n.titleize, n ] }, {}, class: "form-control" %></div>
+  <div><%= form.label :plan_override_expires_at, "Override expires" %><%= form.datetime_local_field :plan_override_expires_at, class: "form-control" %></div>
+  <%= form.submit "Save plan", class: "btn btn-sm btn-primary" %>
+<% end %>
+
+<h2>Suspension</h2>
+<% if @account.suspended? %>
+  <%= button_to "Lift suspension", unsuspend_admin_developers_account_path(@account), method: :post, class: "btn btn-sm", form: { style: "margin-bottom: 2rem;" } %>
+<% else %>
+  <%= form_with url: suspend_admin_developers_account_path(@account), method: :post, style: "display: flex; gap: 0.5rem; margin-bottom: 2rem;" do |form| %>
+    <%= form.text_field :reason, class: "form-control", placeholder: "Reason (shown to the account)", required: true %>
+    <%= form.submit "Suspend account", class: "btn btn-sm btn-danger", data: { turbo_confirm: "Suspend this account? Its keys stop working at once." } %>
+  <% end %>
+<% end %>
+
+<h2>Members</h2>
+<table>
+  <thead><tr><th>User</th><th>Role</th></tr></thead>
+  <tbody>
+    <% @memberships.each do |membership| %>
+      <tr><td class="mono"><%= membership.user.email %></td><td><%= membership.role.capitalize %></td></tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Keys</h2>
+<%= render "admin/developers/keys/table", api_keys: @api_keys %>
+
+<h2>Audit log</h2>
+<%= render "developers/audit_events", events: @audit_events %>
+<p><a href="<%= admin_developers_audit_events_path(account_id: @account.id, format: :csv) %>">Export this account's log as CSV</a></p>

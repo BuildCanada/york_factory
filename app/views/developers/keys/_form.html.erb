@@ -1,0 +1,46 @@
+<%= form_with model: api_key, url: api_key.persisted? ? developers_key_path(api_key) : developers_keys_path, scope: :api_key do |form| %>
+  <% if api_key.errors.any? %>
+    <div class="flash flash-alert">
+      <% api_key.errors.full_messages.each do |message| %><div><%= message %></div><% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :name, "Key name" %>
+    <%= form.text_field :name, class: "form-control", required: true, maxlength: 100, placeholder: "Spending dashboard (production)" %>
+  </div>
+
+  <div class="form-group">
+    <label>Scopes</label>
+    <% policy = Keys::Policy.new(current_account, current_user) %>
+    <% ApiKey::SCOPES.each do |scope, description| %>
+      <% grantable = policy.grantable?(scope) %>
+      <% next if scope == "cms:drafts" && !grantable %>
+      <label class="checkbox">
+        <%= check_box_tag "api_key[scopes][]", scope, api_key.scopes.include?(scope), id: "scope_#{scope.parameterize}", disabled: !grantable %>
+        <span><span class="mono"><%= scope %></span> &mdash; <%= description %><% unless grantable %> <span class="text-muted">(accept the data terms on the overview first)</span><% end %></span>
+      </label>
+    <% end %>
+  </div>
+
+  <% unless api_key.persisted? %>
+    <div class="form-group">
+      <%= form.label :expiry, "Expires" %>
+      <%= form.select :expiry, options_for_select([ [ "In 30 days", "30d" ], [ "In 90 days", "90d" ], [ "In 1 year", "365d" ], [ "Never", "never" ] ], expiry), {}, class: "form-control" %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :allowed_origins, "Allowed origins (optional)" %>
+    <%= form.text_area :allowed_origins, value: api_key.allowed_origins.join("\n"), rows: 2, class: "form-control", placeholder: "https://example.com" %>
+    <div class="hint">One per line. When set, browser requests from other origins, and requests with no Origin header, are refused.</div>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :allowed_ips, "Allowed IP addresses (optional)" %>
+    <%= form.text_area :allowed_ips, value: api_key.allowed_ips.join("\n"), rows: 2, class: "form-control", placeholder: "203.0.113.0/24" %>
+    <div class="hint">Addresses or CIDR ranges, one per line.</div>
+  </div>
+
+  <%= form.submit api_key.persisted? ? "Save changes" : "Create API key", class: "btn btn-primary" %>
+<% end %>

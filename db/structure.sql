@@ -94,9 +94,101 @@ CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
 COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
 
 
+--
+-- Name: audit_events_append_only(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.audit_events_append_only() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_events is append-only';
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: account_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.account_memberships (
+    id bigint NOT NULL,
+    account_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    role character varying DEFAULT 'member'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT account_memberships_role CHECK (((role)::text = ANY (ARRAY[('owner'::character varying)::text, ('admin'::character varying)::text, ('member'::character varying)::text])))
+);
+
+
+--
+-- Name: account_memberships_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.account_memberships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: account_memberships_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.account_memberships_id_seq OWNED BY public.account_memberships.id;
+
+
+--
+-- Name: accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.accounts (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    kind character varying DEFAULT 'personal'::character varying NOT NULL,
+    plan character varying DEFAULT 'free'::character varying NOT NULL,
+    personal_user_id bigint,
+    plan_override character varying,
+    plan_override_expires_at timestamp with time zone,
+    stripe_customer_id character varying,
+    bifrost_customer_id character varying,
+    suspended_at timestamp with time zone,
+    suspended_reason text,
+    terms_accepted_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT accounts_kind CHECK (((kind)::text = ANY (ARRAY[('personal'::character varying)::text, ('organization'::character varying)::text]))),
+    CONSTRAINT accounts_personal_has_user CHECK ((((kind)::text <> 'personal'::text) OR (personal_user_id IS NOT NULL))),
+    CONSTRAINT accounts_plan CHECK (((plan)::text = ANY (ARRAY[('anonymous'::character varying)::text, ('free'::character varying)::text, ('internal'::character varying)::text, ('partner'::character varying)::text, ('paid'::character varying)::text]))),
+    CONSTRAINT accounts_plan_override CHECK (((plan_override IS NULL) OR ((plan_override)::text = ANY (ARRAY[('anonymous'::character varying)::text, ('free'::character varying)::text, ('internal'::character varying)::text, ('partner'::character varying)::text, ('paid'::character varying)::text]))))
+);
+
+
+--
+-- Name: accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
+
 
 --
 -- Name: active_storage_attachments; Type: TABLE; Schema: public; Owner: -
@@ -210,7 +302,19 @@ CREATE TABLE public.api_keys (
     last_used_at timestamp(6) without time zone,
     revoked_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    account_id bigint NOT NULL,
+    scopes character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    issuer character varying DEFAULT 'local'::character varying NOT NULL,
+    bifrost_vk_id character varying,
+    expires_at timestamp with time zone,
+    rotated_from_id bigint,
+    grace_until timestamp with time zone,
+    allowed_origins character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    allowed_ips character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    last_used_ip inet,
+    revoked_reason character varying,
+    CONSTRAINT api_keys_issuer CHECK (((issuer)::text = ANY (ARRAY[('bifrost'::character varying)::text, ('local'::character varying)::text])))
 );
 
 
@@ -243,6 +347,45 @@ CREATE TABLE public.ar_internal_metadata (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: audit_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_events (
+    id bigint NOT NULL,
+    account_id bigint,
+    actor_user_id bigint,
+    actor_kind character varying NOT NULL,
+    action character varying NOT NULL,
+    subject_type character varying,
+    subject_id bigint,
+    ip inet,
+    user_agent character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT audit_events_actor_kind CHECK (((actor_kind)::text = ANY (ARRAY[('user'::character varying)::text, ('admin'::character varying)::text, ('system'::character varying)::text])))
+);
+
+
+--
+-- Name: audit_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.audit_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: audit_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.audit_events_id_seq OWNED BY public.audit_events.id;
 
 
 --
@@ -5461,6 +5604,20 @@ ALTER SEQUENCE warehouse.units_id_seq OWNED BY warehouse.units.id;
 
 
 --
+-- Name: account_memberships id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account_memberships ALTER COLUMN id SET DEFAULT nextval('public.account_memberships_id_seq'::regclass);
+
+
+--
+-- Name: accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.accounts_id_seq'::regclass);
+
+
+--
 -- Name: active_storage_attachments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5486,6 +5643,13 @@ ALTER TABLE ONLY public.active_storage_variant_records ALTER COLUMN id SET DEFAU
 --
 
 ALTER TABLE ONLY public.api_keys ALTER COLUMN id SET DEFAULT nextval('public.api_keys_id_seq'::regclass);
+
+
+--
+-- Name: audit_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_events ALTER COLUMN id SET DEFAULT nextval('public.audit_events_id_seq'::regclass);
 
 
 --
@@ -6294,6 +6458,22 @@ ALTER TABLE ONLY warehouse.units ALTER COLUMN id SET DEFAULT nextval('warehouse.
 
 
 --
+-- Name: account_memberships account_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account_memberships
+    ADD CONSTRAINT account_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6331,6 +6511,14 @@ ALTER TABLE ONLY public.api_keys
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: audit_events audit_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_events
+    ADD CONSTRAINT audit_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -7567,6 +7755,34 @@ CREATE INDEX idx_tb_jurisdiction_histories_aj_id ON public.trade_barriers_jurisd
 
 
 --
+-- Name: index_account_memberships_on_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_account_memberships_on_account_id ON public.account_memberships USING btree (account_id);
+
+
+--
+-- Name: index_account_memberships_on_account_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_account_memberships_on_account_id_and_user_id ON public.account_memberships USING btree (account_id, user_id);
+
+
+--
+-- Name: index_account_memberships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_account_memberships_on_user_id ON public.account_memberships USING btree (user_id);
+
+
+--
+-- Name: index_accounts_on_personal_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_accounts_on_personal_user_id ON public.accounts USING btree (personal_user_id);
+
+
+--
 -- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7595,10 +7811,45 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 
 
 --
+-- Name: index_api_keys_on_account_and_live_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_keys_on_account_and_live_name ON public.api_keys USING btree (account_id, name) WHERE ((revoked_at IS NULL) AND (grace_until IS NULL));
+
+
+--
+-- Name: index_api_keys_on_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_keys_on_account_id ON public.api_keys USING btree (account_id);
+
+
+--
+-- Name: index_api_keys_on_bifrost_vk_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_keys_on_bifrost_vk_id ON public.api_keys USING btree (bifrost_vk_id) WHERE (bifrost_vk_id IS NOT NULL);
+
+
+--
+-- Name: index_api_keys_on_rotated_from_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_keys_on_rotated_from_id ON public.api_keys USING btree (rotated_from_id);
+
+
+--
 -- Name: index_api_keys_on_token_digest; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_api_keys_on_token_digest ON public.api_keys USING btree (token_digest);
+
+
+--
+-- Name: index_api_keys_on_token_prefix; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_keys_on_token_prefix ON public.api_keys USING btree (token_prefix);
 
 
 --
@@ -7609,10 +7860,24 @@ CREATE INDEX index_api_keys_on_user_id ON public.api_keys USING btree (user_id);
 
 
 --
--- Name: index_api_keys_on_user_id_and_name; Type: INDEX; Schema: public; Owner: -
+-- Name: index_audit_events_on_account_id_and_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_api_keys_on_user_id_and_name ON public.api_keys USING btree (user_id, name);
+CREATE INDEX index_audit_events_on_account_id_and_created_at ON public.audit_events USING btree (account_id, created_at);
+
+
+--
+-- Name: index_audit_events_on_action_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_audit_events_on_action_and_created_at ON public.audit_events USING btree (action, created_at);
+
+
+--
+-- Name: index_audit_events_on_subject; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_audit_events_on_subject ON public.audit_events USING btree (subject_type, subject_id, created_at);
 
 
 --
@@ -9882,6 +10147,21 @@ CREATE OR REPLACE VIEW warehouse.human_review_queue AS
 
 
 --
+-- Name: audit_events audit_events_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_events_append_only BEFORE DELETE OR UPDATE ON public.audit_events FOR EACH ROW EXECUTE FUNCTION public.audit_events_append_only();
+
+
+--
+-- Name: api_keys fk_rails_023b1dfb4a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_keys
+    ADD CONSTRAINT fk_rails_023b1dfb4a FOREIGN KEY (rotated_from_id) REFERENCES public.api_keys(id);
+
+
+--
 -- Name: memos fk_rails_03b1037082; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10146,6 +10426,22 @@ ALTER TABLE ONLY public.engagements
 
 
 --
+-- Name: account_memberships fk_rails_8e0ff21478; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account_memberships
+    ADD CONSTRAINT fk_rails_8e0ff21478 FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- Name: accounts fk_rails_8ea5f06199; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT fk_rails_8ea5f06199 FOREIGN KEY (personal_user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: metrics_social_media_account_metric_snapshots fk_rails_91139009de; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10223,6 +10519,14 @@ ALTER TABLE ONLY public.metrics_social_media_ad_account_daily_metrics
 
 ALTER TABLE ONLY public.oauth_access_grants
     ADD CONSTRAINT fk_rails_b4b53e07b8 FOREIGN KEY (application_id) REFERENCES public.oauth_applications(id);
+
+
+--
+-- Name: account_memberships fk_rails_c33721ecfa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.account_memberships
+    ADD CONSTRAINT fk_rails_c33721ecfa FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -10319,6 +10623,14 @@ ALTER TABLE ONLY public.broadcast_backfill_requests
 
 ALTER TABLE ONLY public.metrics_meta_media_insights
     ADD CONSTRAINT fk_rails_f0c87216b9 FOREIGN KEY (meta_medium_id) REFERENCES public.metrics_meta_media(id) ON DELETE CASCADE;
+
+
+--
+-- Name: api_keys fk_rails_f4470e16d5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_keys
+    ADD CONSTRAINT fk_rails_f4470e16d5 FOREIGN KEY (account_id) REFERENCES public.accounts(id);
 
 
 --
@@ -11336,6 +11648,9 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260928000003'),
+('20260928000002'),
+('20260928000001'),
 ('20260921000003'),
 ('20260921000002'),
 ('20260921000001'),

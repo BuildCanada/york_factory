@@ -11,6 +11,8 @@ class User < ApplicationRecord
   has_many :identities, dependent: :destroy
   has_many :saved_searches, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :account_memberships, dependent: :destroy
+  has_many :accounts, through: :account_memberships
   has_many :media_clips, dependent: :destroy
 
   enum :role, {

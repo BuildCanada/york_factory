@@ -4,7 +4,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## Scope
 
-1. **Phase 1 only.** WS-A's scope is "every phase 1 operation in §3.2", and WS-L and WS-M add the phase 2 and 3 resources to the spec themselves. So corporations, persons, documents, network, paths, StatCan and `/v1/keys` are not in the spec, not even as stubs. Where later phases matter, enums and descriptions say what arrives later: `search types`, `Predicate`, `EntityClass.person` and the `read:persons` and `keys:manage` scopes. Stub operations would have become promises in the SDKs.
+1. **Phase 1 only.** WS-A's scope is "every phase 1 operation in §3.2", and WS-L and WS-M add the phase 2 and 3 resources to the spec themselves. So corporations, persons, documents, network, paths, StatCan and `/v1/keys` are not in the spec, not even as stubs. Where later phases matter, enums and descriptions say what arrives later: `search types`, `Predicate`, `EntityClass.person` and the `keys:manage` scope. (There is no `read:persons` scope; see 39.) Stub operations would have become promises in the SDKs.
 2. **25 operations.** These are §3.2's phase 1 rows, plus `GET /entities/{id}/spending/unlinked`. §3.4's `linked_only` caveat links to that operation, but the catalogue leaves it out. `GET /v1/changelog` (§9) is left out. It isn't in §3.2, and each release's `changes[]` covers the data stream for now.
 3. **Discovery paths are relative to the server.** The server URL is `https://data.buildcanada.com/v1`, so the index is `GET /` and the spec is `GET /openapi.json`. `/.well-known/oauth-protected-resource` lives outside `/v1` and belongs to WS-F.
 
@@ -42,7 +42,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 24. **`parties[]`** is always on `GET /spending/{id}`, and on list items only with `expand=parties`, to keep list pages small.
 25. **Lineage.** `/lineage` takes `direction=predecessors|successors` (default predecessors) and `max_depth` (1 to 10, default 10). It returns steps nearest first.
 26. **Relationships.** `/relationships` takes `direction=out|in|both` (default both). Each item says its direction relative to the requested entity.
-27. **Search limits.** `/search` pages are 20 by default and 50 at most, following the §8.1 person caps. The minimum query is 2 characters, and 422 `query_too_broad` otherwise.
+27. **Search limits.** `/search` pages are 20 by default and 50 at most. These began as the §8.1 person caps; since 39 they are general page limits, the same for every class. The minimum query is 2 characters, and 422 `query_too_broad` otherwise.
 28. **Identifier resolution.** `/identifiers/{namespace}/{value}` returns every holder (`matches[]`) rather than picking one, because a BN can be shared after an amalgamation. It returns 404 when nothing holds the identifier.
 29. **Units.** `x-bc-units` is `{base, large_page?, count_exact?}`. `count_exact` is **added** to the base, following §3.1's "+2 units". The test checks the base units against §6.1.
 30. **Caching.** `x-bc-cache` is `release` for release-pinned data (ETag, immutable when pinned, 304), `short` for `/`, `/openapi.json`, `/releases` and `/releases/latest`, and `none` for `/me*`.
@@ -53,7 +53,20 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 ## Changes WS-D made while implementing the contract (1.0.0-alpha.2)
 
 34. **Three auth problem codes.** `account_suspended`, `ip_not_allowed` and `origin_not_allowed` (403) are in the `Problem.code` enum. WS-E's `PublicApiAuthentication` answers with them, and they say more than `insufficient_scope` would.
-35. **403 on every keyed operation.** Any key can meet a suspended account, an IP or origin restriction, or (for person entities) `read:persons`. The contract had 403 on `/me/usage` only. `/openapi.json` also declares 400, 401 and 403, because it authenticates like the rest.
+35. **403 on every keyed operation.** Any key can meet a suspended account, an IP or origin restriction, or a scope the key doesn't hold (`usage:read` on `/me/usage`). The contract had 403 on `/me/usage` only. `/openapi.json` also declares 400, 401 and 403, because it authenticates like the rest.
 36. **422 where a query can outgrow its limits.** `listEntities`, `listSpending`, `listEntitySpending` and `getEntitySpendingSummary` declare 422 `query_too_broad`. It is the answer to a statement timeout (design §8.2). (Until fact-factory 6b3034e it was also the answer to `group_by=counterparty` on an entity with more than 50,000 linked rows, computed live; that summary is now precomputed in `api.spending_counterparties`, so the limit is gone.)
 37. **Review: `fields` against `required`.** A `fields=` projection leaves out properties that `Entity` and `SpendingRecord` require, so a projected response fails its own schema. WS-D's tests check projected items field by field. The contract should say that `fields` responses are partial (for example, a `Partial<Entity>` schema, or a note on each operation), so SDK generators don't reject them.
 38. **`is_latest_revision` is the table's, not the slice's.** fact-factory sets `spending_records.is_latest_revision` per slice (asset_key and acquisition), so an `archive_import` copy of an older revision is the latest of the archive slice, and `latest_revision_only=true` returned it next to the live latest revision. The API serves, and filters on, the flag across the table: a live row keeps fact-factory's flag, and an `archive_import` row is the latest only when fact-factory flags it and no live row of the release has its canonical_id. An agreement only the archive has stays visible. Summaries are unchanged (they never count archive rows).
+
+## People data
+
+39. **Person data is `read:public` (decided 2026-09-29).** Brendan: "Remove many of the restrictions on people, we have already protected their personal information a lot by restricting addresses." So:
+    - There is no `read:persons` scope. Person entities, individuals' names, the persons endpoints and person results in MCP are read with `read:public`, anonymously wherever the rest of the API is anonymous. The scope is gone from `x-bc-scopes`, `Me.scopes` and the OAuth scopes, and is not kept as an alias: nothing has launched, so no client holds it.
+    - There is no data-terms acceptance step before a key can read people.
+    - Persons are listed, searched and filtered like other entities (`class=person` on `/entities` and `/search`, when person entities exist).
+    - There are no person-specific rate limits or unit surcharges. Person operations cost the same units as any other operation.
+    - **Kept:** the address rule of 19 and 20. A person's address is only ever city, province and FSA, never a street address, and an individual recipient's postal code is served as its FSA. No address keys are served. Also kept are the factual caveats `person_is_clustering` (a person entity is our clustering of records, not a legal identity) and `observed_not_appointed` (`observed_from` is when a filing first showed the role, not the appointment date). Authentication, abuse controls, general rate limits and audit logs are unchanged.
+
+## URLs
+
+40. **Developer docs live at `https://data.buildcanada.com/api` (decided 2026-09-29).** `data.buildcanada.com/` is kept for a future public interactive site, so nothing the API names sits at the root any more. Every docs URL moves under `/api`: pages and Markdown twins (`/docs/...` becomes `/api/...`, including `termsOfService`, `externalDocs`, caveat anchors at `/api/caveats#<code>` and dictionary term pages at `/api/dictionary/<term>`), problem type URIs (`/problems/<code>` becomes `/api/problems/<code>`) and `llms.txt` (`/api/llms.txt`). The API itself stays at `/v1`, MCP at `/mcp`, and OAuth metadata at `/.well-known/...`. Problem type URIs are identifiers, so this is a breaking change once launched; before launch it is not (see 10).

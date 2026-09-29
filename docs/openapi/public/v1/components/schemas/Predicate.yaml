@@ -3,7 +3,7 @@ description: >-
   The kind of relationship, read as "subject <predicate> object": governs,
   located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by,
   controlled_by, member_of, succeeded_by. Person predicates (director_of,
-  has_significant_control_over) arrive in phase 2 under read:persons. New predicates may be added.
+  has_significant_control_over) arrive in phase 2 under read:public. New predicates may be added.
 type: string
 enum: [governs, located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by, controlled_by, member_of, succeeded_by]
 examples: [located_within]

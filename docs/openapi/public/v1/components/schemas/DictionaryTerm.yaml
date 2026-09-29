@@ -67,4 +67,4 @@ properties:
         type: string
         format: uri
         description: The term's documentation page, with a Markdown twin.
-        examples: ['https://data.buildcanada.com/docs/dictionary/fiscal_year']
+        examples: ['https://data.buildcanada.com/api/dictionary/fiscal_year']

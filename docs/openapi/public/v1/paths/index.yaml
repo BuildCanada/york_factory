@@ -5,7 +5,7 @@ get:
   description: |-
     The front door. Names the latest release and links to every collection, the OpenAPI
     document, the docs, llms.txt and the MCP server. Start here, or at
-    https://data.buildcanada.com/llms.txt.
+    https://data.buildcanada.com/api/llms.txt.
   tags:
   - Discovery
   x-fern-sdk-method-name: index
@@ -47,8 +47,8 @@ get:
                   latest_release: 11
                   links:
                     openapi: "/v1/openapi.json"
-                    docs: https://data.buildcanada.com/docs
-                    llms_txt: https://data.buildcanada.com/llms.txt
+                    docs: https://data.buildcanada.com/api
+                    llms_txt: https://data.buildcanada.com/api/llms.txt
                     mcp: https://data.buildcanada.com/mcp
                     releases: "/v1/releases"
                     datasets: "/v1/datasets"

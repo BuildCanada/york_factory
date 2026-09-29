@@ -1,7 +1,9 @@
 title: EntityClass
 description: >-
-  What kind of party an entity is. `person` is reserved: release 1 to 11 have no person
-  entities, and persons will need the read:persons scope. New classes may be added.
+  What kind of party an entity is. Release 1 to 11 have no `person` entities yet. When
+  they arrive, persons are listed, searched and filtered like any other class, under
+  read:public. A person entity is our clustering of records, not a legal identity. New
+  classes may be added.
 type: string
 enum: [jurisdiction, government_org, government_enterprise, indigenous_government, organization, person]
 examples: [government_org]

@@ -137,8 +137,7 @@ components:
       description: >-
         An API key from https://auth.buildcanada.com/developers, sent as
         `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the
-        scopes its owner granted it (read:public always; read:persons after verification;
-        usage:read by default). Keys are shown once; the console shows only the first 12
+        scopes its owner granted it (read:public always; usage:read by default). Keys are shown once; the console shows only the first 12
         characters.
     OAuth2:
       type: oauth2
@@ -157,8 +156,7 @@ components:
           tokenUrl: https://auth.buildcanada.com/oauth/token
           refreshUrl: https://auth.buildcanada.com/oauth/token
           scopes:
-            'read:public': Read organizations, spending, releases, datasets, the dictionary and exports.
-            'read:persons': Read person entities and their public roles (phase 2). Never includes street addresses.
+            'read:public': Read organizations, persons, spending, releases, datasets, the dictionary and exports. A person's address is only ever city, province and FSA.
             'usage:read': Read your account's usage (/v1/me/usage).
             'keys:manage': Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys).
   schemas:

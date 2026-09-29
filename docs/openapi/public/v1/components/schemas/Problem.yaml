@@ -65,7 +65,7 @@ properties:
   required_scope:
     type: string
     description: insufficient_scope only. The scope the operation needs.
-    examples: ['read:persons']
+    examples: ['usage:read']
   retry_after_seconds:
     type: integer
     minimum: 0

@@ -68,7 +68,7 @@ rules:
           schema:
             type: array
             minItems: 1
-            items: {enum: ['read:public', 'read:persons', 'usage:read', 'keys:manage']}
+            items: {enum: ['read:public', 'usage:read', 'keys:manage']}
       - field: x-bc-cache
         function: enumeration
         functionOptions: {values: [release, short, none]}

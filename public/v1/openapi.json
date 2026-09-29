@@ -353,7 +353,6 @@
                         "plan": "free",
                         "scopes": [
                           "read:public",
-                          "read:persons",
                           "usage:read"
                         ],
                         "limits": {
@@ -5057,7 +5056,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "bc_live_<secret>_<crc6>",
-        "description": "An API key from https://auth.buildcanada.com/developers, sent as `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the scopes its owner granted it (read:public always; read:persons after verification; usage:read by default). Keys are shown once; the console shows only the first 12 characters."
+        "description": "An API key from https://auth.buildcanada.com/developers, sent as `Authorization: Bearer bc_live_…` (`bc_stg_…` on staging). A key carries the scopes its owner granted it (read:public always; usage:read by default). Keys are shown once; the console shows only the first 12 characters."
       },
       "OAuth2": {
         "type": "oauth2",
@@ -5070,8 +5069,7 @@
             "tokenUrl": "https://auth.buildcanada.com/oauth/token",
             "refreshUrl": "https://auth.buildcanada.com/oauth/token",
             "scopes": {
-              "read:public": "Read organizations, spending, releases, datasets, the dictionary and exports.",
-              "read:persons": "Read person entities and their public roles (phase 2). Never includes street addresses.",
+              "read:public": "Read organizations, persons, spending, releases, datasets, the dictionary and exports. A person's address is only ever city, province and FSA.",
               "usage:read": "Read your account's usage (/v1/me/usage).",
               "keys:manage": "Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys)."
             }
@@ -5171,7 +5169,7 @@
             "type": "string",
             "description": "insufficient_scope only. The scope the operation needs.",
             "examples": [
-              "read:persons"
+              "usage:read"
             ]
           },
           "retry_after_seconds": {
@@ -6563,7 +6561,6 @@
               "type": "string",
               "enum": [
                 "read:public",
-                "read:persons",
                 "usage:read",
                 "keys:manage"
               ]
@@ -7620,7 +7617,7 @@
       },
       "EntityClass": {
         "title": "EntityClass",
-        "description": "What kind of party an entity is. `person` is reserved: release 1 to 11 have no person entities, and persons will need the read:persons scope. New classes may be added.",
+        "description": "What kind of party an entity is. Release 1 to 11 have no `person` entities yet. When they arrive, persons are listed, searched and filtered like any other class, under read:public. A person entity is our clustering of records, not a legal identity. New classes may be added.",
         "type": "string",
         "enum": [
           "jurisdiction",
@@ -8035,7 +8032,7 @@
       },
       "Predicate": {
         "title": "Predicate",
-        "description": "The kind of relationship, read as \"subject <predicate> object\": governs, located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by, controlled_by, member_of, succeeded_by. Person predicates (director_of, has_significant_control_over) arrive in phase 2 under read:persons. New predicates may be added.",
+        "description": "The kind of relationship, read as \"subject <predicate> object\": governs, located_within, covers, party_to, administrative_part_of, reports_to_minister, owned_by, controlled_by, member_of, succeeded_by. Person predicates (director_of, has_significant_control_over) arrive in phase 2 under read:public. New predicates may be added.",
         "type": "string",
         "enum": [
           "governs",
@@ -9339,7 +9336,7 @@
         "example": 61240
       },
       "WWWAuthenticate": {
-        "description": "RFC 6750 challenge. On 401 it names the protected-resource metadata (`Bearer resource_metadata=\"https://data.buildcanada.com/.well-known/oauth-protected-resource\"`); on 403 it names the missing scope (`Bearer error=\"insufficient_scope\", scope=\"read:persons\"`).",
+        "description": "RFC 6750 challenge. On 401 it names the protected-resource metadata (`Bearer resource_metadata=\"https://data.buildcanada.com/.well-known/oauth-protected-resource\"`); on 403 it names the missing scope (`Bearer error=\"insufficient_scope\", scope=\"usage:read\"`).",
         "schema": {
           "type": "string"
         },

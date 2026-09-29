@@ -79,7 +79,7 @@ properties:
     description: The scopes granted to this key or token.
     items:
       type: string
-      enum: ['read:public', 'read:persons', 'usage:read', 'keys:manage']
+      enum: ['read:public', 'usage:read', 'keys:manage']
     examples: [['read:public', 'usage:read']]
   limits:
     $ref: PlanLimits.yaml

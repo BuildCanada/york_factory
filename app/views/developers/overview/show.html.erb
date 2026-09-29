@@ -21,7 +21,7 @@
 
 <section>
   <h2>Quickstart</h2>
-  <p class="text-muted mb-2">Many endpoints work without a key, at a lower rate limit. With a key:</p>
+  <p class="text-muted mb-2">Many endpoints work without a key, at a lower rate limit. The docs are at <a href="<%= api_docs_url %>"><%= api_docs_url.delete_prefix("https://") %></a>. With a key:</p>
   <pre>curl -H "Authorization: Bearer $BUILDCANADA_API_KEY" <%= api_base_url %>/me</pre>
   <pre>claude mcp add --transport http buildcanada https://data.buildcanada.com/mcp \
   --header "Authorization: Bearer $BUILDCANADA_API_KEY"</pre>

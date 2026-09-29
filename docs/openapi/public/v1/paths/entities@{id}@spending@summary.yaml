@@ -106,17 +106,17 @@ get:
                   caveats:
                   - code: not_cross_source_total
                     text: Sources overlap. Never add amounts across sources.
-                    docs: https://data.buildcanada.com/docs/caveats#not_cross_source_total
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
                   - code: agreement_value_not_paid
                     text: proactive_grants amounts are agreement values, not money paid.
-                    docs: https://data.buildcanada.com/docs/caveats#agreement_value_not_paid
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
                   - code: latest_revision_only
                     text: Only the highest-ranked revision per canonical_id is summed.
-                    docs: https://data.buildcanada.com/docs/caveats#latest_revision_only
+                    docs: https://data.buildcanada.com/api/caveats#latest_revision_only
                   - code: linked_only
                     text: >-
                       Only linked occurrences are counted. 38 unlinked occurrences with this name: /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked.
-                    docs: https://data.buildcanada.com/docs/caveats#linked_only
+                    docs: https://data.buildcanada.com/api/caveats#linked_only
                   role: recipient
                   group_by:
                   - source

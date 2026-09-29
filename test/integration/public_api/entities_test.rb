@@ -110,10 +110,10 @@ class PublicApiEntitiesTest < PublicApiTestCase
     assert_equal "fields", assert_problem("listEntities", 400, "invalid_parameter").dig("errors", 0, "parameter")
   end
 
-  test "entities list by filter, page by cursor and never list persons" do
+  test "entities list by filter and page by cursor, persons included" do
     all = page_through("/v1/entities", limit: 3)
     assert_equal all.sort, all
-    refute_includes all, "gid://buildcanada/Entity/#{PERSON}"
+    assert_includes all, "gid://buildcanada/Entity/#{PERSON}"
     assert_includes all, "gid://buildcanada/Entity/#{NEW}"
     assert_equal all, page_through("/v1/entities", limit: 200)
 
@@ -185,7 +185,7 @@ class PublicApiEntitiesTest < PublicApiTestCase
     assert_equal [ "107511586RR0001" ], body["data"].map { |i| i["value"] }
   end
 
-  test "relationships in and out, with the object entity, and never person predicates" do
+  test "relationships in and out, with the object entity, and phase 1 predicates only" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}/relationships"
     assert_conforms("listEntityRelationships", status: 200)
     directions = body["data"].map { |r| [ r["predicate"], r["direction"] ] }.tally
@@ -199,7 +199,7 @@ class PublicApiEntitiesTest < PublicApiTestCase
     api_get "/v1/entities/#{DIAMOND_VALLEY}/relationships", valid_on: "2015-01-01", direction: "in"
     assert_equal [ "located_within" ], body["data"].map { |r| r["predicate"] }
 
-    api_get "/v1/entities/#{FOUNDATION}/relationships", key: persons_key
+    api_get "/v1/entities/#{FOUNDATION}/relationships"
     refute_includes body["data"].map { |r| r["predicate"] }, "director_of"
     api_get "/v1/entities/#{FOUNDATION}/relationships", predicate: "director_of"
     assert_problem("listEntityRelationships", 400, "invalid_parameter")
@@ -224,29 +224,21 @@ class PublicApiEntitiesTest < PublicApiTestCase
     assert_problem("getEntityLineage", 400, "invalid_parameter")
   end
 
-  test "person entities need read:persons: 401 anonymous, 403 without the scope" do
+  test "person entities are read:public, anonymously too, and cache like any entity" do
     api_get "/v1/entities/#{PERSON}"
-    problem = assert_problem("getEntity", 401, "unauthenticated")
-    assert_equal "read:persons", problem["required_scope"]
-
-    api_get "/v1/entities/#{PERSON}", key: key_with(%w[read:public])
-    problem = assert_problem("getEntity", 403, "insufficient_scope")
-    assert_equal "read:persons", problem["required_scope"]
-    assert_equal %(Bearer error="insufficient_scope", scope="read:persons"), response.headers["WWW-Authenticate"]
-
-    api_get "/v1/entities/#{PERSON}", key: persons_key
     assert_conforms("getEntity", status: 200)
     assert_equal "person", body.dig("data", "entity_class")
-    assert_cache_control "private, no-store"
+    assert_equal "Jane Q. Example", body.dig("data", "name")
+    refute_equal "private, no-store", response.headers["Cache-Control"]
+
+    api_get "/v1/entities/#{PERSON}", key: key_with(%w[read:public])
+    assert_conforms("getEntity", status: 200)
   end
 
-  test "persons are never listed, even with read:persons" do
+  test "persons are listed and filtered like any class" do
     api_get "/v1/entities", class: "person"
-    assert_problem("listEntities", 401, "unauthenticated")
-    api_get "/v1/entities", class: "person", key: persons_key
-    assert_problem("listEntities", 422, "query_too_broad")
-    api_get "/v1/entities", key: persons_key, limit: 200
-    refute_includes ids, "gid://buildcanada/Entity/#{PERSON}"
+    assert_conforms("listEntities", status: 200)
+    assert_equal [ "gid://buildcanada/Entity/#{PERSON}" ], ids
   end
 
   private

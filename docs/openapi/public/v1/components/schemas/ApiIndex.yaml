@@ -20,8 +20,8 @@ properties:
     required: [openapi, docs, llms_txt, mcp, releases, datasets, dictionary, search, entities, spending, exports]
     properties:
       openapi: {type: string, description: This OpenAPI document as JSON., examples: [/v1/openapi.json]}
-      docs: {type: string, format: uri, description: The documentation site., examples: ['https://data.buildcanada.com/docs']}
-      llms_txt: {type: string, format: uri, description: The agent index of the docs., examples: ['https://data.buildcanada.com/llms.txt']}
+      docs: {type: string, format: uri, description: The documentation site., examples: ['https://data.buildcanada.com/api']}
+      llms_txt: {type: string, format: uri, description: The agent index of the docs., examples: ['https://data.buildcanada.com/api/llms.txt']}
       mcp: {type: string, format: uri, description: The MCP server endpoint., examples: ['https://data.buildcanada.com/mcp']}
       releases: {type: string, description: Registry releases., examples: [/v1/releases]}
       datasets: {type: string, description: Published datasets., examples: [/v1/datasets]}

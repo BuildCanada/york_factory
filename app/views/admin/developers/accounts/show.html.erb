@@ -10,7 +10,6 @@
 
 <div class="grid">
   <div class="card"><div class="label">Effective plan</div><div class="value"><%= @account.effective_plan_name.titleize %></div></div>
-  <div class="card"><div class="label">Data terms</div><div class="value"><%= @account.terms_accepted? ? "Accepted" : "Not accepted" %></div></div>
   <div class="card"><div class="label">Live keys</div><div class="value"><%= @account.live_key_count %> / <%= @account.plan_definition.key_limit %></div></div>
 </div>
 

@@ -17,7 +17,7 @@ module PublicApi
           version: Spec.version,
           latest_release: latest.number,
           links: {
-            openapi: "/v1/openapi.json", docs: "https://data.buildcanada.com/docs", llms_txt: "https://data.buildcanada.com/llms.txt",
+            openapi: "/v1/openapi.json", docs: "https://data.buildcanada.com/api", llms_txt: "https://data.buildcanada.com/api/llms.txt",
             mcp: "https://data.buildcanada.com/mcp", releases: "/v1/releases", datasets: "/v1/datasets", dictionary: "/v1/dictionary",
             search: "/v1/search?q={q}", entities: "/v1/entities", spending: "/v1/spending", exports: "/v1/exports"
           }
@@ -46,7 +46,7 @@ module PublicApi
           key: c.api_key && { id: "key_#{c.api_key.id}", name: c.api_key.name, prefix: c.api_key.token_prefix, expires_at: Format.timestamp(c.api_key.expires_at) },
           oauth_client: oauth_client(c),
           plan: plan.name.start_with?("paid") ? "paid" : plan.name,
-          scopes: c.scopes & %w[read:public read:persons usage:read keys:manage],
+          scopes: c.scopes & %w[read:public usage:read keys:manage],
           limits: {
             rate_per_minute: plan.rate, burst: plan.burst, monthly_units: plan.daily ? nil : plan.monthly,
             daily_units: plan.daily, monthly_units_used: used

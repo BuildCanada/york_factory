@@ -2,7 +2,7 @@ title: Caveat
 description: >-
   A machine-readable warning about how to read the data in this response. Agents should
   act on `code`, not on `text`; `text` is prose for people and follows Accept-Language.
-  Every code has an anchor on https://data.buildcanada.com/docs/caveats. New codes may be
+  Every code has an anchor on https://data.buildcanada.com/api/caveats. New codes may be
   added at any time; treat an unknown code as a warning to show the reader.
 type: object
 required: [code, text]
@@ -24,4 +24,4 @@ properties:
     type: string
     format: uri
     description: The caveat's documentation anchor, with a Markdown twin at the same URL plus `.md`.
-    examples: ['https://data.buildcanada.com/docs/caveats#not_cross_source_total']
+    examples: ['https://data.buildcanada.com/api/caveats#not_cross_source_total']

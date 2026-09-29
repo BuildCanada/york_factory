@@ -36,12 +36,6 @@ class PublicApiTestCase < ActionDispatch::IntegrationTest
     issue_key(user:, scopes:).raw_key
   end
 
-  def persons_key
-    user = users(:member)
-    Account.personal_for!(user).update!(terms_accepted_at: Time.current)
-    issue_key(user:, scopes: %w[read:public read:persons usage:read]).raw_key
-  end
-
   # Validates the last response against `operation_id` in the contract.
   # `projected: true` checks a `fields=` response field by field, since a
   # projection leaves out properties the item schema requires.
@@ -87,7 +81,7 @@ class PublicApiTestCase < ActionDispatch::IntegrationTest
     assert_conforms(operation_id, status:)
     assert_equal "application/problem+json", response.media_type
     assert_equal code, body["code"], body.inspect
-    assert_equal "https://data.buildcanada.com/problems/#{code.dasherize}", body["type"]
+    assert_equal "https://data.buildcanada.com/api/problems/#{code.dasherize}", body["type"]
     assert_match(/\Areq_[0-9A-HJKMNP-TV-Z]{26}\z/, body["instance"])
     body
   end

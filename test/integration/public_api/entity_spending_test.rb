@@ -94,11 +94,11 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     assert_problem("listEntityUnlinkedSpending", 400, "invalid_parameter")
   end
 
-  test "a summary of an unknown entity is 404; of a person, needs read:persons" do
+  test "a summary of an unknown entity is 404; a person's spending is read:public" do
     api_get "/v1/entities/#{UNKNOWN}/spending/summary"
     assert_problem("getEntitySpendingSummary", 404, "not_found")
-    api_get "/v1/entities/#{PERSON}/spending", key: key_with(%w[read:public])
-    assert_problem("listEntitySpending", 403, "insufficient_scope")
+    api_get "/v1/entities/#{PERSON}/spending"
+    assert_conforms("listEntitySpending", status: 200)
   end
 
   private

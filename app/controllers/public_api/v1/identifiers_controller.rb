@@ -11,7 +11,7 @@ module PublicApi
         namespace = parameters["namespace"]
         value = parameters["value"].gsub(/\s/, "")
         value = value[0, 9] if namespace == "ca.cra.bn9" && value.match?(BUSINESS_NUMBER)
-        query = FactFactory::EntityQuery.new(release:, persons: persons?)
+        query = FactFactory::EntityQuery.new(release:)
         holders = query.holders(namespace, value)
         raise Problem.not_found("No entity holds #{namespace} #{value} in release #{release}.") if holders.empty?
 

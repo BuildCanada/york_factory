@@ -172,13 +172,13 @@
     {
       "warning_type": "SQL Injection",
       "warning_code": 0,
-      "fingerprint": "2fa7c5f2f66e28593cfdd5661fc5e89269162c678d1e262b8acdf76db3682417",
+      "fingerprint": "87709b953c4fede83c879570ff2be96e99f74f61aad268c74f4a064b51a8a7a9",
       "check_name": "SQL",
       "message": "Possible SQL injection",
       "file": "app/queries/fact_factory/entity_query.rb",
-      "line": 78,
+      "line": 77,
       "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
-      "code": "Identifier.find_by_sql([\"SELECT i.* FROM api.identifiers i\\nJOIN api.entities e ON e.entity_id = i.entity_id AND #{current(\"e\")} AND #{visible(\"e\")}\\nWHERE i.namespace = :namespace AND i.value = :value AND #{current(\"i\")}\\nORDER BY i.entity_id, i.row_id\\n\", binds(:namespace => namespace, :value => value)])",
+      "code": "Identifier.find_by_sql([\"SELECT i.* FROM api.identifiers i\\nJOIN api.entities e ON e.entity_id = i.entity_id AND #{current(\"e\")}\\nWHERE i.namespace = :namespace AND i.value = :value AND #{current(\"i\")}\\nORDER BY i.entity_id, i.row_id\\n\", binds(:namespace => namespace, :value => value)])",
       "render_path": null,
       "location": {
         "type": "method",
@@ -241,13 +241,13 @@
     {
       "warning_type": "SQL Injection",
       "warning_code": 0,
-      "fingerprint": "5b638542a515646b834732779c5b459700501737bcc032d41bf1ca49901e9fbb",
+      "fingerprint": "af5cf5137cb6349f2c2e4b53efbaae23162ee8784fb35714517f54d5f8257426",
       "check_name": "SQL",
       "message": "Possible SQL injection",
       "file": "app/queries/fact_factory/entity_query.rb",
-      "line": 29,
+      "line": 28,
       "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
-      "code": "Entity.find_by_sql([\"SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current(\"e\")} AND #{visible(\"e\")}\", binds(:ids => entity_ids.compact.uniq)])",
+      "code": "Entity.find_by_sql([\"SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current(\"e\")}\", binds(:ids => entity_ids.compact.uniq)])",
       "render_path": null,
       "location": {
         "type": "method",

@@ -90,8 +90,6 @@ module PublicApi
           normalized_name: p.normalized_name,
           party_kind: PARTY_KINDS.include?(p.party_kind) ? p.party_kind : "unknown",
           link_status: status,
-          # A linked entity the caller may not see (a person, without
-          # read:persons) is shown as unlinked-looking nulls, never by name.
           entity_id: entity ? Format.entity_gid(p.entity_id) : nil,
           entity: entity && EntitySerializer.ref(entity),
           method: METHODS.include?(p.method) ? p.method : nil,

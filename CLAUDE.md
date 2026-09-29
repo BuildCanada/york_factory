@@ -49,7 +49,7 @@ Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
 
 ## Developer console and API keys
 ```
-/developers                 → overview: plan, limits, data terms, quickstart, recent activity
+/developers                 → overview: plan, limits, quickstart, recent activity
 /developers/keys            → keys: create (shown once), detail, rename/rescope/restrict, rotate with grace, revoke
 /admin/developers           → staff: accounts (plan override, suspend), all keys, audit log (CSV), Bifrost reconciliation, mass rotation
 /internal/keys/lookup       → HMAC-signed key lookup for the data-edge Worker

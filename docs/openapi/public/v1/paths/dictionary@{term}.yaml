@@ -74,7 +74,7 @@ get:
                       year it starts in.
                   links:
                     self: "/v1/dictionary/fiscal_year"
-                    docs: https://data.buildcanada.com/docs/dictionary/fiscal_year
+                    docs: https://data.buildcanada.com/api/dictionary/fiscal_year
                 meta:
                   release: 11
                   as_of: '11'

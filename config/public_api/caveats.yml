@@ -1,6 +1,6 @@
 # Caveat codes and their text (docs/public-interface-design.md §3.4 and §7.2).
 # Agents act on the code; the text follows Accept-Language. Every code has an
-# anchor at https://data.buildcanada.com/docs/caveats#<code>. %{name} fills in
+# anchor at https://data.buildcanada.com/api/caveats#<code>. %{name} fills in
 # from the response.
 not_cross_source_total:
   en: Sources overlap. Never add amounts across sources.

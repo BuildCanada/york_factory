@@ -53,8 +53,6 @@ class Account < ApplicationRecord
 
   def suspended? = suspended_at.present?
 
-  def terms_accepted? = terms_accepted_at.present?
-
   def membership_for(user) = memberships.find_by(user:)
 
   def manageable_by?(user) = membership_for(user)&.manages_keys? || false

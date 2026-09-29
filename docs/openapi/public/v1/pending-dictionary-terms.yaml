@@ -1,0 +1,102 @@
+# Dictionary terms the public API names in x-bc-dictionary that fact-factory's
+# docs/data-dictionary.yaml does not define yet. Each entry is a proposed definition in the
+# dictionary's own format, for WS-B (api read model) or WS-K2 (dictionary export) to add
+# to fact-factory. When a term lands there, run bin/openapi-sync-dictionary and delete it
+# here; bin/openapi-check-dictionary fails while a defined term is still listed.
+#
+# Terms describe what the API serves. Several are columns of the planned api.* read model
+# (docs/public-interface-design.md, section 5.2) rather than of today's warehouse tables.
+
+terms:
+  # Provenance and captures
+  asset_key:
+    meaning: The fact-factory asset that published a row, such as sources/ca/tbs/proactive_grants or entities/entities. The same key names the dataset in the public catalog.
+    type: string
+    blank_means: Never blank.
+  snapshot_id:
+    meaning: The Iceberg snapshot of a spending table that a registry release pinned. Reading the table at this snapshot returns the rows the release served.
+    type: string (int64 as decimal text)
+    blank_means: The row is not from an Iceberg table (registry rows).
+  capture_url:
+    meaning: The public, content-addressed URL of a retained capture, files.buildcanada.com/sha256/<first two characters>/<digest>. Already a key of the registry `source` JSON; this defines it on its own.
+    type: string (URL)
+    blank_means: The row was not parsed from a capture.
+  retrieved_at:
+    meaning: When fact-factory retrieved the captured file from its publisher.
+    type: timestamp (UTC)
+    blank_means: Never blank for a capture.
+  row_number:
+    meaning: 1-based data row of the captured file a row was parsed from, header rows not counted. Already a key of the registry `source` JSON; this defines it for spending rows too.
+    type: integer
+    blank_means: The capture is not tabular, or the row predates row tracking.
+  page:
+    meaning: 1-based page of a captured document a fact was cited from.
+    type: integer
+    blank_means: The fact was not cited from a paged document.
+  license:
+    meaning: The licence the publisher releases the source under, as an SPDX-style identifier such as OGL-Canada-2.0.
+    type: string
+    blank_means: Never blank for a published asset.
+
+  # Registry
+  name_fr:
+    meaning: The entity's French name, where the roster gives one. Defined today only in the entities/entities asset note.
+    type: string
+    blank_means: The roster gives no French name.
+  redirected_to:
+    meaning: The entity that now carries a redirected entity's record, set with status redirected. Described in docs/entity-registry-v2.md, "Queue and redirects".
+    type: string (entity_id)
+    blank_means: The entity is not redirected.
+
+  # Spending rows and parties
+  spending_key:
+    meaning: The API's stable key for one published spending row, the first 128 bits of sha256(asset_key, acquisition, resource_id, id) in Crockford base32. Unique across a whole table, unlike id. Published references use gid://buildcanada/SpendingRecord/<spending_key>.
+    type: string (26 characters)
+    blank_means: Never blank.
+  measure:
+    meaning: What a source's amount measures (contract_value, aggregated_contract_value, agreement_value, payments_or_expenditure, award_amount, commitment). Amounts of different measures must never be added.
+    type: string
+    values: [contract_value, aggregated_contract_value, agreement_value, payments_or_expenditure, award_amount, commitment]
+    blank_means: Never blank.
+  is_latest_revision:
+    meaning: True when the row is the highest-ranked revision (revision_rank_json) of its canonical_id in the pinned snapshot, the only revision summaries count.
+    type: boolean
+    blank_means: Never blank.
+  position:
+    meaning: 0-based position of an occurrence within a list-valued party field (recipients); 0 for single-valued fields. Part of the occurrence_id hash today.
+    type: int32
+    blank_means: Never blank.
+  link_status:
+    meaning: Whether an occurrence is linked (entity_id set), proposed (reason proposed, so the entity is only the first candidate) or unlinked (any other reason).
+    type: string
+    values: [linked, proposed, unlinked]
+    blank_means: Never blank.
+
+  # Spending summary (api.spending_summary)
+  record_count:
+    meaning: Spending rows counted in a summary group, latest revisions only and aggregate rows excluded.
+    type: int64
+    blank_means: Never blank.
+  agreement_count:
+    meaning: Distinct canonical_id values among the rows counted in a summary group.
+    type: int64
+    blank_means: Never blank.
+  amount_missing_count:
+    meaning: Rows counted in a summary group whose amount is blank. They add nothing to the group's amount.
+    type: int64
+    blank_means: Never blank.
+
+  # Search
+  match_kind:
+    meaning: How a search result matched, identifier (the query is an identifier the entity holds), exact (a normalized name or alias equals the query) or fuzzy (trigram similarity).
+    type: string
+    values: [identifier, exact, fuzzy]
+    blank_means: Never blank.
+  match_score:
+    meaning: 1 for identifier and exact matches; the pg_trgm similarity, 0 to 1, for fuzzy ones.
+    type: float
+    blank_means: Never blank.
+  matched_on:
+    meaning: What a search result matched on, such as name, alias:<the alias> or identifier:<namespace>.
+    type: string
+    blank_means: Never blank.

@@ -1,0 +1,49 @@
+title: Identifier
+description: >-
+  An external identifier an issuer gives an entity, such as a CRA business number
+  (namespace ca.cra.bn9) or a StatCan census subdivision code (ca.statcan.csd_uid).
+  Resolve any identifier to its entities with GET /v1/identifiers/{namespace}/{value}.
+type: object
+x-bc-record: true
+required: [namespace, value, verified, vintage, provenance]
+properties:
+  namespace:
+    type: string
+    pattern: '^[a-z0-9-]+(\.[a-z0-9_-]+)+$'
+    description: Who issued the identifier and what kind it is, such as ca.cra.bn9, ca.isc.band_number, ca.open.owner_org or gleif.lei.
+    x-bc-dictionary: namespace
+    examples: [ca.statcan.csd_uid]
+  value:
+    type: string
+    description: The identifier exactly as its issuer writes it.
+    x-bc-dictionary: value
+    examples: ['4806014']
+  verified:
+    type: boolean
+    description: >-
+      True when the identifier comes from its issuer's own register or passed a published
+      verification rule; false for an unchecked crosswalk candidate. The dictionary stores
+      it as 1 or 0.
+    x-bc-dictionary: verified
+    examples: [true]
+  vintage:
+    type: [string, 'null']
+    description: The edition of the code list the identifier belongs to, such as a census year.
+    x-bc-dictionary: vintage
+    examples: ['2021']
+  valid_from:
+    description: When the entity started holding the identifier, at the source's precision. Null when unknown.
+    x-bc-dictionary: valid_from
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  valid_to:
+    description: When the entity stopped holding the identifier. Null when it still does or the source gives no end.
+    x-bc-dictionary: valid_to
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  provenance:
+    $ref: Provenance.yaml
+    description: Where this identifier version came from.
+    x-bc-structural: true

@@ -1,0 +1,9 @@
+title: Amount
+description: >-
+  A monetary amount as a decimal string, never a float, such as "125000.00". At least two
+  and at most six decimal places. Negative values are published as the source gives them
+  (for example recoveries). The currency is in the sibling `currency` field.
+type: string
+pattern: '^-?[0-9]+\.[0-9]{2,6}$'
+examples:
+  - '125000.00'

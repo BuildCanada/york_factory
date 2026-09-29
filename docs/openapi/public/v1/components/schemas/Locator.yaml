@@ -1,0 +1,17 @@
+title: Locator
+description: Where in the captured file the fact is. Only the members that apply are present.
+type: object
+x-bc-record: true
+properties:
+  row:
+    type: integer
+    minimum: 1
+    description: 1-based data row in the captured file (header rows not counted).
+    x-bc-dictionary: row_number
+    examples: [48213]
+  page:
+    type: integer
+    minimum: 1
+    description: 1-based page of a captured document, for facts cited from a PDF.
+    x-bc-dictionary: page
+    examples: [4]

@@ -1,0 +1,57 @@
+title: SpendingSummaryRow
+description: >-
+  One group of an entity's linked spending. Rows are always split by source (and by
+  currency), because sources measure different things and overlap: never add amounts of
+  rows with different sources. Within a source, only the highest-ranked revision per
+  canonical_id is summed, aggregate rows are left out, and blank amounts are counted in
+  amount_missing, never as zero.
+type: object
+x-bc-record: true
+required: [source, fiscal_year, counterparty, records, agreements, amount, amount_missing, currency, measure]
+properties:
+  source:
+    $ref: SourceKey.yaml
+    description: The spending source. Always a grouping key.
+    x-bc-dictionary: source_key
+  fiscal_year:
+    description: The fiscal year, when grouped by fiscal_year; otherwise null.
+    x-bc-dictionary: fiscal_year
+    oneOf:
+      - $ref: FiscalYear.yaml
+      - type: 'null'
+  counterparty:
+    description: The entity on the other side (the payer for role=recipient, the recipient for role=payer), when grouped by counterparty; otherwise null. Unlinked counterparties are grouped under null with group_by=counterparty.
+    x-bc-structural: true
+    oneOf:
+      - $ref: EntityRef.yaml
+      - type: 'null'
+  records:
+    type: integer
+    minimum: 0
+    description: Rows counted (latest revisions only, aggregates excluded).
+    x-bc-dictionary: record_count
+    examples: [14]
+  agreements:
+    type: integer
+    minimum: 0
+    description: Distinct canonical_id values among the counted rows.
+    x-bc-dictionary: agreement_count
+    examples: [11]
+  amount:
+    $ref: Amount.yaml
+    description: Sum of amount over the counted rows with an amount. Its meaning is the source's measure.
+    x-bc-dictionary: amount
+  amount_missing:
+    type: integer
+    minimum: 0
+    description: Counted rows whose amount is blank. They add nothing to amount; a large value means amount understates the group.
+    x-bc-dictionary: amount_missing_count
+    examples: [0]
+  currency:
+    $ref: CurrencyCode.yaml
+    description: The currency of amount. A source with several currencies gets one row per currency.
+    x-bc-dictionary: currency
+  measure:
+    $ref: Measure.yaml
+    description: What amount measures, from the source.
+    x-bc-dictionary: measure

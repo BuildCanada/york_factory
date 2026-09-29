@@ -1,0 +1,231 @@
+title: SpendingRecord
+description: >-
+  One published row of a federal spending source (a contract, grant, contribution,
+  transfer payment, research award or international project), as the release's pinned
+  Iceberg snapshot holds it, with its typed columns, the source's meaning of `amount`,
+  every party occurrence and whether each is linked to an entity. Rows sharing a
+  canonical_id are revisions of one agreement: never add them together.
+type: object
+x-bc-record: true
+required: [id, source, record_type, is_aggregated, external_id, canonical_id, source_occurrence, acquisition, title, payer, recipient, amount, currency, measure, fiscal_year, date, is_latest_revision, provenance, cite]
+properties:
+  id:
+    $ref: SpendingRecordGid.yaml
+    description: The row's global ID, stable across releases while the source row exists.
+    x-bc-dictionary: spending_key
+  source:
+    $ref: SourceKey.yaml
+    description: The spending source.
+    x-bc-dictionary: source_key
+  record_type:
+    type: string
+    enum: [contract, grant, contribution, transfer_payment, award, project]
+    description: The kind of financial record.
+    x-bc-dictionary: record_type
+    examples: [grant]
+  is_aggregated:
+    type: boolean
+    description: >-
+      True when the row summarizes several recipients or transactions (contracts under
+      $10,000, "Names withheld (10,931 recipients)"). Aggregate rows are left out of
+      summaries and counted in meta.
+    x-bc-dictionary: is_aggregated
+    examples: [false]
+  external_id:
+    type: string
+    description: The source's own identifier for the record, or a hash of the fields that identify it.
+    x-bc-dictionary: external_id
+    examples: [c1f0a3d9e8b7]
+  canonical_id:
+    type: string
+    description: Groups revisions (amendments) of one agreement. Rows sharing it must not be summed.
+    x-bc-dictionary: canonical_id
+    examples: [5b7e2c19d4a8]
+  source_occurrence:
+    type: integer
+    minimum: 1
+    description: 1-based count of how often this record identity has appeared in the same source release. Above 1 means the source repeated it.
+    x-bc-dictionary: source_occurrence
+    examples: [1]
+  acquisition:
+    type: string
+    enum: [live, archive_import]
+    description: How the capture arrived. archive_import rows come from an external archive and may overlap live rows.
+    x-bc-dictionary: acquisition
+    examples: [live]
+  resource_id:
+    $ref: Sha256.yaml
+    description: The source resource (one file or feed) the row came from.
+    x-bc-dictionary: resource_id
+  source_row_id:
+    $ref: Sha256.yaml
+    description: The row's id in the published spending table, unique only within one (acquisition, resource_id).
+    x-bc-dictionary: id
+  title:
+    type: [string, 'null']
+    description: Short name of the contract, agreement, award or project, in English where the source gives both languages.
+    x-bc-dictionary: title
+    examples: [Canada Cultural Spaces Fund]
+  description:
+    type: [string, 'null']
+    description: Longer description or summary, in English where the source gives both languages.
+    x-bc-dictionary: description
+    examples: [Renovation of the Diamond Valley community arts centre.]
+  program:
+    type: [string, 'null']
+    description: Name of the funding program the record belongs to.
+    x-bc-dictionary: program
+    examples: [Canada Cultural Spaces Fund]
+  payer:
+    type: [string, 'null']
+    description: The English name of the government organization that made the commitment or payment, as the source names it.
+    x-bc-dictionary: payer
+    examples: [Canadian Heritage]
+  payer_code:
+    type: [string, 'null']
+    description: The open.canada.ca organization code of the payer, such as pch. After a reorganization, past rows carry the successor's code.
+    x-bc-dictionary: payer_code
+    examples: [pch]
+  recipient:
+    type: [string, 'null']
+    description: The recipient as the source names it. Null when the source names no single recipient.
+    x-bc-dictionary: recipient
+    examples: [Town of Diamond Valley]
+  recipients:
+    type: array
+    description: All implementing organizations the source lists (global_affairs_projects only). Empty elsewhere.
+    x-bc-dictionary: recipients
+    items:
+      type: string
+    examples: [[]]
+  recipient_refs:
+    type: array
+    description: The IATI organization identifier of each entry in recipients, at the same position. Empty elsewhere.
+    x-bc-dictionary: recipient_refs
+    items:
+      type: [string, 'null']
+    examples: [[]]
+  principal_investigator:
+    type: [string, 'null']
+    description: The lead researcher named on a research award.
+    x-bc-dictionary: principal_investigator
+    examples: [null]
+  research_org:
+    type: [string, 'null']
+    description: The research institution named on the record, when it is a different party from the recipient.
+    x-bc-dictionary: research_org
+    examples: [null]
+  recipient_business_number:
+    type: [string, 'null']
+    description: The recipient's CRA business number as the source writes it (9-digit BN or 15-character program account).
+    x-bc-dictionary: recipient_business_number
+    examples: ['107511586RC0001']
+  recipient_type:
+    type: [string, 'null']
+    description: The source's own code for the kind of recipient, unchanged. See the source's notes.
+    x-bc-dictionary: recipient_type
+    examples: [G]
+  recipient_city:
+    type: [string, 'null']
+    description: City of the recipient, as the source writes it.
+    x-bc-dictionary: recipient_city
+    examples: [Diamond Valley]
+  recipient_postal_code:
+    type: [string, 'null']
+    description: Postal code of the recipient, as the source writes it, including case and spacing.
+    x-bc-dictionary: recipient_postal_code
+    examples: [T0L 0H0]
+  province:
+    type: [string, 'null']
+    description: Province or territory of the recipient, as the source writes it.
+    x-bc-dictionary: province
+    examples: [AB]
+  country:
+    type: [string, 'null']
+    description: Country of the recipient, as the source writes it.
+    x-bc-dictionary: country
+    examples: [CA]
+  amount:
+    description: >-
+      The single monetary value that best represents the row. It is not necessarily money
+      paid: `measure` and `amount_note` say what it is for this source. Null when the
+      source gives no single value.
+    x-bc-dictionary: amount
+    oneOf:
+      - $ref: Amount.yaml
+      - type: 'null'
+  currency:
+    description: ISO 4217 code of amount. Null only when amount is null for a mixed-currency project.
+    x-bc-dictionary: currency
+    oneOf:
+      - $ref: CurrencyCode.yaml
+      - type: 'null'
+  measure:
+    $ref: Measure.yaml
+    description: What amount measures for this source.
+    x-bc-dictionary: measure
+  amount_note:
+    type: string
+    description: The source's amount rule in plain words, from the data dictionary's per-asset `amount` note.
+    x-bc-dictionary: amount
+    examples: ['agreement_value for that amendment. Do not sum across rows sharing a canonical_id.']
+  commitments:
+    type: object
+    description: global_affairs_projects only. Total commitments by currency, from ISO 4217 code to decimal string.
+    x-bc-dictionary: commitments_json
+    additionalProperties:
+      $ref: Amount.yaml
+    examples: [{}]
+  value_consistent:
+    type: [boolean, 'null']
+    description: proactive_contracts only. Whether contract_value equals original_value plus amendment_value as the source publishes them.
+    x-bc-dictionary: value_consistent
+    examples: [null]
+  fiscal_year:
+    description: The fiscal year the row belongs to, by the source's rule (see fiscal_year_note on /v1/spending/sources). Null when the source gives no parseable year.
+    x-bc-dictionary: fiscal_year
+    oneOf:
+      - $ref: FiscalYear.yaml
+      - type: 'null'
+  date:
+    type: [string, 'null']
+    format: date
+    description: The row's principal date, such as the contract date or agreement start date, when the source gives it in ISO format.
+    x-bc-dictionary: date
+    examples: ['2024-06-01']
+  date_raw:
+    type: [string, 'null']
+    description: The principal date exactly as the source wrote it.
+    x-bc-dictionary: date_raw
+    examples: ['2024-06-01']
+  revision_rank:
+    type: [array, 'null']
+    description: Sort key for ordering revisions sharing a canonical_id; higher sorts later. Null when the source has no revision ordering.
+    x-bc-dictionary: revision_rank_json
+    items: {}
+    examples: [[0]]
+  is_latest_revision:
+    type: boolean
+    description: True when this is the highest-ranked revision of its canonical_id, the only revision summaries count.
+    x-bc-dictionary: is_latest_revision
+    examples: [true]
+  parties:
+    type: array
+    description: Every party occurrence on the row, with its link outcome. Always present on GET /v1/spending/{id}; in lists only with `expand=parties`.
+    x-bc-structural: true
+    items:
+      $ref: SpendingParty.yaml
+  raw:
+    type: [string, 'null']
+    description: The complete original source record (JSON, or XML for global_affairs_projects). Present only with `expand=raw`.
+    x-bc-dictionary: raw_json
+    examples: ['{"ref_number":"001-2024-2025-Q1-00042","agreement_value":"125000.00"}']
+  provenance:
+    $ref: Provenance.yaml
+    description: The pinned snapshot, captured file and row this record came from.
+    x-bc-structural: true
+  cite:
+    type: string
+    description: A ready-to-paste citation naming the publisher, dataset, retrieval date, row, capture digest, release and gid.
+    x-bc-structural: true
+    examples: ['Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, retrieved 2026-09-26, row 48,213 (sha256 9f2c4e8b). Build Canada data release 11, gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.']

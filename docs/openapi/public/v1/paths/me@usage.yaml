@@ -1,0 +1,138 @@
+# /me/usage
+get:
+  operationId: getUsage
+  summary: Usage by time, key and operation
+  description: |-
+    Your account's requests and units by minute, hour or day, optionally split by key and
+    operation. Past days come from the durable daily rollup (the billing source); the
+    current day is live and up to a minute behind. Needs the usage:read scope; not
+    available anonymously.
+  tags:
+  - Discovery
+  x-fern-sdk-method-name: usage
+  x-fern-sdk-group-name: me
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - usage:read
+  x-bc-cache: none
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - usage:read
+  parameters:
+  - name: granularity
+    in: query
+    required: false
+    description: Bucket size. `minute` allows at most a 24-hour range; `hour` at most 31 days.
+    schema:
+      type: string
+      enum:
+      - minute
+      - hour
+      - day
+      default: day
+    example: day
+  - name: from
+    in: query
+    required: false
+    description: 'Start of the range (inclusive). Default: 30 days ago for day, 24 hours ago otherwise.'
+    schema:
+      type: string
+      format: date-time
+    example: '2026-09-27T00:00:00Z'
+  - name: to
+    in: query
+    required: false
+    description: 'End of the range (exclusive). Default: now.'
+    schema:
+      type: string
+      format: date-time
+    example: '2026-09-28T00:00:00Z'
+  - name: group_by
+    in: query
+    required: false
+    description: Split buckets by `key`, `operation` or both, comma-separated.
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - key
+        - operation
+    example:
+    - key
+    - operation
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: A page of usage buckets.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/UsageResponse.yaml"
+          examples:
+            by_operation:
+              summary: One day by key and operation
+              value:
+                data:
+                - bucket_start: '2026-09-27T00:00:00Z'
+                  key_id: key_981
+                  operation: getEntity
+                  requests: 412
+                  units: 412
+                  cache_hits: 288
+                  errors_4xx: 3
+                  errors_5xx: 0
+                - bucket_start: '2026-09-27T00:00:00Z'
+                  key_id: key_981
+                  operation: searchEntities
+                  requests: 40
+                  units: 120
+                  cache_hits: 2
+                  errors_4xx: 0
+                  errors_5xx: 0
+                meta:
+                  release:
+                  as_of: '2026-09-28T00:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor:
+                  count:
+                links:
+                  self: >-
+                    /v1/me/usage?granularity=day&from=2026-09-27T00:00:00Z&to=2026-09-28T00:00:00Z&group_by=key,operation
+                  next:
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

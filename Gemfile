@@ -158,4 +158,7 @@ gem "caxlsx"
 group :test do
   # Minitest 6 provides the stubbing API used by broadcast tests separately.
   gem "minitest-mock", "~> 5.27"
+
+  # Validates the public API's OpenAPI 3.1 examples, and responses against the spec.
+  gem "json_schemer", "~> 2.5"
 end

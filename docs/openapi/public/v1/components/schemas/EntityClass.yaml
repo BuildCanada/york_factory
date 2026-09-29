@@ -1,0 +1,7 @@
+title: EntityClass
+description: >-
+  What kind of party an entity is. `person` is reserved: release 1 to 11 have no person
+  entities, and persons will need the read:persons scope. New classes may be added.
+type: string
+enum: [jurisdiction, government_org, government_enterprise, indigenous_government, organization, person]
+examples: [government_org]

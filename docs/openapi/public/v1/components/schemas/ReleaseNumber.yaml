@@ -1,0 +1,9 @@
+title: ReleaseNumber
+description: >-
+  A registry release number. Releases are numbered from 1 upward, are immutable once
+  published, and are the unit that `as_of` pins. Release N of the registry is every
+  version with release_id <= N whose retired_release_id is blank or greater than N.
+type: integer
+minimum: 1
+examples:
+  - 11

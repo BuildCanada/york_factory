@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Compares public/v1/openapi.json with the same file on a base ref and reports breaking
+# changes with oasdiff (https://github.com/oasdiff/oasdiff).
+#
+#   bin/openapi-breaking [BASE_REF]    BASE_REF defaults to origin/main
+#
+# Policy (docs/openapi/public/v1/README.md, "Versioning"): a breaking change to /v1 fails.
+# Before launch, while info.version carries a prerelease tag (1.0.0-alpha.N), breaking
+# changes are reported but do not fail, so the contract can still move with WS-D.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+base_ref="${1:-origin/main}"
+spec="public/v1/openapi.json"
+base="$(mktemp -t openapi-base).json"
+
+if ! git -C "$root" cat-file -e "$base_ref:$spec" 2>/dev/null; then
+  echo "No $spec on $base_ref; nothing to compare."
+  exit 0
+fi
+git -C "$root" show "$base_ref:$spec" > "$base"
+
+if command -v oasdiff >/dev/null 2>&1; then
+  oasdiff_cmd=(oasdiff)
+else
+  oasdiff_cmd=(docker run --rm -v "$root:/head:ro" -v "$(dirname "$base"):/base:ro" tufin/oasdiff:v1.32.1)
+  head_path="/head/$spec"
+  base_path="/base/$(basename "$base")"
+fi
+head_path="${head_path:-$root/$spec}"
+base_path="${base_path:-$base}"
+
+version="$(ruby -rjson -e 'puts JSON.parse(File.read(ARGV[0]))["info"]["version"]' "$root/$spec")"
+if [[ "$version" == *-* ]]; then
+  echo "info.version $version is a prerelease: reporting breaking changes without failing."
+  "${oasdiff_cmd[@]}" breaking "$base_path" "$head_path" --format text || true
+else
+  "${oasdiff_cmd[@]}" breaking "$base_path" "$head_path" --format text --fail-on ERR
+fi

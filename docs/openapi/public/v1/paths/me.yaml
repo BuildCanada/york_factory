@@ -1,0 +1,108 @@
+# /me
+get:
+  operationId: getMe
+  summary: The caller, plan and limits
+  description: |-
+    Who the API thinks you are: the account and key (or OAuth client), the plan, the
+    scopes granted and this period's usage. Works anonymously. Use it to check a key
+    before a long job.
+  tags:
+  - Discovery
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: me
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: none
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters: []
+  responses:
+    '200':
+      description: The caller.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/MeResponse.yaml"
+          examples:
+            key:
+              summary: A free-plan API key
+              value:
+                data:
+                  authenticated: true
+                  account:
+                    id: acct_42
+                    name: Brendan Samek
+                    kind: personal
+                  key:
+                    id: key_981
+                    name: newsroom-scripts
+                    prefix: bc_live_4fQ9
+                    expires_at:
+                  oauth_client:
+                  plan: free
+                  scopes:
+                  - read:public
+                  - read:persons
+                  - usage:read
+                  limits:
+                    rate_per_minute: 120
+                    burst: 240
+                    monthly_units: 100000
+                    daily_units:
+                    monthly_units_used: 38760
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1/me"
+            anonymous:
+              summary: No key
+              value:
+                data:
+                  authenticated: false
+                  account:
+                  key:
+                  oauth_client:
+                  plan: anonymous
+                  scopes:
+                  - read:public
+                  limits:
+                    rate_per_minute: 30
+                    burst: 30
+                    monthly_units:
+                    daily_units: 1000
+                    monthly_units_used: 212
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1/me"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

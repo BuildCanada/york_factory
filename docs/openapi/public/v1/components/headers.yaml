@@ -1,0 +1,62 @@
+# Shared response headers. Referenced as ../components/headers.yaml#/<Name>.
+ETag:
+  description: >-
+    A strong validator for the response, `"r<release>-<first 12 hex of sha256>"`. Send it
+    back as If-None-Match for a free 304.
+  schema:
+    type: string
+  example: '"r11-3f9a2c4e8b1d"'
+CacheControl:
+  description: >-
+    `public, max-age=31536000, immutable` when the request pinned `as_of`; otherwise
+    `public, max-age=300, stale-while-revalidate=3600`. Responses for /me, /me/usage and
+    `count=exact` are `private, no-store`.
+  schema:
+    type: string
+  example: public, max-age=31536000, immutable
+BCRelease:
+  description: The release that answered, the same as `meta.release`. Absent for data versioned only by time.
+  schema:
+    type: integer
+    minimum: 1
+  example: 11
+RateLimit:
+  description: >-
+    The caller's remaining units in the current window, per
+    draft-ietf-httpapi-ratelimit-headers: `r` is units remaining and `t` seconds until the
+    window resets.
+  schema:
+    type: string
+  example: '"minute";r=37;t=18'
+RateLimitPolicy:
+  description: >-
+    The caller's limits: `q` is the quota in units and `w` the window in seconds, for the
+    per-minute rate and the monthly (or, for anonymous callers, daily) allowance.
+  schema:
+    type: string
+  example: '"minute";q=120;w=60, "month";q=100000;w=2592000'
+QuotaRemaining:
+  description: Units left in the caller's monthly (anonymous, daily) allowance.
+  schema:
+    type: integer
+    minimum: 0
+  example: 61240
+RetryAfter:
+  description: Seconds to wait before retrying.
+  schema:
+    type: integer
+    minimum: 0
+  example: 18
+Location:
+  description: The survivor entity's URL, pinned to the same release.
+  schema:
+    type: string
+  example: /v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11
+WWWAuthenticate:
+  description: >-
+    RFC 6750 challenge. On 401 it names the protected-resource metadata
+    (`Bearer resource_metadata="https://data.buildcanada.com/.well-known/oauth-protected-resource"`);
+    on 403 it names the missing scope (`Bearer error="insufficient_scope", scope="read:persons"`).
+  schema:
+    type: string
+  example: Bearer resource_metadata="https://data.buildcanada.com/.well-known/oauth-protected-resource"

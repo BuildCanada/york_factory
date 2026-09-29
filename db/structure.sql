@@ -161,7 +161,6 @@ CREATE TABLE public.accounts (
     bifrost_customer_id character varying,
     suspended_at timestamp with time zone,
     suspended_reason text,
-    terms_accepted_at timestamp with time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT accounts_kind CHECK (((kind)::text = ANY (ARRAY[('personal'::character varying)::text, ('organization'::character varying)::text]))),

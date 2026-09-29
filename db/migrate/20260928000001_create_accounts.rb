@@ -14,7 +14,6 @@ class CreateAccounts < ActiveRecord::Migration[8.1]
       t.string :bifrost_customer_id
       t.timestamptz :suspended_at
       t.text :suspended_reason
-      t.timestamptz :terms_accepted_at
       t.timestamps
     end
 

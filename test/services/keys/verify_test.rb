@@ -17,10 +17,10 @@ class Keys::VerifyTest < ActiveSupport::TestCase
   end
 
   test "a missing scope is insufficient_scope, naming the scope" do
-    result = Keys::Verify.call(@raw, scopes: [ "read:persons" ])
+    result = Keys::Verify.call(@raw, scopes: [ "cms:drafts" ])
 
     assert_equal :insufficient_scope, result.error
-    assert_equal "read:persons", result.required_scope
+    assert_equal "cms:drafts", result.required_scope
   end
 
   test "a mistyped key is malformed and costs no query" do

@@ -7,5 +7,7 @@ Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
   # API keys: an Authorization value or a key passed as ?key= must never be
   # logged (docs/public-interface-design.md §4.3).
-  :authorization, /\Akey\z/i, :raw_key
+  :authorization, /\Akey\z/i, :raw_key,
+  # OAuth authorization codes and PKCE verifiers (tokens are covered by :token).
+  /\Acode\z/i, :code_verifier, :code_challenge
 ]

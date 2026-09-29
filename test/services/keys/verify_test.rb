@@ -24,7 +24,7 @@ class Keys::VerifyTest < ActiveSupport::TestCase
   end
 
   test "a mistyped key is malformed and costs no query" do
-    queries = count_queries { assert_equal :malformed, Keys::Verify.call(@raw.chop + "x").error }
+    queries = count_queries { assert_equal :malformed, Keys::Verify.call(mistyped(@raw)).error }
 
     assert_equal 0, queries
   end

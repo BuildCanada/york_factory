@@ -1,0 +1,44 @@
+<%= render "developers/nav" %>
+
+<p class="text-muted mb-2">
+  Apps you've connected to <strong><%= current_account.name %></strong> through "Sign in with Build Canada", such as Claude or another MCP client.
+  Their usage counts against this account. Revoking an app stops its tokens at once; it can ask you again later.
+</p>
+
+<% if @entries.empty? %>
+  <p class="text-muted">No apps are authorized.</p>
+<% else %>
+  <table>
+    <thead><tr><th>App</th><th>Access</th><th>Authorized by</th><th>Authorized</th><th>Last refreshed</th><th></th></tr></thead>
+    <tbody>
+      <% @entries.each do |entry| %>
+        <% app = entry.application %>
+        <tr>
+          <td>
+            <strong><%= app.name %></strong><br>
+            <span class="text-muted mono"><%= app.display_host %></span>
+            <span class="badge"><%= app.client_type_label %></span>
+            <% unless app.reviewed? %><span class="badge badge-yellow">Unverified</span><% end %>
+          </td>
+          <td>
+            <span class="mono"><%= entry.scopes.join(" ") %></span><br>
+            <span class="text-muted mono"><%= entry.resources.join(", ") %></span>
+          </td>
+          <td><%= entry.user&.email || "a former member" %></td>
+          <td><%= developer_time(entry.authorized_at) %></td>
+          <td><%= developer_time(entry.last_refreshed_at) %></td>
+          <td>
+            <% if can_manage_keys? || entry.user == current_user %>
+              <%= button_to "Revoke", developers_authorized_app_path(app), method: :delete, class: "btn btn-danger" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<section style="margin-top: 2rem;">
+  <h2>OAuth activity</h2>
+  <%= render "developers/audit_events", events: @events %>
+</section>

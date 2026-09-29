@@ -2,7 +2,9 @@
 # (docs/public-interface-design.md §8.4). The table has a trigger that
 # refuses UPDATE and DELETE; the model refuses them too.
 class AuditEvent < ApplicationRecord
-  ACTOR_KINDS = %w[user admin system].freeze
+  # client: an OAuth client acting for itself (dynamic registration, RFC 7009
+  # revocation), identified by the event's subject and IP.
+  ACTOR_KINDS = %w[user admin system client].freeze
 
   # Who did it and from where. Built once per request (or per job) and passed
   # to the key services.
@@ -12,6 +14,8 @@ class AuditEvent < ApplicationRecord
     def self.from_request(request, actor:, actor_kind: "user")
       new(actor:, actor_kind:, ip: request.remote_ip, user_agent: request.user_agent.to_s.first(255))
     end
+
+    def self.client(request) = from_request(request, actor: nil, actor_kind: "client")
   end
 
   belongs_to :account, optional: true
@@ -40,6 +44,7 @@ class AuditEvent < ApplicationRecord
 
   def actor_label
     return "system" if actor_kind == "system"
+    return "OAuth client" if actor_kind == "client"
 
     [ actor_user&.email || "user ##{actor_user_id}", ("(admin)" if actor_kind == "admin") ].compact.join(" ")
   end

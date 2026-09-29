@@ -37,13 +37,14 @@ class PublicApiAuthenticationTest < ActionDispatch::IntegrationTest
       assert_equal "application/problem+json", response.media_type
       assert_equal "insufficient_scope", response.parsed_body["code"]
       assert_equal "read:persons", response.parsed_body["required_scope"]
-      assert_equal %(Bearer error="insufficient_scope", scope="read:persons"), response.headers["WWW-Authenticate"]
+      assert_equal %(Bearer error="insufficient_scope", scope="read:persons", resource_metadata="http://www.example.com/.well-known/oauth-protected-resource/v1"),
+        response.headers["WWW-Authenticate"]
     end
   end
 
   test "a bad or revoked key is a 401 problem" do
     with_probe_routes do
-      get "/probe", headers: { "Authorization" => "Bearer #{@issued.raw_key.chop}x" }
+      get "/probe", headers: { "Authorization" => "Bearer #{mistyped(@issued.raw_key)}" }
       assert_response :unauthorized
       assert_equal "unauthenticated", response.parsed_body["code"]
 

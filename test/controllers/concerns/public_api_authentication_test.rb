@@ -43,7 +43,9 @@ class PublicApiAuthenticationTest < ActionDispatch::IntegrationTest
 
   test "a bad or revoked key is a 401 problem" do
     with_probe_routes do
-      get "/probe", headers: { "Authorization" => "Bearer #{@issued.raw_key.chop}x" }
+      # A different last character (chop + "x" was the same key when it already ended in x).
+      tampered = @issued.raw_key.chop + (@issued.raw_key.end_with?("x") ? "y" : "x")
+      get "/probe", headers: { "Authorization" => "Bearer #{tampered}" }
       assert_response :unauthorized
       assert_equal "unauthenticated", response.parsed_body["code"]
 

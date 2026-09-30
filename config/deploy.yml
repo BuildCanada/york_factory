@@ -14,6 +14,11 @@ servers:
       - 66.70.179.6
     cmd: bin/jobs
 
+# The web entrypoint runs db:prepare. Boot it before the worker so the worker
+# cannot start against an unmigrated schema.
+boot:
+  parallel_roles: false
+
 proxy:
   ssl:
     certificate_pem: CERTIFICATE_PEM
@@ -26,7 +31,10 @@ proxy:
     - auth.buildcanada.com
 
 registry:
-  server: localhost:5555
+  server: ghcr.io
+  username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME") { `bin/rails credentials:fetch kamal.registry_username`.strip } %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
 
 env:
   secret:

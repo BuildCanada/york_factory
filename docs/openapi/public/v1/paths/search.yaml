@@ -7,8 +7,7 @@ get:
     corporation number, band number, LEI or census code matches exactly (match.kind
     identifier). Otherwise names and aliases match after normalization (exact); with
     mode=fuzzy, trigram similarity adds candidates (fuzzy), which are guesses to check,
-    not matches. There is no address or postal code search. Phase 1 searches entities
-    only; other types arrive additively.
+    not matches. Phase 1 searches entities only; other types arrive additively.
   tags:
   - Search
   x-fern-sdk-method-name: search

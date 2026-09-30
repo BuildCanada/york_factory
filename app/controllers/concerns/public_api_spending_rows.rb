@@ -1,6 +1,6 @@
 # Serializing a page of spending rows the same way on every /v1 operation
-# that returns them: the parties are always loaded (the postal code rule reads
-# them) but shown only when asked, and caveats follow the rows' sources.
+# that returns them: the parties are loaded and shown only when asked, and
+# caveats follow the rows' sources.
 module PublicApiSpendingRows
   extend ActiveSupport::Concern
 
@@ -11,15 +11,14 @@ module PublicApiSpendingRows
   def expand?(name) = Array(parameters["expand"]).include?(name)
 
   def serialize_records(records, show_parties:)
-    parties = spending_query.parties(records)
+    parties = show_parties ? spending_query.parties(records) : {}
     latest = spending_query.latest_revisions(records)
     captures = spending_query.captures(records)
-    linked = parties.values.flatten.filter_map(&:entity_id)
-    entities = show_parties ? entity_query.refs(linked) : {}
+    entities = show_parties ? entity_query.refs(parties.values.flatten.filter_map(&:entity_id)) : {}
     records.map do |r|
-      row_parties = parties.fetch([ r.asset_key, r.acquisition, r.source_row_id ], [])
+      row_parties = parties.fetch([ r.asset_key, r.acquisition, r.source_row_id ], []) if show_parties
       item = PublicApi::V1::SpendingSerializer.record(r, context, parties: row_parties, latest: latest.fetch(r.spending_key, true),
-        capture: captures[r.source_sha256], entities:, show_parties:, raw: expand?("raw"))
+        capture: captures[r.source_sha256], entities:, raw: expand?("raw"))
       project(item)
     end
   end

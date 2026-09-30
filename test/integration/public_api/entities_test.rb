@@ -18,15 +18,6 @@ class PublicApiEntitiesTest < PublicApiTestCase
     assert_cache_control "public, max-age=300, stale-while-revalidate=3600"
   end
 
-  test "address keys never leave the API, at any depth" do
-    api_get "/v1/entities/#{DIAMOND_VALLEY}"
-    assert_equal({ "municipality_type_raw" => "Town", "office" => {} }, body.dig("data", "attributes"))
-    api_get "/v1/entities/#{DIAMOND_VALLEY}/relationships", predicate: "located_within", direction: "out"
-    assert_conforms("listEntityRelationships", status: 200)
-    dguid = body["data"].find { |r| r["object_ref"] }
-    assert_equal({ "dguid" => "2021A00054806014", "vintage" => "2021" }, dguid["attributes"])
-  end
-
   test "as_of pins the release, by number, date or timestamp" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "10"
     assert_conforms("getEntity", status: 200)

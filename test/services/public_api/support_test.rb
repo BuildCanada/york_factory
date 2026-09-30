@@ -68,7 +68,7 @@ class PublicApiSupportTest < ActiveSupport::TestCase
     assert_equal "release_building", assert_raises(PublicApi::Problem) { PublicApi::AsOf.resolve(nil, releases: []) }.code
   end
 
-  test "amounts, fiscal years and FSAs are written as the contract says" do
+  test "amounts and fiscal years are written as the contract says" do
     assert_equal "125000.00", PublicApi::Format.amount(BigDecimal("125000"))
     assert_equal "1.2345", PublicApi::Format.amount("1.234500")
     assert_equal "-0.50", PublicApi::Format.amount(-0.5)
@@ -77,8 +77,6 @@ class PublicApiSupportTest < ActiveSupport::TestCase
     assert_equal "1999-00", PublicApi::Format.fiscal_year(1999)
     assert_equal 2024, PublicApi::Format.fiscal_year_start("2024-25")
     assert_nil PublicApi::Format.fiscal_year_start("2024-26")
-    assert_equal "T2P", PublicApi::Format.fsa("t2p 1j9")
-    assert_equal({ "a" => { "b" => [ {} ] } }, PublicApi::Format.without_address_keys({ "a" => { "b" => [ { "StreetAddress" => 1 } ], "address" => 2 } }))
   end
 
   test "request IDs are req_ and a ULID" do

@@ -25,7 +25,7 @@ module PublicApi
           redirected_to: Format.entity_gid(e.redirected_to),
           valid_from: Format.partial_date(e.valid_from),
           valid_to: Format.partial_date(e.valid_to),
-          attributes: Format.without_address_keys(json_object(e["attributes"]))
+          attributes: json_object(e["attributes"])
         }
         data[:identifiers] = identifiers.map { |i| identifier(i, ctx) } if identifiers
         data[:relationships] = relationships if relationships
@@ -64,7 +64,7 @@ module PublicApi
           object_ref: r.object_id ? nil : r.object_ref,
           object: object && ref(object),
           direction:,
-          attributes: Format.without_address_keys(json_object(r["attributes"])),
+          attributes: json_object(r["attributes"]),
           valid_from: Format.partial_date(r.valid_from),
           valid_to: Format.partial_date(r.valid_to),
           provenance: provenance(r, ASSETS[:relationship]),

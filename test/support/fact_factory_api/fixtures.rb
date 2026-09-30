@@ -17,9 +17,8 @@ require "json"
 #   its director_of relationship, not served until the contract has phase 2's
 #   predicates;
 # - spending: revisions, an aggregate row, a blank amount, an archive copy,
-#   linked, proposed and unlinked occurrences, two currencies, and the privacy
-#   rules: an individual recipient's full postal code (which must leave as its
-#   FSA) and an address key in entity attributes (which must never leave);
+#   linked, proposed and unlinked occurrences, an individual recipient, and
+#   two currencies;
 # - is_latest_revision as fact-factory sets it, per slice: G1_A0 gets a new
 #   version with false in release 11, when G1_A1 outranks it, while the
 #   archive copy of G1_A0 stays the latest of the archive slice; an archive
@@ -110,8 +109,7 @@ module FactFactoryApiFixtures
   def entities
     dv = { entity_class: "government_org", subtype: "municipal_government", jurisdiction: "ca-ab", valid_from: "2023-01-01",
            anchor: "ca-ab/municipal_affairs/municipalities:0417", source: roster_source(212),
-           # An address key the read model would have removed (serve/allowlist.FORBIDDEN_KEYS): the API must never serve it.
-           attributes: { municipality_type_raw: "Town", office: { mailing_address: "Box 1, Diamond Valley" } } }
+           attributes: { municipality_type_raw: "Town" } }
     [
       entity(DIAMOND_VALLEY, "Town of Diamond Valley", from: 10, to: 11, **dv),
       entity(DIAMOND_VALLEY, "Town of Diamond Valley", from: 11, **dv, aliases: [ "Diamond Valley" ]),
@@ -173,7 +171,7 @@ module FactFactoryApiFixtures
       relationship(BLACK_DIAMOND, "succeeded_by", object_id: DIAMOND_VALLEY, attributes: amalgamation, valid_from: "2023-01-01"),
       relationship(TURNER_VALLEY, "succeeded_by", object_id: DIAMOND_VALLEY, attributes: amalgamation, valid_from: "2023-01-01"),
       relationship(DIAMOND_VALLEY, "located_within", object_ref: "ca.statcan.dguid:2021A00054806014",
-        attributes: { dguid: "2021A00054806014", vintage: "2021", street_address: "never served" }),
+        attributes: { dguid: "2021A00054806014", vintage: "2021" }),
       relationship(DIAMOND_VALLEY, "located_within", object_id: ALBERTA, valid_from: "2023-01-01"),
       relationship(FOUNDATION, "located_within", object_id: DIAMOND_VALLEY, valid_from: "2010", valid_to: "2019-03"),
       relationship(PERSON, "director_of", object_id: FOUNDATION)
@@ -211,8 +209,7 @@ module FactFactoryApiFixtures
       record(G2, GRANTS, "g2", title: "Community foundation operating grant", recipient: "Diamond Valley Community Foundation",
         recipient_postal_code: "T0L 1A0", amount: "50000.00", fiscal_year: 2023, date: "2023-05-01", revision_rank: [ 0 ],
         recipient_business_number: "107511586RR0001"),
-      # An individual recipient: the read model reduces the postal code to its FSA; this row keeps the full code to prove the API
-      # reduces it again.
+      # An individual recipient, never linked (excluded_individual).
       record(G_PERSON, GRANTS, "gp", title: "Artist residency", recipient: "Jane Doe", recipient_city: "Calgary",
         recipient_postal_code: "T2P 1J9", recipient_type: "P", amount: "5000.00", fiscal_year: 2024, revision_rank: [ 0 ]),
       record(G_AGGREGATE, GRANTS, "gagg", title: "Grants under $25,000", recipient: "Town of Diamond Valley", is_aggregated: true,

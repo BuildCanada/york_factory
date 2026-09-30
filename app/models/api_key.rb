@@ -6,8 +6,7 @@
 # Keys::Revoke; verify presented keys through Keys::Verify.
 class ApiKey < ApplicationRecord
   SCOPES = {
-    # People are included: person entities, individuals' names and roles. A
-    # person's address is only ever city, province and FSA, never a street address.
+    # People are included: person entities, individuals' names and roles.
     "read:public" => "Organizations, people, spending, documents, StatCan, releases, datasets and exports",
     "usage:read" => "Your own usage (/v1/me/usage)",
     "cms:drafts" => "Build Canada CMS draft-memo routes, acting as you"

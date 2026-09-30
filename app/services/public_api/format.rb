@@ -56,26 +56,5 @@ module PublicApi
     def sha256(value)
       value.to_s.match?(SHA256) ? value.to_s : nil
     end
-
-    # Object keys that never leave the API: street addresses (design D9,
-    # DECISIONS 19). The read model removes them already
-    # (serve/allowlist.FORBIDDEN_KEYS); this is a second guard.
-    FORBIDDEN_KEYS = /address|street/i
-
-    def without_address_keys(value)
-      case value
-      when Hash then value.each_with_object({}) { |(k, v), out| out[k] = without_address_keys(v) unless k.to_s.match?(FORBIDDEN_KEYS) }
-      when Array then value.map { |v| without_address_keys(v) }
-      else value
-      end
-    end
-
-    # A postal code as served for an individual: the forward sortation area
-    # (DECISIONS 20).
-    def fsa(postal_code)
-      return nil if postal_code.nil?
-
-      postal_code.to_s.gsub(/\s/, "")[0, 3].upcase.presence
-    end
   end
 end

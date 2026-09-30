@@ -244,7 +244,7 @@ get:
                     /v1/spending?source=proactive_grants&payer=01J9ZK3A1B2C3D4E5F6G7H8J9K&recipient=01J9ZK4T6M8Q2R5V7X3B1N0C4D&as_of=11
                   next:
             individual_recipient:
-              summary: 'An individual recipient: postal code reduced to its FSA'
+              summary: 'An individual recipient: named as published, never linked to an entity'
               value:
                 data:
                 - id: gid://buildcanada/SpendingRecord/M7P2R4T6V8X0Z2B4D6F8H0K2N4
@@ -270,7 +270,7 @@ get:
                   recipient_business_number:
                   recipient_type: P
                   recipient_city: Calgary
-                  recipient_postal_code: T2P
+                  recipient_postal_code: T2P 1J9
                   province: AB
                   country: CA
                   amount: '2400.00'

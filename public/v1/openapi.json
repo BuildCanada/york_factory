@@ -1784,7 +1784,7 @@
       "get": {
         "operationId": "searchEntities",
         "summary": "Search entities by name or identifier",
-        "description": "Finds entities by identifier first, then by name. A query that is a BN9, BN15,\ncorporation number, band number, LEI or census code matches exactly (match.kind\nidentifier). Otherwise names and aliases match after normalization (exact); with\nmode=fuzzy, trigram similarity adds candidates (fuzzy), which are guesses to check,\nnot matches. There is no address or postal code search. Phase 1 searches entities\nonly; other types arrive additively.",
+        "description": "Finds entities by identifier first, then by name. A query that is a BN9, BN15,\ncorporation number, band number, LEI or census code matches exactly (match.kind\nidentifier). Otherwise names and aliases match after normalization (exact); with\nmode=fuzzy, trigram similarity adds candidates (fuzzy), which are guesses to check,\nnot matches. Phase 1 searches entities only; other types arrive additively.",
         "tags": [
           "Search"
         ],
@@ -4309,7 +4309,7 @@
                     }
                   },
                   "individual_recipient": {
-                    "summary": "An individual recipient: postal code reduced to its FSA",
+                    "summary": "An individual recipient: named as published, never linked to an entity",
                     "value": {
                       "data": [
                         {
@@ -4336,7 +4336,7 @@
                           "recipient_business_number": null,
                           "recipient_type": "P",
                           "recipient_city": "Calgary",
-                          "recipient_postal_code": "T2P",
+                          "recipient_postal_code": "T2P 1J9",
                           "province": "AB",
                           "country": "CA",
                           "amount": "2400.00",
@@ -5069,7 +5069,7 @@
             "tokenUrl": "https://auth.buildcanada.com/oauth/token",
             "refreshUrl": "https://auth.buildcanada.com/oauth/token",
             "scopes": {
-              "read:public": "Read organizations, persons, spending, releases, datasets, the dictionary and exports. A person's address is only ever city, province and FSA.",
+              "read:public": "Read organizations, persons, spending, releases, datasets, the dictionary and exports.",
               "usage:read": "Read your account's usage (/v1/me/usage).",
               "keys:manage": "Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys)."
             }
@@ -5604,7 +5604,7 @@
           },
           "attributes": {
             "type": "object",
-            "description": "Roster-specific details, such as institutional_form for federal bodies or category_code for charities. Keys differ by roster and are documented on the dataset page of the entity's provenance asset. Only allowlisted keys are served. Address attributes (such as a school board's `addresses`) are not served in v1.",
+            "description": "Roster-specific details, such as institutional_form for federal bodies or category_code for charities. Keys differ by roster and are documented on the dataset page of the entity's provenance asset. Only allowlisted keys are served.",
             "x-bc-dictionary": "attributes",
             "additionalProperties": true,
             "examples": [
@@ -5944,11 +5944,10 @@
               "string",
               "null"
             ],
-            "description": "Postal code of the recipient. For an organization it is the full code as the source writes it, including case and spacing. When the recipient occurrence is an individual (its party's party_kind is individual), only the forward sortation area is served: the first 3 characters, uppercased (for example \"T2P\"), because people are shown by city, province and FSA only. Bulk files follow the same rule.",
+            "description": "Postal code of the recipient, as the source writes it, including case and spacing.",
             "x-bc-dictionary": "recipient_postal_code",
             "examples": [
-              "T0L 0H0",
-              "T2P"
+              "T0L 0H0"
             ]
           },
           "province": {
@@ -6102,7 +6101,7 @@
               "string",
               "null"
             ],
-            "description": "The complete original source record (JSON, or XML for global_affairs_projects). Present only with `expand=raw`. For an individual recipient, the source's postal code field is reduced to its FSA here too, so raw never carries more than the typed columns.",
+            "description": "The complete original source record (JSON, or XML for global_affairs_projects). Present only with `expand=raw`.",
             "x-bc-dictionary": "raw_json",
             "examples": [
               "{\"ref_number\":\"001-2024-2025-Q1-00042\",\"agreement_value\":\"125000.00\"}"

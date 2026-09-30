@@ -156,7 +156,7 @@ components:
           tokenUrl: https://auth.buildcanada.com/oauth/token
           refreshUrl: https://auth.buildcanada.com/oauth/token
           scopes:
-            'read:public': Read organizations, persons, spending, releases, datasets, the dictionary and exports. A person's address is only ever city, province and FSA.
+            'read:public': Read organizations, persons, spending, releases, datasets, the dictionary and exports.
             'usage:read': Read your account's usage (/v1/me/usage).
             'keys:manage': Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys).
   schemas:

@@ -18,4 +18,12 @@ class ApiKeyTest < ActiveSupport::TestCase
     api_key.revoke!
     assert_nil ApiKey.authenticate(raw)
   end
+
+  test "revoked? mirrors the revoked_at state" do
+    api_key, = ApiKey.issue!(user: users(:admin), name: "revocable")
+
+    refute api_key.revoked?
+    api_key.revoke!
+    assert api_key.revoked?
+  end
 end

@@ -17,7 +17,7 @@ Warehouse::Election.find_or_create_by!(slug: "toronto-2026") do |e|
   e.name = "Toronto 2026 General Municipal Election"
   e.kind = "municipal"
   e.election_date = Date.new(2026, 10, 26)
-  e.nomination_close_date = Date.new(2026, 9, 18)
+  e.nomination_close_date = Date.new(2026, 8, 21)
   # Seeded regions are live regions; drafts are for elections built by hand in admin.
   e.published_at = Time.current
 end

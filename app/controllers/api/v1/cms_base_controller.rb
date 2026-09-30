@@ -22,6 +22,8 @@ module Api
         # devise JWT, an expired/revoked token, or no token at all).
         token = doorkeeper_token
         return false unless token&.accessible?
+        # Public-API and MCP tokens (bound to a resource) never unlock drafts.
+        return false if token.resource.present?
 
         # Any user can hold a token (general login), so preview access is gated on
         # the token owner actually being an admin — never on the client's request.

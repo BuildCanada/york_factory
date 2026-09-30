@@ -1,0 +1,8 @@
+title: SourceKey
+description: >-
+  The spending source: the fact-factory adapter that collected the row. Each source has
+  its own meaning of `amount`, of `fiscal_year` and of revisions; read
+  GET /v1/spending/sources before comparing or totalling. New sources may be added.
+type: string
+enum: [proactive_contracts, aggregated_contracts, proactive_grants, transfer_payments, nserc_awards, sshrc_awards, cihr_awards, global_affairs_projects]
+examples: [proactive_grants]

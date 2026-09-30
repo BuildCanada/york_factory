@@ -1,0 +1,27 @@
+title: Caveat
+description: >-
+  A machine-readable warning about how to read the data in this response. Agents should
+  act on `code`, not on `text`; `text` is prose for people and follows Accept-Language.
+  Every code has an anchor on https://data.buildcanada.com/api/caveats. New codes may be
+  added at any time; treat an unknown code as a warning to show the reader.
+type: object
+required: [code, text]
+properties:
+  code:
+    type: string
+    pattern: '^[a-z][a-z0-9_]*$'
+    description: >-
+      Stable caveat code. Known codes include not_cross_source_total,
+      agreement_value_not_paid, latest_revision_only, linked_only, aggregates_excluded,
+      amount_missing, calendar_year_not_fiscal, archive_overlaps_live, coverage_partial,
+      person_is_clustering and observed_not_appointed.
+    examples: [not_cross_source_total]
+  text:
+    type: string
+    description: The caveat in plain words, in the language chosen by Accept-Language.
+    examples: [Sources overlap. Never add amounts across sources.]
+  docs:
+    type: string
+    format: uri
+    description: The caveat's documentation anchor, with a Markdown twin at the same URL plus `.md`.
+    examples: ['https://data.buildcanada.com/api/caveats#not_cross_source_total']

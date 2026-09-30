@@ -1,0 +1,96 @@
+title: Dataset
+description: >-
+  A published fact-factory asset: what one row means, its coverage and freshness, its
+  licence, the dictionary terms its fields use, and where to get it in bulk.
+type: object
+required: [asset_key, title, record_meaning, publisher, license, freshness, coverage, dictionary_terms, caveats, bulk, links]
+properties:
+  asset_key:
+    type: string
+    description: The fact-factory asset key, such as sources/ca/tbs/proactive_grants or entities/entities.
+    examples: [sources/ca/tbs/proactive_grants]
+  title:
+    type: string
+    description: The dataset's name.
+    examples: [Proactive Disclosure of Grants and Contributions]
+  record_meaning:
+    type: string
+    description: What one row is, in plain words, from the data dictionary's per-asset note.
+    examples: ['One row per amendment of a grant or contribution agreement over $25,000.']
+  publisher:
+    type: [string, 'null']
+    description: Who publishes the source, or null for assets Build Canada derives.
+    examples: [Treasury Board of Canada Secretariat]
+  license:
+    type: string
+    description: The licence the data is available under.
+    examples: [OGL-Canada-2.0]
+  freshness:
+    type: object
+    description: How current the data is.
+    required: [latest_retrieved_at, cadence]
+    properties:
+      latest_retrieved_at:
+        description: When the newest input the release pinned was retrieved.
+        oneOf:
+          - $ref: Timestamp.yaml
+          - type: 'null'
+      cadence:
+        type: string
+        description: How often fact-factory captures the source, such as daily or weekly.
+        examples: [daily]
+  coverage:
+    type: object
+    description: What the dataset covers.
+    required: [rows]
+    properties:
+      rows:
+        type: [integer, 'null']
+        minimum: 0
+        description: Rows in the release.
+        examples: [1313276]
+      from_fiscal_year:
+        description: The earliest fiscal year present, for spending.
+        oneOf:
+          - $ref: FiscalYear.yaml
+          - type: 'null'
+      to_fiscal_year:
+        description: The latest fiscal year present, for spending.
+        oneOf:
+          - $ref: FiscalYear.yaml
+          - type: 'null'
+      known_gaps:
+        type: array
+        description: Known gaps against the dictionary definitions, in plain words.
+        items:
+          type: string
+        examples: [[Earlier snapshots hold the calendar year of the start date in fiscal_year.]]
+  dictionary_terms:
+    type: array
+    description: The dictionary terms the dataset's fields use. Look each up with GET /v1/dictionary/{term}.
+    items:
+      type: string
+    examples: [[amount, fiscal_year, canonical_id]]
+  caveats:
+    type: array
+    description: Caveats that always apply to this dataset.
+    items:
+      $ref: Caveat.yaml
+  bulk:
+    type: array
+    description: Bulk files and tables for the dataset.
+    items:
+      $ref: ExportFile.yaml
+  links:
+    type: object
+    description: Relative links for the dataset.
+    required: [self]
+    properties:
+      self:
+        type: string
+        description: This dataset, pinned.
+        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11']
+      records:
+        type: [string, 'null']
+        description: The API collection serving the dataset's rows, if any.
+        examples: ['/v1/spending?source=proactive_grants&as_of=11']

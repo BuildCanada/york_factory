@@ -15,9 +15,17 @@ module Authenticatable
 
     doorkeeper_authorize!
     return if performed?
+    return render_unauthorized unless first_party_doorkeeper_token?
 
     @current_user = User.find_by(id: doorkeeper_token&.resource_owner_id)
     render_unauthorized unless @current_user
+  end
+
+  # Tokens issued for the public data API or the MCP server carry a resource
+  # (their RFC 8707 audience) and are refused on the CMS routes; only
+  # first-party tokens (TradingPost) act as the user here.
+  def first_party_doorkeeper_token?
+    doorkeeper_token.present? && doorkeeper_token.resource.blank?
   end
 
   def authenticate_admin!
@@ -28,7 +36,7 @@ module Authenticatable
       return
     end
 
-    if doorkeeper_token&.accessible?
+    if doorkeeper_token&.accessible? && first_party_doorkeeper_token?
       @current_user = User.find_by(id: doorkeeper_token.resource_owner_id)
       return render_forbidden unless @current_user&.admin?
 

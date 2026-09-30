@@ -1,0 +1,87 @@
+title: SpendingSource
+description: >-
+  What one spending source's rows mean: its measure, how `amount`, `fiscal_year` and
+  revisions work, its coverage, licence and the snapshot the release pinned. Read this
+  before comparing or totalling amounts. Amounts from different sources overlap (the same
+  grant can appear in proactive_grants and in transfer_payments) and must never be added.
+type: object
+x-bc-record: true
+required: [source, asset, title, publisher, measure, record_types, amount_note, fiscal_year_note, revisions_note, license, snapshot_id, caveats, links]
+properties:
+  source:
+    $ref: SourceKey.yaml
+    description: The source key.
+    x-bc-dictionary: source_key
+  asset:
+    type: string
+    description: The fact-factory asset key of the source's Iceberg table.
+    x-bc-dictionary: asset_key
+    examples: [sources/ca/tbs/proactive_grants]
+  title:
+    type: string
+    description: The publisher's name for the dataset.
+    x-bc-structural: true
+    examples: [Proactive Disclosure of Grants and Contributions]
+  publisher:
+    type: string
+    description: The organization that publishes the source.
+    x-bc-structural: true
+    examples: [Treasury Board of Canada Secretariat]
+  measure:
+    $ref: Measure.yaml
+    description: What the source's amount measures.
+    x-bc-dictionary: measure
+  record_types:
+    type: array
+    description: The record types the source publishes.
+    x-bc-dictionary: record_type
+    items:
+      type: string
+      enum: [contract, grant, contribution, transfer_payment, award, project]
+    examples: [[grant, contribution]]
+  amount_note:
+    type: string
+    description: Which source field fills amount, and its known defects.
+    x-bc-dictionary: amount
+    examples: ['agreement_value for that amendment. Do not sum across rows sharing a canonical_id.']
+  fiscal_year_note:
+    type: string
+    description: How the source's fiscal_year is derived.
+    x-bc-dictionary: fiscal_year
+    examples: ['The fiscal year (April to March) containing agreement_start_date, named by the calendar year it starts in.']
+  revisions_note:
+    type: string
+    description: How the source's canonical_id groups revisions, or that it has none.
+    x-bc-dictionary: canonical_id
+    examples: [Hash of owner_org and ref_number. Each amendment is its own row.]
+  license:
+    type: string
+    description: The publisher's licence for the source.
+    x-bc-dictionary: license
+    examples: [OGL-Canada-2.0]
+  snapshot_id:
+    type: string
+    pattern: '^[0-9]+$'
+    description: The Iceberg snapshot of the source table this release pinned.
+    x-bc-dictionary: snapshot_id
+    examples: ['2534519102996296639']
+  caveats:
+    type: array
+    description: Caveats that always apply to this source.
+    x-bc-structural: true
+    items:
+      $ref: Caveat.yaml
+  links:
+    type: object
+    description: Relative links for the source.
+    x-bc-structural: true
+    required: [dataset, records]
+    properties:
+      dataset:
+        type: string
+        description: The source's dataset page.
+        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11']
+      records:
+        type: string
+        description: The source's rows.
+        examples: ['/v1/spending?source=proactive_grants&as_of=11']

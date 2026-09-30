@@ -1,0 +1,13 @@
+title: ProblemParameterError
+description: One rejected request parameter.
+type: object
+required: [parameter, detail]
+properties:
+  parameter:
+    type: string
+    description: The parameter's name as sent, such as `fiscal_year` or `cursor`.
+    examples: [fiscal_year]
+  detail:
+    type: string
+    description: Why it was rejected and what a valid value looks like.
+    examples: ['Use YYYY-YY, e.g. 2024-25']

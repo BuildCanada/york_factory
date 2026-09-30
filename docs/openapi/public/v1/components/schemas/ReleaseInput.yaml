@@ -1,0 +1,29 @@
+title: ReleaseInput
+description: One input a release pinned, either a roster capture or an Iceberg snapshot of a spending table.
+type: object
+required: [kind, asset]
+properties:
+  kind:
+    type: string
+    enum: [capture, iceberg_snapshot]
+    description: Whether the input is a captured file or an Iceberg table snapshot.
+    examples: [iceberg_snapshot]
+  asset:
+    type: string
+    description: The fact-factory asset key of the input.
+    examples: [sources/ca/tbs/proactive_grants]
+  sha256:
+    description: The capture's SHA-256, for captures.
+    oneOf:
+      - $ref: Sha256.yaml
+      - type: 'null'
+  snapshot_id:
+    type: [string, 'null']
+    pattern: '^[0-9]+$'
+    description: The Iceberg snapshot ID, for spending tables.
+    examples: ['2534519102996296639']
+  retrieved_at:
+    description: When the input's source file was retrieved.
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'

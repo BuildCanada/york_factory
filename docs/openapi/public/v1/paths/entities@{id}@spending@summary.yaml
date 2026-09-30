@@ -1,0 +1,150 @@
+# /entities/{id}/spending/summary
+get:
+  operationId: getEntitySpendingSummary
+  summary: Summarize an entity's spending
+  description: |-
+    Totals of the entity's linked spending by source and, optionally, fiscal year and
+    counterparty, under fixed rules: never summed across sources (source is always a
+    group key); within a source only the highest-ranked revision per canonical_id;
+    aggregate rows left out and counted in meta; blank amounts counted in amount_missing,
+    never as zero; each row names its measure. Unlinked occurrences with the entity's name
+    are counted in meta, not summed.
+  tags:
+  - Spending
+  x-fern-sdk-method-name: summary
+  x-fern-sdk-group-name:
+  - entities
+  - spending
+  x-bc-phase: 1
+  x-bc-units:
+    base: 3
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: release
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/EntityId"
+  - "$ref": "../components/parameters.yaml#/SpendingRole"
+  - name: group_by
+    in: query
+    required: false
+    description: >-
+      Group keys, comma-separated, from `source`, `fiscal_year` and `counterparty`. `source` is always
+      added. Default `source,fiscal_year`.
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - source
+        - fiscal_year
+        - counterparty
+      default:
+      - source
+      - fiscal_year
+    example:
+    - source
+    - fiscal_year
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/SpendingSource"
+  - "$ref": "../components/parameters.yaml#/FiscalYear"
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  responses:
+    '200':
+      description: The summary.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Release:
+          "$ref": "../components/headers.yaml#/BCRelease"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/SpendingSummaryResponse.yaml"
+          examples:
+            by_source_and_year:
+              summary: Diamond Valley as recipient, 2024-25
+              value:
+                data:
+                - source: proactive_grants
+                  fiscal_year: 2024-25
+                  counterparty:
+                  records: 14
+                  agreements: 11
+                  amount: '3120450.00'
+                  amount_missing: 0
+                  currency: CAD
+                  measure: agreement_value
+                - source: transfer_payments
+                  fiscal_year: 2024-25
+                  counterparty:
+                  records: 2
+                  agreements: 2
+                  amount: '880000.00'
+                  amount_missing: 0
+                  currency: CAD
+                  measure: payments_or_expenditure
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats:
+                  - code: not_cross_source_total
+                    text: Sources overlap. Never add amounts across sources.
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                  - code: latest_revision_only
+                    text: Only the highest-ranked revision per canonical_id is summed.
+                    docs: https://data.buildcanada.com/api/caveats#latest_revision_only
+                  - code: linked_only
+                    text: >-
+                      Only linked occurrences are counted. 38 unlinked occurrences with this name: /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked.
+                    docs: https://data.buildcanada.com/api/caveats#linked_only
+                  role: recipient
+                  group_by:
+                  - source
+                  - fiscal_year
+                  aggregated_rows_excluded: 0
+                  unlinked_occurrences: 38
+                links:
+                  self: >-
+                    /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&fiscal_year=2024-25&as_of=11
+                  unlinked: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=11"
+                  records: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&fiscal_year=2024-25&as_of=11"
+    '301':
+      "$ref": "../components/problems.yaml#/MovedPermanently"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '422':
+      "$ref": "../components/problems.yaml#/UnprocessableEntity"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

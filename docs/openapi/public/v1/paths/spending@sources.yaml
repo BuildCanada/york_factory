@@ -1,0 +1,133 @@
+# /spending/sources
+get:
+  operationId: listSpendingSources
+  summary: List spending sources and their semantics
+  description: |-
+    What each spending source's amounts mean (its measure), how fiscal_year and revisions
+    work, the snapshot the release pinned and the licence. Read this before comparing or
+    totalling: sources overlap and measure different things.
+  tags:
+  - Spending
+  x-fern-sdk-method-name: sources
+  x-fern-sdk-group-name: spending
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: release
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: Every spending source.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Release:
+          "$ref": "../components/headers.yaml#/BCRelease"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/SpendingSourceListResponse.yaml"
+          examples:
+            sources:
+              summary: Two of the sources
+              value:
+                data:
+                - source: proactive_grants
+                  asset: sources/ca/tbs/proactive_grants
+                  title: Proactive Disclosure of Grants and Contributions
+                  publisher: Treasury Board of Canada Secretariat
+                  measure: agreement_value
+                  record_types:
+                  - grant
+                  - contribution
+                  - transfer_payment
+                  amount_note: agreement_value for that amendment. Do not sum across rows sharing a canonical_id.
+                  fiscal_year_note: >-
+                    The fiscal year (April to March) containing agreement_start_date, named by the calendar
+                    year it starts in.
+                  revisions_note: canonical_id is a hash of owner_org and ref_number; each amendment is
+                    its own row.
+                  license: OGL-Canada-2.0
+                  snapshot_id: '2534519102996296639'
+                  caveats:
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                  links:
+                    dataset: "/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11"
+                    records: "/v1/spending?source=proactive_grants&as_of=11"
+                - source: transfer_payments
+                  asset: sources/ca/pspc/transfer_payments
+                  title: 'Public Accounts of Canada: Transfer Payments'
+                  publisher: Public Services and Procurement Canada
+                  measure: payments_or_expenditure
+                  record_types:
+                  - transfer_payment
+                  amount_note: >-
+                    Known defect. The first non-zero of aggregate payments and current-year expenditure;
+                    which was used is not recorded.
+                  fiscal_year_note: FSCL_YR, else the year in the resource name; the start year.
+                  revisions_note: No revisions; canonical_id equals external_id.
+                  license: OGL-Canada-2.0
+                  snapshot_id: '7718203349911205548'
+                  caveats: []
+                  links:
+                    dataset: "/v1/datasets/sources%2Fca%2Fpspc%2Ftransfer_payments?as_of=11"
+                    records: "/v1/spending?source=transfer_payments&as_of=11"
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats:
+                  - code: not_cross_source_total
+                    text: Sources overlap. Never add amounts across sources.
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
+                  limit: 50
+                  next_cursor:
+                  count:
+                links:
+                  self: "/v1/spending/sources?as_of=11"
+                  next:
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

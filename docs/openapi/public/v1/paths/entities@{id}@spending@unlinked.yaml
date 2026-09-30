@@ -1,0 +1,140 @@
+# /entities/{id}/spending/unlinked
+get:
+  operationId: listEntityUnlinkedSpending
+  summary: List unlinked occurrences with an entity's name
+  description: |-
+    Party occurrences in the given role that are not linked to the entity but carry its
+    normalized name or an alias: proposed links, ambiguous names, conflicts. They are not
+    in the entity's spending or summary. Read each reason before counting any of them.
+  tags:
+  - Spending
+  x-fern-sdk-method-name: unlinked
+  x-fern-sdk-group-name:
+  - entities
+  - spending
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: release
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/EntityId"
+  - "$ref": "../components/parameters.yaml#/SpendingRole"
+  - "$ref": "../components/parameters.yaml#/SpendingSource"
+  - "$ref": "../components/parameters.yaml#/FiscalYear"
+  - name: reason
+    in: query
+    required: false
+    description: Only occurrences with these reasons, comma-separated.
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - conflict
+        - ambiguous
+        - period_spans_change
+        - no_candidate
+        - proposed
+        - rule_retired
+        - ai_undecided
+        - corrected_unlinked
+    example:
+    - proposed
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: A page of unlinked occurrences.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Release:
+          "$ref": "../components/headers.yaml#/BCRelease"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/UnlinkedOccurrenceListResponse.yaml"
+          examples:
+            proposed:
+              summary: A proposed link
+              value:
+                data:
+                - party:
+                    occurrence_id: ab7dec15c1fbbb83edf640bf794b39b1e85a1ce28e48cf756cc686d3f98e8ebf
+                    field: recipient
+                    position: 0
+                    raw_name: DIAMOND VALLEY, TOWN OF
+                    normalized_name: diamond valley town of
+                    party_kind: organization
+                    link_status: proposed
+                    entity_id:
+                    entity:
+                    method: exact_name
+                    reason: proposed
+                    candidates:
+                    - gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D
+                    rule_version: resolution-v5+occurrences-v3+names-v2+matching-v4
+                  record:
+                    id: gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H4K
+                    source: transfer_payments
+                    fiscal_year: 2023-24
+                    amount: '440000.00'
+                    currency: CAD
+                    payer: Infrastructure Canada
+                    title:
+                meta:
+                  release: 11
+                  as_of: '11'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor:
+                  count:
+                links:
+                  self: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=11"
+                  next:
+    '301':
+      "$ref": "../components/problems.yaml#/MovedPermanently"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

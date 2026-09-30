@@ -1,0 +1,27 @@
+title: ListMeta
+description: >-
+  Meta for a paginated list. Adds the cursor for the next page, the page size used and,
+  only when requested with `count=exact`, the total count.
+allOf:
+  - $ref: Meta.yaml
+  - type: object
+    required: [limit, next_cursor]
+    properties:
+      limit:
+        type: integer
+        minimum: 1
+        maximum: 200
+        description: The page size used for this page.
+        examples: [50]
+      next_cursor:
+        type: [string, 'null']
+        description: >-
+          Opaque, signed cursor for the next page, or null on the last page. It encodes
+          the release, the sort key and the last ID, so it stays valid and stable after a
+          newer release publishes. Pass it as `cursor` with the same other parameters.
+        examples: [c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v]
+      count:
+        type: [integer, 'null']
+        minimum: 0
+        description: Total matching items. Null unless the request set `count=exact`, which costs 2 more units.
+        examples: [null]

@@ -1,11 +1,32 @@
 Rails.application.routes.draw do
-  # OAuth provider — auth.buildcanada.com in production, /oauth/* in dev/test
-  if Rails.env.production?
-    constraints subdomain: "auth" do
-      use_doorkeeper
+  # OAuth provider — auth.buildcanada.com in production, /oauth/* in dev/test.
+  # The authorization and token endpoints are extended for MCP 2026-07-28
+  # (RFC 8707 resources, RFC 9207 iss, Client ID Metadata Documents, refresh
+  # rotation); RFC 7591 registration and RFC 8414 metadata sit beside them
+  # (docs/public-interface-design.md §4.6).
+  oauth_server = lambda do
+    use_doorkeeper do
+      controllers authorizations: "oauth/authorizations", tokens: "oauth/tokens"
     end
+    post "oauth/register", to: "oauth/registrations#create", as: :oauth_registration
+    get ".well-known/oauth-authorization-server", to: "well_known#authorization_server", as: :oauth_authorization_server_metadata
+  end
+
+  # The MCP server (WS-G) and the RFC 9728 metadata for it and the REST API,
+  # on data.buildcanada.com in production.
+  data_resources = lambda do
+    get ".well-known/oauth-protected-resource(/:resource_path)", to: "well_known#protected_resource",
+      as: :oauth_protected_resource_metadata, constraints: { resource_path: /mcp|v1/ }
+    post "mcp", to: "mcp#create", as: :mcp
+    match "mcp", to: "mcp#method_not_allowed", via: %i[get delete put patch]
+  end
+
+  if Rails.env.production?
+    constraints(subdomain: "auth", &oauth_server)
+    constraints(subdomain: "data", &data_resources)
   else
-    use_doorkeeper
+    oauth_server.call
+    data_resources.call
   end
 
   # Sign in with LinkedIn (browser OmniAuth → Devise session) is used by the
@@ -21,6 +42,44 @@ Rails.application.routes.draw do
     skip: [ :registrations, :confirmations, :unlocks ]
 
   get "up" => "rails/health#show", as: :rails_health_check
+
+  # The public data API, data.buildcanada.com/v1 (docs/openapi/public/v1;
+  # fact-factory docs/public-interface-design.md §3). Read-only: every route is
+  # a GET, and anything else under /v1 is a 404 problem.
+  constraints(PublicApi::HostConstraint) do
+    scope "v1", module: "public_api/v1", format: false, as: "public_api_v1" do
+      get "/", to: "discovery#index", as: :index
+      get "openapi.json", to: "discovery#openapi", as: :openapi
+      get "me", to: "discovery#me", as: :me
+      get "me/usage", to: "discovery#usage", as: :usage
+      get "releases", to: "releases#index", as: :releases
+      get "releases/latest", to: "releases#latest", as: :latest_release
+      get "releases/:release", to: "releases#show", as: :release
+      get "datasets", to: "datasets#index", as: :datasets
+      # Asset keys have slashes: sent percent-encoded (sources%2Fca%2F...) or bare.
+      get "datasets/*asset_key", to: "datasets#show", as: :dataset
+      get "dictionary", to: "dictionary#index", as: :dictionary
+      get "dictionary/:term", to: "dictionary#show", as: :dictionary_term
+      get "search", to: "search#index", as: :search
+      get "entities", to: "entities#index", as: :entities
+      scope "entities/:id", constraints: { id: %r{[^/]+} } do
+        get "/", to: "entities#show", as: :entity
+        get "identifiers", to: "entities#identifiers", as: :entity_identifiers
+        get "relationships", to: "entities#relationships", as: :entity_relationships
+        get "lineage", to: "entities#lineage", as: :entity_lineage
+        get "spending", to: "entity_spending#index", as: :entity_spending
+        get "spending/summary", to: "entity_spending#summary", as: :entity_spending_summary
+        get "spending/unlinked", to: "entity_spending#unlinked", as: :entity_spending_unlinked
+      end
+      get "identifiers/:namespace/:value", to: "identifiers#show", as: :identifier, constraints: { namespace: %r{[^/]+}, value: %r{[^/]+} }
+      get "spending", to: "spending#index", as: :spending
+      get "spending/sources", to: "spending#sources", as: :spending_sources
+      get "spending/:id", to: "spending#show", as: :spending_record, constraints: { id: %r{[^/]+} }
+      get "exports", to: "exports#index", as: :exports
+      match "*path", to: "missing#show", via: :all, as: :missing
+    end
+    match "v1", to: "public_api/v1/missing#show", via: %i[post put patch delete], format: false
+  end
 
   namespace :webhooks, constraints: { format: "json" } do
     resources :hubspot, only: [ :create ]
@@ -344,6 +403,7 @@ Rails.application.routes.draw do
   # (docs/public-interface-design.md §4.4).
   get "developers", to: "developers/overview#show", as: :developers
   namespace :developers do
+    resources :authorized_apps, only: %i[index destroy]
     resource :account_switch, only: :create
     resources :keys do
       post :rotate, on: :member

@@ -1,0 +1,139 @@
+title: Entity
+description: >-
+  One party in the Build Canada entity registry, as of the release that answered: a
+  jurisdiction, government organization, government enterprise, Indigenous government or
+  other organization. An entity is Build Canada's record of the party, built from
+  published rosters; its `id` never changes and is never reused. Real-world changes
+  (renames, amalgamations) are lineage (GET /v1/entities/{id}/lineage), not new IDs. A
+  merged duplicate returns 301 to its survivor. `identifiers` and `relationships` are
+  present only when requested with `expand`.
+type: object
+x-bc-record: true
+required: [id, entity_class, subtype, name, name_fr, aliases, jurisdiction, status, valid_from, valid_to, links, provenance, cite]
+properties:
+  id:
+    $ref: EntityGid.yaml
+    description: The entity's global ID. Minted once, never reused.
+    x-bc-dictionary: entity_id
+  entity_class:
+    $ref: EntityClass.yaml
+    description: What kind of party the entity is.
+    x-bc-dictionary: entity_class
+  subtype:
+    type: [string, 'null']
+    description: >-
+      The class's controlled subtype, such as ministerial_department,
+      municipal_government, first_nation, registered_charity, university, hospital or
+      federal_predecessor. Look terms up with GET /v1/dictionary/subtype.
+    x-bc-dictionary: subtype
+    examples: [municipal_government]
+  name:
+    type: string
+    description: The entity's name as its roster publishes it, unchanged.
+    x-bc-dictionary: name
+    examples: [Town of Diamond Valley]
+  name_fr:
+    type: [string, 'null']
+    description: The French name, where the roster gives one.
+    x-bc-dictionary: name_fr
+    examples: [null]
+  aliases:
+    type: array
+    description: Other names the roster gives for the same entity, such as a legal title or abbreviation. Empty when none.
+    x-bc-dictionary: aliases
+    items:
+      type: string
+    examples: [[]]
+  anchor:
+    type: [string, 'null']
+    description: The roster record the entity was first built from, as `<roster>:<record key>`.
+    x-bc-dictionary: anchor
+    examples: ['ca-ab/municipal_affairs/municipalities:0417']
+  jurisdiction:
+    description: The jurisdiction the entity belongs to. Null when the roster gives none, as for First Nations.
+    x-bc-dictionary: jurisdiction
+    oneOf:
+      - $ref: Jurisdiction.yaml
+      - type: 'null'
+  status:
+    type: string
+    description: >-
+      The roster's own status, such as active, dissolved, inactive, transferred or
+      registered. `not_in_roster` means the roster no longer lists the entity (its ID is
+      kept). `redirected` means another entity now carries its record; see redirected_to.
+    x-bc-dictionary: status
+    examples: [active]
+  redirected_to:
+    description: When status is redirected, the survivor that now carries this entity's record. A GET on a redirected entity returns 301 to it.
+    x-bc-dictionary: redirected_to
+    oneOf:
+      - $ref: EntityGid.yaml
+      - type: 'null'
+  valid_from:
+    description: When the entity came into existence in the world, at the precision the source gives. Null when the source gives no start.
+    x-bc-dictionary: valid_from
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  valid_to:
+    description: >-
+      When the entity stopped existing in the world, at the precision the source gives.
+      Null when it still exists or the source gives no end; the two are not
+      distinguished. An entity ended by lineage has valid_to set and successors in
+      /lineage.
+    x-bc-dictionary: valid_to
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  attributes:
+    type: object
+    description: >-
+      Roster-specific details, such as institutional_form for federal bodies or
+      category_code for charities. Keys differ by roster and are documented on the
+      dataset page of the entity's provenance asset. Only allowlisted keys are served.
+    x-bc-dictionary: attributes
+    additionalProperties: true
+    examples: [{municipality_type_raw: Town}]
+  identifiers:
+    type: array
+    description: The entity's external identifiers. Present only with `expand=identifiers`.
+    x-bc-structural: true
+    items:
+      $ref: Identifier.yaml
+  relationships:
+    type: array
+    description: The entity's first 50 outgoing relationships. Present only with `expand=relationships`; page through all of them with /relationships.
+    x-bc-structural: true
+    items:
+      $ref: Relationship.yaml
+  links:
+    type: object
+    description: Relative links to the entity's related collections, pinned to the release that answered.
+    x-bc-structural: true
+    required: [identifiers, relationships, lineage, spending]
+    properties:
+      identifiers:
+        type: string
+        description: The entity's identifiers.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=11']
+      relationships:
+        type: string
+        description: The entity's relationships.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=11']
+      lineage:
+        type: string
+        description: The entity's predecessors and successors.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=11']
+      spending:
+        type: string
+        description: Spending rows linked to the entity.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=11']
+  provenance:
+    $ref: Provenance.yaml
+    description: Where this version of the entity came from.
+    x-bc-structural: true
+  cite:
+    type: string
+    description: A ready-to-paste citation for this entity version, naming the release, the gid and the roster row.
+    x-bc-structural: true
+    examples: ['Build Canada entity registry release 11, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from the Alberta municipal roster, row 212.']

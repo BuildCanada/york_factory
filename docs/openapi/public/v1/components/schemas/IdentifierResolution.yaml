@@ -1,0 +1,26 @@
+title: IdentifierResolution
+description: >-
+  The result of resolving an external identifier. Usually one entity holds it; several can
+  (for example an amalgamated corporation's predecessors share its BN), and the caller
+  decides which applies, often by `valid_from` and `valid_to`.
+type: object
+x-bc-record: true
+required: [namespace, value, matches]
+properties:
+  namespace:
+    type: string
+    description: The namespace requested.
+    x-bc-dictionary: namespace
+    examples: [ca.cra.bn9]
+  value:
+    type: string
+    description: The value as the issuer writes it, after the API removed spaces and, for business numbers, the program account suffix.
+    x-bc-dictionary: value
+    examples: ['107511586']
+  matches:
+    type: array
+    minItems: 1
+    description: Every entity holding the identifier in the release that answered.
+    x-bc-structural: true
+    items:
+      $ref: IdentifierMatch.yaml

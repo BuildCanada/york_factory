@@ -1,0 +1,58 @@
+<%= render "developers/nav" %>
+
+<% if @raw_key.present? %>
+  <div class="flash flash-notice">
+    <strong>Copy this key now. It won't be shown again.</strong>
+    <div class="api-key-secret"><%= @raw_key %></div>
+  </div>
+  <pre>curl -H "Authorization: Bearer <%= @raw_key %>" <%= api_base_url %>/me</pre>
+<% end %>
+
+<h2><%= @api_key.name %> <%= key_status_badge(@api_key) %></h2>
+<dl class="details">
+  <dt>Key</dt><dd class="mono"><%= @api_key.token_prefix %>&hellip;</dd>
+  <dt>Scopes</dt><dd class="mono"><%= @api_key.scopes.join(" ") %></dd>
+  <dt>Created</dt><dd><%= developer_time(@api_key.created_at) %> by <%= @api_key.user.email %></dd>
+  <dt>Expires</dt><dd><%= developer_time(@api_key.expires_at) %></dd>
+  <dt>Last used</dt><dd><%= developer_time(@api_key.last_used_at) %><% if @api_key.last_used_ip %> from <span class="mono"><%= @api_key.last_used_ip %></span><% end %></dd>
+  <dt>Allowed origins</dt><dd class="mono"><%= @api_key.allowed_origins.presence&.join(", ") || "Any" %></dd>
+  <dt>Allowed IPs</dt><dd class="mono"><%= @api_key.allowed_ips.presence&.join(", ") || "Any" %></dd>
+  <% if @api_key.rotated_from %><dt>Replaces</dt><dd><a href="<%= developers_key_path(@api_key.rotated_from) %>"><%= @api_key.rotated_from.token_prefix %>&hellip;</a></dd><% end %>
+  <% if @api_key.rotated_to %><dt>Replaced by</dt><dd><a href="<%= developers_key_path(@api_key.rotated_to) %>"><%= @api_key.rotated_to.token_prefix %>&hellip;</a></dd><% end %>
+  <% if @api_key.revoked_at %><dt>Revoked</dt><dd><%= developer_time(@api_key.revoked_at) %> (<%= @api_key.revoked_reason %>)</dd><% end %>
+</dl>
+
+<section>
+  <h2>Usage</h2>
+  <p class="text-muted">Per-minute requests, top operations, status codes and rate-limited requests for this key appear here once metering is live.</p>
+</section>
+
+<% if can_manage_keys? && @api_key.usable? %>
+  <section>
+    <h2>Change</h2>
+    <div class="btn-group mb-2">
+      <a href="<%= edit_developers_key_path(@api_key) %>" class="btn">Rename, rescope or restrict</a>
+    </div>
+    <% if @api_key.rotated_to.nil? %>
+      <%= form_with url: rotate_developers_key_path(@api_key), method: :post, class: "btn-group mb-2" do |form| %>
+        <%= form.label :grace, "Keep the old key working for", class: "text-muted" %>
+        <%= form.select :grace, options_for_select([ [ "No time (stop it now)", "none" ], [ "1 hour", "1h" ], [ "24 hours", "24h" ], [ "7 days", "7d" ] ], ApiKey::DEFAULT_GRACE_PERIOD), {}, class: "form-control", style: "width: auto" %>
+        <%= form.submit "Rotate key", class: "btn" %>
+      <% end %>
+    <% end %>
+  </section>
+
+  <section class="danger-zone">
+    <h2>Revoke</h2>
+    <p class="text-muted mb-2">Revoking stops the key at once. Type <strong><%= @api_key.name %></strong> to confirm.</p>
+    <%= form_with url: developers_key_path(@api_key), method: :delete, class: "btn-group" do |form| %>
+      <%= form.text_field :confirm_name, class: "form-control", autocomplete: "off", "aria-label": "Key name" %>
+      <%= form.submit "Revoke key", class: "btn btn-danger" %>
+    <% end %>
+  </section>
+<% end %>
+
+<section>
+  <h2>Audit trail</h2>
+  <%= render "developers/audit_events", events: @audit_events %>
+</section>

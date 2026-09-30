@@ -345,7 +345,8 @@
           </div>
           <ul class="sidebar-links" data-sidebar-target="section" data-sidebar-key="settings">
             <li><a href="/admin/users" class="<%= 'active' if controller_name == 'users' %>">Users</a></li>
-            <li><a href="<%= profile_api_keys_path %>">My API Keys</a></li>
+            <li><a href="<%= admin_developers_root_path %>" class="<%= 'active' if controller_path.start_with?('admin/developers') %>">Developers &amp; API keys</a></li>
+            <li><a href="<%= developers_keys_path %>">My API Keys</a></li>
           </ul>
         </div>
 

@@ -1,0 +1,33 @@
+<%= render "developers/nav" %>
+
+<section>
+  <h2><%= current_account.name %> <span class="badge"><%= current_account.kind.capitalize %></span></h2>
+  <div class="grid">
+    <div class="card"><div class="label">Plan</div><div class="value"><%= @plan.label %></div></div>
+    <div class="card"><div class="label">Rate limit</div><div class="value"><%= plan_limit(@plan.rate, "units/min") %></div></div>
+    <div class="card"><div class="label">Monthly quota</div><div class="value"><%= plan_limit(@plan.monthly, "units") %></div></div>
+    <div class="card"><div class="label">Active keys</div><div class="value"><%= @live_keys %> / <%= @plan.key_limit %></div></div>
+  </div>
+  <p class="text-muted mb-2">Usage against your quota appears here once metering is live.</p>
+</section>
+
+<section>
+  <h2>People data</h2>
+  <p class="text-muted mb-2">
+    Person entities and individuals' names come with <span class="mono">read:public</span>, like the rest of the data.
+  </p>
+</section>
+
+<section>
+  <h2>Quickstart</h2>
+  <p class="text-muted mb-2">Many endpoints work without a key, at a lower rate limit. The docs are at <a href="<%= api_docs_url %>"><%= api_docs_url.delete_prefix("https://") %></a>. With a key:</p>
+  <pre>curl -H "Authorization: Bearer $BUILDCANADA_API_KEY" <%= api_base_url %>/me</pre>
+  <pre>claude mcp add --transport http buildcanada https://data.buildcanada.com/mcp \
+  --header "Authorization: Bearer $BUILDCANADA_API_KEY"</pre>
+  <% if can_manage_keys? %><a href="<%= new_developers_key_path %>" class="btn btn-primary">Create an API key</a><% end %>
+</section>
+
+<section>
+  <h2>Recent activity</h2>
+  <%= render "developers/audit_events", events: @recent_events %>
+</section>

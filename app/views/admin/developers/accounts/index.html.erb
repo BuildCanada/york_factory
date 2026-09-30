@@ -1,0 +1,25 @@
+<%= render "admin/developers/nav" %>
+
+<%= form_with url: admin_developers_accounts_path, method: :get, style: "display: flex; gap: 0.5rem; margin-bottom: 1rem;" do |form| %>
+  <%= form.search_field :q, value: params[:q], class: "form-control", placeholder: "Account name or member email" %>
+  <%= form.select :plan, options_for_select([ [ "Any plan", "" ] ] + Plan::NAMES.map { |n| [ n.titleize, n ] }, params[:plan]), {}, class: "form-control" %>
+  <%= form.select :status, options_for_select([ [ "Any status", "" ], [ "Suspended", "suspended" ] ], params[:status]), {}, class: "form-control" %>
+  <%= form.submit "Search", class: "btn btn-sm" %>
+<% end %>
+
+<table>
+  <thead><tr><th>Account</th><th>Kind</th><th>Plan</th><th>Status</th><th>Created</th></tr></thead>
+  <tbody>
+    <% @accounts.each do |account| %>
+      <tr>
+        <td><a href="<%= admin_developers_account_path(account) %>"><%= account.name %></a></td>
+        <td><%= account.kind.capitalize %></td>
+        <td><span class="badge badge-blue"><%= account.effective_plan_name.titleize %></span></td>
+        <td><% if account.suspended? %><span class="badge badge-red">Suspended</span><% else %><span class="badge badge-green">Active</span><% end %></td>
+        <td class="text-muted"><%= account.created_at.strftime("%Y-%m-%d") %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

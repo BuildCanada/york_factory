@@ -1,0 +1,28 @@
+<%= render "developers/nav" %>
+
+<p class="text-muted mb-2">
+  Keys belong to <strong><%= current_account.name %></strong>. Keep them secret; a key is shown only once, when it's created or rotated.
+</p>
+<% if can_manage_keys? %>
+  <p class="mb-2"><a href="<%= new_developers_key_path %>" class="btn btn-primary">Create an API key</a></p>
+<% end %>
+
+<% if @api_keys.empty? %>
+  <p class="text-muted">No API keys yet.</p>
+<% else %>
+  <table>
+    <thead><tr><th>Name</th><th>Key</th><th>Scopes</th><th>Expires</th><th>Last used</th><th>Status</th></tr></thead>
+    <tbody>
+      <% @api_keys.each do |api_key| %>
+        <tr>
+          <td><a href="<%= developers_key_path(api_key) %>"><%= api_key.name %></a></td>
+          <td class="mono"><%= api_key.token_prefix %>&hellip;</td>
+          <td class="mono"><%= api_key.scopes.join(" ") %></td>
+          <td><%= developer_time(api_key.expires_at) %></td>
+          <td><%= developer_time(api_key.last_used_at) %></td>
+          <td><%= key_status_badge(api_key) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

@@ -1,0 +1,11 @@
+<% case @event %>
+<% when "created" %>A new API key, "<%= @api_key.name %>" (<%= @api_key.token_prefix %>…), was created on your Build Canada account.
+<% when "rotated" %>The API key "<%= @api_key.name %>" was rotated. The new key starts <%= @api_key.token_prefix %>…<% if @api_key.rotated_from&.grace_until %>, and the old one stops working at <%= @api_key.rotated_from.grace_until.utc.strftime("%Y-%m-%d %H:%M UTC") %><% end %>.
+<% when "revoked" %>The API key "<%= @api_key.name %>" (<%= @api_key.token_prefix %>…) was revoked<% if @api_key.revoked_reason == "leak" %> because it was found exposed in public<% end %>. It no longer works.
+<% when "scopes_widened" %>The API key "<%= @api_key.name %>" (<%= @api_key.token_prefix %>…) now has these scopes: <%= @api_key.scopes.join(", ") %>.
+<% when "rotation_required" %>For security, the API key "<%= @api_key.name %>" (<%= @api_key.token_prefix %>…) must be replaced. It stops working at <%= @api_key.grace_until&.utc&.strftime("%Y-%m-%d %H:%M UTC") %>. Rotate it in the developer console to get its replacement.
+<% end %>
+
+Manage your keys: <%= developers_key_url(@api_key) %>
+
+If you didn't expect this, revoke the key and contact us.

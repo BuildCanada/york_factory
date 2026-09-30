@@ -84,3 +84,8 @@ production:
   search_saved_search_fanout:
     class: Search::SavedSearchFanoutJob
     schedule: every minute
+  reconcile_bifrost_keys:
+    # Deactivates orphaned data-api:* Bifrost virtual keys and reports live
+    # keys missing from Bifrost (docs/public-interface-design.md §4.3).
+    class: Keys::ReconcileBifrostJob
+    schedule: every day at 3:20am

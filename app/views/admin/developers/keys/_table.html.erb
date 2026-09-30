@@ -1,0 +1,24 @@
+<table>
+  <thead><tr><th>Key</th><th>Name</th><th>Account</th><th>Scopes</th><th>Issuer</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+    <% api_keys.each do |api_key| %>
+      <tr>
+        <td class="mono"><%= api_key.token_prefix %>…</td>
+        <td><%= api_key.name %></td>
+        <td><a href="<%= admin_developers_account_path(api_key.account) %>"><%= api_key.account.name %></a></td>
+        <td class="mono"><%= api_key.scopes.join(" ") %></td>
+        <td><%= api_key.issuer %></td>
+        <td class="text-muted"><%= developer_time(api_key.last_used_at) %></td>
+        <td><%= key_status_badge(api_key) %></td>
+        <td class="text-right">
+          <% unless api_key.revoked_at? %>
+            <%= form_with url: revoke_admin_developers_key_path(api_key), method: :post, style: "display: flex; gap: 0.25rem;" do |form| %>
+              <%= form.select :reason, [ [ "Admin", "admin" ], [ "Leaked", "leak" ] ], {}, class: "form-control", style: "width: auto" %>
+              <%= form.submit "Revoke", class: "btn btn-sm btn-danger", data: { turbo_confirm: "Revoke #{api_key.token_prefix}…?" } %>
+            <% end %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

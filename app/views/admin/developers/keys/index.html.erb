@@ -1,0 +1,11 @@
+<%= render "admin/developers/nav" %>
+
+<%= form_with url: admin_developers_keys_path, method: :get, style: "display: flex; gap: 0.5rem; margin-bottom: 1rem;" do |form| %>
+  <%= form.search_field :prefix, value: params[:prefix], class: "form-control", placeholder: "Key prefix, e.g. bc_live_4fQ9" %>
+  <%= form.select :status, options_for_select([ [ "Any status", "" ], [ "Live", "live" ], [ "Revoked", "revoked" ] ], params[:status]), {}, class: "form-control" %>
+  <%= form.select :issuer, options_for_select([ [ "Any issuer", "" ] ] + ApiKey::ISSUERS.map { |i| [ i.titleize, i ] }, params[:issuer]), {}, class: "form-control" %>
+  <%= form.submit "Search", class: "btn btn-sm" %>
+<% end %>
+
+<%= render "table", api_keys: @api_keys %>
+<%= render "admin/shared/pagination", pagy: @pagy %>

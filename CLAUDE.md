@@ -47,6 +47,18 @@ Admin:  session auth, CRUD for all resources, retranslate, reorder, Webflow sync
         published_at-gated (Publishable) so a half-entered one stays off the API
 ```
 
+## Developer console and API keys
+```
+/developers                 → overview: plan, limits, quickstart, recent activity
+/developers/keys            → keys: create (shown once), detail, rename/rescope/restrict, rotate with grace, revoke
+/admin/developers           → staff: accounts (plan override, suspend), all keys, audit log (CSV), Bifrost reconciliation, mass rotation
+/internal/keys/lookup       → HMAC-signed key lookup for the data-edge Worker
+```
+Keys are `bc_live_<secret>_<crc6>`; only an HMAC digest is stored. `Keys::Issue`, `Keys::Rotate`, `Keys::Revoke` and
+`Keys::Update` change keys (audited in `audit_events`, append-only); `Keys::Verify` checks a presented key, and the
+`PublicApiAuthentication` concern wraps it for public API controllers. Bifrost (`BifrostClient`) is called only on
+create, rotate and revoke, and is faked in tests (`test/support/fake_bifrost.rb`).
+
 ## Geo API
 ```
 GET /api/v1/geo/boundaries       → search boundaries by type, province, name
@@ -81,6 +93,14 @@ GET /api/v1/geo/crosswalk/:type/:uid → population-weighted crosswalk lookup
 - `R2_ACTIVE_STORAGE_BUCKET` — R2 bucket for ActiveStorage uploads (CMS images)
 - `CORS_ORIGINS` — Allowed CORS origins (comma-separated, defaults to *)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth for admin
+- Public data API keys (docs: fact-factory `docs/public-interface-design.md` §4). Each is an env var or a Rails credential:
+  - `API_KEY_PEPPER` / `api_keys.pepper` — HMAC pepper for key digests, shared with the edge Worker. **Required in production.**
+  - `API_KEY_ISSUER` / `api_keys.issuer` — `bifrost` (production default) or `local`
+  - `API_KEY_PREFIX` / `api_keys.prefix` — `bc_live_` (production default) or `bc_stg_` (staging, development, test)
+  - `BIFROST_URL`, `BIFROST_ADMIN_USERNAME`, `BIFROST_ADMIN_PASSWORD` / `bifrost.url`, `bifrost.admin_username`, `bifrost.admin_password` — Bifrost admin API (key create, rotate, revoke only)
+  - `BIFROST_CUSTOMERS` / `bifrost.customers` — `false` to skip creating one Bifrost customer per account
+  - `EDGE_URL`, `EDGE_HMAC_SECRET` / `edge.url`, `edge.hmac_secret` — the data-edge Worker; key pushes are skipped when unset
+  - `PUBLIC_API_ANONYMOUS` — `false` turns off anonymous `read:public` access
 - Mailer/SES config is read from Rails credentials under `mailer`:
   - `mailer.smtp_address` — SES SMTP endpoint (defaults to `email-smtp.ca-central-1.amazonaws.com`)
   - `mailer.smtp_username`, `mailer.smtp_password` — SES SMTP credentials (IAM SMTP user)

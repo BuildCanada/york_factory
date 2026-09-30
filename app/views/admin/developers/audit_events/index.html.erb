@@ -1,0 +1,27 @@
+<%= render "admin/developers/nav" %>
+
+<%= form_with url: admin_developers_audit_events_path, method: :get, style: "display: flex; gap: 0.5rem; margin-bottom: 1rem;" do |form| %>
+  <%= form.text_field :action_prefix, value: params[:action_prefix], class: "form-control", placeholder: "Action prefix, e.g. key. or admin." %>
+  <%= form.text_field :account_id, value: params[:account_id], class: "form-control", placeholder: "Account id" %>
+  <%= form.submit "Filter", class: "btn btn-sm" %>
+  <a href="<%= admin_developers_audit_events_path(request.query_parameters.merge(format: :csv)) %>" class="btn btn-sm">Export CSV</a>
+<% end %>
+
+<table>
+  <thead><tr><th>When</th><th>Account</th><th>Event</th><th>By</th><th>Subject</th><th>IP</th><th>Details</th></tr></thead>
+  <tbody>
+    <% @audit_events.each do |event| %>
+      <tr>
+        <td class="text-muted"><%= developer_time(event.created_at) %></td>
+        <td><% if event.account_id %><a href="<%= admin_developers_account_path(event.account_id) %>"><%= event.account_id %></a><% end %></td>
+        <td class="mono"><%= event.action %></td>
+        <td><%= event.actor_label %></td>
+        <td class="mono"><%= [ event.subject_type, event.subject_id ].compact.join(" #") %></td>
+        <td class="mono"><%= event.ip %></td>
+        <td class="mono" style="max-width: 360px; overflow-wrap: anywhere;"><%= event.metadata.to_json.truncate(300) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= render "admin/shared/pagination", pagy: @pagy %>

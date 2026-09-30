@@ -315,12 +315,43 @@ Rails.application.routes.draw do
       resources :agreements, only: full
       resources :themes, only: full
     end
+
+    # Public data API accounts, keys and audit log (docs/public-interface-design.md §4.5).
+    namespace :developers do
+      get "/", to: "dashboard#show", as: :root
+      post "reconcile", to: "dashboard#reconcile", as: :reconcile
+      post "mass_rotation", to: "dashboard#mass_rotation", as: :mass_rotation
+      resources :accounts, only: %i[index show update] do
+        member do
+          post :suspend
+          post :unsuspend
+        end
+      end
+      resources :keys, only: :index do
+        post :revoke, on: :member
+      end
+      resources :audit_events, only: :index
+    end
   end
 
   # Member profile
   get "profile", to: "profile#show", as: :profile
   patch "profile", to: "profile#update"
-  get "profile/api_keys", to: "api_keys#index", as: :profile_api_keys
-  post "profile/api_keys", to: "api_keys#create"
-  delete "profile/api_keys/:id", to: "api_keys#destroy", as: :profile_api_key
+  # Replaced by the developer console.
+  get "profile/api_keys", to: redirect("/developers/keys"), as: :profile_api_keys
+
+  # Developer console: accounts and API keys for the public data API
+  # (docs/public-interface-design.md §4.4).
+  get "developers", to: "developers/overview#show", as: :developers
+  namespace :developers do
+    resource :account_switch, only: :create
+    resources :keys do
+      post :rotate, on: :member
+    end
+  end
+
+  # Called by the data-edge Worker (HMAC-signed, see Edge::Signature).
+  namespace :internal do
+    get "keys/lookup", to: "keys#lookup"
+  end
 end

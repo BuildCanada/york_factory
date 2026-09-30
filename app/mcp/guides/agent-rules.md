@@ -9,8 +9,7 @@
 5. Totals cover linked rows only. Report meta.unlinked_occurrences when it is not zero.
 6. Blank amounts are not zero. Fiscal years are YYYY-YY (2024-25 is April 2024 to March 2025).
 7. A person entity is our clustering of records, not a legal identity: say which records it groups. A role's
-   observed_from is when a filing first showed it, not the appointment date. A person's address is only ever
-   city, province and FSA; there are no street addresses.
+   observed_from is when a filing first showed it, not the appointment date.
 8. For whole-table questions, use the bulk files (https://data.buildcanada.com/v1/exports), not thousands of calls.
 
 More: https://data.buildcanada.com/api/agents.md

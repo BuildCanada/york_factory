@@ -13,7 +13,7 @@ module Mcp
       international projects), with provenance and a citation for every fact. Start with search_entities to turn
       a name into an ID. Amounts from different sources overlap; never add them. Call describe_data("spending
       semantics") before totalling. Pin the release from your first result as as_of on later calls, state it, and
-      end answers with the citations the tools return. Read-only; no street addresses.
+      end answers with the citations the tools return. Read-only.
     TEXT
 
     CAPABILITIES = { tools: {}, resources: {}, prompts: {} }.freeze

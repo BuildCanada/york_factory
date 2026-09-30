@@ -15,7 +15,7 @@ module Mcp
         amalgamated into it, and what succeeded it). Use lineage to answer questions that span renames and
         amalgamations: a predecessor's spending is its own, under its own ID, so ask entity_spending for each one
         and report them separately. A merged (duplicate) ID is followed to its survivor, and redirected_from says
-        so. A dissolved entity has status dissolved and valid_to set. Street addresses are never included. Every
+        so. A dissolved entity has status dissolved and valid_to set. Every
         result has a cite to quote and the release it answered from. Costs 1 request unit, plus 2 with lineage.
       TEXT
       input_schema(

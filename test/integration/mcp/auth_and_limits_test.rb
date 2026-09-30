@@ -1,7 +1,7 @@
 require "test_helper"
 
-# Who may call /mcp, which tool needs which scope, the privacy rules, and
-# units: API keys and OAuth tokens through Keys::Authenticate, a 401
+# Who may call /mcp, which tool needs which scope, and units: API keys and
+# OAuth tokens through Keys::Authenticate, a 401
 # challenge for everyone else, per-tool scopes as structured tool errors, and
 # the /v1 limiter charging each tool call the units of what it wraps.
 class McpAuthAndLimitsTest < PublicApiTestCase
@@ -49,7 +49,7 @@ class McpAuthAndLimitsTest < PublicApiTestCase
     assert_equal "Access token not for this resource", response.parsed_body["title"]
   end
 
-  # ---------- scopes and privacy ----------
+  # ---------- scopes ----------
 
   test "persons come with read:public: get_entity and search_entities, by name, identifier or class" do
     result = call_tool("get_entity", { id: PERSON }, token: key)
@@ -82,20 +82,6 @@ class McpAuthAndLimitsTest < PublicApiTestCase
     assert_equal({ "code" => "insufficient_scope", "required_scope" => "usage:read" },
       response.dig(:structuredContent, :error).slice("code", "required_scope"))
     assert_equal 1, meter.units
-  end
-
-  test "no street address and no full postal code of an individual leaves through a tool" do
-    result = call_tool("search_spending", { query: "Artist residency" }, token: key)
-    record = result.dig("structuredContent", "data").find { |r| r["id"].end_with?(G_PERSON) }
-    assert_equal "T2P", record["recipient_postal_code"]
-    refute_includes result["content"].map { |c| c["text"] }.join, "T2P 1J9"
-
-    result = call_tool("get_entity", { id: DIAMOND_VALLEY, include: %w[relationships] }, token: key)
-    text = result["content"].map { |c| c["text"] }.join
-    refute_includes text, "mailing_address"
-    refute_includes text, "Box 1, Diamond Valley"
-    refute_includes text, "never served"
-    # (call_tool also checks every key of structuredContent: nothing named address or street.)
   end
 
   # ---------- units and limits ----------

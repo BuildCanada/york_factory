@@ -13,7 +13,7 @@ module Mcp
         different sources overlap; never add them. Call describe_data("spending semantics") before totalling. Rows
         sharing a canonical_id are revisions of one agreement: never add them either; set latest_revision_only true
         to keep only the latest. For an entity's totals use entity_spending instead, which applies these rules.
-        Individuals' postal codes are cut to the first three characters; there are no street addresses. Pages hold
+        Individual recipients are never matched to organizations. Pages hold
         10 rows by default; pass next_cursor as cursor for more. Costs 1 request unit per page of 50 or fewer.
       TEXT
       input_schema(

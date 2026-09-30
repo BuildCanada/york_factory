@@ -11,9 +11,9 @@ module Mcp
         a StatCan census code) matches exactly; otherwise names and aliases match after normalization. Each result
         has match.kind: identifier or exact are matches; with fuzzy=true, fuzzy results are similar names to check,
         not matches, so say so if you rely on one. Results are best first; prefer a precise name with its place
-        ("Town of Diamond Valley", jurisdiction "ca-ab"). There is no address or postal code search. Persons are
-        searched like any other entity. Returns entity references (id, name, class, subtype, jurisdiction,
-        status) and the release that answered: pass that release as as_of on later calls. Costs 3 request units.
+        ("Town of Diamond Valley", jurisdiction "ca-ab"). Persons are searched like any other entity. Returns entity
+        references (id, name, class, subtype, jurisdiction, status) and the release that answered: pass that release
+        as as_of on later calls. Costs 3 request units.
       TEXT
       input_schema(
         properties: {

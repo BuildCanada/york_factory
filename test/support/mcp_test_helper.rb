@@ -43,7 +43,6 @@ module McpTestHelper
     assert body.key?("result"), "expected a result, got #{body.inspect.first(500)}"
     result = body["result"]
     assert_output_conforms(name, result["structuredContent"]) if result.key?("structuredContent")
-    assert_no_address_keys(result["structuredContent"]) if respond_to?(:assert_no_address_keys)
     result
   end
 

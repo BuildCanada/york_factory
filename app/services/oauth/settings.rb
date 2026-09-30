@@ -27,7 +27,7 @@ module Oauth
 
     # Plain-word descriptions for the consent screen.
     SCOPE_DESCRIPTIONS = {
-      "read:public" => "Read Build Canada's public data: organizations, people named in public records, spending, documents, releases and datasets. A person's address is only ever city, province and postal area, never a street address.",
+      "read:public" => "Read Build Canada's public data: organizations, people named in public records, spending, documents, releases and datasets.",
       "usage:read" => "See your account's API usage."
     }.freeze
 

@@ -210,7 +210,6 @@ class McpOauthFlowTest < ActionDispatch::IntegrationTest
 
     get "/oauth/authorize", params: authorize_params(client_id: tokens["client_id"], pkce: pkce_pair, scope: "read:public")
     assert_match "people named in public records", response.body
-    assert_match "never a street address", response.body
     assert_no_match "data terms", response.body
   end
 

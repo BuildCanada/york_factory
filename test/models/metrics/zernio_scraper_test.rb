@@ -178,6 +178,28 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert_equal "2026-08-04", request[:until]
   end
 
+  test "keeps LinkedIn requests within the exclusive 88-day API limit" do
+    @account_payload.merge!(
+      "_id" => "account-linkedin-build-canada",
+      "platform" => "linkedin"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-linkedin-build-canada")
+    client = fake_client("/analytics/linkedin/org-aggregate-analytics" => { "metrics" => {} })
+
+    described_scraper(client).sync_account_daily_metrics!(
+      account_id: account.id,
+      from_date: Date.new(2026, 1, 1),
+      to_date: Date.new(2026, 3, 30)
+    )
+
+    assert_equal 2, client.requests.size
+    assert_equal "2026-01-01", client.requests.first.last[:since]
+    assert_equal "2026-03-30", client.requests.first.last[:until]
+    assert_equal "2026-03-30", client.requests.second.last[:since]
+    assert_equal "2026-03-31", client.requests.second.last[:until]
+  end
+
   test "imports TikTok received-attribution metrics as account days" do
     @account_payload.merge!(
       "_id" => "account-tiktok-build-canada",
@@ -204,6 +226,28 @@ class Metrics::ZernioScraperTest < ActiveSupport::TestCase
     assert_equal "received", request[:attribution]
     assert_equal "all", request[:source]
     assert_equal "tiktok", request[:platform]
+  end
+
+  test "does not send TikTok daily metric windows across calendar years" do
+    @account_payload.merge!(
+      "_id" => "account-tiktok-build-canada",
+      "platform" => "tiktok"
+    )
+    scraper_for(accounts_response).sync_accounts!
+    account = Metrics::SocialMediaAccount.find_by!(zernio_account_id: "account-tiktok-build-canada")
+    client = fake_client("/analytics/daily-metrics" => { "dailyData" => [] })
+
+    described_scraper(client).sync_account_daily_metrics!(
+      account_id: account.id,
+      from_date: Date.new(2025, 12, 30),
+      to_date: Date.new(2026, 1, 2)
+    )
+
+    assert_equal 2, client.requests.size
+    assert_equal "2025-12-30", client.requests.first.last[:fromDate]
+    assert_equal "2025-12-31", client.requests.first.last[:toDate]
+    assert_equal "2026-01-01", client.requests.second.last[:fromDate]
+    assert_equal "2026-01-02", client.requests.second.last[:toDate]
   end
 
   test "preserves a stored day when a later sparse response omits it" do

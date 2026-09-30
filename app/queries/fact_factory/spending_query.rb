@@ -19,9 +19,6 @@ module FactFactory
       "payer" => %w[payer],
       "recipient" => %w[recipient recipients principal_investigator vendor_name]
     }.freeze
-    # The fields whose party_kind decides whether a row's postal code is shown
-    # whole (fact-factory serve/allowlist.RECIPIENT_FIELDS).
-    POSTAL_FIELDS = %w[recipient vendor_name].freeze
     EXCLUDED_REASONS = %w[excluded_individual excluded_aggregate excluded_unknown].freeze
 
     # The text `q` searches: title, description, program and the party names

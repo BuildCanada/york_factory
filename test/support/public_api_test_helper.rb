@@ -61,20 +61,7 @@ class PublicApiTestCase < ActionDispatch::IntegrationTest
       errors = spec.openapi.ref(schema).validate(body).first(5).map { |e| "#{e['data_pointer']}: #{e['error']}" }
       assert_empty errors, "#{operation_id} #{code} does not match the contract"
     end
-    assert_no_address_keys(body)
     body
-  end
-
-  # No response ever carries a street address key (design D9, DECISIONS 19).
-  def assert_no_address_keys(value, path = "$")
-    case value
-    when Hash
-      value.each do |k, v|
-        refute_match(/address|street/i, k.to_s, "#{path}.#{k} is an address key")
-        assert_no_address_keys(v, "#{path}.#{k}")
-      end
-    when Array then value.each_with_index { |v, i| assert_no_address_keys(v, "#{path}[#{i}]") }
-    end
   end
 
   def assert_problem(operation_id, status, code)

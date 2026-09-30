@@ -74,3 +74,7 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 ## Addresses
 
 41. **Addresses and postal codes are served as the source publishes them (decided 2026-09-30).** Brendan: "This data is all public." This supersedes 20 and the address parts of 19 and 39. Every postal code, an individual recipient's included, is served as the source writes it: in `recipient_postal_code`, in `raw` and in the bulk files. Address attributes, such as a school board's `addresses`, are served like any other attribute. Nothing has launched, so this is not a breaking change (see 10). The correctness caveats stay: a person entity is our clustering of records, not a legal identity (`person_is_clustering`); `observed_from` is when a filing first showed a role, not the appointment date (`observed_not_appointed`); and individuals are never matched to organizations.
+
+## Data source
+
+42. **The read model goes away in fact-factory's cut-over (noted 2026-09-30).** fact-factory is moving to one Postgres schema, `fact_factory`, with no `api_*` read-model copy. york_factory will read the base tables through a read-only role. Until then WS-D reads the `api` schema at fact-factory 6b3034e (`db/fact_factory_api/api_schema.sql`, vendored). The query objects in `app/queries/fact_factory/`, `FactFactoryRecord`, the vendored schema and the test fixtures move to the new tables once their names are settled. The contract doesn't change.

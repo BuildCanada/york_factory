@@ -97,7 +97,7 @@ class PublicApiEntitiesTest < PublicApiTestCase
     api_get "/v1/entities", fields: "name", limit: 2
     assert_conforms("listEntities", status: 200, projected: true)
     assert(body["data"].all? { |e| e.keys == %w[id name cite] })
-    api_get "/v1/entities", fields: "name,street"
+    api_get "/v1/entities", fields: "name,nickname"
     assert_equal "fields", assert_problem("listEntities", 400, "invalid_parameter").dig("errors", 0, "parameter")
   end
 

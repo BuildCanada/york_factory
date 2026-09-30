@@ -89,3 +89,25 @@ production:
     # keys missing from Bifrost (docs/public-interface-design.md §4.3).
     class: Keys::ReconcileBifrostJob
     schedule: every day at 3:20am
+  # Public API usage (docs/public-interface-design.md §6.3, WS-I). The
+  # rollup does nothing until CLOUDFLARE_ACCOUNT_ID and
+  # CLOUDFLARE_ANALYTICS_API_TOKEN are set; the reconcile needs EDGE_URL.
+  rollup_usage_recent:
+    class: Usage::RollupJob
+    args: [ 2 ]
+    schedule: every minute
+  rollup_usage_late:
+    # Re-reads 48 hours for points that reached Analytics Engine late.
+    class: Usage::RollupJob
+    args: [ 48 ]
+    schedule: every hour at minute 7
+  reconcile_usage:
+    class: Usage::ReconcileJob
+    schedule: every day at 2:40am
+  report_billing_usage:
+    # Writes usage records for metered plans; nothing is sent to Stripe yet.
+    class: Billing::ReportUsageJob
+    schedule: every day at 4:10am
+  expire_plan_overrides:
+    class: Accounts::ExpirePlanOverridesJob
+    schedule: every 10 minutes

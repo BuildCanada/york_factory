@@ -44,6 +44,12 @@
 <h2>Keys</h2>
 <%= render "admin/developers/keys/table", api_keys: @api_keys %>
 
+<h2>Usage</h2>
+<%= render "usage/styles" %>
+<div class="grid"><%= render "usage/quota", quota: Usage::Quota.new(@account) %></div>
+<% report = Usage::Report.new(account: @account) %>
+<%= render "usage/report", report:, freshness: report.freshness %>
+
 <h2>Audit log</h2>
 <%= render "developers/audit_events", events: @audit_events %>
 <p><a href="<%= admin_developers_audit_events_path(account_id: @account.id, format: :csv) %>">Export this account's log as CSV</a></p>

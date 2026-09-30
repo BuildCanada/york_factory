@@ -1,0 +1,17 @@
+<%# locals: (quota:) %>
+<div class="card">
+  <div class="label">Units this month</div>
+  <% if quota.unlimited? %>
+    <div class="value"><%= number_with_delimiter(quota.used) %></div>
+    <div class="text-muted">No monthly quota on this plan.</div>
+  <% else %>
+    <div class="value"><%= number_with_delimiter(quota.used) %> <span class="text-muted">/ <%= number_with_delimiter(quota.quota) %></span></div>
+    <div class="usage-meter<%= ' over' if quota.percent.to_f >= 100 %>" role="meter" aria-valuemin="0" aria-valuemax="<%= quota.quota %>" aria-valuenow="<%= [ quota.used, quota.quota ].min %>" aria-label="Quota used">
+      <span style="width: <%= [ quota.percent.to_f, 100 ].min.round(1) %>%"></span>
+    </div>
+    <div class="text-muted">
+      <%= number_with_delimiter(quota.remaining) %> remaining (<%= number_to_percentage(quota.percent, precision: 1) %> used). Resets <%= developer_time(quota.resets_at) %>.
+      At this pace: about <%= number_with_delimiter(quota.forecast) %> by then.
+    </div>
+  <% end %>
+</div>

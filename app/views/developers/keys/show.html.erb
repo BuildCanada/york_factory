@@ -1,4 +1,5 @@
 <%= render "developers/nav" %>
+<%= render "usage/styles" %>
 
 <% if @raw_key.present? %>
   <div class="flash flash-notice">
@@ -24,7 +25,24 @@
 
 <section>
   <h2>Usage</h2>
-  <p class="text-muted">Per-minute requests, top operations, status codes and rate-limited requests for this key appear here once metering is live.</p>
+  <div class="grid"><%= render "usage/quota", quota: @quota %></div>
+  <%= render "developers/keys/live", api_key: @api_key, minutes: @minutes, edge: @edge_usage %>
+  <%= usage_column_chart(@report.hourly(hours: 48).map { |hour, units| [ hour.strftime("%b %-d %H:00"), units ] }, title: "Units by hour, last 48 hours", unit: "units", label_every: 12) %>
+  <%= render "usage/report", report: @report, freshness: @report.freshness %>
+  <script>
+    (() => {
+      const panel = () => document.getElementById("live-usage")
+      const timer = setInterval(async () => {
+        const el = panel()
+        if (!el) return clearInterval(timer)
+        if (document.hidden) return
+        try {
+          const response = await fetch(el.dataset.liveUrl, { headers: { Accept: "text/html" }, credentials: "same-origin" })
+          if (response.ok) el.outerHTML = await response.text()
+        } catch (_) {}
+      }, 10000)
+    })()
+  </script>
 </section>
 
 <% if can_manage_keys? && @api_key.usable? %>

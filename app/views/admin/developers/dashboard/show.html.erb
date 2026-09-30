@@ -1,4 +1,5 @@
 <%= render "admin/developers/nav" %>
+<%= render "usage/styles" %>
 
 <div class="grid">
   <div class="card"><div class="label">Accounts</div><div class="value"><%= number_with_delimiter(@account_count) %></div></div>
@@ -8,7 +9,52 @@
 </div>
 
 <h2>Top consumers and anomaly flags</h2>
-<p class="text-muted" style="margin-bottom: 1.5rem;">Units, 429s and anomaly flags per key appear here once usage metering (WS-I) is live. Until then, the most recently used keys:</p>
+<p class="text-muted" style="margin-bottom: 0.75rem;">
+  Keys by units in the last 24 hours (OAuth usage has no key). Flags: a 10× spike against the key's daily average over the previous 7 days (or 10,000 units with no history),
+  429s on 10% or more of requests, mostly 4xx, the account near or over its quota, and edge reconciliation drift.
+  <% if @rollup %>Rolled up <%= developer_time(@rollup.finished_at) %>.<% else %>No rollup has run yet: set the Analytics Engine credentials.<% end %>
+</p>
+<% if @consumers.any? %>
+  <table style="margin-bottom: 1.5rem;">
+    <thead><tr><th>Key</th><th>Account</th><th>Units (24 h)</th><th>Daily average</th><th>Requests</th><th>4xx</th><th>5xx</th><th>429s</th><th>Quota</th><th>Flags</th></tr></thead>
+    <tbody>
+      <% @consumers.each do |row| %>
+        <tr>
+          <td class="mono"><%= row.api_key ? "#{row.api_key.token_prefix}…" : "OAuth" %></td>
+          <td><a href="<%= admin_developers_account_path(row.account) %>"><%= row.account.name %></a> <span class="text-muted"><%= row.account.effective_plan_name %></span></td>
+          <td><%= number_with_delimiter(row.units) %></td>
+          <td class="text-muted"><%= number_with_delimiter(row.baseline) %></td>
+          <td><%= number_with_delimiter(row.requests) %></td>
+          <td><%= number_with_delimiter(row.errors_4xx) %></td>
+          <td><%= number_with_delimiter(row.errors_5xx) %></td>
+          <td><%= number_with_delimiter(row.throttled) %></td>
+          <td><%= row.quota_percent ? number_to_percentage(row.quota_percent, precision: 1) : "Unlimited" %></td>
+          <td><%= usage_flag_badges(row.flags) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="text-muted" style="margin-bottom: 1.5rem;">No keyed usage in the last 24 hours.</p>
+<% end %>
+<% days = (Time.current.utc.to_date - 29..Time.current.utc.to_date).map { |d| [ d.strftime("%b %-d"), @daily_units.fetch(d, 0) ] } %>
+<%= usage_column_chart(days, title: "All accounts: units by day, last 30 days", unit: "units") %>
+
+<% if @drifted.any? %>
+  <h2>Reconciliation drift</h2>
+  <p class="text-muted" style="margin-bottom: 0.75rem;">Days where usage_daily and the edge's AccountDO differ by more than 0.5% (the billing source must match the edge).</p>
+  <table style="margin-bottom: 1.5rem;">
+    <thead><tr><th>Day</th><th>Account</th><th>Rollup</th><th>Edge</th><th>Drift</th></tr></thead>
+    <tbody>
+      <% @drifted.each do |r| %>
+        <tr><td><%= r.day.iso8601 %></td><td><a href="<%= admin_developers_account_path(r.account) %>"><%= r.account.name %></a></td>
+          <td><%= number_with_delimiter(r.rollup_units) %></td><td><%= number_with_delimiter(r.edge_units) %></td><td><%= number_to_percentage(r.drift * 100, precision: 2) %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<h2>Recently used keys</h2>
 <table>
   <thead><tr><th>Key</th><th>Account</th><th>Last used</th><th>From</th></tr></thead>
   <tbody>

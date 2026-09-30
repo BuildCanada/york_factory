@@ -37,6 +37,8 @@ module PublicApi
       def me
         c = current_api_caller
         used = @limiter&.enabled? ? @limiter.allowance_used(caller: c, ip: request.remote_ip) : 0
+        # Behind the edge this limiter doesn't count; the rollup (usage_daily) does.
+        used = [ used, c.account&.monthly_units_used.to_i ].max unless c.anonymous?
         plan = c.plan
         data = {
           authenticated: !c.anonymous?,
@@ -54,9 +56,10 @@ module PublicApi
         render_data({ data:, meta: meta(release: latest, as_of: latest.to_s), links: { self: "/v1/me" } }, release: latest, pinned: false)
       end
 
-      # Usage buckets (docs/public-interface-design.md §6.3). The history comes
-      # from PublicApi::Usage.source: the metering rollup (WS-I) when it
-      # exists, nothing until then (said in a caveat).
+      # Usage buckets (docs/public-interface-design.md §6.3), from
+      # PublicApi::Usage.source: usage_daily for days, usage_hourly for hours
+      # (7 days) and Analytics Engine for minutes. Caveats say when the rollup
+      # is behind or a range is outside what is kept.
       def usage
         granularity = parameters["granularity"]
         to = parse_time("to") || Time.current.utc
@@ -71,7 +74,7 @@ module PublicApi
         buckets = source.buckets(account: current_api_caller.account, granularity:, from:, to:, group_by: Array(parameters["group_by"]),
           limit: limit + 1, after: after)
         page, next_cursor = paginate(buckets, cursor_release: nil) { |b| [ b[:bucket_start], b[:key_id], b[:operation] ] }
-        caveats = [ source.caveat(locale:) ].compact
+        caveats = source.caveats(locale:, granularity:, from:, to:)
         render_data({
           data: page,
           meta: list_meta(next_cursor:, caveats:, release: nil, as_of: Format.timestamp(to)),

@@ -1,0 +1,9 @@
+The usage rollup (usage_daily) and the edge's AccountDO disagree by more than 0.5% on these account-days:
+
+<% @reconciliations.each do |r| -%>
+- <%= r.account.name %> (account <%= r.account_id %>), <%= r.day.iso8601 %>: rollup <%= number_with_delimiter(r.rollup_units) %> units, edge <%= number_with_delimiter(r.edge_units) %> (<%= number_to_percentage(r.drift * 100, precision: 2) %>)
+<% end -%>
+
+usage_daily is the billing source. Check Analytics Engine sampling and late points (rerun Usage::RollupJob with a longer window), and the edge's KeyDO flushes.
+
+<%= admin_developers_root_url %>

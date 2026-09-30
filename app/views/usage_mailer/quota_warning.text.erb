@@ -1,0 +1,11 @@
+<% if @threshold >= 100 -%>
+<%= @account.name %> has used all <%= number_with_delimiter(@quota) %> units of its monthly Build Canada API quota (<%= number_with_delimiter(@used) %> so far). Requests are refused with 429 quota_exceeded until the quota resets at <%= @resets_at.utc.strftime("%Y-%m-%d %H:%M UTC") %>.
+<% else -%>
+<%= @account.name %> has used <%= number_with_delimiter(@used) %> of its <%= number_with_delimiter(@quota) %> monthly Build Canada API units (<%= @threshold %>%). The quota resets at <%= @resets_at.utc.strftime("%Y-%m-%d %H:%M UTC") %>.
+<% end -%>
+
+For heavier use, the bulk files carry every release: https://data.buildcanada.com/v1/exports
+
+See your usage: <%= developers_url %>
+
+To ask about a higher limit, reply to this email.

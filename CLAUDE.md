@@ -76,6 +76,20 @@ through a separate, read-only connection (`FactFactoryRecord`, database `fact_fa
 (`db/fact_factory_api/api_schema.sql`) and fixture rows into their own database and validate every response against
 the contract. `script/public_api/explain.rb` checks query plans at representative size.
 
+## Public API usage (WS-I)
+```
+Usage::RollupJob        → Analytics Engine (edge points) → usage_hourly (7 days) + usage_daily (kept; billing source)
+                          every minute over 2 h, hourly over 48 h (late points); replaces its window, so it is idempotent
+Usage::QuotaNotices     → 80% and 100% emails, once per account, month and threshold (usage_quota_notices)
+Usage::ReconcileJob     → yesterday's usage_daily against the edge AccountDO (Edge::UsageClient); > 0.5% alerts staff
+Billing::ReportUsageJob → billing_usage_records per metered account and day; Billing::Reporter is a null seam (no Stripe)
+Accounts::ExpirePlanOverridesJob → clears expired plan overrides and pushes the account's keys to the edge
+```
+`/v1/me/usage` reads `Usage::History` (days from usage_daily, hours from usage_hourly, minutes live from Analytics
+Engine via `Usage::Live`). The console (`/developers`, key detail, `/developers/usage.csv`) and `/admin/developers`
+(top consumers, anomaly flags, drift) use `Usage::Report`, `Usage::Quota` and `Usage::Consumers`; charts are
+server-rendered SVG (`UsageChartsHelper`). Tests use `test/support/fake_analytics_engine.rb`.
+
 ## Geo API
 ```
 GET /api/v1/geo/boundaries       → search boundaries by type, province, name
@@ -124,6 +138,10 @@ GET /api/v1/geo/crosswalk/:type/:uid → population-weighted crosswalk lookup
   - `PUBLIC_API_HOSTS` — hosts that serve /v1 (default `data.buildcanada.com,data.staging.buildcanada.com` in production, any host elsewhere)
   - `PUBLIC_API_RATE_LIMIT_STORE` — `cache` (Rails.cache, the default), `memory` (per process) or `off`
   - `PUBLIC_API_REQUIRE_EDGE` — `true` refuses /v1 requests the data-edge Worker did not sign (`EDGE_HMAC_SECRET`); off until WS-H
+- Public API usage (WS-I):
+  - `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ANALYTICS_API_TOKEN` / `cloudflare.account_id`, `cloudflare.analytics_api_token` — Analytics Engine SQL API (Account Analytics: Read). The rollup does nothing without them.
+  - `USAGE_DATASET` / `cloudflare.usage_dataset` — the edge's dataset (default `data_api_requests`; `data_api_requests_staging` on staging)
+  - `USAGE_ALERT_EMAILS` / `usage.alert_emails` — reconciliation alerts (comma-separated; default: superadmins)
 - Mailer/SES config is read from Rails credentials under `mailer`:
   - `mailer.smtp_address` — SES SMTP endpoint (defaults to `email-smtp.ca-central-1.amazonaws.com`)
   - `mailer.smtp_username`, `mailer.smtp_password` — SES SMTP credentials (IAM SMTP user)

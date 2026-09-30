@@ -8,6 +8,10 @@ class Account < ApplicationRecord
   has_many :memberships, class_name: "AccountMembership", dependent: :destroy
   has_many :users, through: :memberships
   has_many :api_keys, dependent: :restrict_with_error
+  has_many :usage_days, class_name: "Usage::Daily", dependent: :delete_all
+  has_many :usage_hours, class_name: "Usage::Hourly", dependent: :delete_all
+  has_many :usage_quota_notices, class_name: "Usage::QuotaNotice", dependent: :delete_all
+  has_many :billing_usage_records, class_name: "Billing::UsageRecord", dependent: :restrict_with_error
 
   validates :name, presence: true, length: { maximum: 200 }
   validates :plan, inclusion: { in: Plan::NAMES }
@@ -43,6 +47,9 @@ class Account < ApplicationRecord
   end
 
   def plan_definition = Plan.fetch(effective_plan_name)
+
+  # Units used this UTC month, from the rollup (usage_daily).
+  def monthly_units_used(now: Time.current) = usage_days.for_month(now).sum(:units)
 
   def suspended? = suspended_at.present?
 

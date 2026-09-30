@@ -1,4 +1,5 @@
 <%= render "developers/nav" %>
+<%= render "usage/styles" %>
 
 <section>
   <h2><%= current_account.name %> <span class="badge"><%= current_account.kind.capitalize %></span></h2>
@@ -8,7 +9,15 @@
     <div class="card"><div class="label">Monthly quota</div><div class="value"><%= plan_limit(@plan.monthly, "units") %></div></div>
     <div class="card"><div class="label">Active keys</div><div class="value"><%= @live_keys %> / <%= @plan.key_limit %></div></div>
   </div>
-  <p class="text-muted mb-2">Usage against your quota appears here once metering is live.</p>
+</section>
+
+<section>
+  <div class="page-header">
+    <h2>Usage</h2>
+    <a href="<%= developers_usage_path(format: :csv) %>" class="btn">Download CSV (90 days)</a>
+  </div>
+  <div class="grid"><%= render "usage/quota", quota: @quota %></div>
+  <%= render "usage/report", report: @report, freshness: @report.freshness %>
 </section>
 
 <section>

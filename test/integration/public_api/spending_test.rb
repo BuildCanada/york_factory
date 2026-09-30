@@ -110,20 +110,6 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_nil body.dig("data", "provenance", "capture")
   end
 
-  test "an individual recipient's postal code is served as its FSA only, everywhere" do
-    api_get "/v1/spending/#{G_PERSON}"
-    assert_conforms("getSpendingRecord", status: 200)
-    assert_equal "T2P", body.dig("data", "recipient_postal_code")
-    assert_equal "individual", body.dig("data", "parties").find { |p| p["field"] == "recipient" }["party_kind"]
-    refute_match(/T2P ?1J9/, response.body)
-
-    page_through("/v1/spending", limit: 3, expand: "parties")
-    api_get "/v1/spending", q: "residency"
-    assert_equal [ "T2P" ], body["data"].map { |r| r["recipient_postal_code"] }
-    api_get "/v1/spending/#{G2}"
-    assert_equal "T0L 1A0", body.dig("data", "recipient_postal_code"), "an organization keeps its full code"
-  end
-
   test "a proposed link is never linked, and says what was proposed" do
     api_get "/v1/spending/#{G_PROPOSED}"
     party = body.dig("data", "parties").find { |p| p["field"] == "recipient" }

@@ -17,9 +17,8 @@ module PublicApi
 
       module_function
 
-      # `parties` are the row's SpendingParty rows (always loaded, for the
-      # postal code rule); they are shown only when `show_parties`.
-      def record(r, ctx, parties:, latest:, entities:, show_parties:, raw: false, capture: nil)
+      # `parties` are the row's SpendingParty rows, shown when given (nil leaves them out).
+      def record(r, ctx, parties:, latest:, entities:, raw: false, capture: nil)
         source = Catalog.source(r.source_key)
         data = {
           id: Format.gid("SpendingRecord", r.spending_key),
@@ -45,7 +44,7 @@ module PublicApi
           recipient_business_number: r.recipient_business_number,
           recipient_type: r.recipient_type,
           recipient_city: r.recipient_city,
-          recipient_postal_code: postal_code(r.recipient_postal_code, parties),
+          recipient_postal_code: r.recipient_postal_code,
           province: r.province,
           country: r.country,
           amount: Format.amount(r.amount),
@@ -60,7 +59,7 @@ module PublicApi
           revision_rank: r.revision_rank.is_a?(Array) ? r.revision_rank : (r.revision_rank.nil? ? nil : [ r.revision_rank ]),
           is_latest_revision: latest ? true : false
         }
-        data[:parties] = parties.map { |p| party(p, entities) } if show_parties
+        data[:parties] = parties.map { |p| party(p, entities) } if parties
         data[:raw] = nil if raw
         data[:provenance] = provenance(r, ctx, source, capture)
         data[:cite] = cite(r, ctx, source)
@@ -97,17 +96,6 @@ module PublicApi
           candidates: linked ? [] : Array(p.candidates).map { |c| c.to_s.match?(Format::ULID) ? Format.entity_gid(c) : c.to_s },
           rule_version: p.rule_version
         }
-      end
-
-      # The recipient postal code as served (DECISIONS 20): whole only when
-      # every recipient party on the row is an organization, else its FSA. The
-      # read model already applies this; this is the second guard.
-      def postal_code(value, parties)
-        return nil if value.nil?
-
-        recipients = parties.select { |p| FactFactory::SpendingQuery::POSTAL_FIELDS.include?(p.field) }
-        organization = recipients.any? && recipients.all? { |p| p.party_kind == "organization" }
-        organization ? value : Format.fsa(value)
       end
 
       def commitments(value)

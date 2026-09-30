@@ -31,8 +31,8 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 16. **Datasets are keyed by the percent-encoded asset key** in the path (`/datasets/sources%2Fca%2Ftbs%2Fproactive_grants`), because keys contain slashes. Every list item carries `links.self`, so clients rarely have to build one.
 17. **`values` in `DictionaryTerm`** is always an array of `{value, meaning}`. The YAML dictionary uses both lists and maps.
 18. **Enums in responses.** They use `enum` so agents and docs can read them. The versioning policy says new values are additive, so the SDK generators must be configured to tolerate unknown values (WS-J).
-19. **Entity `attributes`** is an open object, and only keys allowlisted by WS-B are served. **Decided 2026-09-29:** the school-board `addresses` attribute, and any other address attribute, is not served in v1. It is deferred until someone decides whether organization street addresses belong in the API. WS-B must leave it off the `api.entities` allowlist.
-20. **`recipient_postal_code` follows the persons rule (decided 2026-09-29).** People are shown by city, province and FSA only. When a row's recipient occurrence is an individual (`party_kind` is `individual`), the API serves only the FSA: the first 3 characters, uppercased. The same reduction applies to the postal code inside `raw` (`expand=raw`) and in the bulk exports. Organizations keep the full postal code as published. WS-B applies this in `api.spending_records`, and WS-K in the exports.
+19. **Entity `attributes`** is an open object, and only keys allowlisted by WS-B are served. The address exclusion decided here on 2026-09-29 is **superseded by 41**.
+20. **Superseded by 41.** On 2026-09-29 an individual recipient's `recipient_postal_code` was to be cut to its first 3 characters. It is now served as published.
 
 ## Behaviour the spec fixes for WS-D
 
@@ -60,13 +60,21 @@ These are the places where the design (fact-factory `docs/public-interface-desig
 
 ## People data
 
-39. **Person data is `read:public` (decided 2026-09-29).** Brendan: "Remove many of the restrictions on people, we have already protected their personal information a lot by restricting addresses." So:
+39. **Person data is `read:public` (decided 2026-09-29).** Brendan: "Remove many of the restrictions on people." So:
     - There is no `read:persons` scope. Person entities, individuals' names, the persons endpoints and person results in MCP are read with `read:public`, anonymously wherever the rest of the API is anonymous. The scope is gone from `x-bc-scopes`, `Me.scopes` and the OAuth scopes, and is not kept as an alias: nothing has launched, so no client holds it.
     - There is no data-terms acceptance step before a key can read people.
     - Persons are listed, searched and filtered like other entities (`class=person` on `/entities` and `/search`, when person entities exist).
     - There are no person-specific rate limits or unit surcharges. Person operations cost the same units as any other operation.
-    - **Kept:** the address rule of 19 and 20. A person's address is only ever city, province and FSA, never a street address, and an individual recipient's postal code is served as its FSA. No address keys are served. Also kept are the factual caveats `person_is_clustering` (a person entity is our clustering of records, not a legal identity) and `observed_not_appointed` (`observed_from` is when a filing first showed the role, not the appointment date). Authentication, abuse controls, general rate limits and audit logs are unchanged.
+    - **Kept:** the factual caveats `person_is_clustering` (a person entity is our clustering of records, not a legal identity) and `observed_not_appointed` (`observed_from` is when a filing first showed the role, not the appointment date). Authentication, abuse controls, general rate limits and audit logs are unchanged. This entry also kept the address rule of 19 and 20, which is **superseded by 41**.
 
 ## URLs
 
 40. **Developer docs live at `https://data.buildcanada.com/api` (decided 2026-09-29).** `data.buildcanada.com/` is kept for a future public interactive site, so nothing the API names sits at the root any more. Every docs URL moves under `/api`: pages and Markdown twins (`/docs/...` becomes `/api/...`, including `termsOfService`, `externalDocs`, caveat anchors at `/api/caveats#<code>` and dictionary term pages at `/api/dictionary/<term>`), problem type URIs (`/problems/<code>` becomes `/api/problems/<code>`) and `llms.txt` (`/api/llms.txt`). The API itself stays at `/v1`, MCP at `/mcp`, and OAuth metadata at `/.well-known/...`. Problem type URIs are identifiers, so this is a breaking change once launched; before launch it is not (see 10).
+
+## Addresses
+
+41. **Addresses and postal codes are served as the source publishes them (decided 2026-09-30).** Brendan: "This data is all public." This supersedes 20 and the address parts of 19 and 39. Every postal code, an individual recipient's included, is served as the source writes it: in `recipient_postal_code`, in `raw` and in the bulk files. Address attributes, such as a school board's `addresses`, are served like any other attribute. Nothing has launched, so this is not a breaking change (see 10). The correctness caveats stay: a person entity is our clustering of records, not a legal identity (`person_is_clustering`); `observed_from` is when a filing first showed a role, not the appointment date (`observed_not_appointed`); and individuals are never matched to organizations.
+
+## Data source
+
+42. **The read model goes away in fact-factory's cut-over (noted 2026-09-30).** fact-factory is moving to one Postgres schema, `fact_factory`, with no `api_*` read-model copy. york_factory will read the base tables through a read-only role. Until then WS-D reads the `api` schema at fact-factory 6b3034e (`db/fact_factory_api/api_schema.sql`, vendored). The query objects in `app/queries/fact_factory/`, `FactFactoryRecord`, the vendored schema and the test fixtures move to the new tables once their names are settled. The contract doesn't change.

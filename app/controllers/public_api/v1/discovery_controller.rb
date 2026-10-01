@@ -11,18 +11,18 @@ module PublicApi
       USAGE_RANGES = { "minute" => 24.hours, "hour" => 31.days, "day" => 400.days }.freeze
 
       def index
-        latest = releases.last || AsOf.resolve(nil, releases:)
+        latest = AsOf.resolve(nil, served:).revision
         data = {
           name: Spec.document.dig("info", "title"),
           version: Spec.version,
-          latest_release: latest.number,
+          latest_revision: latest,
           links: {
             openapi: "/v1/openapi.json", docs: "https://data.buildcanada.com/api", llms_txt: "https://data.buildcanada.com/api/llms.txt",
-            mcp: "https://data.buildcanada.com/mcp", releases: "/v1/releases", datasets: "/v1/datasets", dictionary: "/v1/dictionary",
-            search: "/v1/search?q={q}", entities: "/v1/entities", spending: "/v1/spending", exports: "/v1/exports"
+            mcp: "https://data.buildcanada.com/mcp", revisions: "/v1/revisions", snapshots: "/v1/snapshots", datasets: "/v1/datasets", dictionary: "/v1/dictionary",
+            search: "/v1/search?q={q}", entities: "/v1/entities", spending: "/v1/spending", elections: "/v1/elections"
           }
         }
-        render_data({ data:, meta: meta(release: latest.number), links: { self: "/v1" } }, release: latest.number, pinned: false)
+        render_data({ data:, meta: meta(revision: latest, snapshot: served.snapshot_for(latest)), links: { self: "/v1" } }, revision: latest, pinned: false)
       end
 
       # The contract itself, as bundled (docs/openapi/dist/v1/openapi.json).
@@ -50,8 +50,8 @@ module PublicApi
             daily_units: plan.daily, monthly_units_used: used
           }
         }
-        latest = latest_release_or_nil
-        render_data({ data:, meta: meta(release: latest, as_of: latest.to_s), links: { self: "/v1/me" } }, release: latest, pinned: false)
+        latest = latest_revision_or_nil
+        render_data({ data:, meta: meta(revision: latest, snapshot: nil, as_of: latest.to_s), links: { self: "/v1/me" } }, revision: latest, pinned: false)
       end
 
       # Usage buckets (docs/public-interface-design.md §6.3). The history comes
@@ -70,21 +70,21 @@ module PublicApi
         source = Usage.source
         buckets = source.buckets(account: current_api_caller.account, granularity:, from:, to:, group_by: Array(parameters["group_by"]),
           limit: limit + 1, after: after)
-        page, next_cursor = paginate(buckets, cursor_release: nil) { |b| [ b[:bucket_start], b[:key_id], b[:operation] ] }
+        page, next_cursor = paginate(buckets, cursor_revision: nil) { |b| [ b[:bucket_start], b[:key_id], b[:operation] ] }
         caveats = [ source.caveat(locale:) ].compact
         render_data({
           data: page,
-          meta: list_meta(next_cursor:, caveats:, release: nil, as_of: Format.timestamp(to)),
+          meta: list_meta(next_cursor:, caveats:, revision: nil, snapshot: nil, as_of: Format.timestamp(to)),
           links: page_links(next_cursor)
-        }, release: nil, pinned: false)
+        }, revision: nil, pinned: false)
       end
 
       private
 
-      def latest_release_or_nil
-        releases.last&.number
+      def latest_revision_or_nil
+        served.latest
       rescue ActiveRecord::ActiveRecordError => e
-        Rails.logger.warn("[public_api] /v1/me without a release: #{e.class}")
+        Rails.logger.warn("[public_api] /v1/me without a revision: #{e.class}")
         nil
       end
 

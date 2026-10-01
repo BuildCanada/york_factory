@@ -20,7 +20,7 @@ properties:
   matches:
     type: array
     minItems: 1
-    description: Every entity holding the identifier in the release that answered.
+    description: Every entity holding the identifier in the revision that answered.
     x-bc-structural: true
     items:
       $ref: IdentifierMatch.yaml

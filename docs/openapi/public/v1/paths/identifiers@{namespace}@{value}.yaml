@@ -17,7 +17,7 @@ get:
     base: 2
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   security:
   - ApiKey: []
   - OAuth2:
@@ -54,8 +54,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -90,7 +90,7 @@ get:
                       valid_to:
                       provenance:
                         asset: entities/identifiers
-                        release: 8
+                        revision: 28
                         recorded_at: '2026-09-24T01:12:40Z'
                         source:
                           origin: roster
@@ -99,12 +99,13 @@ get:
                           row_number: 88104
                         license: OGL-Canada-2.0
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []
                 links:
-                  self: "/v1/identifiers/ca.cra.bn9/107511586?as_of=11"
+                  self: "/v1/identifiers/ca.cra.bn9/107511586?as_of=31"
     '304':
       "$ref": "../components/responses.yaml#/NotModified"
     '400':

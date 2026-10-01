@@ -1,24 +1,32 @@
 title: Meta
 description: >-
-  Facts about the response itself: which release answered, how `as_of` was resolved, the
-  request ID to quote in support requests, and caveats that apply to the whole response.
+  Facts about the response itself: which registry revision answered, the snapshot that
+  names it, how `as_of` was resolved, the request ID to quote in support requests, and
+  caveats that apply to the whole response.
 type: object
-required: [release, as_of, request_id, caveats]
+required: [revision, snapshot, as_of, request_id, caveats]
 properties:
-  release:
+  revision:
     description: >-
-      The registry release that answered, or null for data versioned only by time.
-      Pass it back as `as_of` to get the same bytes again.
+      The registry revision that answered, or null for data that isn't versioned by
+      revision (elections, usage). Pass it back as `as_of` to get the same answer again.
     oneOf:
-      - $ref: ReleaseNumber.yaml
+      - $ref: RevisionNumber.yaml
+      - type: 'null'
+  snapshot:
+    description: >-
+      The name of the snapshot the request pinned, or of a snapshot that pins the revision
+      that answered; null when none does.
+    oneOf:
+      - $ref: SnapshotName.yaml
       - type: 'null'
   as_of:
     type: string
     description: >-
-      How the request's `as_of` was resolved, as the release number it pinned (for
-      example "11"), or the timestamp it was evaluated at for time-versioned data.
-      Omitting `as_of` resolves to the latest release, named here.
-    examples: ['11']
+      How the request's `as_of` was resolved: the revision number it pinned (for example
+      "31"), or, for data not versioned by revision, the time it was read at. Omitting
+      `as_of` resolves to the latest revision the API serves, named here.
+    examples: ['31']
   request_id:
     type: string
     pattern: '^req_[0-9A-HJKMNP-TV-Z]{26}$'

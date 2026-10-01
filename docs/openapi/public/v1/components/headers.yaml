@@ -1,11 +1,11 @@
 # Shared response headers. Referenced as ../components/headers.yaml#/<Name>.
 ETag:
   description: >-
-    A strong validator for the response, `"r<release>-<first 12 hex of sha256>"`. Send it
+    A strong validator for the response, `"r<revision>-<first 12 hex of sha256>"`. Send it
     back as If-None-Match for a free 304.
   schema:
     type: string
-  example: '"r11-3f9a2c4e8b1d"'
+  example: '"r31-3f9a2c4e8b1d"'
 CacheControl:
   description: >-
     `public, max-age=31536000, immutable` when the request pinned `as_of`; otherwise
@@ -14,12 +14,12 @@ CacheControl:
   schema:
     type: string
   example: public, max-age=31536000, immutable
-BCRelease:
-  description: The release that answered, the same as `meta.release`. Absent for data versioned only by time.
+BCRevision:
+  description: The registry revision that answered, the same as `meta.revision`. Absent for data not versioned by revision.
   schema:
     type: integer
     minimum: 1
-  example: 11
+  example: 31
 RateLimit:
   description: >-
     The caller's remaining units in the current window, per
@@ -48,10 +48,10 @@ RetryAfter:
     minimum: 0
   example: 18
 Location:
-  description: The survivor entity's URL, pinned to the same release.
+  description: The survivor entity's URL, pinned to the same revision.
   schema:
     type: string
-  example: /v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11
+  example: /v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=31
 WWWAuthenticate:
   description: >-
     RFC 6750 challenge. On 401 it names the protected-resource metadata

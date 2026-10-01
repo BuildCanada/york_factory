@@ -1,20 +1,22 @@
 openapi: 3.1.1
 info:
   title: Build Canada Data API
-  version: 1.0.0-alpha.2
+  version: 1.0.0-alpha.3
   summary: Cited, reproducible public data on Canadian governments, organizations and federal spending.
   description: |
     Read-only access to everything fact-factory publishes: the entity registry
     (jurisdictions, government organizations, Indigenous governments, charities and other
-    organizations), their identifiers, relationships and lineage, and federal spending
-    rows linked to them.
+    organizations), their identifiers, relationships and lineage, the spending rows linked
+    to them, and elections with their candidates and results.
 
     Three rules shape the API:
 
     1. **Every fact carries its citation.** Fact-bearing objects have `provenance` (the
-       asset, release, pinned snapshot, captured file and row) and a ready-to-paste `cite`.
-    2. **Every answer is reproducible.** Pass `as_of=<release>` and the same URL returns the
-       same bytes forever. Omit it and the response names the release it used.
+       asset, registry revision, spending publication, captured file and row) and a
+       ready-to-paste `cite`.
+    2. **Every answer is reproducible.** Pass `as_of=<revision>` (or a snapshot name) and the
+       same URL returns the same answer forever. Omit it and the response names the revision
+       it used.
     3. **Caveats are data.** `meta.caveats[]` carries machine-readable warnings, such as
        `not_cross_source_total`. Act on them. Amounts from different spending sources
        overlap: never add them.
@@ -52,12 +54,13 @@ security:
 tags:
   - name: Discovery
     description: The index, this document, and who you are.
-  - name: Releases
+  - name: Revisions
     description: >-
-      Registry releases, the public version unit. Each pins the roster captures and
-      spending snapshots it was built from; `as_of=<number>` reproduces it forever.
+      Registry revisions, the public version unit, and the named snapshots that pin them.
+      The registry commits a revision whenever an input changes; `as_of=<number>` (or a
+      snapshot name) reproduces it forever.
   - name: Datasets
-    description: What each published dataset means, covers and is licensed under, with bulk links.
+    description: What each published dataset means, covers and is licensed under.
   - name: Dictionary
     description: The shared data dictionary. Every data field names its term.
   - name: Search
@@ -70,13 +73,16 @@ tags:
     description: >-
       Federal spending rows, each source with its own meaning of amount, and entity
       summaries under fixed rules. Never add amounts across sources.
-  - name: Bulk
-    description: Parquet files and Iceberg tables for whole releases.
+  - name: Elections
+    description: >-
+      Elections, their contests and districts (with boundaries), candidates with their
+      verified contacts, and results, as the administrators publish them. Current state,
+      not versioned by registry revision.
 x-tagGroups:
   - name: Start
-    tags: [Discovery, Releases, Datasets, Dictionary]
+    tags: [Discovery, Revisions, Datasets, Dictionary]
   - name: Data
-    tags: [Search, Entities, Spending, Bulk]
+    tags: [Search, Entities, Spending, Elections]
 paths:
   /:
     $ref: paths/index.yaml
@@ -86,12 +92,16 @@ paths:
     $ref: paths/me.yaml
   /me/usage:
     $ref: paths/me@usage.yaml
-  /releases:
-    $ref: paths/releases.yaml
-  /releases/latest:
-    $ref: paths/releases@latest.yaml
-  /releases/{release}:
-    $ref: paths/releases@{release}.yaml
+  /revisions:
+    $ref: paths/revisions.yaml
+  /revisions/latest:
+    $ref: paths/revisions@latest.yaml
+  /revisions/{revision}:
+    $ref: paths/revisions@{revision}.yaml
+  /snapshots:
+    $ref: paths/snapshots.yaml
+  /snapshots/{name}:
+    $ref: paths/snapshots@{name}.yaml
   /datasets:
     $ref: paths/datasets.yaml
   /datasets/{asset_key}:
@@ -126,8 +136,26 @@ paths:
     $ref: paths/spending@sources.yaml
   /spending/{id}:
     $ref: paths/spending@{id}.yaml
-  /exports:
-    $ref: paths/exports.yaml
+  /elections:
+    $ref: paths/elections.yaml
+  /elections/{election_id}:
+    $ref: paths/elections@{election_id}.yaml
+  /elections/{election_id}/contests:
+    $ref: paths/elections@{election_id}@contests.yaml
+  /elections/{election_id}/result-reports:
+    $ref: paths/elections@{election_id}@result-reports.yaml
+  /contests/{contest_id}:
+    $ref: paths/contests@{contest_id}.yaml
+  /contests/{contest_id}/candidacies:
+    $ref: paths/contests@{contest_id}@candidacies.yaml
+  /contests/{contest_id}/results:
+    $ref: paths/contests@{contest_id}@results.yaml
+  /candidacies/{candidacy_id}:
+    $ref: paths/candidacies@{candidacy_id}.yaml
+  /districts:
+    $ref: paths/districts.yaml
+  /districts/{district_id}:
+    $ref: paths/districts@{district_id}.yaml
 components:
   securitySchemes:
     ApiKey:
@@ -156,7 +184,7 @@ components:
           tokenUrl: https://auth.buildcanada.com/oauth/token
           refreshUrl: https://auth.buildcanada.com/oauth/token
           scopes:
-            'read:public': Read organizations, persons, spending, releases, datasets, the dictionary and exports.
+            'read:public': Read organizations, persons, spending, elections, revisions, datasets and the dictionary.
             'usage:read': Read your account's usage (/v1/me/usage).
             'keys:manage': Create, rotate and revoke API keys (phase 2; OAuth tokens only, never API keys).
   schemas:

@@ -18,13 +18,13 @@ module PublicApi
       "not_found" => [ 404, "Not found" ],
       "not_yet_published" => [ 404, "Not yet published" ],
       "redirected" => [ 301, "Entity redirected" ],
-      "release_mismatch" => [ 409, "Cursor from another release" ],
+      "revision_mismatch" => [ 409, "Cursor from another revision" ],
       "retired" => [ 410, "Retired" ],
       "query_too_broad" => [ 422, "Query too broad" ],
       "rate_limited" => [ 429, "Rate limit exceeded" ],
       "quota_exceeded" => [ 429, "Monthly quota exceeded" ],
       "internal_error" => [ 500, "Internal error" ],
-      "release_building" => [ 503, "Release building" ]
+      "revision_building" => [ 503, "Revision building" ]
     }.freeze
 
     attr_reader :code, :status, :title, :extra, :headers

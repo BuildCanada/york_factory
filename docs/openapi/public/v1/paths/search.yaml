@@ -6,8 +6,9 @@ get:
     Finds entities by identifier first, then by name. A query that is a BN9, BN15,
     corporation number, band number, LEI or census code matches exactly (match.kind
     identifier). Otherwise names and aliases match after normalization (exact); with
-    mode=fuzzy, trigram similarity adds candidates (fuzzy), which are guesses to check,
-    not matches. Phase 1 searches entities only; other types arrive additively.
+    mode=fuzzy, approximate name matches add candidates (fuzzy), which are guesses to check,
+    not matches. Fuzzy matching arrives with PostgreSQL's tin extension on PlanetScale; until
+    then mode=fuzzy answers like exact and says so in the fuzzy_unavailable caveat. Phase 1 searches entities only; other types arrive additively.
   tags:
   - Search
   x-fern-sdk-method-name: search
@@ -16,7 +17,7 @@ get:
     base: 3
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   x-fern-pagination:
     cursor: "$request.cursor"
     next_cursor: "$response.meta.next_cursor"
@@ -55,7 +56,7 @@ get:
   - name: mode
     in: query
     required: false
-    description: "`exact` (default) matches identifiers and normalized names; `fuzzy` adds trigram candidates."
+    description: "`exact` (default) matches identifiers and normalized names; `fuzzy` adds approximate name candidates (once available; see the operation description)."
     schema:
       type: string
       enum:
@@ -99,8 +100,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -129,15 +130,16 @@ get:
                     score: 1
                     matched_on: name
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []
                   limit: 20
                   next_cursor:
                   count:
                 links:
-                  self: "/v1/search?q=diamond+valley&as_of=11"
+                  self: "/v1/search?q=diamond+valley&as_of=31"
                   next:
             identifier:
               summary: A business number
@@ -156,15 +158,16 @@ get:
                     score: 1
                     matched_on: identifier:ca.cra.bn9
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []
                   limit: 20
                   next_cursor:
                   count:
                 links:
-                  self: "/v1/search?q=107511586&as_of=11"
+                  self: "/v1/search?q=107511586&as_of=31"
                   next:
     '304':
       "$ref": "../components/responses.yaml#/NotModified"

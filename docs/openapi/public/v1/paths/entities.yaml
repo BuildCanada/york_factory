@@ -17,7 +17,7 @@ get:
     count_exact: 2
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   x-fern-pagination:
     cursor: "$request.cursor"
     next_cursor: "$response.meta.next_cursor"
@@ -85,8 +85,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -117,14 +117,13 @@ get:
                   attributes:
                     municipality_type_raw: Town
                   links:
-                    identifiers: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=11"
-                    relationships: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=11"
-                    lineage: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=11"
-                    spending: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=11"
+                    identifiers: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=31"
+                    relationships: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=31"
+                    lineage: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=31"
+                    spending: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=31"
                   provenance:
                     asset: entities/entities
-                    release: 9
-                    snapshot_id:
+                    revision: 29
                     recorded_at: '2026-09-25T18:02:11Z'
                     capture:
                     locator:
@@ -136,20 +135,21 @@ get:
                     parser_version:
                     license: OGL-Alberta-2.1
                   cite: >-
-                    Build Canada entity registry release 11, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D;
+                    Build Canada entity registry revision 31, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D;
                     from the Alberta municipal roster, row 212.
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []
                   limit: 1
                   next_cursor: c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
                   count:
                 links:
-                  self: "/v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=11"
+                  self: "/v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=31"
                   next: >-
-                    /v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=11&cursor=c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
+                    /v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=31&cursor=c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
     '304':
       "$ref": "../components/responses.yaml#/NotModified"
     '400':

@@ -17,8 +17,9 @@ module PublicApi
 
       module_function
 
-      # `parties` are the row's SpendingParty rows, shown when given (nil leaves them out).
-      def record(r, ctx, parties:, latest:, entities:, raw: false, capture: nil)
+      # `parties` are the row's occurrences, shown when given (nil leaves them
+      # out); `publication` is the spending_publications row it is in.
+      def record(r, ctx, parties:, latest:, entities:, publication:, raw: false)
         source = Catalog.source(r.source_key)
         data = {
           id: Format.gid("SpendingRecord", r.spending_key),
@@ -51,17 +52,19 @@ module PublicApi
           currency: r.currency.to_s.match?(/\A[A-Z]{3}\z/) ? r.currency : nil,
           measure: Catalog::MEASURES.fetch(r.source_key),
           amount_note: source&.amount_note(ctx.dictionary).to_s,
-          commitments: commitments(r.commitments_json),
+          commitments: commitments(json(r.commitments_json)),
           value_consistent: r.value_consistent,
           fiscal_year: Format.fiscal_year(r.fiscal_year),
           date: r.date&.iso8601,
           date_raw: r.date_raw,
-          revision_rank: r.revision_rank.is_a?(Array) ? r.revision_rank : (r.revision_rank.nil? ? nil : [ r.revision_rank ]),
+          revision_rank: revision_rank(r.revision_rank_json),
           is_latest_revision: latest ? true : false
         }
         data[:parties] = parties.map { |p| party(p, entities) } if parties
-        data[:raw] = nil if raw
-        data[:provenance] = provenance(r, ctx, source, capture)
+        # The original source record as fact-factory kept it (JSON, or XML for
+        # global_affairs_projects).
+        data[:raw] = r.raw_json.presence || r.raw_xml.presence if raw
+        data[:provenance] = provenance(r, ctx, source, publication)
         data[:cite] = cite(r, ctx, source)
         data
       end
@@ -93,7 +96,7 @@ module PublicApi
           entity: entity && EntitySerializer.ref(entity),
           method: METHODS.include?(p.method) ? p.method : nil,
           reason: linked ? nil : (REASONS.include?(p.reason) ? p.reason : nil),
-          candidates: linked ? [] : Array(p.candidates).map { |c| c.to_s.match?(Format::ULID) ? Format.entity_gid(c) : c.to_s },
+          candidates: linked ? [] : Array(json(p.candidates)).map { |c| c.to_s.match?(Format::ULID) ? Format.entity_gid(c) : c.to_s },
           rule_version: p.rule_version
         }
       end
@@ -109,28 +112,26 @@ module PublicApi
         end
       end
 
-      # The release answering, with the Iceberg snapshot it pinned for the
-      # row's slice (that snapshot holds the row as served), and the captured
-      # source file (api.captures). Spending rows carry no row number yet, so
-      # there is no locator (fact-factory SUCKS.md, "CSV rows have no location
-      # in the source file").
-      def provenance(r, ctx, source, capture = nil)
-        snapshot = FactFactory::ReleaseQuery.snapshot_for(ctx.release, asset_key: r.asset_key, acquisition: r.acquisition) || r.snapshot_id
+      # The revision answering and the publication it reads the row from: the
+      # captured file (content-addressed in R2), the row's position in its
+      # parse, and the parser version.
+      def provenance(r, ctx, source, publication)
         {
-          asset: r.asset_key, release: ctx.release, snapshot_id: snapshot.to_s.match?(/\A\d+\z/) ? snapshot.to_s : nil,
-          recorded_at: nil, capture: capture_object(capture), locator: nil, source: nil, parser_version: r.parser_version,
-          license: source&.license
+          asset: source&.asset || r.source_key, revision: ctx.revision,
+          publication: publication && {
+            id: publication.id, version: publication.version, resource_id: publication.resource_id,
+            committed_at: Format.timestamp(publication.committed_at)
+          },
+          recorded_at: nil, capture: capture(r, publication), locator: r.row_number ? { row: r.row_number } : nil, source: nil,
+          parser_version: r.parser_version, license: source&.license
         }
       end
 
-      # A Capture, when the capture has everything the contract requires: its
-      # source URL and when it was retrieved (blank when fact-factory recorded
-      # no retrieval for those bytes).
-      def capture_object(capture)
-        return nil unless capture && capture.retrieved_at && capture.source_url.present? && Format.sha256(capture.sha256)
+      def capture(r, publication)
+        sha = Format.sha256(publication&.source_sha256 || r.source_sha256) or return nil
 
-        { sha256: capture.sha256, url: "#{FactFactory::DatasetQuery::FILES_BASE}/#{capture.object_key}", source_url: capture.source_url,
-          retrieved_at: Format.timestamp(capture.retrieved_at) }
+        { sha256: sha, url: Format.capture_url(sha), source_url: (publication&.source_url || r.source_url).presence,
+          retrieved_at: Format.timestamp(publication&.observed_at) }
       end
 
       def cite(r, ctx, source)
@@ -139,25 +140,40 @@ module PublicApi
         gid = Format.gid("SpendingRecord", r.spending_key)
         if ctx.fr?
           capture = digest.present? ? ", fichier source sha256 #{digest}" : ""
-          "#{publisher}#{capture}. Données de Build Canada, version #{ctx.release}, #{gid}."
+          row = r.row_number ? ", ligne #{r.row_number}" : ""
+          "#{publisher}#{capture}#{row}. Données de Build Canada, #{ctx.version_label}, #{gid}."
         else
           capture = digest.present? ? ", source file sha256 #{digest}" : ""
-          "#{publisher}#{capture}. Build Canada data release #{ctx.release}, #{gid}."
+          row = r.row_number ? ", row #{r.row_number}" : ""
+          "#{publisher}#{capture}#{row}. Build Canada data #{ctx.version_label}, #{gid}."
         end
+      end
+
+      def json(value)
+        return value unless value.is_a?(String)
+
+        JSON.parse(value)
+      rescue JSON::ParserError
+        nil
+      end
+
+      def revision_rank(value)
+        rank = json(value)
+        rank.nil? || rank.is_a?(Array) ? rank : [ rank ]
       end
 
       def fallback_record_type(source) = source&.record_types&.first || "contract"
 
-      def source_object(source, ctx, snapshot_id:)
+      def source_object(source, ctx, version:)
         {
           source: source.key, asset: source.asset, title: source.title, publisher: source.publisher,
           measure: source.measure, record_types: source.record_types, amount_note: source.amount_note(ctx.dictionary),
           fiscal_year_note: source.fiscal_year_note(ctx.dictionary), revisions_note: source.revisions_note(ctx.dictionary), license: source.license,
-          snapshot_id: snapshot_id.to_s,
+          version:,
           caveats: source.caveats.map { |code| Catalog.caveat(code, locale: ctx.locale) },
           links: {
             dataset: ctx.pin("/v1/datasets/#{ERB::Util.url_encode(source.asset)}"),
-            records: Links.url("/v1/spending", { "source" => source.key, "as_of" => ctx.release })
+            records: Links.url("/v1/spending", { "source" => source.key, "as_of" => ctx.revision })
           }
         }
       end

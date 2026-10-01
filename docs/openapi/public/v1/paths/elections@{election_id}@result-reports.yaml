@@ -1,0 +1,101 @@
+# /elections/{election_id}/result-reports
+get:
+  operationId: listElectionResultReports
+  summary: List an election's result reports
+  description: |-
+    Every result publication fact-factory captured for one election, oldest first. A later
+    report never changes an earlier one; each result row names its report.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name:
+  - elections
+  - result_reports
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: election_id
+    in: path
+    required: true
+    description: "The election's ID. Percent-encode it in the path."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/elections/2024-10-19-general"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List an election's result reports.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/ResultReportListResponse.yaml"
+          examples:
+            reports:
+              summary: The official result
+              value:
+                data:
+                - id: 01M3TP69B6TM9F579VB93ZHFNE
+                  election_id: ca/bc/elections/2024-10-19-general
+                  stage: official
+                  polls_reported: null
+                  polls_total: null
+                  published_at: null
+                  published_at_as_shown: null
+                  retrieved_at: '2026-09-30T18:20:00Z'
+                  source_url: https://elections.bc.ca/2024-provincial-general-election/results/
+                  capture:
+                    sha256: 388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    url: https://files.buildcanada.com/sha256/38/388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    source_url: https://elections.bc.ca/2024-provincial-general-election/
+                    retrieved_at: '2026-09-30T18:02:11Z'
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor: null
+                  count: null
+                links:
+                  self: /v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/result-reports
+                  next: null
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

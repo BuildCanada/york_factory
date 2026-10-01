@@ -13,35 +13,31 @@ module PublicApi
 
       module_function
 
-      # Every dataset the release serves (api.datasets) that the API
-      # describes (config/public_api/datasets.yml), in asset-key order: the
-      # spending sources and the registry tables.
+      # Every dataset the API describes (config/public_api/datasets.yml) that
+      # the revision serves, in asset-key order: the spending sources whose
+      # slices it reads, and the registry tables.
       def datasets(ctx)
-        query = FactFactory::DatasetQuery.new(release: ctx.release)
+        query = FactFactory::DatasetQuery.new(revision: ctx.revision)
         spending = Catalog.sources.values.select { |s| query.served?(s.asset) }.map { |s| spending_dataset(s, ctx, query) }
-        registry = Catalog.registry_datasets.values.select { |d| query.served?(d.asset) }.map { |d| registry_dataset(d, ctx, query) }
+        registry = Catalog.registry_datasets.values.map { |d| registry_dataset(d, ctx, query) }
         (spending + registry).sort_by { |d| d[:asset_key] }
       end
 
       def spending_dataset(source, ctx, query)
-        from, to = query.fiscal_years(source.asset)
         dictionary = ctx.dictionary
         terms = (SPENDING_TERMS + dictionary.asset_notes(source.asset).keys).uniq.select { |t| dictionary.definition(t) }.sort
         {
           asset_key: source.asset, title: source.title, record_meaning: source.record_meaning, publisher: source.publisher,
           license: source.license,
-          freshness: { latest_retrieved_at: nil, cadence: source.cadence },
-          coverage: {
-            rows: query.rows(source.asset),
-            from_fiscal_year: Format.fiscal_year(from), to_fiscal_year: Format.fiscal_year(to),
-            known_gaps: source.known_gaps
-          },
+          freshness: { latest_retrieved_at: Format.timestamp(query.latest_retrieved_at(source.asset)), cadence: source.cadence },
+          # Fiscal-year coverage needs a scan of every row the revision reads;
+          # it stays null until fact-factory records it per publication.
+          coverage: { rows: query.spending_rows(source.asset), from_fiscal_year: nil, to_fiscal_year: nil, known_gaps: source.known_gaps },
           dictionary_terms: terms,
           caveats: source.caveats.map { |code| Catalog.caveat(code, locale: ctx.locale) },
-          bulk: [],
           links: {
             self: ctx.pin("/v1/datasets/#{ERB::Util.url_encode(source.asset)}"),
-            records: Links.url("/v1/spending", { "source" => source.key, "as_of" => ctx.release })
+            records: Links.url("/v1/spending", { "source" => source.key, "as_of" => ctx.revision })
           }
         }
       end
@@ -50,10 +46,9 @@ module PublicApi
         {
           asset_key: d.asset, title: d.title, record_meaning: d.record_meaning, publisher: d.publisher, license: d.license,
           freshness: { latest_retrieved_at: nil, cadence: d.cadence },
-          coverage: { rows: query.rows(d.asset), from_fiscal_year: nil, to_fiscal_year: nil, known_gaps: [] },
+          coverage: { rows: query.registry_rows(d.table), from_fiscal_year: nil, to_fiscal_year: nil, known_gaps: [] },
           dictionary_terms: REGISTRY_TERMS.fetch(d.table, []).select { |t| ctx.dictionary.definition(t) },
           caveats: [],
-          bulk: query.exports(table: FactFactory::DatasetQuery::EXPORT_TABLES[d.table]).map { |e| ReleaseSerializer.export(e, query) },
           links: { self: ctx.pin("/v1/datasets/#{ERB::Util.url_encode(d.asset)}"), records: d.records && ctx.pin(d.records) }
         }
       end

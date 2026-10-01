@@ -10,7 +10,7 @@ properties:
     description: >-
       identifier: the query is an identifier the entity holds (a BN9, BN15, band number,
       LEI, corporation number). exact: a name or alias equals the query after
-      normalization. fuzzy: trigram similarity, only with mode=fuzzy. Treat fuzzy as a
+      normalization. fuzzy: approximate name similarity, only with mode=fuzzy (once available). Treat fuzzy as a
       candidate to check, not a match.
     x-bc-dictionary: match_kind
     examples: [exact]
@@ -18,7 +18,7 @@ properties:
     type: number
     minimum: 0
     maximum: 1
-    description: 1 for identifier and exact matches; the trigram similarity for fuzzy ones.
+    description: 1 for identifier and exact matches; the similarity for fuzzy ones.
     x-bc-dictionary: match_score
     examples: [1]
   matched_on:

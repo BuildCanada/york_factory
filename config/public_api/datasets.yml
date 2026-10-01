@@ -1,13 +1,11 @@
 # What each dataset of the public data API is: title, publisher, licence,
 # cadence and the caveats that always apply. The amount, fiscal_year and
 # revisions notes are read from the data dictionary (dictionary.json), so
-# they have one source. Row counts, snapshots, fiscal-year coverage and bulk
-# files come from the release (api.releases, api.spending_records,
-# api.release_exports).
+# they have one source. Row counts and freshness come from the revision: the
+# spending publications it reads, and the registry tables as of it.
 #
-# This file stands in until the read model carries dataset metadata per
-# release (a WS-B follow-up in the WS-D PR). Keep it to facts the design and
-# the dictionary already state.
+# fact-factory keeps no dataset metadata in its tables, so this file holds it.
+# Keep it to facts the design and the dictionary already state.
 spending:
   proactive_contracts:
     asset: sources/ca/tbs/proactive_contracts
@@ -72,8 +70,8 @@ spending_defaults:
   license: OGL-Canada-2.0
   cadence: daily
 
-# Registry datasets, keyed by asset. `table` is the api read-model table and
-# the bulk export's name; `count` is the api.releases count to report.
+# Registry datasets, keyed by asset. `table` names the registry table counted
+# (FactFactory::DatasetQuery::REGISTRY_TABLES).
 registry:
   entities/entities:
     table: entities

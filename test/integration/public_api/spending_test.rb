@@ -11,7 +11,7 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_equal %w[not_cross_source_total revisions_listed archive_overlaps_live], codes.first(3)
     assert_includes codes, "agreement_value_not_paid"
     refute body["data"].first.key?("parties"), "parties only with expand=parties"
-    assert_equal ALL_11 - [ G1_A1 ], page_through("/v1/spending", as_of: "10")
+    assert_equal ALL_11 - [ G1_A1 ], page_through("/v1/spending", as_of: "30")
   end
 
   test "sorting by amount or date puts blanks last in both directions, and pages stably" do
@@ -34,8 +34,8 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_equal [ G2, C1 ].sort, page_through("/v1/spending", q: "diamond valley community foundation")
     assert_equal ALL_11 - [ G1_A0, G_ARCHIVE ], page_through("/v1/spending", latest_revision_only: "true"),
       "the archive copy of an older revision is not the latest; an agreement only the archive has is"
-    assert_equal ALL_11 - [ G1_A1, G_ARCHIVE ], page_through("/v1/spending", latest_revision_only: "true", as_of: "10"),
-      "in release 10, the archive's copy of the live latest revision is left out too"
+    assert_equal ALL_11 - [ G1_A1, G_ARCHIVE ], page_through("/v1/spending", latest_revision_only: "true", as_of: "30"),
+      "as of revision 30, the archive's copy of the live latest revision is left out too"
     assert_equal ALL_11 - [ G_AGGREGATE ], page_through("/v1/spending", include_aggregated: "false")
   end
 
@@ -74,21 +74,22 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_equal "125000.00", data["amount"]
     assert_equal "2024-25", data["fiscal_year"]
     assert_equal "agreement_value", data["measure"]
-    refute data["is_latest_revision"], "amendment 1 outranks it in release 11"
+    refute data["is_latest_revision"], "amendment 1 outranks it as of revision 31"
     assert_equal({ "payer" => "linked", "recipient" => "linked" }, data["parties"].to_h { |p| [ p["field"], p["link_status"] ] })
     assert_equal "gid://buildcanada/Entity/#{DIAMOND_VALLEY}", data["parties"].find { |p| p["field"] == "recipient" }["entity_id"]
-    capture = { "sha256" => GRANTS_SHA, "url" => "https://files.buildcanada.com/sha256/0d/#{GRANTS_SHA}",
-                "source_url" => "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", "retrieved_at" => "2026-09-19T04:12:09Z" }
-    assert_equal({ "asset" => GRANTS, "release" => 11, "snapshot_id" => SNAPSHOTS[11][GRANTS], "recorded_at" => nil, "capture" => capture,
-                   "locator" => nil, "source" => nil, "parser_version" => "spending-iceberg-v5", "license" => "OGL-Canada-2.0" }, data["provenance"])
-    assert_equal "Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, source file sha256 0d9b2894. " \
-      "Build Canada data release 11, gid://buildcanada/SpendingRecord/#{G1_A0}.", data["cite"]
-    assert_equal "/v1/spending/#{G1_A0}?as_of=11", body.dig("links", "self")
+    capture = { "sha256" => GRANTS_NEW_SHA, "url" => "https://files.buildcanada.com/sha256/1d/#{GRANTS_NEW_SHA}",
+                "source_url" => "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", "retrieved_at" => "2026-09-26T04:59:18Z" }
+    publication = { "id" => 106, "version" => 6, "resource_id" => FactFactoryFixtures.resource(GRANTS, "live"), "committed_at" => "2026-09-30T00:00:06Z" }
+    assert_equal({ "asset" => GRANTS, "revision" => 31, "publication" => publication, "recorded_at" => nil, "capture" => capture,
+                   "locator" => { "row" => 1 }, "source" => nil, "parser_version" => "spending-iceberg-v5", "license" => "OGL-Canada-2.0" }, data["provenance"])
+    assert_equal "Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, source file sha256 1d9b2894, row 1. " \
+      "Build Canada data revision 31 (snapshot daily-2026-10-01), gid://buildcanada/SpendingRecord/#{G1_A0}.", data["cite"]
+    assert_equal "/v1/spending/#{G1_A0}?as_of=31", body.dig("links", "self")
 
-    api_get "/v1/spending/#{G1_A0}", as_of: "10"
+    api_get "/v1/spending/#{G1_A0}", as_of: "30"
     assert body.dig("data", "is_latest_revision")
-    assert_equal SNAPSHOTS[10][GRANTS], body.dig("data", "provenance", "snapshot_id")
-    api_get "/v1/spending/#{G1_A1}", as_of: "10"
+    assert_equal [ 101, 1 ], body.dig("data", "provenance", "publication").values_at("id", "version"), "the parse revision 30 reads"
+    api_get "/v1/spending/#{G1_A1}", as_of: "30"
     assert_problem("getSpendingRecord", 404, "not_found")
     get "/v1/spending/gid%3A%2F%2Fbuildcanada%2FSpendingRecord%2F#{G1_A1}"
     assert_conforms("getSpendingRecord", status: 200)
@@ -104,10 +105,32 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert(body["data"].all? { |r| r["is_latest_revision"] })
   end
 
-  test "a capture with no recorded retrieval time is not served as one" do
+  test "a capture whose publication recorded no retrieval time or URL says so with nulls" do
     api_get "/v1/spending/#{C1}"
     assert_conforms("getSpendingRecord", status: 200)
-    assert_nil body.dig("data", "provenance", "capture")
+    capture = body.dig("data", "provenance", "capture")
+    assert_equal [ CONTRACTS_SHA, nil ], capture.values_at("sha256", "retrieved_at")
+    assert_equal "https://open.canada.ca/data/dataset/432527ab/resource/1d15a62f", capture["source_url"], "the row's own source URL"
+  end
+
+  test "spending reads the publications the revision's slices stand at" do
+    api_get "/v1/spending/#{G1_A1}", as_of: "30"
+    assert_problem("getSpendingRecord", 404, "not_found")
+    api_get "/v1/spending", source: "proactive_grants", as_of: "30", limit: 50
+    assert_equal 8, body["data"].size, "version 1's six live rows and the archive's two"
+    api_get "/v1/spending", source: "proactive_grants", limit: 50
+    assert_equal 9, body["data"].size
+  end
+
+  test "a revision older than the retention horizon can't answer from spending occurrences" do
+    api_get "/v1/spending/#{G1_A0}", as_of: "release-14"
+    assert_problem("getSpendingRecord", 410, "retired")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", as_of: "14"
+    assert_problem("listEntitySpending", 410, "retired")
+    api_get "/v1/spending", as_of: "14"
+    assert_conforms("listSpending", status: 200)
+    assert_empty body["data"], "revision 14's slice is an Iceberg snapshot no table can read"
+    assert_includes body.dig("meta", "caveats").map { |c| c["code"] }, "coverage_partial"
   end
 
   test "a proposed link is never linked, and says what was proposed" do
@@ -128,12 +151,15 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_includes body.dig("meta", "caveats").map { |c| c["code"] }, "commitment_not_spending"
   end
 
-  test "expand=raw says raw is not served yet; fields project" do
-    api_get "/v1/spending/#{G2}", expand: "raw"
+  test "expand=raw adds the original source record; fields project" do
+    api_get "/v1/spending/#{G1_A0}", expand: "raw"
     assert_conforms("getSpendingRecord", status: 200)
+    assert_equal '{"ref_number":"001-2024-2025-Q1-00042","amendment_number":"0","agreement_value":"125000.00"}', body.dig("data", "raw")
+    api_get "/v1/spending/#{GAC1}", expand: "raw"
+    assert_match(/\A<iati-activity>/, body.dig("data", "raw"))
+    api_get "/v1/spending/#{G2}", expand: "raw"
     assert body["data"].key?("raw")
     assert_nil body.dig("data", "raw")
-    assert_includes body.dig("meta", "caveats").map { |c| c["code"] }, "raw_unavailable"
     api_get "/v1/spending", fields: "amount,fiscal_year", limit: 2
     assert_conforms("listSpending", status: 200, projected: true)
     assert(body["data"].all? { |r| r.keys == %w[id amount fiscal_year cite] })
@@ -142,7 +168,7 @@ class PublicApiSpendingTest < PublicApiTestCase
   test "French cites and caveat text with Accept-Language: fr" do
     api_get "/v1/spending/#{G1_A0}", headers: { "Accept-Language" => "fr-CA,fr;q=0.9,en;q=0.5" }
     assert_conforms("getSpendingRecord", status: 200)
-    assert_includes body.dig("data", "cite"), "Données de Build Canada, version 11"
+    assert_includes body.dig("data", "cite"), "Données de Build Canada, révision 31 (snapshot daily-2026-10-01)"
     assert_equal "Les montants de proactive_grants sont des valeurs d'accord, pas des sommes versées.",
       body.dig("meta", "caveats").find { |c| c["code"] == "agreement_value_not_paid" }["text"]
     french = response.headers["ETag"]
@@ -151,15 +177,15 @@ class PublicApiSpendingTest < PublicApiTestCase
     assert_includes response.headers["Vary"], "Accept-Language"
   end
 
-  test "spending sources: each source's meaning of amount and pinned snapshot" do
+  test "spending sources: each source's meaning of amount and spending version" do
     api_get "/v1/spending/sources"
     assert_conforms("listSpendingSources", status: 200)
     assert_equal %w[global_affairs_projects proactive_contracts proactive_grants transfer_payments], body["data"].map { |s| s["source"] }
     grants = body["data"].find { |s| s["source"] == "proactive_grants" }
-    assert_equal SNAPSHOTS[11][GRANTS], grants["snapshot_id"]
+    assert_equal 6, grants["version"]
     assert_equal "agreement_value for that amendment. Do not sum across rows sharing a canonical_id.", grants["amount_note"]
     assert_equal "Hash of owner_org and ref_number.", grants["revisions_note"]
-    assert_equal "/v1/spending?source=proactive_grants&as_of=11", grants.dig("links", "records")
+    assert_equal "/v1/spending?source=proactive_grants&as_of=31", grants.dig("links", "records")
   end
 
   private

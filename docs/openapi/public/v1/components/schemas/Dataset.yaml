@@ -1,9 +1,9 @@
 title: Dataset
 description: >-
   A published fact-factory asset: what one row means, its coverage and freshness, its
-  licence, the dictionary terms its fields use, and where to get it in bulk.
+  licence, and the dictionary terms its fields use.
 type: object
-required: [asset_key, title, record_meaning, publisher, license, freshness, coverage, dictionary_terms, caveats, bulk, links]
+required: [asset_key, title, record_meaning, publisher, license, freshness, coverage, dictionary_terms, caveats, links]
 properties:
   asset_key:
     type: string
@@ -31,7 +31,7 @@ properties:
     required: [latest_retrieved_at, cadence]
     properties:
       latest_retrieved_at:
-        description: When the newest input the release pinned was retrieved.
+        description: When the newest capture the revision reads was retrieved, or null when unknown.
         oneOf:
           - $ref: Timestamp.yaml
           - type: 'null'
@@ -47,7 +47,7 @@ properties:
       rows:
         type: [integer, 'null']
         minimum: 0
-        description: Rows in the release.
+        description: Rows as of the revision, or null when they aren't counted (spending occurrences).
         examples: [1313276]
       from_fiscal_year:
         description: The earliest fiscal year present, for spending.
@@ -76,11 +76,6 @@ properties:
     description: Caveats that always apply to this dataset.
     items:
       $ref: Caveat.yaml
-  bulk:
-    type: array
-    description: Bulk files and tables for the dataset.
-    items:
-      $ref: ExportFile.yaml
   links:
     type: object
     description: Relative links for the dataset.
@@ -89,8 +84,8 @@ properties:
       self:
         type: string
         description: This dataset, pinned.
-        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11']
+        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=31']
       records:
         type: [string, 'null']
         description: The API collection serving the dataset's rows, if any.
-        examples: ['/v1/spending?source=proactive_grants&as_of=11']
+        examples: ['/v1/spending?source=proactive_grants&as_of=31']

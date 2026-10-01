@@ -1,6 +1,6 @@
 title: Entity
 description: >-
-  One party in the Build Canada entity registry, as of the release that answered: a
+  One party in the Build Canada entity registry, as of the revision that answered: a
   jurisdiction, government organization, government enterprise, Indigenous government or
   other organization. An entity is Build Canada's record of the party, built from
   published rosters; its `id` never changes and is never reused. Real-world changes
@@ -108,32 +108,32 @@ properties:
       $ref: Relationship.yaml
   links:
     type: object
-    description: Relative links to the entity's related collections, pinned to the release that answered.
+    description: Relative links to the entity's related collections, pinned to the revision that answered.
     x-bc-structural: true
     required: [identifiers, relationships, lineage, spending]
     properties:
       identifiers:
         type: string
         description: The entity's identifiers.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=31']
       relationships:
         type: string
         description: The entity's relationships.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=31']
       lineage:
         type: string
         description: The entity's predecessors and successors.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=31']
       spending:
         type: string
         description: Spending rows linked to the entity.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=31']
   provenance:
     $ref: Provenance.yaml
     description: Where this version of the entity came from.
     x-bc-structural: true
   cite:
     type: string
-    description: A ready-to-paste citation for this entity version, naming the release, the gid and the roster row.
+    description: A ready-to-paste citation for this entity version, naming the revision, the gid and the roster row.
     x-bc-structural: true
-    examples: ['Build Canada entity registry release 11, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from the Alberta municipal roster, row 212.']
+    examples: ['Build Canada entity registry revision 31, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from the Alberta municipal roster, row 212.']

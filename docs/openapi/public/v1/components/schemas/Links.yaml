@@ -1,9 +1,9 @@
 title: Links
-description: Links for the response. `self` reproduces this response, pinned to its release.
+description: Links for the response. `self` reproduces this response, pinned to its revision.
 type: object
 required: [self]
 properties:
   self:
     type: string
     description: A relative URL that returns these same bytes, with `as_of` pinned.
-    examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D?as_of=11']
+    examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D?as_of=31']

@@ -3,20 +3,29 @@ require "test_helper"
 class PublicApiRateLimitTest < PublicApiTestCase
   # One request per operation, and the units x-bc-units gives it.
   REQUESTS = {
-    "getIndex" => "/v1", "getOpenapi" => "/v1/openapi.json", "getMe" => "/v1/me", "listReleases" => "/v1/releases",
-    "getLatestRelease" => "/v1/releases/latest", "getRelease" => "/v1/releases/11", "listDatasets" => "/v1/datasets",
+    "getIndex" => "/v1", "getOpenapi" => "/v1/openapi.json", "getMe" => "/v1/me", "listRevisions" => "/v1/revisions",
+    "getLatestRevision" => "/v1/revisions/latest", "getRevision" => "/v1/revisions/31", "listSnapshots" => "/v1/snapshots",
+    "getSnapshot" => "/v1/snapshots/release-14", "listDatasets" => "/v1/datasets",
     "getDataset" => "/v1/datasets/entities%2Fentities", "listDictionaryTerms" => "/v1/dictionary",
     "getDictionaryTerm" => "/v1/dictionary/amount", "searchEntities" => "/v1/search?q=diamond",
-    "listEntities" => "/v1/entities", "getEntity" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}",
-    "listEntityIdentifiers" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/identifiers",
-    "listEntityRelationships" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/relationships",
-    "getEntityLineage" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/lineage",
-    "listEntitySpending" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/spending",
-    "getEntitySpendingSummary" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/spending/summary",
-    "listEntityUnlinkedSpending" => "/v1/entities/#{FactFactoryApiFixtures::DIAMOND_VALLEY}/spending/unlinked",
+    "listEntities" => "/v1/entities", "getEntity" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}",
+    "listEntityIdentifiers" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/identifiers",
+    "listEntityRelationships" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/relationships",
+    "getEntityLineage" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/lineage",
+    "listEntitySpending" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/spending",
+    "getEntitySpendingSummary" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/spending/summary",
+    "listEntityUnlinkedSpending" => "/v1/entities/#{FactFactoryFixtures::DIAMOND_VALLEY}/spending/unlinked",
     "resolveIdentifier" => "/v1/identifiers/ca.cra.bn9/107511586", "listSpending" => "/v1/spending",
-    "listSpendingSources" => "/v1/spending/sources", "getSpendingRecord" => "/v1/spending/#{FactFactoryApiFixtures::G2}",
-    "listExports" => "/v1/exports", "getUsage" => "/v1/me/usage"
+    "listSpendingSources" => "/v1/spending/sources", "getSpendingRecord" => "/v1/spending/#{FactFactoryFixtures::G2}",
+    "getUsage" => "/v1/me/usage",
+    "listElections" => "/v1/elections", "getElection" => "/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general",
+    "listElectionContests" => "/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/contests",
+    "listElectionResultReports" => "/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/result-reports",
+    "getContest" => "/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm",
+    "listContestCandidacies" => "/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/candidacies",
+    "listContestResults" => "/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/results",
+    "getCandidacy" => "/v1/candidacies/#{FactFactoryFixtures::CAND_ALEXIS}", "listDistricts" => "/v1/districts",
+    "getDistrict" => "/v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm"
   }.freeze
 
   test "every operation answers per the contract and reports its x-bc-units" do
@@ -50,7 +59,7 @@ class PublicApiRateLimitTest < PublicApiTestCase
       api_get "/v1/entities"
       problem = assert_problem("listEntities", 429, "rate_limited")
       assert_equal "55", response.headers["Retry-After"]
-      assert_equal [ 55, "anonymous", "https://data.buildcanada.com/v1/exports" ], problem.values_at("retry_after_seconds", "plan", "bulk_url")
+      assert_equal [ 55, "anonymous", "https://data.buildcanada.com/api/concepts/bulk-access.md" ], problem.values_at("retry_after_seconds", "plan", "bulk_url")
       assert_equal "0", response.headers["BC-Usage-Units"]
       assert_equal "970", response.headers["BC-Quota-Remaining"], "the refused request took nothing"
     end

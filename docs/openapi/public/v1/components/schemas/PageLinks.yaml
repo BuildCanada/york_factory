@@ -6,8 +6,8 @@ properties:
   self:
     type: string
     description: A relative URL for this page, with `as_of` pinned.
-    examples: ['/v1/entities?class=government_org&as_of=11']
+    examples: ['/v1/entities?class=government_org&as_of=31']
   next:
     type: [string, 'null']
     description: A relative URL for the next page, or null on the last page.
-    examples: ['/v1/entities?class=government_org&as_of=11&cursor=c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v']
+    examples: ['/v1/entities?class=government_org&as_of=31&cursor=c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v']

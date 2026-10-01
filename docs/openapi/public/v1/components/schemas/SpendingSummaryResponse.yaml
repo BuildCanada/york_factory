@@ -51,12 +51,12 @@ properties:
       self:
         type: string
         description: This summary, pinned.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&as_of=31']
       unlinked:
         type: string
         description: The unlinked occurrences counted in meta.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=31']
       records:
         type: string
         description: The rows behind the summary.
-        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&as_of=11']
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&as_of=31']

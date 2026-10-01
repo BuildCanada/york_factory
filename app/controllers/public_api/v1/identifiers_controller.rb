@@ -1,7 +1,7 @@
 module PublicApi
   module V1
     # GET /v1/identifiers/{namespace}/{value}: every entity holding an
-    # identifier in the release (DECISIONS 28).
+    # identifier as of the revision (DECISIONS 28).
     class IdentifiersController < BaseController
       operation :show, :resolveIdentifier
 
@@ -11,9 +11,9 @@ module PublicApi
         namespace = parameters["namespace"]
         value = parameters["value"].gsub(/\s/, "")
         value = value[0, 9] if namespace == "ca.cra.bn9" && value.match?(BUSINESS_NUMBER)
-        query = FactFactory::EntityQuery.new(release:)
+        query = FactFactory::EntityQuery.new(revision:)
         holders = query.holders(namespace, value)
-        raise Problem.not_found("No entity holds #{namespace} #{value} in release #{release}.") if holders.empty?
+        raise Problem.not_found("No entity holds #{namespace} #{value} in revision #{revision}.") if holders.empty?
 
         entities = query.refs(holders.map(&:entity_id))
         matches = holders.filter_map do |i|

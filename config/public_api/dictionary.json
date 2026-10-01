@@ -1,0 +1,2163 @@
+{
+  "schema_version": 1,
+  "dictionary_version": 1,
+  "source": {
+    "path": "docs/data-dictionary.yaml",
+    "sha256": "2ded9f86a3fd2a61ba8806fdcfe921c343f0eb90a1b1f8b92db732ebfd52cf52",
+    "repository": "BuildCanada/fact-factory@f0d4918"
+  },
+  "fields": [
+    "meaning",
+    "type",
+    "units",
+    "values",
+    "blank_means",
+    "known_gaps"
+  ],
+  "definitions": {
+    "id": {
+      "meaning": "Identifier of one published row, unique within one (acquisition, resource_id) and not across them. A hash of the source key, external_id and source_occurrence, so repeated source rows within a resource remain distinct. Neither the acquisition nor the resource goes into it, so rows of different resources or acquisitions with the same id are the same source record, captured more than once. To key rows across a whole table, use (acquisition, resource_id, id).",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank.",
+      "known_gaps": "Not a table-wide key. On 2026-09-28 (spending-tables review N1) cihr.awards had 220,857 rows and 60,644 distinct ids: the three archive captures and the live resource carry the same id for the same award, so an id appears up to 4 times. 191,841 proactive_grants ids appear in both the live and the archive acquisition. The shared id is also how an archive copy of a live record is recognized (the registry counts `<source>@archive_import` evidence once). The asset check ids_unique_within_resource tests uniqueness within each (acquisition, resource_id)."
+    },
+    "external_id": {
+      "meaning": "The source's own identifier for the record, or a hash of the source fields that identify it when the source has no single identifier. The per-asset `external_id` note says which fields are used.",
+      "type": "string",
+      "blank_means": "Never blank. Records without an identifier are rejected, except explicit aggregate rows."
+    },
+    "canonical_id": {
+      "meaning": "Groups revisions of the same underlying agreement or contract, such as amendments. Rows sharing a canonical_id are versions of one thing and must not be summed together.",
+      "type": "string",
+      "blank_means": "Never blank. Equals external_id when the source has no revision concept."
+    },
+    "source_occurrence": {
+      "meaning": "1-based count of how many times this record identity has appeared so far in the same source release. Values above 1 are exact or near duplicates published by the source. A row above 1 whose every other column equals an earlier row's is a content copy; entity creation and payers_resolved count it as that earlier row.",
+      "type": "int64",
+      "blank_means": "Never blank.",
+      "known_gaps": "Some sources repeat keys legitimately: on 2026-09-26 the share of rows above 1 was 53.9% in the NSERC archive import, 0.7% in SSHRC, 0.2% in NSERC live, 0.02% in transfer payments and 0 elsewhere. A snapshot whose share jumps is held before publication (spending.duplicate_guard, docs/RUNBOOK.md \"Duplicate guard\"), and a registry release fails the blocking check spending_duplicates_bounded when a slice's share of occurrences from such rows exceeds its usual share plus 5 points. The proactive contracts capture of 2026-09-27 04:59 UTC was published before the guard with every row twice (2,626,552 rows, Iceberg snapshot 799428121995713838). The table was rolled back to the 2026-09-26 snapshot (2534519102996296639, 1,313,276 rows) and the capture's publication withdrawn; since 2026-09-30 the rows are in PostgreSQL, backfilled from the held capture. On 2026-09-28 TBS still served the file doubled, so the guard keeps the table at the 2026-09-26 capture until TBS fixes it."
+    },
+    "source_key": {
+      "meaning": "The Fact Factory adapter that collected the record.",
+      "type": "string",
+      "values": [
+        "proactive_contracts",
+        "aggregated_contracts",
+        "proactive_grants",
+        "transfer_payments",
+        "nserc_awards",
+        "sshrc_awards",
+        "cihr_awards",
+        "global_affairs_projects"
+      ],
+      "blank_means": "Never blank."
+    },
+    "acquisition": {
+      "meaning": "How the capture this row was parsed from arrived. `live` rows come from a collector's own fetch; `archive_import` rows come from an external archive imported later, which may be partial or overlap live data. Current source data is `acquisition = 'live'`.",
+      "type": "string",
+      "values": [
+        "live",
+        "archive_import"
+      ],
+      "blank_means": "Never blank."
+    },
+    "resource_id": {
+      "meaning": "Identifies the source resource (one file or feed) the row came from. A hash of source_key and the CKAN resource ID, or of the configured URL when there is no CKAN ID; archive imports also hash the acquisition, so they never share a resource with live data. One resource of one acquisition is replaced as a unit on each update.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "source_url": {
+      "meaning": "The URL the source release was downloaded from.",
+      "type": "string (URL)",
+      "blank_means": "Never blank."
+    },
+    "source_sha256": {
+      "meaning": "SHA-256 of the exact source bytes this row was parsed from. The bytes are retained in R2 under sha256/<first two characters>/<digest>.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "parser_version": {
+      "meaning": "Version of the parsing rules that produced the row. A parser change publishes a new version and keeps the old one.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "raw_json": {
+      "meaning": "The complete original source record, as JSON, before any interpretation.",
+      "type": "string (JSON)",
+      "blank_means": "The source record is XML; see raw_xml."
+    },
+    "raw_xml": {
+      "meaning": "The complete original source record as XML.",
+      "type": "string (XML)",
+      "blank_means": "The source record is not XML."
+    },
+    "extra_json": {
+      "meaning": "Additional attributes produced by the parser that have no typed column, such as historical capture status or archive member path and hash.",
+      "type": "string (JSON)",
+      "blank_means": "No additional attributes."
+    },
+    "record_type": {
+      "meaning": "The kind of financial record.",
+      "type": "string",
+      "values": {
+        "contract": "A procurement contract or aggregated contract total.",
+        "grant": "A grant agreement.",
+        "contribution": "A contribution agreement.",
+        "transfer_payment": "A transfer payment reported in the Public Accounts, or a proactive-disclosure agreement of type \"O\".",
+        "award": "A research council award.",
+        "project": "An international development activity."
+      },
+      "blank_means": "Never blank."
+    },
+    "value_consistent": {
+      "meaning": "proactive_contracts only: whether contract_value equals original_value plus amendment_value as the source publishes them. A blank amendment_value is no amendment (0). A false value flags a row whose total disagrees with its parts, such as a mistyped value; amount stays contract_value either way. Since parser spending-iceberg-v5.",
+      "type": "boolean",
+      "blank_means": "Not a proactive contract; or contract_value or original_value is blank or not a number (older reports have no original_value); or the row was published before spending-iceberg-v5.",
+      "known_gaps": "On 2026-09-28, of 1,313,276 contract rows, 884,847 were consistent, 126,906 inconsistent and 301,523 had a blank original_value or contract_value. The largest inconsistency is BancTec (CANADA), INC., reference_number C-2024-2025-Q2-02238 (owner_org pwgsc-tpsgc, procurement_id EN92951708): contract_value 20,027,319,127.56 against original_value 15,000,000.0 and amendment_value -100,000.0, reported to TBS Open Government."
+    },
+    "is_aggregated": {
+      "meaning": "True when the row summarizes several recipients or transactions rather than describing one, for example contracts under $10,000, \"payments under $100,000\" or an NSERC or SSHRC \"Batch report | Report en lots\" row. Transfer-payment rows whose recipient withholds the name or gives a count of recipients (\"Names withheld (10,931 recipients)\", \"Name withheld\", \"Recoveries (38 recipients)\") are aggregates too.",
+      "type": "boolean",
+      "blank_means": "Never blank."
+    },
+    "text_columns": {
+      "meaning": "How every published text column (title, description, payer, recipient, recipients, research_org, recipient_business_number, recipient_type, recipient_city, recipient_postal_code, province, country, program, principal_investigator) is cleaned, for every source, since parser spending-iceberg-v5 (NSERC spending-iceberg-nserc-v6; spending.clean_record). raw_json and raw_xml keep what the source wrote, and ids are computed before cleaning, so they do not change. (1) HTML entities with their closing semicolon are decoded (\"&amp;\", \"&eacute;\", \"&#321;\"), including title-cased ones (\"&Amp;\"); an ampersand that starts no entity (\"R&D\", \"Speaking &notes\") stays. (2) The tags of common HTML elements are removed (a, abbr, b, body, br, div, em, font, h1-h6, head, html, i, li, ol, p, small, span, strong, sub, sup, u, ul; spending.MARKUP), br, p, div, li, body and headings as a space. Other angle brackets stay (\"MONTREAL <<ASKLIPIOS>>\", \"<$10,000\"). (3) A value that is only a placeholder, compared case-insensitively after trimming, is published as null (spending.PLACEHOLDER_VALUES).",
+      "placeholders": [
+        "NA",
+        "N/A",
+        "#N/A",
+        "NULL",
+        "NIL",
+        "None",
+        "Unknown",
+        "Inconnu",
+        "TBD",
+        "Not applicable",
+        "Not available",
+        "S/O",
+        "0",
+        "-",
+        ".",
+        "|"
+      ],
+      "place_placeholders": "\"ZZ\", the grants code for an unknown province or country, in province and country only. In country, \"NA\" is not a placeholder: it is Namibia's ISO code (24 grants rows), and stays.",
+      "kept": "\"REDACTED\" (any case) is not a placeholder: it says the source withheld a value, and stays.",
+      "evidence": "Every listed placeholder was seen in the published tables on 2026-09-28 (spending-tables review N5 and a read-only scan): contracts recipient_postal_code \"NA\" (57,042), title \"NA\"/\"N/A\"/\"#N/A\"/\"NULL\" (739), recipient \"NULL\" (187); grants recipient_business_number \"0\" (18,534), \"-\" (1,713), \"N/A\", \"None\", \"Not applicable\", \"s/o\"; grants title and program \"0\" (4,894 each); grants research_org \"NULL\", \"-\", \"N/A\", \"Not Available\"; grants recipient_city \"N/A\", \"NA\", \".\", \"NIL\"; grants province \"NA\", \"N/A\", \"ZZ\"; research_org \"|\" (45); NSERC province \"NA\" (2,390) and \"NULL\" (314); NSERC recipient \"Inconnu\"; NSERC and CIHR titles \"TBD\"; SSHRC principal_investigator \"n/a\" (147), title \"0\" (144) and province \"Unknown\" (110); CIHR province and country \"Unknown\" (1,394 each) and archive recipient \"N/A\" (253).",
+      "known_gaps": "Mojibake is left as published, since the right characters cannot be recovered: 392 contract recipients and 38 grants recipients with \"Ã\" or \"Â\" (\"VOLTS ÃNERGIES\"), and NSERC province \"Qu?bec\" on 4,672 rows of NSERC_FY2004_Expenditures.csv, whose file has a literal \"?\". The asset check text_placeholders_and_encoding still counts them, and a few placeholders not listed here (\"n.a.\", \"--\", \"?\")."
+    },
+    "title": {
+      "meaning": "Short name of the contract, agreement, award or project, in English where the source provides both languages.",
+      "type": "string",
+      "blank_means": "The source provides no title."
+    },
+    "description": {
+      "meaning": "Longer description or summary, in English where the source provides both languages.",
+      "type": "string",
+      "blank_means": "The source provides no description."
+    },
+    "program": {
+      "meaning": "Name of the funding program the record belongs to.",
+      "type": "string",
+      "blank_means": "The source does not report a program."
+    },
+    "payer": {
+      "meaning": "The English name of the government organization that made the commitment or payment. Where the source gives a bilingual \"English | Français\" title, the English part. Since parser spending-iceberg-v5 (NSERC spending-iceberg-nserc-v6); earlier snapshots hold the bilingual title (proactive contracts and grants), the owner_org code (aggregated contracts) or an abbreviation (NSERC, SSHRC, CIHR).",
+      "type": "string",
+      "blank_means": "Never blank.",
+      "known_gaps": "A name, not a controlled identifier; use payer_code where it is filled. The owner_org title is the organization's current CKAN title, so older rows carry today's name. Transfer payments name the department in wording that varies by year (\"Indian Affairs and Northern Development\", \"INDIAN AFFAIRS AND NORTHERN DEVELOPMENT\", \"Department of Indigenous Services\")."
+    },
+    "payer_code": {
+      "meaning": "The open.canada.ca organization code (CKAN owner_org, such as dnd-mdn) of the payer, as the source writes it, the same code for the same organization in every table. Entity resolution attributes a code to a registry entity (ca.open.owner_org identifiers; catalog/owner-org-codes.json for retired codes, resolve.attribute_payer_code). owner_org is the organization that holds the record now, so after a reorganization past records carry the successor's code (docs/entity-registry-v2.md, \"Payer codes\"). Since parser spending-iceberg-v5.",
+      "type": "string",
+      "blank_means": "The source carries no organization code (transfer payments), or the row was published before spending-iceberg-v5."
+    },
+    "recipient": {
+      "meaning": "The organization or person receiving the money, as named by the source.",
+      "type": "string",
+      "blank_means": "The source does not name a single recipient, including aggregate rows labelled \"Multiple recipients\".",
+      "known_gaps": "Names are as published and are not matched to entities."
+    },
+    "recipients": {
+      "meaning": "All organizations the source lists as implementing the activity, as named by the source.",
+      "type": "list<string>",
+      "blank_means": "The source has no multi-recipient list. Only global_affairs_projects populates it."
+    },
+    "principal_investigator": {
+      "meaning": "The lead researcher named on a research award.",
+      "type": "string",
+      "blank_means": "Not a research award, or an aggregate row."
+    },
+    "research_org": {
+      "meaning": "The research institution named on the record, where it is a different party from the recipient, such as the university of a researcher paid directly.",
+      "type": "string",
+      "blank_means": "The source names no research institution."
+    },
+    "recipient_business_number": {
+      "meaning": "The recipient's Canada Revenue Agency business number, as the source writes it. Either the 9-digit BN or the 15-character program account (9 digits, two letters, four digits), sometimes with spaces or a masked program account such as XX9999.",
+      "type": "string",
+      "blank_means": "The source gives no business number. Individuals and many organizations have none.",
+      "known_gaps": "Not validated. Some values are malformed or fail the check digit."
+    },
+    "recipient_type": {
+      "meaning": "The source's own code for the kind of recipient, unchanged. See each asset's note for the code list.",
+      "type": "string",
+      "blank_means": "The source gives no recipient type."
+    },
+    "recipient_city": {
+      "meaning": "City of the recipient, as the source writes it.",
+      "type": "string",
+      "blank_means": "The source does not report it.",
+      "known_gaps": "Not normalized. Spelling and language vary by source."
+    },
+    "recipient_postal_code": {
+      "meaning": "Postal code of the recipient, as the source writes it, including case and spacing.",
+      "type": "string",
+      "blank_means": "The source does not report it.",
+      "known_gaps": "Not validated. Some sources publish only the first three characters (the forward sortation area); see each asset's note."
+    },
+    "recipient_refs": {
+      "meaning": "The IATI organization identifier (participating-org/@ref) of each implementing organization, at the same position as its name in `recipients`, as the source writes it. Identifiers follow org-id.guide, such as XM-DAC-41130 or CA-CRA_ACR-3119219814.",
+      "type": "list<string>",
+      "blank_means": "The column is blank when the source has no multi-recipient list. An element is null when that organization has no ref.",
+      "known_gaps": "Not validated. Some refs are malformed or carry surrounding spaces."
+    },
+    "province": {
+      "meaning": "Province or territory of the recipient, as the source writes it.",
+      "type": "string",
+      "blank_means": "The source does not report it.",
+      "known_gaps": "Not normalized to a code. Spelling and language vary by source."
+    },
+    "country": {
+      "meaning": "Country of the recipient, as the source writes it.",
+      "type": "string",
+      "blank_means": "The source does not report it.",
+      "known_gaps": "Not normalized to a code. transfer_payments defaults to \"CA\" when blank. Other sources leave it blank."
+    },
+    "amount": {
+      "meaning": "The single monetary value that best represents the record. Which source field fills it differs by asset and is stated in each asset's `amount` note. It is not necessarily money paid.",
+      "type": "decimal(38,6)",
+      "units": "The currency in `currency`.",
+      "blank_means": "No single value is available, for example when a project has commitments in several currencies.",
+      "known_gaps": "Some parsers count missing component values as 0. See per-asset notes."
+    },
+    "currency": {
+      "meaning": "ISO 4217 currency code of `amount`. CAD for every source except global_affairs_projects, which reports the commitment currency.",
+      "type": "string",
+      "blank_means": "No single currency, because amount is blank for a mixed-currency project."
+    },
+    "commitments_json": {
+      "meaning": "Total commitments by currency, as a JSON object from ISO 4217 code to decimal string.",
+      "type": "string (JSON)",
+      "blank_means": "Not an IATI project record."
+    },
+    "fiscal_year": {
+      "meaning": "Four-digit year identifying the Government of Canada fiscal year (April to March) the record belongs to.",
+      "type": "int32",
+      "blank_means": "The source gives no parseable year.",
+      "known_gaps": "Derived per source (see the per-asset notes). Proactive grants, proactive contracts, CIHR and GAC use the April-to-March convention, verified; transfer payments give the start year (verified). Aggregated contracts publish a calendar year here. NSERC and SSHRC take the first four-digit year of their fiscal-year label, not verified against source documentation."
+    },
+    "date": {
+      "meaning": "The record's principal date, such as contract date or agreement start date, when the source gives it in ISO format.",
+      "type": "date",
+      "blank_means": "No date, or a date the parser could not read. See date_raw."
+    },
+    "date_raw": {
+      "meaning": "The principal date exactly as the source wrote it.",
+      "type": "string",
+      "blank_means": "The source gives no date."
+    },
+    "revision_rank_json": {
+      "meaning": "Sort key for ordering revisions that share a canonical_id, as a JSON array. Higher sorts later.",
+      "type": "string (JSON)",
+      "blank_means": "The source has no revision ordering."
+    },
+    "row_id": {
+      "meaning": "Identifier of one version of one registry row. A new version gets a new row_id; the old version is kept.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "content_sha256": {
+      "meaning": "Hash of the row's values other than its source pointer. Two versions with the same hash are the same content.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "source": {
+      "meaning": "Where this version came from, as JSON. `origin` is roster or resolution; roster rows add source_key, capture_sha256, capture_url and row_number, the exact place in the retained capture.",
+      "type": "JSON object",
+      "blank_means": "Never blank."
+    },
+    "recorded_at": {
+      "meaning": "When we first recorded this version, as a Unix timestamp. Not when it became true in the world.",
+      "type": "float (seconds since 1970-01-01 UTC)",
+      "blank_means": "Never blank."
+    },
+    "revision_id": {
+      "meaning": "The registry revision that first wrote this version (docs/continuous-registry-design.md). Revisions 1 to 14 are the releases before the continuous registry, under the same numbers.",
+      "type": "integer",
+      "blank_means": "Never blank."
+    },
+    "retired_revision_id": {
+      "meaning": "The registry revision in which this version stopped being current. The registry as of revision R is every version with revision_id <= R and (retired_revision_id blank or > R). For mention_occurrences this holds only for retained revisions (the head, the latest snapshot and held snapshots); see entities/mention_occurrences.",
+      "type": "integer",
+      "blank_means": "Still current."
+    },
+    "valid_from": {
+      "meaning": "When the row became true in the world, at the precision the source gives (a year or an ISO date).",
+      "type": "string",
+      "blank_means": "The source gives no start."
+    },
+    "valid_to": {
+      "meaning": "When the row stopped being true in the world, at the precision the source gives.",
+      "type": "string",
+      "blank_means": "Still true, or the source gives no end. The two are not distinguished in v1."
+    },
+    "entity_id": {
+      "meaning": "Build Canada's identifier for one party, a ULID minted once and never reused. Published references use gid://buildcanada/Entity/<entity_id>.",
+      "type": "string (26-character ULID)",
+      "blank_means": "In an occurrence, the party is not linked; see reason."
+    },
+    "anchor": {
+      "meaning": "The roster record an entity was first built from, as <roster>:<record key>; a charity uses its BN9, which all its program accounts share; a federal predecessor uses buildcanada/federal_predecessors:<key>; an Ontario agency or ministry uses ca-on/tbs/provincial_agencies:<crosswalk key> (ministries ministry-<key>), a school board its board number, a conservation authority its CA_ID; a curated Indigenous government buildcanada/indigenous_governments:<key>. A provincial record merged with the registered charity that is the same body (rule charity-merge-v1, since registry-build-v2) keeps the charity's anchor ca/cra/charities:<bn9>, and so the charity's entity_id; attributes.merged names the provincial anchor; its rule is the merge rule version that first produced the row version, since registry-build-v5 left out of the content hash so a new rule version alone does not re-version the entity. A municipality, Indigenous roster entity or (since registry-build-v4) ISC tribal council that absorbed the charity that is the same body (charity-merge-v2 and v3, since registry-build-v3) keeps its own anchor and ID. Used to keep the same entity_id across releases. Not an identifier to cite.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "entity_class": {
+      "meaning": "What kind of party the entity is.",
+      "type": "string",
+      "values": [
+        "jurisdiction",
+        "government_org",
+        "government_enterprise",
+        "indigenous_government",
+        "organization",
+        "person"
+      ],
+      "blank_means": "Never blank.",
+      "known_gaps": "person is reserved; v1 has no person entities."
+    },
+    "subtype": {
+      "meaning": "The class's controlled subtype, such as ministerial_department, municipal_government, first_nation or registered_charity; federal_predecessor for a dissolved federal body from buildcanada/federal_predecessors; since v2 week 4 provincial_ministry, provincial_agency, school_board and conservation_authority (government_org), provincial_crown_corporation (government_enterprise, an Ontario agency its crosswalk entry records as a government business enterprise), health_authority (government_org, a Quebec public health and social services establishment), and for charities hospital (CRA category 0100, sub-category 0006, no \"foundation\" or \"fondation\" in a name), university (category 0010 and a name on NSERC's list of eligible universities) and teaching_institution (the rest of category 0010); other charities stay registered_charity. Since registry-build-v2 a charity catalog/nserc-charity-crosswalk.json matches to an NSERC university is university whatever its name or category (the NSERC name itself is a resolution match key only, not stored on the entity); a merged provincial record keeps its provincial subtype (school_board, conservation_authority, provincial_agency, health_authority); federal_organization_unit is a GC organization code the TBS inventory does not list (Service Canada, the Geological Survey of Canada, the Canadian War Museum; mostly units of an inventory department or Crown corporation, so class government_org says only that it is federal); other_federal_organization is the TBS inventory's institutional form \"Other Organizations\" (Federal Judges, Statistics Survey Operations, the Director of Soldier Settlement). See docs/entity-registry-v1.md, \"Entity classes\", and docs/entity-registry-v2.md, \"Model changes\".",
+      "type": "string",
+      "blank_means": "Not blank on a roster entity since registry-build-v2. Before it, a GC organization code missing from the TBS inventory."
+    },
+    "name": {
+      "meaning": "The entity's name as its roster publishes it, unchanged.",
+      "type": "string",
+      "blank_means": "Never blank.",
+      "known_gaps": "ISC publishes some First Nation names with \"?\" in place of a character, such as \"?Akisq'nuk First Nation\". They are kept as published."
+    },
+    "aliases": {
+      "meaning": "Other names the roster gives for the same entity, such as a legal title or abbreviation.",
+      "type": "list of string",
+      "blank_means": "Empty list when there are none."
+    },
+    "jurisdiction": {
+      "meaning": "The jurisdiction the entity belongs to, as a lowercase ISO 3166-2 code such as ca or ca-on.",
+      "type": "string",
+      "blank_means": "The roster gives no province or country, as for First Nations."
+    },
+    "status": {
+      "meaning": "The roster's own status for the entity, such as active, dissolved, inactive, transferred or registered; every federal predecessor is dissolved. `not_in_roster` means the entity's roster no longer lists it; the entity and its ID are kept. `redirected` means another entity now carries its record (redirected_to names it). Since registry-build-v3 an ended entity may still have no valid_to when its roster gives no date, as for the municipal roster's dissolved and inactive municipalities (88 and 12 in release 10). Since registry-build-v2 a roster that calls an entity active but gives it an end (TBS inventory org 258, Oshawa Port Authority, end 2024) makes it `inactive`, since it cannot be active after it ended and the roster does not say how it ended; attributes.inventory_active_with_end keeps both published values. A GC organization code with a blank status_statut and no end date is `active`, with attributes.status_inferred saying so.",
+      "type": "string",
+      "blank_means": "The roster gives no status."
+    },
+    "namespace": {
+      "meaning": "Who issued an external identifier and what kind it is, such as ca.cra.bn9, ca.isc.band_number, ca.open.owner_org, or ca.tbs.phoenix (the GC concordance's Phoenix pay-system code). Since v2 week 4 also ca-on.tbs.agency (a key of catalog/ontario-crosswalk.json, assigned by Build Canada because the agencies list has none; ministries are ministry-<key>), ca-on.edu.board_number (Ontario Ministry of Education board number, such as B28010) and ca-on.mecp.ca_id (the conservation authority's CA_ID in the MECP administrative-area layer, 1 to 36). Since v2 week 8 also ca-qc.meq.organisme_code (MEQ's six-digit organisme code, CD_ORGNS, such as 711000) and ca-qc.msss.etab_code (MSSS's eight-digit establishment permit number, ETAB_CODE). Since v2 week 7 also ca-ab.edu.authority_code (Alberta Education's four-digit authority code, zero-padded, such as 3030). Since v2 week 6 also gleif.lei (a Legal Entity Identifier from GLEIF, attached to a federal corporation entity whose corporation number is the LEI record's registeredAs under registration authority RA000072; its source is the GLEIF row). ca.ised.corporation_number is a Corporations Canada corporation number as its CSV writes it (no hyphen, no leading zeros), on a corporation entity resolution minted and, since registry-build-v3 on an Indigenous roster entity whose curated row cites it (Manitoba Métis Federation 15484090, Inuvialuit Regional Corporation 1854488, Nunavut Tunngavik Incorporated 2592959, Inuit Tapiriit Kanatami 466069), with the row's BN9 as ca.cra.bn9; since registry-build-v4 also on the 17 ISC tribal councils whose identified row cites the federal corporation of their name (Matawa First Nations Management 2317851, and others), with its BN9.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "value": {
+      "meaning": "The external identifier exactly as its issuer writes it.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "verified": {
+      "meaning": "1 when the identifier comes from its issuer's own register, or is a catalog CSD code that passed rule csd-verify-v1 against SGC 2021 (namespace ca.statcan.csd_uid); 0 when it is a crosswalk candidate that is unchecked or failed the check (namespace ca.statcan.csd_uid.unverified).",
+      "type": "integer",
+      "values": [
+        0,
+        1
+      ],
+      "blank_means": "Never blank."
+    },
+    "vintage": {
+      "meaning": "The edition of the code list the identifier belongs to, such as a census year.",
+      "type": "string",
+      "blank_means": "The code list is not versioned, or the vintage is not yet known."
+    },
+    "subject_id": {
+      "meaning": "The entity the relationship is about.",
+      "type": "string (entity_id)",
+      "blank_means": "Never blank."
+    },
+    "predicate": {
+      "meaning": "The kind of relationship. One (subject_id, predicate, object_id, object_ref) holds one relationship; a build that produces two different ones on the same key fails.",
+      "type": "string",
+      "values": [
+        "governs",
+        "located_within",
+        "covers",
+        "party_to",
+        "administrative_part_of",
+        "reports_to_minister",
+        "owned_by",
+        "controlled_by",
+        "member_of",
+        "succeeded_by"
+      ],
+      "blank_means": "Never blank.",
+      "known_gaps": "administrative_part_of has no source loaded yet. succeeded_by comes only from the curated roster buildcanada/federal_predecessors (federal bodies dissolved before 2012 or not in the TBS inventory); municipal and later federal lineage is not loaded yet. A succeeded_by row's attributes carry event (renamed, reclassified, amalgamated, split, absorbed, transferred_functions), effective_date (the day the cited instrument came into force, not its assent) and, for renamed and absorbed only, boundary_rule successor, which resolution uses to give a straddling fiscal year to the successor; plus authority, locator, citation_sha256 and citations (see attributes). succeeded_by is lineage, not payment attribution; a predecessor's payments stay on the predecessor, and after a split nothing is allocated to either successor. covers (rule csd-cover-v1) links a county municipality made of several census subdivisions to each member CSD's DGUID (object_ref ca.statcan.dguid:<DGUID>), with attributes dguid, vintage, role member_csd and evidence (roster_csd_uids, census_division, sgc_capture_sha256); the county has no ca.statcan.csd_uid of its own and no DGUID located_within link. Only the nine Nova Scotia county municipalities qualify in the 2026-09-25 catalog (28 links). party_to links an Indigenous government, an ISC First Nation or an ISC tribal council to an agreement it signed (object_ref buildcanada.agreement:<key>, a key of catalog/indigenous-governments.json; agreements are not entities), with attributes role (signatory), effective_date (the year, month or day CIRNAC gives), agreement (its name) and the curated row's authority, locator, citation_sha256 and citations. It comes only from buildcanada/indigenous_governments. member_of links an ISC First Nation to its ISC tribal council (ca/isc/first_nation_tribal_councils, no attributes) or, from buildcanada/indigenous_governments, to the regional Indigenous government it is a member of (the Nisga'a villages, the Cree First Nations, and the four Tlicho bands, which the Tlicho Agreement says ceased in 2005 but ISC still lists), with the curated row's authority, locator, citation_sha256 and citations."
+    },
+    "object_id": {
+      "meaning": "The entity on the other side of the relationship.",
+      "type": "string (entity_id)",
+      "blank_means": "The object is not an entity; see object_ref."
+    },
+    "object_ref": {
+      "meaning": "A non-entity object, as <namespace>:<value>, such as ca.isc.reserve_number:07427 for land a First Nation governs or ca.statcan.dguid:2021A00054806011 for the 2021 census subdivision a municipality is located within.",
+      "type": "string",
+      "blank_means": "The object is an entity; see object_id."
+    },
+    "attributes": {
+      "meaning": "Predicate-specific values as JSON, such as percent, direct, holding_type, notes and locator for owned_by, or dguid and vintage for a located_within link to a census subdivision. A succeeded_by row carries authority (the instrument and its coming-into-force), locator (the first cited page's URL), citation_sha256 (that page's SHA-256 in content-addressed storage, captured unchanged) and citations (every cited page as locator, sha256 and pinpoint).",
+      "type": "JSON object",
+      "blank_means": "Empty object when there are none."
+    },
+    "occurrence_id": {
+      "meaning": "One party on one spending row, a hash of the source table, row id, field and array position. Stable across releases.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "field": {
+      "meaning": "Which party field of the spending row the occurrence came from.",
+      "type": "string",
+      "values": [
+        "payer",
+        "recipient",
+        "recipients",
+        "principal_investigator",
+        "research_org",
+        "vendor_name"
+      ],
+      "blank_means": "Never blank."
+    },
+    "raw_name": {
+      "meaning": "The party's name exactly as the spending row publishes it.",
+      "type": "string",
+      "blank_means": "The row gives no name; party_kind is unknown. A name with nothing to normalize (a lone bilingual separator \"|\", punctuation) is kept as published, with party_kind unknown and kind_reason blank_name (since occurrences-v5)."
+    },
+    "normalized_name": {
+      "meaning": "raw_name after the versioned normalization in entities/names.py (accents and punctuation removed, casefolded, legal-form suffixes dropped). Used only for exact matching.",
+      "type": "string",
+      "blank_means": "raw_name is blank or has nothing left after normalization."
+    },
+    "party_kind": {
+      "meaning": "Whether the party is an organization, an individual, an aggregate of many recipients, or unknown.",
+      "type": "string",
+      "values": [
+        "organization",
+        "individual",
+        "aggregate",
+        "unknown"
+      ],
+      "blank_means": "Never blank."
+    },
+    "method": {
+      "meaning": "The rule that linked the occurrence, or, when reason is proposed, the rule that proposed a link it is not yet active to make. ai_review when the effective decision is an AI review decision (reason blank, proposed or ai_undecided); correction when it is a human correction.",
+      "type": "string",
+      "values": [
+        "identifier",
+        "payer_code",
+        "payer_name",
+        "exact_name",
+        "national_name",
+        "ai_review",
+        "correction"
+      ],
+      "blank_means": "No rule matched."
+    },
+    "reason": {
+      "meaning": "Why an occurrence is not linked.",
+      "type": "string",
+      "values": [
+        "excluded_individual",
+        "excluded_aggregate",
+        "excluded_unknown",
+        "conflict",
+        "ambiguous",
+        "period_spans_change",
+        "no_candidate",
+        "proposed",
+        "rule_retired",
+        "ai_undecided",
+        "corrected_unlinked"
+      ],
+      "blank_means": "The occurrence is linked.",
+      "known_gaps": "conflict covers an identifier held by several entities and an identifier that disagrees with the name, except that since resolution-v4 a BN held only by federal corporations names the one Active corporation among them (else the one whose name is the row's), so an amalgamation's Inactive predecessors sharing the BN are not a conflict; since resolution-v5 a name matched only by federal corporations, one Active and every other Inactive - Amalgamated on its BN, is the Active one's for rows from its anniversary date on, and otherwise ambiguous; a payer's owner_org names the organization reporting the row (the open.canada.ca organization that holds it), so since resolution-v4 a row dated before that organization's validity is attributed to the cited predecessor (succeeded_by) its period falls in, else to the reporting organization itself (method payer_code, never period_spans_change for that organization's start), and retired codes no roster carries are named through catalog/owner-org-codes.json; rows after an organization ended keep interval matching; period_spans_change means the row's period (its row date, else its fiscal year April 1 to March 31) straddles a validity bound of the entity that would have been linked, at the bound's own precision (a year-only bound covers the whole year); a candidate whose validity the period lies wholly outside is not a candidate; a straddling fiscal year goes to the successor, not period_spans_change, when a renamed or absorbed succeeded_by row carries boundary_rule successor; since resolution-v6 an identifier whose holder is the row's body with a sibling qualifier (the row names X and the BN is X Foundation's, X Trust Fund's, X Investments' or X Public Library Board's, or the row names X Foundation, Trust Fund or Investments and the BN is X's) is a conflict, and national_name links a row with no province to the one entity (of the name+province rules) or federal corporation holding its exact name in any province; proposed means the rule in method matched one entity but is not active for this rule_version (catalog/entity-rule-activations.json), so the proposed entity is the first of candidates; rule_retired means the rule in method matched but its (method, versions) pair was retired (fact-factory entities retire-rule), kept like a proposal with the entity it would have linked first, or an AI review decision on the occurrence was retired with its pair and nothing else links it; ai_undecided means the effective AI review decision is not_same_as or cannot_decide, and the candidates are kept; corrected_unlinked means a human correction names no entity."
+    },
+    "candidates": {
+      "meaning": "The entity IDs, or ca/ised/federal_corporations:<number> anchors for corporations not yet entities, that the rules found for an unlinked occurrence. For reason proposed, the proposed entity comes first.",
+      "type": "list of string",
+      "blank_means": "No candidates, or the occurrence is linked."
+    },
+    "rule_version": {
+      "meaning": "The resolution, extraction, name-normalization and matching-eligibility (catalog/entity-matching.json) versions in force when this row version was written, joined by +. Rows before matching-v1 have three parts. resolution-v4 includes the owner_org codes table (catalog/owner-org-codes.json), whose digest it pins. Since incremental resolution (evidence-v1) it is not part of the row's content, so a release built under new versions keeps every row whose outcome is unchanged, with the versions it was first written under; the versions a release resolved under, which every occurrence as of that release stands for, are in its registry_releases.versions (resolve.release_versions). Before, every row was rewritten when a version changed, so the two agree for earlier releases.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "decision_id": {
+      "meaning": "Identifier of one resolution decision, a hash of its content and the release that made it. Published references use gid://buildcanada/EntityResolutionDecision/<decision_id>.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "subject": {
+      "meaning": "What the decision is about, an occurrence_id or, for entity-level decisions, an entity_id; subject_kind says which.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "subject_kind": {
+      "meaning": "Whether subject is an occurrence or an entity.",
+      "type": "string",
+      "values": [
+        "occurrence",
+        "entity"
+      ],
+      "blank_means": "Never blank."
+    },
+    "outcome": {
+      "meaning": "What was decided about the subject.",
+      "type": "string",
+      "values": [
+        "same_as",
+        "not_same_as",
+        "cannot_decide",
+        "correction",
+        "created_member",
+        "redirect",
+        "retire"
+      ],
+      "blank_means": "Never blank."
+    },
+    "entity_ref": {
+      "meaning": "A roster-reference candidate the decision names when it is not yet an entity, as JSON with ref, source_key, record_key, capture_id and row_sha256, the exact roster row the decider saw.",
+      "type": "JSON object",
+      "blank_means": "The decision names an entity (entity_id), or none."
+    },
+    "decider": {
+      "meaning": "Who made the decision.",
+      "type": "string",
+      "values": [
+        "human",
+        "rule",
+        "ai"
+      ],
+      "blank_means": "Never blank."
+    },
+    "versions": {
+      "meaning": "What made the decision, as JSON. For a rule or model, the (method, versions) pair as one object, such as {\"method\": \"exact_name\", \"resolution\": ..., \"extraction\": ..., \"normalization\": ..., \"matching\": ...}; an ai_review pair adds prompt, model, candidate_generator and, for every reviewer but claude-opus-5, reasoning_effort (such as {\"model\": \"openai/gpt-6-luna\", \"reasoning_effort\": \"xhigh\"}), so each reviewer's decisions name their own pair; for a person, the reviewer and the correction file's digest.",
+      "type": "JSON object",
+      "blank_means": "Never blank."
+    },
+    "input_sha256": {
+      "meaning": "Digest of the evidence the decider was shown (for AI review, the review unit key). A decision is reused only while the occurrence's current evidence gives the same digest.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "The decision is not bound to a digest, as for a rule's own outcome."
+    },
+    "evidence": {
+      "meaning": "What the decider relied on, as JSON. For AI review: confidence, evidence (the model's text), candidates (the refs shown, roster references by their roster ref), pins (the exact roster row each roster reference was read from) and run_id (ops.ai_spend). overridden_by ({method, versions, entity_id}) is added in a new row version when an active rule links the occurrence to something else.",
+      "type": "JSON object",
+      "blank_means": "Empty object when there is none."
+    },
+    "supersedes": {
+      "meaning": "The decision_id this decision replaces. The replaced decision is retired in the revision that made this one, and stays readable as of earlier revisions.",
+      "type": "string (decision_id)",
+      "blank_means": "The decision replaces none."
+    },
+    "retired_reason": {
+      "meaning": "Why a decision stopped being in force, set with retired_revision_id.",
+      "type": "string",
+      "values": [
+        "superseded",
+        "rule_retired",
+        "evidence_changed"
+      ],
+      "blank_means": "The decision is still in force."
+    },
+    "asset_key": {
+      "meaning": "The fact-factory asset that published a row, such as sources/ca/tbs/proactive_grants or entities/entities (docs/entity-registry-v1.md, \"Asset layout\"). The same key names the dataset in the public catalog. With acquisition, a spending table's asset_key names one slice of the table; on the derived tables it is the live slice's label (the occurrence source_key).",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "spending_key": {
+      "meaning": "The stable public key of one spending row (spending_store.spending_key, computed when the row is parsed): the first 128 bits of sha256 of the JSON array [asset_key, acquisition, resource_id, id], in Crockford base32 (26 characters, the ULID alphabet). Unique across a whole table (within one asset_key), unlike id, which is unique only per resource. Every parse of the same source row gives the same spending_key, so it is the same across publications and versions. Indexed (ix_spending_records_spending_key). Published references use gid://buildcanada/SpendingRecord/<spending_key>.",
+      "type": "string (26 characters)",
+      "blank_means": "Never blank."
+    },
+    "snapshot_id": {
+      "meaning": "A spending source's version: the largest committed spending_publications.version of the source when it was read (docs/STORAGE.md). Reading a (source, acquisition) slice at a version returns the publications committed at or before it and not replaced by then. A registry revision records the version each slice it resolved in full was read at (registry_revisions.inputs.slices), and derived_builds.slices the version of each live slice as of the build. On an occurrence, the version the occurrence version was resolved from; occurrence versions are not rewritten when unchanged, so versions resolved before the cut-over (2026-09-30) are Iceberg snapshot IDs, which no spending table can read.",
+      "type": "string (int64 as decimal text)",
+      "blank_means": "The row is not from a spending source (registry rows)."
+    },
+    "capture_url": {
+      "meaning": "The public, content-addressed URL of a retained capture, <public base>/sha256/<first two characters>/<digest> (files.buildcanada.com once its custom domain is live). A key of the registry `source` JSON, defined here on its own.",
+      "type": "string (URL)",
+      "blank_means": "The row was not parsed from a capture, or no public base URL was configured."
+    },
+    "row_number": {
+      "meaning": "1-based data row of the captured file a row was parsed from, header rows not counted. A key of the registry `source` JSON.",
+      "type": "integer",
+      "blank_means": "The capture is not tabular, or the row predates row tracking."
+    },
+    "name_fr": {
+      "meaning": "The French name StatCan gives a dimension or member.",
+      "type": "string",
+      "blank_means": "StatCan gives none."
+    },
+    "redirected_to": {
+      "meaning": "The entity that now carries a redirected entity's record, set with status redirected (docs/entity-registry-v2.md, \"Queue and redirects\"; details in entities/entities).",
+      "type": "string (entity_id)",
+      "blank_means": "The entity is not redirected."
+    },
+    "position": {
+      "meaning": "0-based position of an occurrence within a list-valued party field (recipients); 0 for single-valued fields. Part of the occurrence_id hash.",
+      "type": "int32",
+      "blank_means": "Never blank."
+    },
+    "measure": {
+      "meaning": "What a source's amount measures (contract_value, aggregated_contract_value, agreement_value, payments_or_expenditure, award_amount, commitment). Amounts of different measures must never be added.",
+      "type": "string",
+      "values": [
+        "contract_value",
+        "aggregated_contract_value",
+        "agreement_value",
+        "payments_or_expenditure",
+        "award_amount",
+        "commitment"
+      ],
+      "blank_means": "Never blank."
+    },
+    "record_count": {
+      "meaning": "Spending rows counted in a summary group, latest revisions only and aggregate rows excluded.",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "agreement_count": {
+      "meaning": "Distinct canonical_id values among the rows counted in a summary group.",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "amount_missing_count": {
+      "meaning": "Rows counted in a summary group whose amount is blank. They add nothing to the group's amount.",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "aggregated_excluded": {
+      "meaning": "Rows of a summary group left out because they are aggregates (is_aggregated).",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "revisions_excluded": {
+      "meaning": "Rows of a summary group left out because a higher revision of the same canonical_id counts instead (revision_rank_json).",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "role": {
+      "meaning": "How a summarized entity takes part in the rows of a summary group. spending_summary, payer (field payer), research_org (field research_org) or recipient (every other party field); spending_counterparties, payer or recipient only (research_org is in neither role).",
+      "type": "string",
+      "values": [
+        "payer",
+        "recipient",
+        "research_org"
+      ],
+      "blank_means": "Never blank."
+    },
+    "counterparty_id": {
+      "meaning": "The entity linked in the other role (payer for a recipient, recipient for a payer) on the counted rows of a spending_counterparties group. A row with two linked counterparties counts under each.",
+      "type": "string (entity_id)",
+      "blank_means": "No counterparty is linked on those rows."
+    },
+    "kind": {
+      "meaning": "Which of an entity version's names an entity_names row holds.",
+      "type": "string",
+      "values": [
+        "name",
+        "name_fr",
+        "alias"
+      ],
+      "blank_means": "Never blank."
+    },
+    "match_key": {
+      "meaning": "The exact-name search key of a name (entities/names.py match_key), under the names version in normalization. A query name keyed the same way finds the entities with that key; indexed (ix_entity_names_match_key).",
+      "type": "string",
+      "blank_means": "The name has no letters or digits to key."
+    },
+    "normalization": {
+      "meaning": "The names version (entities/names.py NORMALIZATION_VERSION, such as names-v2) normalized_name and match_key were computed under.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "institution_id": {
+      "meaning": "The registry entity ID of the municipality the document is filed under; for a province-wide document (scope province), the province's entity (buildcanada/jurisdictions:ca-xx), whose institutions row has status province.",
+      "type": "string (entity ID)",
+      "blank_means": "Never blank."
+    },
+    "document_type": {
+      "meaning": "What the document is said to be. Live captures from a website crawl are financial-report-candidate, an unverified finance-related PDF. A province-level collector's first capture takes the portal's type as a slug (audited-financial-statements, inspection-report, financial-statement, tax-rate-bylaw, financial-report); source_category has the label as published. A province-wide publication refiled under its province is provincial-publication. archive_import rows keep the legacy catalog's type (financial-statements, annual-report, statement-of-financial-information).",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "scope": {
+      "meaning": "province for a province-wide publication (a compilation or budget about every municipality), filed once under the province (`fact-factory documents refile-provincial`).",
+      "type": "string",
+      "values": [
+        "province"
+      ],
+      "blank_means": "The document is one municipality's."
+    },
+    "collector": {
+      "meaning": "The province-level collector that filed the document or captured its bytes again from a provincial portal (src/fact_factory/province_collectors.py) - sk-publications, ab-municipal-affairs or qc-mamh-financial-reports.",
+      "type": "string",
+      "blank_means": "Found by the municipality's own website crawl, or an archive_import row not seen on a portal."
+    },
+    "source_category": {
+      "meaning": "The document's type or category exactly as the provincial portal labels it (\"Financial Statement\", \"Tax Rate Bylaw\", \"Saskatchewan Municipal Audited Financial Statements\", \"Municipal Inspection/Inquiry Reports\", \"Rapport financier et autres documents financiers\"), for filtering by type.",
+      "type": "string",
+      "blank_means": "Not from a provincial portal (collector blank)."
+    },
+    "year": {
+      "meaning": "The fiscal year the document is about, as far as its metadata says. Archive rows: fiscal_period_end, else the year segment of the legacy canonical_id (\".../financial-statements/2022/general\"), else fiscal_period_start (financials.legacy_year). Live rows: the first year (1900 to next year) in the title, else the first in the URL file name, else the last in the URL folders; only the URL path counts, never its query string; digits inside a longer number are not a year; a URL year before 1990 is ignored; a full posting date in a file name counts only when nothing else names a year (municipal_ids.document_year, rule document-year-v2 since 2026-09-27). The municipal Dagster partition is this year when it is 2000 to 2030, else unknown.",
+      "type": "int32",
+      "blank_means": "Neither the title nor the URL names a usable year, or the legacy entry gives none.",
+      "known_gaps": "A multi-year plan or comparative statement takes its first year; nothing records its end year. Before document-year-v2 about 9,200 live rows had years from hashes, query strings and plan horizons; `fact-factory documents recompute-years` corrects existing rows and records each change in metadata.year_revisions."
+    },
+    "url": {
+      "meaning": "The URL the document was downloaded from (live) or the legacy catalog's download URL (archive_import).",
+      "type": "string (URL)",
+      "blank_means": "Never blank for live rows."
+    },
+    "sha256": {
+      "meaning": "SHA-256 of the document's bytes, retained in R2 under sha256/<first two characters>/<digest>. One row per (institution_id, sha256).",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "text_sha256": {
+      "meaning": "SHA-256 of the gzipped JSON Lines page text extracted from the document, one line per page (document_id, source_sha256, page, text, parser_version).",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "No text was extracted (state pending, needs_ocr or text_failed)."
+    },
+    "state": {
+      "meaning": "Where the document is in text extraction. pending: not yet extracted. text_ready: every page has text. text_partial: at least one page has under 40 characters (a cover or separator page is enough). needs_ocr: under 100 characters in all, so a scan with no text layer. text_failed: pdftotext could not read the file (a damaged or unsupported PDF; since 2026-09-27, with a text_failed case). None of these says the text is correct or complete.",
+      "type": "string",
+      "values": [
+        "pending",
+        "text_ready",
+        "text_partial",
+        "needs_ocr",
+        "text_failed"
+      ],
+      "blank_means": "Never blank."
+    },
+    "rejected_reason": {
+      "meaning": "Warehouse only; never exported. Set when a maintenance rule decided the row is not its institution's document (`fact-factory documents reject`). off_domain_search_result: found on a search-engine results page, on a host that is not the municipality's own. provincial_publication_copy: a province-wide publication on a shared provincial host filed under each municipality that linked it; metadata.rejection.province_document_id names the one row kept under the province (`fact-factory documents refile-provincial`). refile_reverted: a province row whose refiling was reverted. A rejected row keeps its bytes and text in R2, is left out of the documents export and of partition metadata, and metadata.rejection records the rule, source page and time.",
+      "type": "string",
+      "values": [
+        "off_domain_search_result",
+        "provincial_publication_copy",
+        "refile_reverted"
+      ],
+      "blank_means": "The row is published."
+    },
+    "product_id": {
+      "meaning": "Statistics Canada's product ID (PID) of a table (cube), eight digits; the first two are its subject (14 labour, 18 prices, 98 census). The table's page is https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=<product_id>01, and its number as StatCan writes it is 14-10-0287-01.",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "ref_date": {
+      "meaning": "REF_DATE, the reference period a datapoint describes, exactly as published. Its form follows the table's frequency, such as 2026-08 (monthly), 2025 (annual), 1997/1998 (fiscal year) or 2021-05-11.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "geo": {
+      "meaning": "GEO, the member of the table's first dimension (its geography, such as Canada or Ontario, or another first dimension StatCan labels GEO), in English.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "dguid": {
+      "meaning": "DGUID, Statistics Canada's Dissemination Geography Unique Identifier of the geography, such as 2021A000011124 (Canada) or 2021A000235 (Ontario).",
+      "type": "string",
+      "blank_means": "The geography has no DGUID (some older or non-standard geographies)."
+    },
+    "statcan_dimension": {
+      "meaning": "One column per dimension of the table after the first: the dimension member, in English, exactly as the CSV writes it. The column name is the dimension name in snake case (Labour force characteristics becomes labour_force_characteristics; a name taken already gets a suffix); the Iceberg column doc and the dimensions table give the name as published.",
+      "type": "string",
+      "blank_means": "Never blank in long tables."
+    },
+    "uom": {
+      "meaning": "UOM, the unit of measure of the value, such as Persons, Dollars, Percentage or 2002=100.",
+      "type": "string",
+      "blank_means": "Census tables, whose CSV has no unit column."
+    },
+    "uom_id": {
+      "meaning": "UOM_ID, StatCan's code for the unit of measure (getCodeSets, uom).",
+      "type": "int32",
+      "blank_means": "Census tables."
+    },
+    "scalar_factor": {
+      "meaning": "SCALAR_FACTOR, the multiplier the value is expressed in (units, thousands, millions, ...). The value is not multiplied by it.",
+      "type": "string",
+      "blank_means": "Census tables."
+    },
+    "scalar_id": {
+      "meaning": "SCALAR_ID, the scalar factor's code, the power of ten (0 units, 3 thousands, 6 millions, 9 billions).",
+      "type": "int32",
+      "blank_means": "Census tables."
+    },
+    "vector": {
+      "meaning": "VECTOR, the StatCan identifier of the time series (a v followed by up to 10 digits), which never changes.",
+      "type": "string",
+      "blank_means": "Census tables, and series StatCan publishes without a vector."
+    },
+    "coordinate": {
+      "meaning": "COORDINATE, the member ID of each dimension, in dimension order, joined by dots (15.1, or 1.2.3.1.1.1). With product_id it identifies a series; with ref_date it identifies a datapoint (the check coordinates_unique). Census tables get the CSV's coordinate with the member ID of the value column's dimension appended.",
+      "type": "string",
+      "blank_means": "Never blank."
+    },
+    "symbol": {
+      "meaning": "SYMBOL, StatCan's symbol on the datapoint as published (p preliminary, r revised); in census tables, the Symbol column after the value.",
+      "type": "string",
+      "blank_means": "No symbol."
+    },
+    "terminated": {
+      "meaning": "TERMINATED as published; t when the series is terminated (no longer updated).",
+      "type": "string",
+      "values": [
+        "t"
+      ],
+      "blank_means": "The series is active."
+    },
+    "decimals": {
+      "meaning": "DECIMALS, the number of decimals StatCan states for the value.",
+      "type": "int32",
+      "blank_means": "Census tables."
+    },
+    "source_row": {
+      "meaning": "The 1-based data row of the capture's CSV the row came from (the header and blank lines are not counted).",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "source_column": {
+      "meaning": "Census tables, the 0-based CSV column of the value cell the row came from (the Symbol column is the next one).",
+      "type": "int32",
+      "blank_means": "Long tables, where a CSV row is one datapoint."
+    },
+    "capture_sha256": {
+      "meaning": "SHA-256 of the full-table CSV zip (the capture) the row was parsed from, stored unchanged in R2 under sha256/<first two characters>/<sha256>.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    },
+    "dimension_position_id": {
+      "meaning": "The 1-based position of a dimension in its table (1 is the geography, GEO); a coordinate's n-th part is a member of dimension n.",
+      "type": "int32",
+      "blank_means": "In footnotes, 0 when the footnote is attached to the whole table."
+    },
+    "name_en": {
+      "meaning": "The English name StatCan gives a dimension or member.",
+      "type": "string",
+      "blank_means": "StatCan gives none."
+    },
+    "has_uom": {
+      "meaning": "Whether the dimension's members carry the unit of measure (hasUom).",
+      "type": "boolean",
+      "blank_means": "StatCan gives none."
+    },
+    "members": {
+      "meaning": "How many members the dimension has in the metadata.",
+      "type": "int32",
+      "blank_means": "Never blank."
+    },
+    "member_id": {
+      "meaning": "A member's ID within its dimension (memberId); in footnotes, the member the footnote is attached to.",
+      "type": "int64",
+      "blank_means": "In footnotes, 0 when attached to a whole dimension or table."
+    },
+    "parent_member_id": {
+      "meaning": "The member's parent in its dimension's hierarchy (parentMemberId), such as Canada for a province.",
+      "type": "int64",
+      "blank_means": "A top-level member."
+    },
+    "classification_code": {
+      "meaning": "The member's code in a standard classification (classificationCode), such as an SGC province code (35) or a NAICS code.",
+      "type": "string",
+      "blank_means": "The member has none."
+    },
+    "classification_type_code": {
+      "meaning": "StatCan's code for the classification the classification_code belongs to (getCodeSets, classificationType).",
+      "type": "string",
+      "blank_means": "The member has none."
+    },
+    "geo_level": {
+      "meaning": "A geography member's level (geoLevel), 0 for the top.",
+      "type": "int32",
+      "blank_means": "Not a geography member."
+    },
+    "member_terminated": {
+      "meaning": "Whether StatCan marks the member terminated (no longer used).",
+      "type": "boolean",
+      "blank_means": "StatCan gives none."
+    },
+    "uom_code": {
+      "meaning": "The member's unit of measure code (memberUomCode), in dimensions with has_uom.",
+      "type": "int32",
+      "blank_means": "The member carries no unit."
+    },
+    "footnote_id": {
+      "meaning": "The footnote's number within its table.",
+      "type": "int64",
+      "blank_means": "Never blank."
+    },
+    "text_en": {
+      "meaning": "The footnote's text in English.",
+      "type": "string",
+      "blank_means": "StatCan gives none."
+    },
+    "text_fr": {
+      "meaning": "The footnote's text in French.",
+      "type": "string",
+      "blank_means": "StatCan gives none."
+    },
+    "release_time": {
+      "meaning": "When Statistics Canada released the table's current data, from WDS (releaseTime, 08:30 Eastern unless a correction), as a UTC timestamp (epoch seconds in the statcan_tables export). The date the source says it published, distinct from retrieved_at (when we fetched it) and published_at (when we published it).",
+      "type": "timestamp (UTC)",
+      "blank_means": "Never blank."
+    },
+    "metadata_sha256": {
+      "meaning": "SHA-256 of the getCubeMetadata JSON the row, or the table's release, was built from, stored unchanged in R2 under sha256/<first two>/<sha256>.",
+      "type": "string (SHA-256 hex)",
+      "blank_means": "Never blank."
+    }
+  },
+  "assets": {
+    "sources/ca/tbs/proactive_contracts": {
+      "external_id": "Hash of owner_org and reference_number.",
+      "canonical_id": "Hash of owner_org and procurement_id, falling back to reference_number when procurement_id is missing or a placeholder.",
+      "payer": "The English part of owner_org_title, else of buyer_name, else owner_org. Every row had an owner_org_title on 2026-09-28.",
+      "payer_code": "owner_org.",
+      "value_consistent": "contract_value = original_value + amendment_value (a blank amendment_value is 0); blank when contract_value or original_value is blank.",
+      "recipient": "vendor_name.",
+      "recipient_postal_code": "vendor_postal_code. Only the forward sortation area (A1A) is published.",
+      "amount": "contract_value. The contract's reported value, not payments made.",
+      "title": "description_en, else description_fr. Blank when the source gives neither; the vendor name is only in `recipient`.",
+      "fiscal_year": "The fiscal year of reporting_period (its first year, as in \"2019-2020-Q4\" or \"2018/19 Q2\"), not of the contract itself, which can be earlier when a contract is reported late. Where reporting_period names no year (\"Q1\", \"A\", \"C\") or is blank, the fiscal year (April to March) containing contract_date. Since parser spending-iceberg-v4; earlier snapshots are blank for periods without a year and use contract_date's calendar year otherwise."
+    },
+    "sources/ca/tbs/aggregated_contracts": {
+      "external_id": "Hash of owner_org and year.",
+      "payer": "The English part of owner_org_title. Before spending-iceberg-v5, the owner_org code.",
+      "payer_code": "owner_org.",
+      "amount": "Sum of the goods, services and construction original and amendment values plus acquisition card transactions. Known defect. A missing component is counted as 0."
+    },
+    "sources/ca/tbs/proactive_grants": {
+      "external_id": "Hash of owner_org, ref_number and amendment_number. Each amendment is its own row.",
+      "canonical_id": "Hash of owner_org and ref_number.",
+      "payer": "The English part of owner_org_title, else owner_org.",
+      "payer_code": "owner_org.",
+      "recipient": "recipient_legal_name, else recipient_operating_name. Legal names are often bilingual, joined by \"|\".",
+      "research_org": "research_organization_name.",
+      "recipient_business_number": "recipient_business_number.",
+      "recipient_type": "recipient_type. Codes from the open.canada.ca grants schema: A Indigenous recipients, F For-profit organizations, G Government, I International (non-government), N Not-for-profit organizations and charities, O Other, P Individual or sole proprietorships, S Academia. Required only for agreements starting on or after 2025-12-01.",
+      "recipient_city": "recipient_city.",
+      "recipient_postal_code": "recipient_postal_code.",
+      "amount": "agreement_value for that amendment. Do not sum across rows sharing a canonical_id.",
+      "program": "prog_name_en, else prog_name_fr. Since parser spending-iceberg-v4.",
+      "date": "agreement_start_date. The spreadsheet placeholders 1899-12-30, 1899-12-31 and 1900-01-01 are blank; date_raw keeps them.",
+      "fiscal_year": "The fiscal year (April to March) containing agreement_start_date, named by the calendar year it starts in. Blank when the date is blank or a placeholder. Since parser spending-iceberg-v4; earlier snapshots hold the calendar year of the start date."
+    },
+    "sources/ca/pspc/transfer_payments": {
+      "external_id": "Hash of the entire source row. Any change to any source value produces a new identity.",
+      "amount": "Known defect. The first non-zero of aggregate payments (AGRG_PYMT_AMT) and current-year expenditure (TOT_CY_XPND_AMT), with the order depending on whether the row is an aggregate. Which measure was used is not recorded.",
+      "fiscal_year": "FSCL_YR, else the year in the CKAN resource name.",
+      "is_aggregated": "A blank recipient, or one containing \"payments under\", \"name(s) withheld\" or a count of recipients or payees (\"(62 recipients)\"). Since parser spending-iceberg-v4, which added the last two; an aggregate takes current-year expenditure first for `amount`.",
+      "recipient_city": "CTY_EN_NM or City_Ville_eng (English), else CTY_FR_NM or City_Ville_fra (French). Older files use the capitalized names, current files the bilingual ones.",
+      "payer": "DEPT_EN_DESC or Dept-name_Nom-min_eng, else the minister's portfolio (MINE, Min-portfolio_Portefeuille-min_eng).",
+      "payer_code": "Always blank. The files carry no organization code."
+    },
+    "sources/ca/nserc/awards": {
+      "external_id": "Hash of the application ID and fiscal year. Batch-report aggregate rows without an ID use a hash of the row.",
+      "payer": "Always \"Natural Sciences and Engineering Research Council of Canada\" (\"NSERC\" before spending-iceberg-nserc-v6).",
+      "payer_code": "Always nserc-crsng, NSERC's owner_org in the proactive grants and contracts tables.",
+      "note": "Text columns are trimmed since parser spending-iceberg-nserc-v5; raw_json keeps the values as published.",
+      "amount": "The award amount column."
+    },
+    "sources/ca/sshrc/awards": {
+      "external_id": "Hash of the SSHRC key (clé) and fiscal year. A batch-report row without a key uses a hash of the row.",
+      "payer": "Always \"Social Sciences and Humanities Research Council of Canada\" (\"SSHRC\" before spending-iceberg-v5).",
+      "payer_code": "Always sshrc-crsh.",
+      "note": "\"Batch report | Report en lots\" rows are aggregates (is_aggregated, recipient \"Multiple recipients\", no principal_investigator) since parser spending-iceberg-v4, which also trims text columns; raw_json keeps the values as published.",
+      "amount": "The amount column."
+    },
+    "sources/ca/cihr/awards": {
+      "external_id": "The CIHR record id.",
+      "payer": "Always \"Canadian Institutes of Health Research\" (\"CIHR\" before spending-iceberg-v5).",
+      "payer_code": "Always cihr-irsc.",
+      "note": "The Solr feed escapes accents as HTML entities (\"Universit&eacute; Laval\") and wraps abstracts in <html><body>. Published text is decoded as for every source (text_columns); raw_json keeps the escaped original.",
+      "recipient": "orgname, else orgnameinp2 (the institution paid). \"Direct Payment\" means the award was paid to the researcher, not to an institution; it is not an organization name.",
+      "principal_investigator": "name, the nominated principal investigator. pinamesdelim, all principal investigators, stays in raw_json.",
+      "province": "region.",
+      "program": "programname2.",
+      "amount": "cihramount2.",
+      "fiscal_year": "Year of the competition date, minus one for January to March."
+    },
+    "sources/ca/gac/iati_activities": {
+      "external_id": "The IATI activity identifier.",
+      "payer": "Always \"Global Affairs Canada\".",
+      "payer_code": "Always dfatd-maecd, Global Affairs Canada's owner_org.",
+      "recipient": "Not populated. Implementing organizations are in `recipients`.",
+      "recipients": "The English narrative, else the first narrative, of each participating-org with role 4 (implementing).",
+      "recipient_refs": "participating-org/@ref of the same role 4 organizations, in the same order.",
+      "amount": "Sum of commitment transactions (IATI type 2) when all are in one currency; blank otherwise. These are commitments, not spending. Known defect. A transaction with an empty value is counted as 0.",
+      "date": "iso-date of the first activity-date of type 2 (actual start) that is an ISO date, else of type 1 (planned start). date_raw is that iso-date as written. Blank when neither is present.",
+      "fiscal_year": "The Government of Canada fiscal year (April to March) containing `date`, named by the calendar year it starts in. The date's year, minus one for January to March, so 2025-02-01 is 2024 and 2025-04-15 is 2025. This is the convention CIHR uses and NSERC's \"2024-2025\" labels give (2024). Blank when `date` is blank."
+    },
+    "sources/municipal/documents/capture": {
+      "note": "One row per (institution_id, sha256): a PDF filed under a municipality. The catalog's documents export has columns id, institution_id, source_key, document_type, title, year, url, sha256, text_sha256, state, parser_version, acquisition, scope, collector and source_category, plus sha256_url and text_sha256_url, and leaves out rows with a rejected_reason. A website crawl files a document only when it or the page linking it is on the municipality's own host, never from a search engine or a shared provincial host; a province-level collector files what its portal lists under the municipality the portal names (src/fact_factory/source_policy.py, province_collectors.py). About 70,000 live rows copied before 2026-09-27 are province-wide Quebec and Saskatchewan publications filed under each municipality; `fact-factory documents refile-provincial --apply` keeps one row each under the province (scope province) and rejects the copies.",
+      "id": "An opaque document ID (a ULID for rows since the slug migration; older rows keep their original hash). Kept when the institution's key changes.",
+      "source_key": "Always municipal_financials.",
+      "acquisition": "live for a collector's fetch; archive_import for a document registered from the legacy catalog (catalog/legacy-documents.jsonl.gz). Archive rows are historical evidence, not current coverage.",
+      "title": "Live: the link text on the page it was found on, else the file name; search-result rows carry the result snippet; a province-level collector's rows are the municipality as the portal names it, the year and the document type. Archive: the legacy title, else title_fr (since 2026-09-27).",
+      "parser_version": "The text extraction version (pdftotext-v1). Blank until extracted."
+    },
+    "entities/entities": {
+      "note": "One row version per entity. Columns entity_id, anchor, entity_class, subtype, name, name_fr, aliases, jurisdiction, status, valid_from, valid_to, attributes and the registry bookkeeping columns.",
+      "name_fr": "French name, where the roster gives one.",
+      "attributes": "Roster-specific details as JSON, such as faa_schedule and institutional_form for federal bodies, municipality_type_raw for municipalities, or accounts (every CRA program account under the BN9, lowest BN15 first), category_code and sub_category_code (the CRA category and sub-category codes of the lowest BN15's row, such as 0100 and 0006) for charities. An Ontario agency carries classification, classification_2000, governance, cluster, public_body, website and ministry, and form and form_evidence where its crosswalk entry records a government business enterprise; a school board board_type, language, region, website and addresses. A federal predecessor carries institutional_form (TBS-style, by analogy with its successor), note, and authority, locator, citation_sha256 and citations for its dates. refined_bounds, on a TBS inventory entity, records a valid_from or valid_to the inventory gives only as a year and the curated roster gives to the day, with value, inventory_value (the year the inventory row still says), the roster row, and the citation. inventory_start_after_end and inventory_active_with_end keep a TBS inventory row's contradictory published values (see valid_from and status). status_inferred, on a GC organization code outside the inventory, says its status was read from a blank status_statut. On an entity merged by charity-merge-v1, merged holds rule, provincial_anchor and charity_anchor, and charity the charity's CRA details as they stand on a charity entity (name, subtype and status the charity alone would have, jurisdiction, category, category_code, sub_category_code, designation, city, postal_code, accounts, and the CRA row as source); the other attributes are the provincial record's. Since registry-build-v3 (charity-merge-v2) a municipality or Indigenous roster entity that absorbed a charity carries merged (rule, roster_anchor, charity_anchor) and charity the same way, and keeps its own attributes. identifier_evidence, on an Indigenous roster entity and, since registry-build-v4, on an ISC tribal council an identified row names, lists the curated row's cited identifiers (namespace, value, and citations, each a locator, sha256 and pinpoint on a checked-in excerpt of a Corporations Canada page, or roster_citation, which is a CRA List of charities row by roster, record_key and name, or a Corporations Canada row by roster ca/ised/federal_corporations, record_key (the corporation number), field (the column that gives the value) and name). cited_aliases, since federal-predecessors-v3 on a TBS inventory entity, lists the cited names the federal predecessors roster adds to its aliases (name, written_forms, authority, locator, citation_sha256, citations), such as the Office of Infrastructure of Canada on org 237.",
+      "valid_from": "As published by the roster; for a TBS inventory entity with refined_bounds, the day its cited instrument gives.",
+      "valid_to": "As published by the roster; for a federal predecessor, the day its cited instrument ended it; for a TBS inventory entity with refined_bounds, the day its cited instrument gives. Blank on a created entity.",
+      "redirected_to": "A created entity a reviewed redirect decision retired in favour of the entity_id named here (the survivor); status is then redirected. Its occurrences link to the survivor from the next release, and a later correction reverses it. Since registry-build-v2 also a provincial roster entity whose record was merged into the charity entity that is the same body (charity-merge-v1; release 7 had built 140 such provincial entities beside their charities): it keeps its ID and anchor, loses its identifiers and relationships, and is never a name-match candidate. Since registry-build-v3 also a charity entity merged into the municipality or Indigenous roster entity that is the same body (charity-merge-v2: City of Surrey, Inuit Tapiriit Kanatami; since registry-build-v4, charity-merge-v3, also into an ISC tribal council: Windigo First Nations Council), and an Indigenous roster entity whose curated row is now a party or member row on an ISC entity (the Gwich'in Tribal Council, redirected to ISC tribal council 1034). The ID is never reused. Blank for every other entity.",
+      "created_entities": "Entities with source.origin creation (docs/entity-registry-v2.md, \"Entity creation\") are made from spending rows, not rosters. anchor is ca.cra.bn9:<bn9> or org-id:<ref> for a unit with an identifier, else created:<ulid>, minted once and never recomputed. class is organization; subtype business (grants recipient_type F, or a legal-form suffix), non_profit (type N), foreign_org (type I), indigenous_org (type A) or unknown. attributes.observed holds what the rows show, as observation, not legal fact: first_row_date, last_row_date, provinces, countries, sources, occurrences and, for an identifier-free unit, place ({city} or {fsa}); attributes.created holds unit_key, rule (the create version that minted it: create-v2 counts distinct evidence; create-v4 reads the place from the city as creation.city_place does, so \"Toronto | Toronto\" and \"Toronto, Ontario\" are the city toronto, a province written after the city filling a blank province; create-v5 holds back a unit named as a roster entity only in that entity's province) and founded_release. valid_from is always blank and jurisdiction is set only from an identifier (ca for a BN9; the registry country of an org-id), since the rows give no evidence of either."
+    },
+    "entities/identifiers": {
+      "note": "One row version per (entity_id, namespace, value).",
+      "valid_from": "Blank. No roster says when a code was assigned.",
+      "valid_to": "Since registry-build-v2, the valid_to of the entity it identifies (a code ends with its entity); blank for an entity with none. An LEI attached from GLEIF has no dates."
+    },
+    "sources/buildcanada/federal_predecessors": {
+      "note": "Anything a reader of the entity needs, such as a successor inventory row that starts before the rename.",
+      "key": "The record key; a predecessor's short key (ccra), a succession's predecessor>successor, or a bound's anchor and field.",
+      "kind": "predecessor (a dissolved body, its own entity), succession (one succeeded_by row) or bound (a TBS inventory year refined to a day).",
+      "name": "Predecessor only. The body's legal name as its instrument writes it.",
+      "name_fr": "Predecessor only. The French name, where a captured page gives it.",
+      "aliases": "Predecessor only. Other names, each cited.",
+      "institutional_form": "Predecessor only. TBS institutional form, by analogy with the successor's inventory row.",
+      "valid_from": "Predecessor only. The day the body started, where a captured page gives it; blank otherwise.",
+      "valid_to": "Predecessor only. The day the instrument ending the body came into force. Never blank.",
+      "predecessor": "Succession only. A predecessor key, or an entity anchor such as ca/tbs/federal_inventory:77.",
+      "successor": "Succession only. An entity anchor, or a predecessor key.",
+      "event": "Succession only. renamed, reclassified, amalgamated, split, absorbed or transferred_functions.",
+      "effective_date": "Succession only. The day the instrument came into force. For an ending event it equals the predecessor's valid_to.",
+      "boundary_rule": "Succession only. successor, allowed only on renamed and absorbed; blank otherwise.",
+      "entity": "Bound only. The TBS inventory anchor refined.",
+      "field": "Bound only. valid_from or valid_to.",
+      "value": "Bound only. The day the instrument gives.",
+      "inventory_value": "Bound only. The year the inventory row gives; the build stops if the inventory no longer says it.",
+      "authority": "The instrument, its provision and its coming-into-force, in words. Never blank.",
+      "citations": "Every page the row relies on, as locator (URL), sha256 (of the page as captured) and pinpoint. At least one."
+    },
+    "sources/ca-on/tbs/provincial_agencies": {
+      "note": "One row per agency of Ontario's List of provincial agencies (XLSX, OGL-Ontario 1.0), unchanged; roster_rows.record holds every column as the sheet writes it, stripped. The file has no identifier: build.ontario_agencies keys each row by its normalized (Agency Name, AEAD 2010/AAD 2015 classification, Ministry) through catalog/ontario-crosswalk.json, and a row matching no key builds nothing and is a rename proposal. Reconciled on capture against the 43 agencies with 2024-25 financial statements on ontario.ca (catalog/roster-counts.json).",
+      "Agency Name": "The agency's English name; the record key. Unique in the January 2026 edition.",
+      "Organisme": "French name; name_fr of the entity.",
+      "Ministry": "Responsible ministry, as a short English name such as Attorney General; one provincial_ministry entity per crosswalk ministry key, and the agency's reports_to_minister link.",
+      "Ministère": "French ministry name. Known defect. It disagrees with Ministry on one row (Environment 8, Economic Development 2 in English; 7 and 3 in French).",
+      "Type": "Board-Governed, Non-Board-Governed or Advisory; attributes.governance.",
+      "Cluster": "Tribunals Ontario for its 12 tribunals, else blank.",
+      "AEAD, 2010 Classification/AAD, 2015 Classification": "Advisory, Adjudicative, Regulatory, Regulatory (governing board), Operational Service, Operational Enterprise or Trust; attributes.classification and part of the crosswalk label. There is no Crown corporation classification.",
+      "AEAD, 2000 Classification": "The older classification (I to IV, U, N/A); attributes.classification_2000.",
+      "O. Reg. 146/10: Public Body / Commission Public Body": "attributes.public_body.",
+      "O. Reg. 147/10: Prescribed Ethics Executive Position (Chair is Ethics Executive where none prescribed)": "Kept in the row only.",
+      "Ethics Executive for Appointees": "Kept in the row only.",
+      "O. Reg. 148/10: Delegation by PSC - Prescribed Individual (Chair has authority where none prescribed)": "Kept in the row only.",
+      "Website": "attributes.website, as written (often without a scheme)."
+    },
+    "sources/ca-on/edu/school_boards": {
+      "note": "One row per board and address of Ontario's school board and school authority contact list (English XLSX, monthly, OGL-Ontario 1.0). The record key is Board Number and Postal Code, because a board can be listed once per site (Grandview School Authority, B80020, twice in September 2026); the build makes one school_board entity per board number with every address in attributes.addresses. Reconciled on capture against the 72 district school boards on ontario.ca/page/education-facts (Board Type Pub Dist Sch Brd (E/F) or Cath Dist Sch Brd (E/F)).",
+      "Region": "Ministry region; attributes.region.",
+      "Board Number": "The ministry's board number; identifier ca-on.edu.board_number.",
+      "Board Name": "Name of the entity.",
+      "Board Language": "English or French; attributes.language.",
+      "Board Type": "Pub Dist Sch Brd (E/F), Cath Dist Sch Brd (E/F), Provincial/Hospital, Public School Board, Consortium, Sec Sch Brd (Sch Auth) or Prot Sep Sch Brd (Sch Auth); attributes.board_type. All are loaded as school_board.",
+      "Suite": "Address; in attributes.addresses.",
+      "PO Box": "Address; in attributes.addresses.",
+      "Street": "Address; in attributes.addresses.",
+      "City": "Address; in attributes.addresses.",
+      "Province": "Always Ontario.",
+      "Postal Code": "Address, part of the record key.",
+      "Phone Number": "Kept in the row only.",
+      "Fax": "Kept in the row only.",
+      "Website": "attributes.website."
+    },
+    "sources/ca-on/mecp/conservation_authorities": {
+      "note": "One row per feature of the Conservation Authority Administrative Area layer (Land Information Ontario MapServer LIO_Open03 layer 11, attributes only, OGL-Ontario 1.0), one per authority. Keyed by CA_ID. The layer is effective 2014-06-17 and its area fields are -1; reconciled on capture against Conservation Ontario's 36 authorities. No DGUID is published.",
+      "CA_ID": "The authority's number in the layer, 1 to 36; the record key and identifier ca-on.mecp.ca_id.",
+      "OGF_ID": "Ontario Geographic Framework feature ID; attributes.ogf_id.",
+      "LEGAL_NAME": "Legal name; name of the entity.",
+      "COMMON_NAME": "The name the authority uses, such as Conservation Sudbury; an alias.",
+      "F_TYPE": "Always Land.",
+      "GENERAL_COMMENTS": "attributes.comments, such as \"Under CA-MNR Review 2013\".",
+      "AREA_IN_HA": "Always -1. Known defect.",
+      "AREA_IN_SQ_KM": "Always -1. Known defect.",
+      "SYSTEM_CALCULATED_AREA": "Kept in the row only.",
+      "SYSTEM_CALCULATED_LENGTH": "Kept in the row only.",
+      "GEOMETRY_UPDATE_DATETIME": "Kept in the row only.",
+      "EFFECTIVE_DATETIME": "Milliseconds since 1970; 2014-06-17 for every row.",
+      "SYSTEM_DATETIME": "Kept in the row only.",
+      "OBJECTID": "The service's row number; not stable, not used.",
+      "SHAPE.AREA": "Always 0.",
+      "SHAPE.LEN": "Always 0."
+    },
+    "sources/buildcanada/indigenous_governments": {
+      "note": "Anything the reviewer needs, such as a pending subtype decision.",
+      "key": "The record key, a slug such as nisgaa-lisims-government or teslin-tlingit-final-agreement.",
+      "kind": "government, party or agreement.",
+      "name": "As the cited page writes it, including its spelling (Toquahy, Uchucklesacht on the 2019 implementation report).",
+      "entity_class": "Government only. indigenous_government, or organization for a representative or land-claim organization that is not a government (Inuit Tapiriit Kanatami, Gwich'in Tribal Council).",
+      "subtype": "self_governing_nation, inuit_government or metis_government for a government; indigenous_org, or land_claim_org for a land-claim organization (Makivik, Nunavut Tunngavik, the Inuvialuit Regional Corporation), for an organization.",
+      "jurisdiction": "Government only. The province or territory the government is in, where it is one.",
+      "aliases": "Government only. Other names a cited page gives (Makivvik).",
+      "agreements": "Government only. The agreements it is party to, each with its role.",
+      "band_number": "Party only. The ISC band number of the First Nation entity that gets party_to.",
+      "isc_name": "Party only. ISC's name for the band, where the page spells it otherwise.",
+      "agreement": "Party only. The agreement key.",
+      "role": "Party only. signatory.",
+      "effective_date": "Agreement only. The year (or month, or day) the agreement took effect, as CIRNAC gives it.",
+      "authority": "Who names the row, in words. Never blank.",
+      "citations": "Every page the row relies on, as locator, sha256 and pinpoint (the text on the page). At least one."
+    },
+    "sources/ca/cirnac/indigenous_agreements": {
+      "note": "One row per feature of CIRNAC's Indigenous agreements dataset (the current CSV in its pre-packaged ZIP, OGL-Canada): one agreement boundary, not a signatory; the dataset has no signatory column. Keyed by TAG_ID. Reconciled on capture with the ESRI layer's feature count (20 on 2026-09-25). Not built into entities; the curated roster's agreements stand on the CIRNAC pages.",
+      "TAG_ID": "CIRNAC's unique geographic identifier for the agreement area; the record key.",
+      "ENAME": "English name of the agreement.",
+      "FNAME": "French name of the agreement.",
+      "SUBTYPE_ENAME": "Kind of agreement, such as Self-Government Agreement or Consultation Agreement.",
+      "SUBTYPE_FNAME": "French kind of agreement.",
+      "STAGE_ENAME": "Stage, such as Federal Bilateral Agreement; often blank.",
+      "STAGE_FNAME": "French stage.",
+      "MAX_X_E": "Known defect. Equals CENTER_X in the 2026-09-24 export, so the bounding box is wrong.",
+      "MIN_X_W": "Western bound, decimal degrees.",
+      "MAX_Y_N": "Known defect. Equals CENTER_Y in the 2026-09-24 export.",
+      "MIN_Y_S": "Southern bound, decimal degrees.",
+      "CENTER_X": "Centre longitude.",
+      "CENTER_Y": "Centre latitude.",
+      "COORD_SYS": "Coordinate system, GCS_North_American_1983_CSRS."
+    },
+    "sources/ca/gleif/lei": {
+      "note": "One row per LEI record with a Canadian legal address, read from the GLEIF API by cursor (CC0 1.0) and flattened; the capture is one JSON-lines file. Reconciled on capture with the API's total on the first page (58,906 on 2026-09-24). RA000072 records whose registeredAs is a corporation number give gleif.lei identifiers to federal corporation entities (build.gleif_attachments); provincial registration authorities (RA000073 Alberta, RA000074 BC, RA000079 Ontario, RA000081 Quebec and others) stay on the rows.",
+      "lei": "The 20-character Legal Entity Identifier; the record key.",
+      "legal_name": "entity.legalName.name.",
+      "other_names": "entity.otherNames names, as a list.",
+      "registered_at": "entity.registeredAt.id, the GLEIF registration authority code (RA000072 is Corporations Canada).",
+      "registered_as": "entity.registeredAs, the number at that authority as GLEIF writes it (366563-1 for a federal corporation; the Corporations Canada CSV writes 3665631).",
+      "jurisdiction": "entity.jurisdiction, such as CA or CA-ON. RA000072 records are not all CA.",
+      "legal_form": "entity.legalForm.id, an ISO 20275 code.",
+      "entity_status": "entity.status, such as ACTIVE or INACTIVE.",
+      "registration_status": "registration.status, such as ISSUED or LAPSED.",
+      "legal_city": "entity.legalAddress.city.",
+      "legal_region": "entity.legalAddress.region, such as CA-QC.",
+      "legal_postal_code": "entity.legalAddress.postalCode.",
+      "legal_country": "entity.legalAddress.country, always CA.",
+      "last_update": "registration.lastUpdateDate."
+    },
+    "sources/ca-ab/edu/school_authorities": {
+      "note": "One row per school authority of Alberta Education's authority list (authority.xlsx, sheet Authority Information Report, header on row 3 below a title, OGL-Alberta), 445 rows on 2026-09-23. Keyed by Authority Code. Public, Separate and Francophone authorities become government_org / school_board entities (63); Charter, Private School, ECS Private Operator, Federal First Nations and Provincial authorities stay on the roster and are counted under rosters.alberta_school_authorities.not_loaded_by_type. No status column: the file lists current authorities. Reconciled on capture against the four francophone regional authorities on alberta.ca.",
+      "Authority Code": "The authority's code, a zero-padded string; the record key and identifier ca-ab.edu.authority_code.",
+      "Authority Name": "Name of the entity. (The sheet merges columns B and C for it; C is empty and not read.)",
+      "Authority Type": "Public, Separate, Francophone, Charter, Private School, ECS Private Operator, Federal First Nations or Provincial; attributes.authority_type.",
+      "Authority Address1": "Kept in the row only.",
+      "Authority Address2": "Kept in the row only.",
+      "Authority City": "attributes.city.",
+      "Authority Province": "Always AB.",
+      "Authority Postal Code": "attributes.postal_code, without spaces.",
+      "Authority Telephone": "Kept in the row only.",
+      "Authority Fax": "Kept in the row only.",
+      "Authority E-Mail": "Kept in the row only.",
+      "Authority Website": "attributes.website.",
+      "Extract Date": "The extract's date and time as an Excel serial number (46288.33 is 2026-09-23 08:00), as written."
+    },
+    "sources/ca-ab/registries/non_profits": {
+      "note": "One row per organization of the Alberta Non-Profit Listing (XLSX, monthly, OGL-Alberta), 70,065 rows on 2026-09-02, found in its open.alberta.ca package by pattern. The file has no registration number (correcting docs/entity-registry-v2.md, which expected one), so the record key is type, name, registration date and status, and no entities are built from it. Names are published with HTML entities (ACME &amp; DISTRICT) and are kept as published. No independent count is known (SUCKS.md).",
+      "Legal Entity Type Description": "Alberta Society, Non-Profit Private Company, Religious Society, Extra-Provincial Non-Profit Corporation, Non-Profit Public Company, Agricultural Society, Recreation Public or Private Company, or Private Act Non-Profit Corporation.",
+      "Legal Entity Name": "The registered name, as published. Not unique (170 names repeat).",
+      "Status": "The registry status, such as Active, Struck, Dissolved, Amalgamated or Cancelled; the listing's status definitions file defines 13 of the values.",
+      "Registration Date": "YYYY/MM/DD.",
+      "City": "The city; the header is published as \" City\", with a leading space the reader strips. Blank on 9,258 rows.",
+      "Postal Code": "Blank on 9,660 rows."
+    },
+    "sources/ca-qc/meq/school_service_centres": {
+      "note": "One row per school service centre or school board head office (MEQ, \"Sièges sociaux des centres de services scolaires et des commissions scolaires\", CSV, CC BY 4.0 per the Données Québec package, which discovery checks before each capture), 72 rows on 2026-09-22. Keyed by CD_ORGNS. Every row becomes a government_org / school_board. Reconciled on capture with the 72 codes of MEQ's separate territories dataset (60 + 9 + 3).",
+      "DT_MAJ_GDUNO": "Update date; blank on every row.",
+      "CD_ORGNS": "The organisme code; the record key and identifier ca-qc.meq.organisme_code.",
+      "NOM_COURT": "Short name, such as CSS du Littoral; an alias.",
+      "NOM_OFFCL": "Official name; name of the entity.",
+      "ADRS_GEO_L1_GDUNO": "Kept in the row only.",
+      "ADRS_GEO_L2_GDUNO": "Kept in the row only.",
+      "CD_MUNCP": "Municipality code; kept in the row.",
+      "NOM_MUNCP": "attributes.municipality.",
+      "STAT_MUNCP": "Kept in the row only.",
+      "CD_POSTL_GDUNO": "attributes.postal_code.",
+      "TYPE_ORGNS": "Centre de services scolaire or Commission scolaire; attributes.organisme_type. Littoral is typed Commission scolaire.",
+      "RESEAU": "Always Public.",
+      "SITE_WEB": "attributes.website.",
+      "COORD_X_LL84": "Longitude; kept in the row.",
+      "COORD_Y_LL84": "Latitude; kept in the row.",
+      "TYPE_CS": "Franco (60), Anglo (9) or Statut (3, the Cree, Kativik and Littoral boards); attributes.network.",
+      "NO_TEL": "Kept in the row only."
+    },
+    "sources/ca-qc/msss/health_establishments": {
+      "note": "One row per establishment of MSSS's M02 file (\"Liste des établissements\", CSV, CC BY 4.0 per the Données Québec package, checked before each capture), 127 rows on 2026-09-16. Keyed by ETAB_CODE. Public establishments (STATUT_COD 1, 3 or 4) become government_org / health_authority entities (51); private establishments (2) are counted under rosters.quebec_health_establishments and not built. Reconciled on capture with the 51 public establishments quebec.ca counts. Known defect. The technical sheet defines STATUT_COD 1 and 2 only.",
+      "ETAB_CODE": "Eight-digit permit number; the record key and identifier ca-qc.msss.etab_code.",
+      "ETAB_NOM": "Name of the entity.",
+      "ETAB_NOM_A": "Short name; an alias.",
+      "RSS_CODE": "Health region code; attributes.region_code.",
+      "RSS_NOM": "Health region; attributes.region.",
+      "MUN_NOM": "attributes.municipality.",
+      "CODE_POSTA": "attributes.postal_code, without spaces.",
+      "STATUT_COD": "1 public, 2 private, 3 Santé Québec territorial establishment, 4 Santé Québec non-territorial establishment (3 and 4 read from their names and quebec.ca's counts, not from the sheet); attributes.status_code.",
+      "DATE_INCOR": "Incorporation date, YYYY-MM-DD; valid_from of the entity. Blank (a space) on 40 rows, most Santé Québec establishments.",
+      "note_other_columns": "ADRESSE, CASE_POST, MUN_CODE, CLSC_CODE, CLSC_NOM, MRC_CODE, MRC_NOM, RLS_CODE, RLS_NOM, RUIS_CODE, RUIS_NOM, MD_CONS_CO, MD_FINAN_C, DESIGN_MIN, INSTANCE, LONGITUDE, LATITUDE, the mission flags (CHPSY, CHSGS, CHSLD, CLSC, CPEJ, CRDITED, CRDPA, CRDPM, CRDPV, CRDPL, CRJDA, CRMDA, CRD) and DATE_MAJ are kept in the row only, as MSSS defines them in the M02 technical sheet."
+    },
+    "sources/ca/nserc/eligible_institutions": {
+      "note": "One row per institution on NSERC's list of eligible institutions (HTML). The page states no licence (its footer is added by script), so the names are an index only: build.charity_subtype gives a teaching-institution charity subtype university when a name matches one in the Canadian Universities section after normalization, and catalog/nserc-charity-crosswalk.json (nserc-charity-v1) matches 80 of the 81 universities to the charity BN9 that is the institution (the legal names differ for 16, such as THE GOVERNING COUNCIL OF THE UNIVERSITY OF TORONTO); the matched charity gets subtype university, and resolution indexes the NSERC name as an exact-name key of that charity in its province (read from the pinned capture), so a spending row naming the university matches it. The NSERC name is never written to the entity: not an alias, not an attribute. The crosswalk keys rows by record key (section and name) and holds nothing else from the list. Not published as entities or rows of their own. Colleges are not crosswalked. The three affiliated research centres are listed outside the province blocks and are not read.",
+      "section": "Canadian Universities or Canadian Colleges.",
+      "province": "The province block the name is listed under.",
+      "name": "The institution's name, without the trailing asterisk.",
+      "exceptional": "true when the page marks the name with an asterisk (college eligibility granted on an exceptional basis), else blank."
+    },
+    "sources/ca/ised/federal_corporation_details": {
+      "note": "Corporations Canada's public record of each federal corporation (OGL-Canada), two responses per corporation number of the ca/ised/federal_corporations roster: the JSON API record (https://ised-isde.canada.ca/cc/lgcy/api/corporations/<number>.json?lang=eng) in warehouse.corporation_details, and the Federal corporation information page (https://ised-isde.canada.ca/cc/lgcy/fdrlCrpDtls.html?corpId=<number>&lang=eng) in warehouse.corporation_pages, each stored gzipped exactly as received (raw, sha256 of the uncompressed bytes, http_status, fetched_at) and never fetched again unless refreshed. Directors and individuals with significant control, shown only on the page, are parsed into warehouse.corporation_directors and warehouse.corporation_significant_control. The names and addresses are public under the CBCA, the NFP Act and the CBCA ISC register (public since 2024); they are published as Corporations Canada shows them. Partitioned by shard; each shard's responses are also archived to R2 as one gzip JSON-lines object (warehouse.corporation_detail_archives). docs/RUNBOOK.md, \"Corporation records\".",
+      "corporation_number": "The Corporations Canada corporation number without its check digit, as the roster writes it (2493306, shown 249330-6 on the page); the key of every table.",
+      "outcome": "found, or not_found (the API answers [\"could not find corporation <n>\", ...]; the page shows no corporation panel). A not_found response is stored and not fetched again.",
+      "corporation_id": "The record's corporationId; equals corporation_number (check numbers_match).",
+      "status": "The JSON status, more detailed than the roster's (Active, Dissolved, Inactive - Amalgamated, Inactive - Discontinued, Active - Dissolution Pending (Non-compliance), Active - Intent to Dissolve Filed ...).",
+      "act": "Governing act, as written (Canada Business Corporations Act; Canada Not-for-profit Corporations Act; Canada Corporations Act - Part  II, with the source's double space).",
+      "bn9": "The first nine digits of businessNumbers.businessNumber; blank when the record has none (common before about 1995).",
+      "incorporated_on": "Date of the earliest Incorporation activity; blank for a corporation that came by continuance or amalgamation.",
+      "dissolved_on": "Date of the latest activity starting \"Dissolution\", blank when a Revival is later (\"Statement of Intent to Dissolve\" is not a dissolution). Some old records say Dissolved with no Dissolution activity, so no date (2453, dissolved, Boards of Trade Act).",
+      "amalgamated_on": "Date of the latest Amalgamation activity, the day this corporation was formed by amalgamating others. A corporation that amalgamated into another has status Inactive - Amalgamated and no dated activity for it (154768); its date is the successor's amalgamated_on, which the record does not link.",
+      "discontinued_on": "Date of the latest Discontinuance (continued into another jurisdiction, named in the activity's jurisdictionId).",
+      "last_annual_return_year": "The largest annualReturns yearOfFiling.",
+      "names": "JSON list of corporationNames, unwrapped (name, nameType, current, effectiveDate, expiryDate).",
+      "activities": "JSON list of activities, unwrapped (activity, date, and section or jurisdictionId where given).",
+      "annual_returns": "JSON list of annualReturns, unwrapped (annualMeetingdate, yearOfFiling, typeOfCorporation).",
+      "directors": "On corporation_pages, the number of directors the page lists.",
+      "significant_control": "On corporation_pages, the number of individuals with significant control the page lists (current and previous).",
+      "isc_updated_on": "On corporation_pages, the ISC panel's \"Last updated or confirmed\" date. The panel appears for CBCA business corporations only (not NFP Act or Canada Corporations Act ones), and in the smoke test of 2026-09-28 on 16 of 17 active CBCA corporations and none of 13 dissolved ones.",
+      "isc_note": "On corporation_pages, the ISC panel's sentence when it lists nobody (\"There are no individuals with significant control over the corporation.\").",
+      "error": "The last failed fetch's error (HTTP 500, a network error, or a 200 with an unexpected body), with error_status, error_at and error_raw (its body, gzipped, at most 64 KB). A stored response is never replaced by a failure; a success clears these.",
+      "archive_sha256": "The R2 archive that holds the stored response; blank until the shard is archived.",
+      "note_directors": "corporation_directors: one row per director listed on a stored page, in page order (position from 0): name and the address as the page shows it (address, lines joined by newlines; address_lines, a JSON list). Replaced when the page is refetched; page_sha256 names the page read.",
+      "note_significant_control": "corporation_significant_control: one row per individual with significant control on a stored page: current (1 under \"Current individuals\", 0 under a previous list), name, address_label (\"Address for service\" when the page labels the address so; blank means the address shown, which the corporation filed), address and address_lines, interest (Type of interest or control), holds_shares (Directly or Indirectly), control (Individually or Jointly), holding (the share band, such as At least 25% and up to 50% of the shares), start_date and end_date where shown, and fields, every label and value of the entry as shown."
+    },
+    "sources/ca/ised/federal_corporation_details/plan": {
+      "note": "corporation_detail_plan: one row per corporation number of the roster's latest capture set when planned, with tier (1 a BN9 some current registry occurrence carries as ca.cra.bn9, that is a grants recipient_business_number; 2 a roster reference of a current occurrence, roster_refs, or a registry entity anchored on the number; 3 Dissolved or Inactive in the roster; 4 the rest), shard (t<tier>-<nnnn>, 5,000 numbers, in number order within a tier), capture_id, bn9, roster_status and planned_at. A number keeps its tier and shard when the plan is extended by a later capture. Each shard is a work row (work, kind fetch, family corporations, key corporations:<shard>) holding its size, runs and completion."
+    },
+    "entities/relationships": {
+      "note": "One row version per (subject_id, predicate, object_id, object_ref). valid_from is not part of the key, so a relationship that ends and later holds again (an ownership re-acquired) cannot be two rows yet.",
+      "valid_from": "Since registry-build-v2: for succeeded_by, the effective_date of the succession; for party_to, the agreement's effective_date; for located_within, and for controlled_by on basis statute (a body its enabling instrument makes a controlled body), the subject's valid_from. Blank for the rest, whose sources give no start: owned_by and controlled_by from Crown holdings, reports_to_minister (a lead department), member_of (ISC's association file has no dates; since registry-build-v3 a curated member row starts at its government's valid_from, which only the Tlicho Government has: 2005-08-04), governs, covers. Blank before registry-build-v2.",
+      "valid_to": "Since registry-build-v2, the subject's valid_to (no link outlives its subject), except succeeded_by, which never ends. Blank for a subject with none, and before registry-build-v2."
+    },
+    "entities/mention_occurrences": {
+      "note": "One row version per occurrence_id. snapshot_id is the spending version the row was read from (an Iceberg snapshot ID before 2026-09-30); spending_row_id is the spending table's id column; position is the index within an array field such as GAC recipients, else 0. Until a rule's (method, versions) pair is activated from a gold set, no rule links, so entity_id is blank on every occurrence (0 of 12,313,634 in release 11), and a rule's match is reason proposed with the proposed entity first in candidates, so consumers read candidates[0] of a proposed occurrence, whose precision is not yet measured. Retention. Only the versions current in the last published release are kept (FACT_FACTORY_REGISTRY_KEEP_RELEASES, default 1). After each publish, fact-factory entities prune deletes every version retired in or before K, the last published release (releases.prune; decided 2026-09-29, no archive). An older release is marked pruned (warehouse.registry_releases.pruned_at) and its occurrences as of that release are incomplete, so it is not reproducible from the warehouse, and the gold set, activation, AI review and creation samples refuse it.",
+      "province": "Lowercase two-letter province code from the spending row, when it maps.",
+      "city": "The party's city as the spending row publishes it (recipient_city), trimmed. Blank when the source gives none, and on a research_org occurrence, since the row's city describes the recipient.",
+      "postal_code": "The party's postal code when it is a complete Canadian code, uppercase without spaces (A1A1A1). Blank when the source gives none, gives only the forward sortation area, gives a malformed value, or the party is outside Canada.",
+      "fsa": "The forward sortation area (A1A), the first three characters of postal_code, or a bare FSA as the source publishes it (proactive_contracts). Blank when the source gives neither.",
+      "kind_reason": "Why the party got its party_kind, as entities/occurrences.py decides it: grants_recipient_type_<code> (the grants recipient_type A, F, G, I, N, O, P or S), grants_researcher_name_type_<code> (since occurrences-v5: a recipient written as a researcher, \"Surname, Given\" or \"Surname, Given-Institution\", under an organization type, which is an individual; about 7,000 grants rows in release 7, over 99% of the 4,867 distinct names persons on review, the rest mostly type N \"Name, Place\" organizations), payer_field, institution_field, blank_name, blank_type_org_marker, blank_type_person_name_rule, blank_type_unsure_default_organization (since occurrences-v7: the person rule is unsure, so the party is an organization candidate; about 50 of 80 such names sampled in release 8 were organizations), blank_type_unsure_default_individual (the same case until occurrences-v6, excluded as an individual), withheld_name (since occurrences-v7: the name is only a withheld-name label such as REDACTED, Name withheld or Payment made to individual / Paiement émis à un individu, an individual whatever the recipient type), blank_type_roster_name (since occurrences-v6: the name equals, normalized, a current non-charity roster organization's name, such as Nunavut Tunngavik; since occurrences-v8 every name of an ISC First Nation, tribal council or Indigenous government counts, such as Mistawasis Nêhiyawak) and so on. Since occurrences-v8 a name written the same on both sides of \"|\" (Charles McCardle|Charles McCardle) is classified as its one side, and Secretariat is an organization word. Since occurrences-v7 a \"Surname, Given\" name in any case (SANDHU, MANJIT SINGH) is blank_type_person_name_rule. Since occurrences-v6 people named together need each side to be a person's name, so a trade or institution name joined by & is an organization; researcher names accept surname particles and lower-case names followed by an institution, and not foreign institution words or a legal form after the comma (Instituto Blacksmith México, A.C.). Since occurrences-v5 the person rule also marks an organization by a trade, community or Indigenous word (occurrences.TRADE_WORDS) unless the name also names a person (\"Chad Parr Painting\"), by a partnership or foreign legal form (GP, s.e.c., Sdn Bhd), or by an English and a French name joined by \"|\"; a title (Dr., Mr.) or a \"Last, First (Affiliation)\" name is an individual. On 8,286 blank-type excluded_individual rows sampled from release 7, 1,682 (1,022 names) became organizations, none of them a person's given name and surname; on 20,443 blank_type_org_marker rows, 121 became individuals, 119 of them researchers written \"Last, First (University)\". Entity creation reads the recipient type from it.",
+      "country": "ISO 3166-1 alpha-2 country the row places the party in (CA when a province maps and no country is given); blank where the source gives neither. For GAC recipients it is blank, since the field naming the recipient's country is unverified.",
+      "create_unit": "For an unlinked or created-member organization occurrence, its entity creation unit: its identifier (ca.cra.bn9:<bn9>, else org-id:<ref>), or name: followed by the JSON list [normalized name, province, place kind, place], place being the normalized city, else the FSA. Blank when the occurrence has neither an identifier nor a place, and for every other occurrence.",
+      "create_reason": "For an unlinked no_candidate organization occurrence (or one fuzzy review left ai_undecided), why creation made no entity for its unit: too_few (fewer than three occurrences across two fiscal years or two sources, and no identifier; since create-v2 occurrences are counted as distinct evidence, so an archive-imported copy of a live row, the same spending row under <source>@archive_import, counts once, and so does a content copy of a row in one snapshot, a row with source_occurrence above 1 whose content equals an earlier row's), single_token, person_rule (a name the person rule calls an individual; since occurrences-v7 a name it is unsure of is not one), pending_review (fuzzy candidates awaiting AI review), identifier_held (another entity holds its identifier), identifier_conflict (names disagree under one identifier; queued), namesake_of_identified (its name and province belong to an identified unit; listed), namesake_unplaced (no city or FSA), roster_gap (government, academic or marker-word units, and since create-v4 units with a member whose name is a current roster entity's name, French name or alias, such as a federal body named in a recipient field; since create-v5 only in that entity's province when it has one, the row's province being its own, its city field's or its FSA's; this test comes before too_few and single_token; they go to fuzzy review and the roster gap list, never to creation) or rule_inactive (the unit passes the create rule but the create pair is not active: a proposal). Blank for every other occurrence.",
+      "row_date": "The row's date under its source's date rule; see SOURCE_DATE_RULES in entities/occurrences.py.",
+      "identifiers": "Validated identifiers from the row as JSON, by namespace. Since occurrences-v9 an individual occurrence keeps its identifiers too (a sole proprietor's business number, or an institution's BN written on a researcher's row); before, they were removed. Resolution excludes every individual before reading identifiers, so an individual's identifier never links it to an entity.",
+      "roster_refs": "For each candidate that is a roster reference (ca/ised/federal_corporations:<number>, a corporation with no entity yet, or first linked in this release), the roster row the release read, as JSON: {ref: {source_key, record_key, capture_id, row_sha256}}. row_sha256 is the digest of that row's record (rosters.row_sha256). Blank when no candidate is a roster reference.",
+      "row_context": "For an occurrence the rules left conflict or ambiguous, what AI review is shown from the spending row, as JSON: payer, program and description, each where the source publishes it (published columns payer, program, description). Never the amount. Blank for every other occurrence.",
+      "review_unit_id": "For an occurrence the rules left conflict or ambiguous, its AI review unit key: the SHA-256 of everything the reviewer is shown (source, field, raw name, identifiers, province, city, postal code or FSA, period key, row_context, and each candidate with its pinned version: an entity's row_id in the release, or a roster reference's pin). Occurrences with the same key share one review. The period key is the fiscal year, or the row date where a candidate's validity changes inside that year. Also set for a no_candidate organization occurrence that has fuzzy_candidates, whose unit holds those candidates marked fuzzy and is reviewed under the fuzzy-v1 pair. Blank for every other occurrence.",
+      "evidence_sha256": "The SHA-256 of what the rules computed for the occurrence before decisions (resolve.evidence_digest, evidence-v1): its extracted fields and the rules' outcome, every candidate they found, the roster rows pinned for them and the payer attribution. Bookkeeping for incremental resolution: a build that computes the same digest for an occurrence that no decision names, that is not a review unit and whose fuzzy search cannot find anything new keeps the row version as it is. Blank on row versions written before incremental resolution.",
+      "fuzzy_candidates": "For a no_candidate organization occurrence whose normalized name has a municipal, university, hospital or First Nation marker word (goldset.MARKER_WORDS), its fuzzy-v1 candidates as a JSON list of refs, best first, at most 8: records sharing the name's rarest token in the release's token index, ranked by token overlap (Jaccard). A charity or First Nation is named by its entity ID; a federal corporation by its roster reference, pinned in roster_refs. Shown to AI review only, under the pair with candidate_generator fuzzy-v1; no rule links on them. Blank for every other occurrence."
+    },
+    "entities/mentions": {
+      "note": "Current state. One row per (source_key, field, raw_name) of the current occurrences with occurrences (count), linked (count linked; proposals are not links) and entity_ids (distinct entities linked); a slice's rows are rebuilt by each revision that writes or retires its occurrences, and revision_id names that revision."
+    },
+    "entities/resolution_decisions": {
+      "note": "One row per decision, versioned like the other registry tables (row_id, content_sha256, source, recorded_at, revision_id, retired_revision_id). A decision is in force in the revisions between revision_id and retired_revision_id; a replacement names it in supersedes, and no decision is edited. Columns decision_id, subject, subject_kind, outcome, entity_id, entity_ref, decider, versions, input_sha256, evidence, supersedes and retired_reason. AI review decisions are written by resolution revisions from stored answers (fact-factory entities ai-review), one per occurrence of a review unit. Creation writes one created_member decision (decider rule, versions the create pair, input_sha256 the digest of the occurrence's create_unit, evidence unit_key and founding) per occurrence that joins a created entity; entity-level decisions (subject_kind entity, subject a created entity) are redirect (entity_id the survivor; by a reviewer, or by the redirect pair once active), correction (a reviewer keeping the entity, which reverses a redirect) and same_as (entity_ref.ref a roster record that covers the entity and attaches to its ID). A decision can have several row versions (overridden_by is added in a new one); decision_id stays.",
+      "source": "The decider as origin, such as {\"origin\": \"ai\"}."
+    },
+    "sources/ca/statcan/t_<productId>": {
+      "note": "Pending a PostgreSQL design (2026-09-30): not loaded; as designed with Iceberg: One Iceberg table per Statistics Canada table (cube), sources.ca.statcan.t_<product_id>, from its English full-table CSV (WDS getFullTableDownloadCSV). One row per datapoint: unique by (coordinate, ref_date), checked on every load (coordinates_unique). A long table's rows equal StatCan's nbDatapointsCube. Census tables (product IDs 98...) are published wide; each value cell is one row. Replaced whole at each StatCan release; earlier releases are earlier snapshots. Columns: product_id, ref_date, geo, dguid, one statcan_dimension column per further dimension, uom, uom_id, scalar_factor, scalar_id, vector, coordinate, value, status, symbol, terminated, decimals, source_row, source_column, capture_sha256. Licence: Statistics Canada Open Licence.",
+      "domain": "statcan",
+      "statcan_dimension": "The columns between dguid and uom. Census tables also get one for the dimension their value columns spread across (such as sex_3).",
+      "known_gaps": "uom, uom_id, scalar_factor, scalar_id, vector, terminated and decimals are blank in census tables, whose CSV has no such columns; members.uom_code has the unit of each member of a dimension with has_uom. English labels only; French names are in sources/ca/statcan/members and dimensions."
+    },
+    "sources/ca/statcan/dimensions": {
+      "note": "One row per dimension of each loaded table, from the getCubeMetadata JSON of the release its table holds; unique by (product_id, dimension_position_id). Partitioned by product_id, each table's partition replaced whole. Columns product_id, dimension_position_id, name_en, name_fr, has_uom, members, release_time, metadata_sha256."
+    },
+    "sources/ca/statcan/members": {
+      "note": "One row per member of each dimension of each loaded table, unique by (product_id, dimension_position_id, member_id). Columns product_id, dimension_position_id, member_id, parent_member_id, name_en, name_fr, classification_code, classification_type_code, geo_level, vintage, member_terminated, uom_code, metadata_sha256.",
+      "vintage": "The geography vintage of a geography member (vintage), such as 2021, as a string."
+    },
+    "sources/ca/statcan/footnotes": {
+      "note": "One row per footnote of each loaded table and member it is attached to (a footnote attached to several members is several rows). Columns product_id, footnote_id, text_en, text_fr, dimension_position_id and member_id (0 and 0 for the whole table), metadata_sha256."
+    },
+    "sources/ca/statcan/cubes": {
+      "note": "The WDS listing (getAllCubesListLite), one record per table, kept in PostgreSQL (statcan_cubes) with every listing captured in R2; not an Iceberg table. The checked-in catalog/statcan-cubes.json is its slowly changing part (product ID, CANSIM ID, titles, subject and survey codes, frequency, archived) and defines the assets. Between midnight and 08:30 Eastern the listing leaves out tables locked for the day's release."
+    },
+    "statcan_tables": {
+      "note": "Not exported since 2026-09-30 (StatCan storage pending a PostgreSQL design); as it was: The public catalog export (statcan_tables.jsonl.gz), one row per loaded StatCan table at the snapshot it is published at. id is the Iceberg identifier (sources.ca.statcan.t_<product_id>), not a spending row id. Columns product_id, title_en, title_fr, subject_code, frequency_code, archived, release_time, retrieved_at (when we fetched the zip, epoch seconds), source_url (the WDS zip URL), table_url (the table's page at StatCan), csv_sha256 and metadata_sha256 (each with a _url to the stored bytes), layout (long or wide), rows, snapshot_id, metadata_location, metadata_url, parser_version, release_key (SHA-256 of product, csv_sha256 and parser version), published_at (when we published it, epoch seconds), licence (statcan-open-licence) and delisted_at (when WDS stopped listing the table, epoch seconds; blank while listed; the table stays published with its history).",
+      "archived": "WDS archiveStatusCode as published, 2 current and 1 archived (no longer updated).",
+      "frequency_code": "WDS frequencyCode (getCodeSets, frequency), such as 6 monthly, 9 quarterly, 12 annual."
+    },
+    "statcan_normalized/t_<productId>": {
+      "note": "Pending a PostgreSQL design (2026-09-30): not loaded; as designed with Iceberg: One Iceberg table per StatCan table except the census (98-) tables, which are not normalized, statcan_normalized.t_<product_id>, built from the raw table's current snapshot (sources/ca/statcan/t_<productId>, which stays as published and is what to cite). Every raw row and column, in the raw order and under the raw names (a dimension column whose name a derived column takes gets the suffix _dimension), then period_start, period_end, frequency, value_scaled, unit, status_label, is_suppressed, is_unreliable, is_missing, is_rounded_zero, quality_grade, is_preliminary, is_revised, is_terminated, dguid_vintage, dguid_type, dguid_schema, geo_level, sgc_code, province, entity_id, entity_match, registry_release_id, and a statcan_member_id and a statcan_code column per dimension (geo_member_id, geo_code, then <dimension column>_member_id and _code). Replaced whole at each build; the snapshot summary names the raw release and snapshot, the registry release and the normalizer version. Licence: Statistics Canada Open Licence (adapted data).",
+      "domain": "statcan",
+      "statcan_dimension": "As in the raw table.",
+      "entity_id": "The registry entity of the row's geography, as entity_match says; blank when not linked."
+    },
+    "statcan/series": {
+      "note": "Pending a PostgreSQL design (2026-09-30): not loaded; as designed with Iceberg: One row per StatCan vector across every table, statcan.series, partitioned by product_id (each table's slice replaced at its build) and sorted by vector. Census (98-) tables are not normalized, so they are not here. Unique by vector (vectors_unique). Columns product_id, title, vector, coordinate, series_name, dimension_members, classification_codes, unit, scalar_id, scalar_factor, frequency, dguid, geo_level, province, sgc_code, entity_id, entity_match, first_ref_date, last_ref_date, first_period_start, last_period_end, observations, is_terminated, release_time, raw_snapshot_id, capture_sha256, registry_release_id. The attributes of the series' first row (unit, scalar, geography) are the series' own; StatCan gives each vector one.",
+      "domain": "statcan",
+      "entity_id": "The registry entity of the series' geography.",
+      "release_time": "When StatCan released the table data the series was built from.",
+      "capture_sha256": "The raw capture (full-table zip) the series was built from."
+    },
+    "statcan/observations": {
+      "note": "Pending a PostgreSQL design (2026-09-30): not loaded; as designed with Iceberg: One row per StatCan datapoint across every table except the census (98-) tables, which are not normalized, statcan.observations: the rows of every normalized table, fewer columns. Partitioned by product_id (each table's slice replaced at its build); within a slice sorted by vector, then period_start. For one series, read statcan/series for its product_id and filter both; for one entity, read the series with that entity_id, then their product_ids and vectors. Columns product_id, vector, coordinate, ref_date, period_start, period_end, frequency, value, value_scaled, scalar_id, unit, status, status_label, is_suppressed, is_unreliable, is_missing, is_rounded_zero, quality_grade, is_preliminary, is_revised, is_terminated, dguid, geo_level, province, sgc_code, entity_id, entity_match, capture_sha256, source_row, registry_release_id.",
+      "domain": "statcan",
+      "entity_id": "As in statcan_normalized/t_<productId>."
+    },
+    "statcan_normalized/tables": {
+      "note": "The Dagster asset standing for every statcan_normalized.t_<productId> table (one asset, not one per table); its checks cover the tables a run built."
+    },
+    "statcan_normalized": {
+      "note": "Not exported since 2026-09-30 (StatCan storage pending a PostgreSQL design); as it was: The public catalog export (statcan_normalized.jsonl.gz), one row per StatCan table with a published normalized build. id is the Iceberg identifier (statcan_normalized.t_<product_id>). Columns product_id, release_key, normalizer_version, registry_release_id, raw_snapshot_id, table_snapshot_id, series_snapshot_id, observations_snapshot_id, rows, series, published_at.",
+      "domain": "statcan"
+    },
+    "publication/derived_tables": {
+      "note": "Tables the public API reads beside the registry and spending tables, because they are too slow to compute per request (src/fact_factory/derived.py; docs/RUNBOOK.md, \"Derived tables\"). They follow the registry's head: each build (entity_registry_job, registry_daily_job or derived_tables_job) brings them from the last build point to the head in one transaction, and its derived_builds row is written last, so a reader that sees revision N there sees all of it. entity_names, spending_summary and spending_counterparties are versioned like the registry tables: a row is current as of revision N when revision_id <= N and (retired_revision_id is blank or retired_revision_id > N). Spending rows as of N are those of the version each live slice was last resolved in full at. The blocking checks summary_reconciles (up to 200 sampled entities recomputed in Python) and names_cover_entities run before the derived_builds row is written; a failure writes nothing. york_factory reads these and every other fact-factory table directly, as the read-only role api_reader; there is no serving copy (since 2026-09-30).",
+      "derived_builds": "One row per build point: revision_id (the registry revision the tables were brought up to), previous_revision_id (the build before it; blank for the first), slices (per live slice label, such as sources/ca/tbs/proactive_grants: the spending version it was read at, blank when nothing is published), counts (rows added and retired per table, and the entities whose summaries were recomputed; entities is blank on a full rebuild), checks (the blocking checks with their metadata), build_version, built_at (Unix seconds) and build_seconds. A slice last resolved at a version the spending tables cannot read (an Iceberg snapshot ID) holds builds back until it resolves again (fact-factory derived status).",
+      "entity_names": "One row per name, French name or alias of an entity version (entities.row_id): kind (name, name_fr or alias), name as published, normalized_name (names.normalize), match_key and normalization, with the entity_id and the entity version's revision_id and retired_revision_id. Exact-name search reads match_key. Written for each entity version a revision adds; a retired version's names are retired with it.",
+      "spending_summary": "One row per (entity_id, role, asset_key, fiscal_year, currency), versioned by revision_id and retired_revision_id (a build recomputes only the entities linked to a changed row, retiring their rows), under fixed rules: only linked (entity_id set) live occurrences, never archive_import; one row per source, never summed across sources; role payer, recipient (recipient, recipients and vendor_name fields) or research_org; a live record held in several resources counts once; where the table ranks revisions (revision_rank_json), only the highest-ranked revision per canonical_id counts. record_count, agreement_count, amount (sum of the counted amounts in currency; blank when none has an amount, never 0 for missing), amount_missing_count, aggregated_excluded (is_aggregated rows left out), revisions_excluded (lower revisions left out). measure names what amount measures: contract_value (proactive contracts), aggregated_contract_value, agreement_value (grants: not money paid), payments_or_expenditure (transfer payments), award_amount (NSERC, SSHRC, CIHR) or commitment (GAC). source_key is the adapter. id is a surrogate key.",
+      "spending_counterparties": "The spending summary split by counterparty, versioned as the summary is: for each entity linked as payer (field payer) or recipient (fields recipient, recipients, principal_investigator, vendor_name) on live rows, the linked entity in the other role on the same row (counterparty_id; blank when none is linked, and a row with two linked counterparties counts under each), with the summary's rules, measures and columns (record_count, agreement_count, amount, amount_missing_count, aggregated_excluded, revisions_excluded). research_org is in neither role. Precomputed so group_by=counterparty is a lookup."
+    },
+    "publication/public_catalog": {
+      "note": "catalog/latest.json points at the current index.json (content-addressed). Since 2026-09-29 a run whose index content (everything but generated_at) equals the latest one's publishes nothing, and each published index is appended to catalog_history and catalog/history.json (entries index_sha256, url, visible_from in Unix seconds and visible_from_utc; the catalog current at a time T is the last entry with visible_from <= T; before the first entry nothing was recorded). Since 2026-09-30 the index lists raw_captures (the content-addressed key, sha256/<first two characters>/<sha256>, its public URL prefix, and the exports that list them: spending_snapshots and documents) and api (the public API, to come); no Iceberg tables, releases or StatCan exports. The index adds history (its URL and rule) and dictionary (catalog/dictionary.json, the machine-readable export of this file, and its sha256; also listed under exports as dictionary.json)."
+    },
+    "elections/captures": {
+      "note": "Every source response the elections pipeline stored in R2, one row per distinct set of bytes (the candidate list PDF, the voting information page, the boundary files, the 2024 results CSV, the results container listing and pages, and each page the contact research and verification captured). Fetching the same bytes again only moves last_retrieved_at. Raw captures are stored unchanged, including the agents' addresses and phone numbers on the candidate list.",
+      "sha256": {
+        "meaning": "SHA-256 of the bytes, which are in R2 under sha256/<first two characters>/<digest>. Every row that names a capture (capture_sha256, first_seen_capture, last_seen_capture) names this.",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Never blank."
+      },
+      "kind": {
+        "meaning": "What the response is.",
+        "type": "string",
+        "values": [
+          "bc_boundaries",
+          "bc_candidate_list",
+          "bc_voting_info",
+          "bc_results_by_voting_place",
+          "bc_results_listing",
+          "bc_results_page",
+          "contact_page"
+        ],
+        "blank_means": "Never blank."
+      },
+      "url": {
+        "meaning": "The URL the bytes were fetched from, after redirects, when first fetched.",
+        "type": "string (URL)",
+        "blank_means": "Never blank."
+      },
+      "bytes": {
+        "meaning": "Size of the response.",
+        "type": "int64",
+        "units": "bytes",
+        "blank_means": "Never blank."
+      },
+      "content_type": {
+        "meaning": "The Content-Type the server sent, without parameters.",
+        "type": "string",
+        "blank_means": "The server sent none."
+      },
+      "first_retrieved_at": {
+        "meaning": "When these bytes were first fetched.",
+        "type": "float (Unix seconds)",
+        "blank_means": "Never blank."
+      },
+      "last_retrieved_at": {
+        "meaning": "When these bytes were last fetched. A poll that finds the same bytes moves only this.",
+        "type": "float (Unix seconds)",
+        "blank_means": "Never blank."
+      },
+      "metadata": {
+        "meaning": "What the loader read from the capture about itself, such as published_at_as_shown (the candidate list's timestamp as printed).",
+        "type": "JSON object",
+        "blank_means": "Empty object."
+      }
+    },
+    "elections/offices": {
+      "note": "One row per kind of seat, seeded from catalog/elections/<jurisdiction>.json and replaced on reload.",
+      "id": {
+        "meaning": "Path key of the office, such as ca/bc/legislative-assembly/mla.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "title": {
+        "meaning": "The seat's title as the source shows it, such as Member of the Legislative Assembly.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "title_fr": {
+        "meaning": "The French title, where the source gives one.",
+        "type": "string",
+        "blank_means": "The source gives no French title."
+      },
+      "body_name": {
+        "meaning": "The body the seat is on, such as Legislative Assembly of British Columbia.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "body_level": {
+        "meaning": "The level of government of the body.",
+        "type": "string",
+        "values": [
+          "federal",
+          "provincial_territorial",
+          "municipal",
+          "regional",
+          "school",
+          "indigenous",
+          "other"
+        ],
+        "blank_means": "Never blank."
+      },
+      "jurisdiction": {
+        "meaning": "Key of the jurisdiction in catalog/jurisdictions.json, a lowercase ISO 3166-2 code such as ca-bc.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "source_url": {
+        "meaning": "The law or page that defines the office.",
+        "type": "string (URL)",
+        "blank_means": "Not recorded."
+      }
+    },
+    "elections/elections": {
+      "note": "One row per election event run by one administrator on one schedule, seeded from the catalog. The deadlines and voting_notes are transcribed by hand from the captured voting information page (capture_sha256). Deadlines are ISO 8601 timestamps with offset, or dates.",
+      "id": {
+        "meaning": "Path key of the election, such as ca/bc/elections/2026-10-24-general.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "jurisdiction": {
+        "meaning": "Key of the jurisdiction in catalog/jurisdictions.json, such as ca-bc.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "administrator": {
+        "meaning": "The election authority, such as Elections BC.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "kind": {
+        "meaning": "The kind of election.",
+        "type": "string",
+        "values": [
+          "general",
+          "by_election",
+          "referendum"
+        ],
+        "blank_means": "Never blank."
+      },
+      "called_on": {
+        "meaning": "The day the election was called.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Not recorded (the 2024 BC election)."
+      },
+      "voting_day": {
+        "meaning": "Final voting day.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Never blank."
+      },
+      "return_day": {
+        "meaning": "The day the writs are returned.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Not recorded."
+      },
+      "nominations_close_at": {
+        "meaning": "When nominations close.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "Not recorded."
+      },
+      "registration_deadline_at": {
+        "meaning": "The last day to register in advance. In BC, to receive a Where to Vote card; voters can also register when they vote.",
+        "type": "string (ISO 8601 date or timestamp)",
+        "blank_means": "No such deadline, or not recorded."
+      },
+      "mail_request_deadline_at": {
+        "meaning": "The last day or time to request a mail-in ballot.",
+        "type": "string (ISO 8601 date or timestamp)",
+        "blank_means": "No mail-in voting, or not recorded."
+      },
+      "mail_return_deadline_at": {
+        "meaning": "When a mail-in ballot must be received.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "No mail-in voting, or not recorded."
+      },
+      "advance_voting_starts_at": {
+        "meaning": "The first opening of advance voting, in Pacific time for BC (voting_notes has the local hours).",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "No advance voting, or not recorded."
+      },
+      "advance_voting_ends_at": {
+        "meaning": "The last close of advance voting.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "No advance voting, or not recorded."
+      },
+      "polls_open_at": {
+        "meaning": "When polls open on final voting day.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "Not recorded."
+      },
+      "polls_close_at": {
+        "meaning": "When polls close on final voting day.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "Not recorded."
+      },
+      "voting_notes": {
+        "meaning": "Everything else about how to vote, as the authority states it (eligibility, ID, where each method can be used, hours and time zones, other methods), in Markdown, one section per topic.",
+        "type": "string (Markdown)",
+        "blank_means": "Not transcribed yet."
+      },
+      "where_to_vote_url": {
+        "meaning": "The authority's page for finding a voting place. Voting places are not copied.",
+        "type": "string (URL)",
+        "blank_means": "Not recorded."
+      },
+      "capture_sha256": {
+        "meaning": "The capture of the voting information page the deadlines and notes were taken from (elections/captures).",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Not captured yet; the blocking check voting_info_captured fails."
+      }
+    },
+    "elections/boundary_sets": {
+      "note": "One row per legal instrument or gazette that defines a set of districts or polling areas, seeded from the catalog.",
+      "id": {
+        "meaning": "Path key of the set, such as ca/bc/electoral-districts/2023 or ca/bc/voting-areas/2024-09-19.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "jurisdiction": {
+        "meaning": "Key of the jurisdiction in catalog/jurisdictions.json.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "kind": {
+        "meaning": "Which table the set's areas are in. district and whole_jurisdiction sets are in elections/districts; polling_area sets in elections/polling_areas.",
+        "type": "string",
+        "values": [
+          "district",
+          "whole_jurisdiction",
+          "polling_area"
+        ],
+        "blank_means": "Never blank."
+      },
+      "kind_as_shown": {
+        "meaning": "The source's name for its areas, such as electoral district or voting area.",
+        "type": "string",
+        "blank_means": "Not recorded."
+      },
+      "district_set_id": {
+        "meaning": "For a polling area set, the district set it subdivides.",
+        "type": "string",
+        "blank_means": "A district or whole-jurisdiction set."
+      },
+      "legal_instrument": {
+        "meaning": "The law, order or gazette notice that defines the set, as named.",
+        "type": "string",
+        "blank_means": "The set has none (a whole-jurisdiction set built from a cartographic file)."
+      },
+      "gazetted_on": {
+        "meaning": "The day the set was gazetted.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Not recorded."
+      },
+      "in_force_from": {
+        "meaning": "The first voting day the set governs.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Not recorded."
+      },
+      "in_force_to": {
+        "meaning": "The last voting day the set governs.",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "Still in force."
+      },
+      "capture_sha256": {
+        "meaning": "The first page of the capture the set's areas were loaded from (elections/captures).",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Not loaded yet."
+      }
+    },
+    "elections/districts": {
+      "note": "One row per area a contest is held in: an electoral district, ward or electoral area, or a whole jurisdiction for an at-large contest. BC's 93 electoral districts of 2023 come from the BC Geographic Warehouse (WHSE_ADMIN_BOUNDARIES.EBC_ELECTORAL_DISTS_BS11_SVW). Licence: Elections BC Open Data Licence.",
+      "id": {
+        "meaning": "<boundary_set_id>/<code>, lower-cased, such as ca/bc/electoral-districts/2023/vpg.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "boundary_set_id": {
+        "meaning": "The set the district belongs to (elections/boundary_sets).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "code": {
+        "meaning": "The district's code as the source writes it, such as VPG. Unique within its set.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "name_as_shown": {
+        "meaning": "The district's name as the source writes it, such as Vancouver-Point Grey.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "geometry": {
+        "meaning": "The district's boundary. A source polygon that is invalid is repaired with ST_MakeValid on load; the original is in the capture. The blocking check geometry_valid tests every geometry.",
+        "type": "PostGIS geometry(MultiPolygon, 4326)",
+        "units": "WGS 84 longitude and latitude (EPSG:4326)",
+        "blank_means": "The source gives no geometry."
+      }
+    },
+    "elections/polling_areas": {
+      "note": "One row per area votes are counted in: a voting area, polling division or subdivision. BC's 5,778 voting areas gazetted 2024-09-19 (reused in 2026) come from the BC Geographic Warehouse (WHSE_ADMIN_BOUNDARIES.EBC_VOTING_AREAS_BS11_POLY_SVW). A voting area in several parts is one row. Licence: Elections BC Open Data Licence.",
+      "id": {
+        "meaning": "<boundary_set_id>/<district code>/<code>, lower-cased, such as ca/bc/voting-areas/2024-09-19/vpg/042.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "boundary_set_id": {
+        "meaning": "The polling area set (elections/boundary_sets).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "district_id": {
+        "meaning": "The district the area is in, in the set's district set. BC numbers voting areas within each district, so the code alone is not unique.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "code": {
+        "meaning": "The area's code as shown, with any suffix, such as 042, 042A or 12-1.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "parent_id": {
+        "meaning": "The polling area this one subdivides (a federal polling subdivision's division).",
+        "type": "string",
+        "blank_means": "Not a subdivision (every BC voting area)."
+      },
+      "geometry": {
+        "meaning": "The area's boundary, repaired with ST_MakeValid when the source polygon is invalid (one 2024 BC voting area). The blocking check polling_areas_within_districts tests that each lies within its district, allowing 1% outside.",
+        "type": "PostGIS geometry(MultiPolygon, 4326)",
+        "units": "WGS 84 longitude and latitude (EPSG:4326)",
+        "blank_means": "The source gives no geometry."
+      }
+    },
+    "elections/contests": {
+      "note": "One row per race, one office in one district (or one referendum question), made from the catalog and the districts.",
+      "id": {
+        "meaning": "<election_id>/<office>/<district code>, such as ca/bc/elections/2026-10-24-general/mla/vpg.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "election_id": {
+        "meaning": "The election (elections/elections).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "office_id": {
+        "meaning": "The office the contest fills (elections/offices).",
+        "type": "string",
+        "blank_means": "A referendum question."
+      },
+      "district_id": {
+        "meaning": "Where the contest is held (elections/districts).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "seats": {
+        "meaning": "How many are elected. 1 for an MLA.",
+        "type": "integer",
+        "blank_means": "Never blank."
+      },
+      "method": {
+        "meaning": "The counting method. fptp is first past the post; block is multi-seat plurality; irv single-seat ranked; stv single transferable vote.",
+        "type": "string",
+        "values": [
+          "fptp",
+          "block",
+          "irv",
+          "stv",
+          "referendum",
+          "referendum_ranked"
+        ],
+        "blank_means": "Never blank."
+      },
+      "status": {
+        "meaning": "Whether the contest goes ahead.",
+        "type": "string",
+        "values": [
+          "scheduled",
+          "postponed",
+          "cancelled",
+          "annulled"
+        ],
+        "blank_means": "Never blank."
+      },
+      "voting_day": {
+        "meaning": "The contest's voting day when it differs from the election's (a race restarted after a candidate's death).",
+        "type": "date (YYYY-MM-DD)",
+        "blank_means": "The election's voting_day."
+      },
+      "question_number": {
+        "meaning": "A referendum question's number.",
+        "type": "integer",
+        "blank_means": "Not a referendum."
+      },
+      "question_text": {
+        "meaning": "A referendum question as worded.",
+        "type": "string",
+        "blank_means": "Not a referendum."
+      },
+      "question_text_fr": {
+        "meaning": "The French wording of a referendum question.",
+        "type": "string",
+        "blank_means": "Not a referendum, or no French wording."
+      },
+      "threshold_as_shown": {
+        "meaning": "What a referendum needs to pass, as the law words it.",
+        "type": "string",
+        "blank_means": "Not a referendum."
+      }
+    },
+    "elections/candidacies": {
+      "note": "One row per person's candidacy in one contest, as the latest capture shows it (current state; the history is in the captures). BC 2026: Elections BC's candidate list, which shows accepted nominations only; 2024: the names in the results. Names, agents' addresses and phone numbers are published as the source publishes them.",
+      "id": {
+        "meaning": "ULID of the candidacy, minted when first seen.",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "contest_id": {
+        "meaning": "The contest (elections/contests).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "ballot_name": {
+        "meaning": "The candidate's name as listed.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "normalized_name": {
+        "meaning": "ballot_name casefolded, accents and punctuation stripped, spaces collapsed. Unique within a contest; a corrected spelling makes a new candidacy.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "legal_name": {
+        "meaning": "The candidate's legal name, where published.",
+        "type": "string",
+        "blank_means": "Not published (BC)."
+      },
+      "party_key": {
+        "meaning": "The party's key in the catalog's parties (such as bc-ndp), whose registered name is in party_names.",
+        "type": "string",
+        "blank_means": "Independent, no affiliation, or a label the catalog does not map yet (the check parties_mapped reports these)."
+      },
+      "party_as_shown": {
+        "meaning": "The affiliation as printed, such as BC NDP, Conservative Party, CWP or Independent.",
+        "type": "string",
+        "blank_means": "The source shows no affiliation."
+      },
+      "status": {
+        "meaning": "The candidacy's status. A candidacy is on the current list when last_seen_capture is the latest list capture; one that drops off keeps its last status, since the list does not say why.",
+        "type": "string",
+        "values": [
+          "accepted",
+          "withdrawn",
+          "rejected",
+          "deceased"
+        ],
+        "blank_means": "Never blank."
+      },
+      "incumbent": {
+        "meaning": "Whether the source says the candidate holds the seat.",
+        "type": "boolean",
+        "blank_means": "The source does not say."
+      },
+      "residence_address": {
+        "meaning": "The candidate's address (street and number), as the source publishes it.",
+        "type": "string",
+        "blank_means": "Not published (BC's list publishes the agents' addresses, not the candidate's)."
+      },
+      "residence_city": {
+        "meaning": "The candidate's city, as published.",
+        "type": "string",
+        "blank_means": "Not published."
+      },
+      "residence_province": {
+        "meaning": "The candidate's province, as a two-letter code.",
+        "type": "string",
+        "blank_means": "Not published."
+      },
+      "residence_postal_code": {
+        "meaning": "The candidate's postal code, as published.",
+        "type": "string",
+        "blank_means": "Not published."
+      },
+      "agents": {
+        "meaning": "The candidate's official and financial agents as the list publishes them, a list of {role (financial_agent or official_agent), name, address (the street lines, joined with \", \"), city, province, postal_code, phone}. Since 2026-09-30 addresses and phone numbers are kept as published.",
+        "type": "JSON list",
+        "blank_means": "Empty list when the source names no agent (the 2024 results).",
+        "known_gaps": "An agent's field the source leaves blank is null; the BC list gives official agents no phone number."
+      },
+      "declared_result": {
+        "meaning": "The result as officially declared.",
+        "type": "string",
+        "values": [
+          "elected",
+          "acclaimed",
+          "defeated"
+        ],
+        "blank_means": "Not declared yet."
+      },
+      "first_seen_capture": {
+        "meaning": "The capture the candidacy was first seen in (elections/captures).",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Never blank."
+      },
+      "last_seen_capture": {
+        "meaning": "The latest capture that lists the candidacy.",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Never blank."
+      },
+      "status_changed_at": {
+        "meaning": "When we first saw the candidacy or its status change. An observation time, not when the change happened.",
+        "type": "float (Unix seconds)",
+        "blank_means": "Never blank for rows loaded since 2026-09-30."
+      },
+      "person_id": {
+        "meaning": "The person entity the candidate is, once a measured rule links candidacies to people.",
+        "type": "string",
+        "blank_means": "Always blank for now."
+      }
+    },
+    "elections/candidate_contacts": {
+      "note": {
+        "meaning": "Why a contact is proposed, rejected or stale.",
+        "type": "string",
+        "blank_means": "Verified."
+      },
+      "candidacy_id": {
+        "meaning": "The candidacy (elections/candidacies).",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "kind": {
+        "meaning": "The kind of contact.",
+        "type": "string",
+        "values": [
+          "phone",
+          "email",
+          "website",
+          "social",
+          "donate"
+        ],
+        "blank_means": "Never blank."
+      },
+      "platform": {
+        "meaning": "For a social account, its platform.",
+        "type": "string",
+        "values": [
+          "facebook",
+          "instagram",
+          "x",
+          "bluesky",
+          "threads",
+          "tiktok",
+          "youtube",
+          "linkedin"
+        ],
+        "blank_means": "Empty string for every kind but social."
+      },
+      "value": {
+        "meaning": "The contact, normalized: a phone number in E.164 (+16045550199), a lower-cased email, a website or donation URL as https://host/path without www., query or trailing slash, a social handle without @ (in/<name> on LinkedIn).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "source_url": {
+        "meaning": "The page the value is on, as the agent cited it.",
+        "type": "string (URL)",
+        "blank_means": "Never blank."
+      },
+      "capture_sha256": {
+        "meaning": "The latest capture of source_url that verification or the recheck read (elections/captures).",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Not checked yet."
+      },
+      "linked_from_url": {
+        "meaning": "The trusted page that links to source_url (the party's page for the candidate, the legislature's, the election authority's).",
+        "type": "string (URL)",
+        "blank_means": "source_url is itself trusted, or the agent gave none."
+      },
+      "evidence_quote": {
+        "meaning": "The words next to the value on the page, as the agent quoted them (at most 500 characters). Not checked by code; the value is.",
+        "type": "string",
+        "blank_means": "The agent gave none."
+      },
+      "found_by": {
+        "meaning": "Who proposed the contact.",
+        "type": "string",
+        "values": [
+          "agent:<run_id>",
+          "loader",
+          "human"
+        ],
+        "blank_means": "Never blank."
+      },
+      "status": {
+        "meaning": "verified: code found the value on a fresh capture of source_url, near the candidate's surname (unless the page is on the candidate's verified website), and the page is trusted (Elections BC, the legislature, the candidate's party, the candidate's verified website) or a trusted page links to it near the name. proposed: not verified yet, or off a trusted chain, or the page could not be captured (note says which). rejected: the value is not on the page, not near the candidate's name, or is a party's own site. stale: a verified value the daily recheck no longer finds.",
+        "type": "string",
+        "values": [
+          "proposed",
+          "verified",
+          "rejected",
+          "stale"
+        ],
+        "blank_means": "Never blank.",
+        "known_gaps": "On a page that lists several candidates, near the surname is a weak test (1,500 characters); the 50-contact check before publication is the guard."
+      },
+      "checked_at": {
+        "meaning": "When code last checked the value against a capture.",
+        "type": "float (Unix seconds)",
+        "blank_means": "Not checked yet."
+      }
+    },
+    "elections/contact_research": {
+      "note": "One row per candidacy the research agent was given under one pair (prompt, model, reasoning effort); a candidacy is never researched twice under the same pair. The run's budget and spend are its ai_spend row (mode contact_research).",
+      "pair_sha256": {
+        "meaning": "Digest of the pair (method, prompt, model, reasoning effort).",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Never blank."
+      },
+      "candidacy_id": {
+        "meaning": "The candidacy researched.",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "pair": {
+        "meaning": "The pair, as {method, prompt, model, reasoning_effort}.",
+        "type": "JSON object",
+        "blank_means": "Never blank."
+      },
+      "run_id": {
+        "meaning": "The research run (ai_spend.run_id).",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "state": {
+        "meaning": "answered (a valid answer, possibly with no contacts), refused, or failed (no valid answer).",
+        "type": "string",
+        "values": [
+          "answered",
+          "refused",
+          "failed"
+        ],
+        "blank_means": "Never blank."
+      },
+      "rounds": {
+        "meaning": "Requests sent for the candidacy (at most 3).",
+        "type": "integer",
+        "blank_means": "Never blank."
+      },
+      "pages": {
+        "meaning": "Every page the agent was shown, [{url, sha256}]; sha256 is blank for a page that could not be captured.",
+        "type": "JSON list",
+        "blank_means": "Empty list."
+      },
+      "proposals": {
+        "meaning": "The contacts the agent proposed, as it returned them (kind, platform, value, source_url, linked_from_url, evidence_quote).",
+        "type": "JSON list",
+        "blank_means": "Empty list."
+      },
+      "usage": {
+        "meaning": "Tokens used for the candidacy (input, cache, output, reasoning).",
+        "type": "JSON object",
+        "blank_means": "Empty object."
+      },
+      "error": {
+        "meaning": "Why no valid answer came back.",
+        "type": "string",
+        "blank_means": "Answered or refused."
+      },
+      "answered_at": {
+        "meaning": "When the row was written.",
+        "type": "float (Unix seconds)",
+        "blank_means": "Never blank."
+      }
+    },
+    "elections/result_reports": {
+      "note": "One row per results response at one stage of counting; append-only. 2024: DataBC's results by voting place, as one official report. 2026: each changed Elections BC results page polled on election night and through the final count (elections/bc_results.py).",
+      "id": {
+        "meaning": "ULID of the report.",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "election_id": {
+        "meaning": "The election (elections/elections).",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "stage": {
+        "meaning": "The stage of counting: initial_count (election night, including partial updates), final_count (from the day Elections BC's page shows the final count in progress), judicial_recount, official (the Statement of Votes or equivalent).",
+        "type": "string",
+        "values": [
+          "initial_count",
+          "final_count",
+          "judicial_recount",
+          "official"
+        ],
+        "blank_means": "Never blank."
+      },
+      "polls_reported": {
+        "meaning": "Ballot boxes reported, summed over the districts, where the source gives \"N of M\" (the initial count).",
+        "type": "integer",
+        "blank_means": "The source gives no such count (the final count's pages give a status per district instead)."
+      },
+      "polls_total": {
+        "meaning": "Ballot boxes in all, summed the same way.",
+        "type": "integer",
+        "blank_means": "As polls_reported."
+      },
+      "published_at": {
+        "meaning": "When the source says the report is as of, in Pacific time with its offset. Elections BC labels it PST even in October; it is local time.",
+        "type": "string (ISO 8601 timestamp)",
+        "blank_means": "The source gives no time (DataBC's CSV)."
+      },
+      "published_at_as_shown": {
+        "meaning": "The source's own words for published_at, such as \"As of October 21, 2024 16:00 PST\".",
+        "type": "string",
+        "blank_means": "The source gives no time."
+      },
+      "retrieved_at": {
+        "meaning": "When the response was fetched (its capture's last_retrieved_at when loaded).",
+        "type": "float (Unix seconds)",
+        "blank_means": "Never blank."
+      },
+      "capture_sha256": {
+        "meaning": "The capture the report was parsed from. Unique.",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "Never blank."
+      },
+      "content_sha256": {
+        "meaning": "Digest of the report's stage and counts, without its time. A page republished with the same counts and a new \"As of\" adds no report.",
+        "type": "string (SHA-256 hex)",
+        "blank_means": "The 2024 official report (loaded before this column)."
+      }
+    },
+    "elections/results": {
+      "note": "Every count in a report, append-only; each report carries a full copy of the contests it covers. The latest counts of a contest are the rows of the latest report that covers it; counts at a stage the same within one stage. Unique on (report_id, contest_id, candidacy_id, answer, polling_area_id, unit_label_as_shown, ballot_type_as_shown, round, measure), nulls equal.",
+      "id": {
+        "meaning": "Surrogate key of the row.",
+        "type": "int64",
+        "blank_means": "Never blank."
+      },
+      "report_id": {
+        "meaning": "The report (elections/result_reports).",
+        "type": "string (ULID)",
+        "blank_means": "Never blank."
+      },
+      "contest_id": {
+        "meaning": "The contest counted.",
+        "type": "string",
+        "blank_means": "Never blank."
+      },
+      "candidacy_id": {
+        "meaning": "The candidacy the votes are for.",
+        "type": "string (ULID)",
+        "blank_means": "A referendum answer or a contest-level measure."
+      },
+      "answer": {
+        "meaning": "The referendum answer the votes are for, such as Yes.",
+        "type": "string",
+        "blank_means": "Not a referendum."
+      },
+      "measure": {
+        "meaning": "What value counts: votes; registered_electors; ballots_cast; rejected, declined and exhausted ballots; quota; other. Election-night pages add polls_reported and polls_total (ballot boxes reported, and in all, per district and ballot_type) and count_status (a status word the page shows instead of a number, in measure_as_shown, with value blank).",
+        "type": "string",
+        "values": [
+          "votes",
+          "registered_electors",
+          "ballots_cast",
+          "rejected",
+          "declined",
+          "exhausted",
+          "quota",
+          "other",
+          "polls_reported",
+          "polls_total",
+          "count_status"
+        ],
+        "blank_means": "Never blank."
+      },
+      "measure_as_shown": {
+        "meaning": "The source's name for the measure (Valid, Rejected, Total Valid Votes), or for count_status the status as shown (Complete, In Progress).",
+        "type": "string",
+        "blank_means": "Not recorded."
+      },
+      "polling_area_id": {
+        "meaning": "The polling area counted in.",
+        "type": "string",
+        "blank_means": "A district total, or a count reported by voting place or ballot type. Every BC row so far (2024 has no voting-area counts; election night is by district)."
+      },
+      "unit_label_as_shown": {
+        "meaning": "The source's own label for the counting unit, such as the voting place's name, or the election-night reporting row's label (Advance voting ballot boxes, Final Voting Day ballot boxes, Out-of-district ballots, Status).",
+        "type": "string",
+        "blank_means": "The count is for the whole contest."
+      },
+      "ballot_type": {
+        "meaning": "How the ballots were cast, when the source splits by it.",
+        "type": "string",
+        "values": [
+          "election_day",
+          "advance",
+          "mail",
+          "absentee",
+          "other"
+        ],
+        "blank_means": "Not split by how ballots were cast."
+      },
+      "ballot_type_as_shown": {
+        "meaning": "The source's category, such as Final voting, Advance voting - out-of-district or Vote by mail. Several map to one ballot_type.",
+        "type": "string",
+        "blank_means": "Not split."
+      },
+      "round": {
+        "meaning": "The counting round.",
+        "type": "integer",
+        "blank_means": "Never blank; 1 unless ranked."
+      },
+      "value": {
+        "meaning": "The count.",
+        "type": "int64",
+        "blank_means": "Withheld, not yet reported, counted in another unit (reported_under), or a count_status row. Never 0 for missing."
+      },
+      "reported_under": {
+        "meaning": "For a unit the source combined into another for secrecy, that unit's label and ID; its own value is then blank.",
+        "type": "string",
+        "blank_means": "Not combined."
+      }
+    }
+  }
+}

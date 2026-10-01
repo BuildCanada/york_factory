@@ -1,10 +1,9 @@
 module PublicApi
   module V1
     # GET /v1/dictionary and /v1/dictionary/{term}: fact-factory's shared data
-    # dictionary as the answering release was built with it (api.dictionary),
-    # pinned and cached like the data. A release built before api.dictionary
-    # existed gets the newest dictionary instead, says so in a caveat and is
-    # not cached as immutable.
+    # dictionary (config/public_api/dictionary.json). fact-factory keeps no
+    # dictionary per revision, so a pinned as_of says so in a caveat and is not
+    # cached as immutable.
     class DictionaryController < BaseController
       operation :index, :listDictionaryTerms
       operation :show, :getDictionaryTerm
@@ -35,7 +34,7 @@ module PublicApi
 
       def dictionary = context.dictionary
 
-      def caveats = dictionary.pinned ? [] : [ Catalog.caveat(:dictionary_not_pinned, locale:) ]
+      def caveats = parameters["as_of"] && !dictionary.pinned ? [ Catalog.caveat(:dictionary_not_pinned, locale:) ] : []
     end
   end
 end

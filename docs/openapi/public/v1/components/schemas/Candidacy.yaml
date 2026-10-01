@@ -1,0 +1,96 @@
+title: Candidacy
+description: >-
+  One candidate in one contest, as the administrator lists them, with their verified
+  campaign contacts. Names, addresses and postal codes are served as the source publishes
+  them.
+type: object
+required: [id, contest_id, ballot_name, status, contacts, links]
+properties:
+  id:
+    type: string
+    description: "The candidacy's ID."
+    examples: [01M3TP5P62RM2298Y7AC2WYJJ4]
+  contest_id:
+    $ref: ElectionId.yaml
+    description: "The contest the candidacy is in."
+  ballot_name:
+    type: string
+    description: "The name as it appears on the ballot."
+    examples: ['Alexis, Pam']
+  legal_name:
+    type: [string, 'null']
+    description: "The candidate's legal name, where published."
+    examples: [null]
+  party_key:
+    type: [string, 'null']
+    description: "fact-factory's key for the party, or null for an independent."
+    examples: [bc-ndp]
+  party_as_shown:
+    type: [string, 'null']
+    description: "The party as the source writes it."
+    examples: [BC NDP]
+  status:
+    type: string
+    description: "The candidacy's status, such as accepted or withdrawn."
+    examples: [accepted]
+  incumbent:
+    type: [boolean, 'null']
+    description: "Whether the candidate holds the seat, when published."
+    examples: [null]
+  residence_address:
+    type: [string, 'null']
+    description: "The candidate's residence as the source publishes it."
+    examples: [null]
+  residence_city:
+    type: [string, 'null']
+    description: "The residence's city."
+    examples: [null]
+  residence_province:
+    type: [string, 'null']
+    description: "The residence's province."
+    examples: [null]
+  residence_postal_code:
+    type: [string, 'null']
+    description: "The residence's postal code as published."
+    examples: [null]
+  agents:
+    type: array
+    description: The candidate's official agents as published.
+    items: {type: object, additionalProperties: true}
+    examples: [[]]
+  declared_result:
+    type: [string, 'null']
+    description: "The result the administrator declared, such as elected."
+    examples: [elected]
+  person_id:
+    type: [string, 'null']
+    description: "The registry person entity the candidacy is linked to, when one is."
+    examples: [null]
+  status_changed_at:
+    description: When the status last changed.
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'
+  contacts:
+    type: array
+    description: The candidate's verified contacts. Unverified contacts are unconfirmed and are not served.
+    items:
+      $ref: CandidateContact.yaml
+  capture:
+    description: The latest stored capture that lists the candidacy.
+    oneOf:
+      - $ref: ElectionsCapture.yaml
+      - type: 'null'
+  links:
+    type: object
+    description: Relative links for the candidacy.
+    required: [self, contest]
+    properties:
+      self:
+        type: string
+        description: "This candidacy."
+        examples: [/v1/candidacies/01M3TP5P62RM2298Y7AC2WYJJ4]
+      contest:
+        type: string
+        description: "Its contest."
+        examples: [/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm]

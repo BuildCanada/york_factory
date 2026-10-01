@@ -1,10 +1,11 @@
 require "test_helper"
 
 class PublicApiDiscoveryTest < PublicApiTestCase
-  test "the index names the latest release and links everything" do
+  test "the index names the latest revision and links everything" do
     api_get "/v1"
     assert_conforms("getIndex", status: 200)
-    assert_equal 11, body.dig("data", "latest_release")
+    assert_equal 31, body.dig("data", "latest_revision")
+    assert_equal [ 31, "daily-2026-10-01" ], body["meta"].values_at("revision", "snapshot")
     assert_equal PublicApi::Spec.version, body.dig("data", "version")
     assert_equal "/v1", body.dig("links", "self")
     assert_cache_control "public, max-age=30"
@@ -74,7 +75,7 @@ class PublicApiDiscoveryTest < PublicApiTestCase
     api_get "/v1/me/usage", key: key_with(%w[read:public usage:read]), granularity: "hour"
     assert_conforms("getUsage", status: 200)
     assert_equal [], body["data"]
-    assert_nil body.dig("meta", "release")
+    assert_nil body.dig("meta", "revision")
     assert_equal [ "coverage_partial" ], body.dig("meta", "caveats").map { |c| c["code"] }
   end
 
@@ -122,7 +123,7 @@ class PublicApiDiscoveryTest < PublicApiTestCase
   end
 
   test "an unexpected failure is a 500 internal_error problem" do
-    FactFactory::ReleaseQuery.stub(:served, -> { raise ActiveRecord::StatementInvalid, "boom" }) do
+    FactFactory::RevisionQuery.stub(:served, -> { raise ActiveRecord::StatementInvalid, "boom" }) do
       api_get "/v1/entities"
     end
     problem = assert_problem("listEntities", 500, "internal_error")
@@ -130,11 +131,12 @@ class PublicApiDiscoveryTest < PublicApiTestCase
     assert_equal "0", response.headers["BC-Usage-Units"]
   end
 
-  test "no release yet is 503 release_building with Retry-After" do
-    FactFactory::ReleaseQuery.stub(:served, []) do
+  test "no served revision yet is 503 revision_building with Retry-After" do
+    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {})
+    FactFactory::RevisionQuery.stub(:served, empty) do
       api_get "/v1/entities"
     end
-    problem = assert_problem("listEntities", 503, "release_building")
+    problem = assert_problem("listEntities", 503, "revision_building")
     assert_equal "30", response.headers["Retry-After"]
     assert_equal 30, problem["retry_after_seconds"]
   end

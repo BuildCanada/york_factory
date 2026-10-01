@@ -20,7 +20,7 @@ get:
     base: 3
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   security:
   - ApiKey: []
   - OAuth2:
@@ -64,8 +64,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -100,8 +100,9 @@ get:
                   currency: CAD
                   measure: payments_or_expenditure
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats:
                   - code: not_cross_source_total
@@ -125,9 +126,9 @@ get:
                   unlinked_occurrences: 38
                 links:
                   self: >-
-                    /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&fiscal_year=2024-25&as_of=11
-                  unlinked: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=11"
-                  records: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&fiscal_year=2024-25&as_of=11"
+                    /v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&fiscal_year=2024-25&as_of=31
+                  unlinked: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=31"
+                  records: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&fiscal_year=2024-25&as_of=31"
     '301':
       "$ref": "../components/problems.yaml#/MovedPermanently"
     '304':

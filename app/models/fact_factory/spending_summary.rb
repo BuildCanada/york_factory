@@ -1,7 +1,7 @@
 module FactFactory
-  # api.spending_summary in fact-factory's read model (serve/api_schema.sql).
+  # spending_summary in fact-factory's schema (db/fact_factory/schema.sql).
   class SpendingSummary < FactFactoryRecord
-    self.table_name = "api.spending_summary"
-    self.primary_key = nil
+    self.table_name = FactFactoryRecord.table("spending_summary")
+    self.primary_key = "id"
   end
 end

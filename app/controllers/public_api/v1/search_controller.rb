@@ -7,7 +7,7 @@ module PublicApi
       def index
         q = parameters["q"].to_s.strip
         raise Problem.new(:query_too_broad, "q must have at least 2 characters other than spaces and punctuation.") if FactFactory::SearchQuery.too_broad?(q)
-        query = FactFactory::SearchQuery.new(release:)
+        query = FactFactory::SearchQuery.new(revision:)
         hits = query.page(q:, mode: parameters["mode"], entity_class: parameters["class"], jurisdiction: parameters["jurisdiction"],
           limit:, after:)
         page, next_cursor = paginate(hits) { |h| [ h.rank, h.score_key, h.entity_id ] }
@@ -16,7 +16,8 @@ module PublicApi
           entity = entities[hit.entity_id] or next
           { type: "entity", entity: EntitySerializer.ref(entity), match: { kind: hit.kind, score: hit.score, matched_on: hit.matched_on } }
         end
-        render_data({ data:, meta: list_meta(next_cursor:), links: page_links(next_cursor) })
+        caveats = query.fuzzy_unavailable?(parameters["mode"]) ? [ Catalog.caveat(:fuzzy_unavailable, locale:) ] : []
+        render_data({ data:, meta: list_meta(next_cursor:, caveats:), links: page_links(next_cursor) })
       end
 
       private

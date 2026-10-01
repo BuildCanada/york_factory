@@ -8,7 +8,7 @@ properties:
     description: One dictionary term.
   meta:
     $ref: Meta.yaml
-    description: The release that answered, the resolved as_of, the request ID and caveats.
+    description: The revision that answered, the resolved as_of, the request ID and caveats.
   links:
     $ref: Links.yaml
     description: Links for the response.

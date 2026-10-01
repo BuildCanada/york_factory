@@ -17,12 +17,14 @@ properties:
     x-bc-dictionary: capture_url
     examples: ['https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21']
   source_url:
-    type: string
+    type: [string, 'null']
     format: uri
-    description: The URL the publisher served the file from when it was retrieved.
+    description: The URL the publisher served the file from when it was retrieved, or null when the capture's record doesn't say.
     x-bc-dictionary: source_url
     examples: ['https://open.canada.ca/data/dataset/432527ab-7aac-45b5-81d6-7597107a7013/resource/1d15a62f-5656-49ad-8c88-f40ce689d831']
   retrieved_at:
-    $ref: Timestamp.yaml
-    description: When Build Canada retrieved the file.
+    description: When Build Canada retrieved the file, or null when the capture's record doesn't say.
     x-bc-dictionary: retrieved_at
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'

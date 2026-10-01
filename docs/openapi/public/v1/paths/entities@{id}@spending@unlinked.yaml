@@ -18,7 +18,7 @@ get:
     large_page: 2
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   x-fern-pagination:
     cursor: "$request.cursor"
     next_cursor: "$response.meta.next_cursor"
@@ -67,8 +67,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -108,15 +108,16 @@ get:
                     payer: Infrastructure Canada
                     title:
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []
                   limit: 50
                   next_cursor:
                   count:
                 links:
-                  self: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=11"
+                  self: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=31"
                   next:
     '301':
       "$ref": "../components/problems.yaml#/MovedPermanently"
@@ -132,6 +133,8 @@ get:
       "$ref": "../components/problems.yaml#/NotFound"
     '409':
       "$ref": "../components/problems.yaml#/Conflict"
+    '410':
+      "$ref": "../components/problems.yaml#/Gone"
     '429':
       "$ref": "../components/problems.yaml#/TooManyRequests"
     '500':

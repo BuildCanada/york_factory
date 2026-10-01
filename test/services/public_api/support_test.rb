@@ -41,31 +41,40 @@ class PublicApiSupportTest < ActiveSupport::TestCase
     assert_raises(ArgumentError) { PublicApi::RateLimiter.build_store("redis") }
   end
 
-  test "cursors are signed and carry their release, keys and parameters" do
-    cursor = PublicApi::Cursor.encode(release: 11, keys: [ "a", nil ], fingerprint: "f")
+  test "cursors are signed and carry their revision, keys and parameters" do
+    cursor = PublicApi::Cursor.encode(revision: 31, keys: [ "a", nil ], fingerprint: "f")
     assert_operator cursor.size, :<=, 512
     decoded = PublicApi::Cursor.decode(cursor)
-    assert_equal [ 11, [ "a", nil ], "f" ], [ decoded.release, decoded.keys, decoded.fingerprint ]
+    assert_equal [ 31, [ "a", nil ], "f" ], [ decoded.revision, decoded.keys, decoded.fingerprint ]
     version, payload, signature = cursor.split(".")
-    forged = Base64.urlsafe_encode64({ r: 10, k: [ "a" ], f: "f" }.to_json, padding: false)
+    forged = Base64.urlsafe_encode64({ r: 30, k: [ "a" ], f: "f" }.to_json, padding: false)
     assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode([ version, forged, signature ].join(".")) }
     assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode("c1.#{payload}") }
     assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode("garbage") }
   end
 
-  test "as_of resolves numbers, dates and timestamps, and says which are pinned" do
-    releases = [ 10, 11 ].map { |n| PublicApi::AsOf::ServedRelease.new(number: n, published_at: Time.utc(2026, 9, n == 10 ? 20 : 27)) }
-    now = Time.utc(2026, 9, 29)
-    resolve = ->(v) { PublicApi::AsOf.resolve(v, releases:, now:) }
-    assert_equal [ 11, false ], resolve.(nil).then { |r| [ r.release, r.pinned ] }
-    assert_equal [ 10, true ], resolve.("10").then { |r| [ r.release, r.pinned ] }
-    assert_equal 10, resolve.("2026-09-26").release
-    assert_equal 11, resolve.("2026-09-27T00:00:00Z").release
-    assert_equal 11, resolve.("2026-09-27T01:00:00+01:00").release
-    refute resolve.("2026-10-01").pinned, "a future time can still move"
-    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("2026-09-19") }.code
-    assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("12") }.code
-    assert_equal "release_building", assert_raises(PublicApi::Problem) { PublicApi::AsOf.resolve(nil, releases: []) }.code
+  test "as_of resolves revision numbers, snapshot names, dates and timestamps, and says which are pinned" do
+    served = FactFactory::RevisionQuery::Served.new(
+      latest: 31, committed: { 14 => Time.utc(2026, 9, 29, 6), 30 => Time.utc(2026, 9, 30, 6), 31 => Time.utc(2026, 10, 1, 3), 32 => Time.utc(2026, 10, 1, 4) },
+      pruned: Set[14], snapshots: { "release-14" => 14, "daily-2026-10-01" => 31 }
+    )
+    now = Time.utc(2026, 10, 2)
+    resolve = ->(v) { PublicApi::AsOf.resolve(v, served:, now:) }
+    assert_equal [ 31, false, "daily-2026-10-01" ], resolve.(nil).then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal [ 30, true, nil ], resolve.("30").then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal [ 14, true, "release-14" ], resolve.("release-14").then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal 30, resolve.("2026-10-01").revision
+    assert_equal 31, resolve.("2026-10-01T03:00:00Z").revision
+    assert_equal 31, resolve.("2026-10-01T05:00:00+01:00").revision
+    assert_equal 31, resolve.("2026-10-01T04:30:00Z").revision, "revision 32 committed then, but isn't served"
+    refute resolve.("2026-10-05").pinned, "a future time can still move"
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("2026-09-01") }.code
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("9") }.code
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("32") }.code
+    assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("20") }.code
+    assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("weekly-1") }.code
+    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {})
+    assert_equal "revision_building", assert_raises(PublicApi::Problem) { PublicApi::AsOf.resolve(nil, served: empty) }.code
   end
 
   test "amounts and fiscal years are written as the contract says" do
@@ -100,10 +109,10 @@ class PublicApiSupportTest < ActiveSupport::TestCase
     end
   end
 
-  test "the read model connection refuses writes, in Rails and in the database" do
-    assert_raises(ActiveRecord::ReadOnlyError, ActiveRecord::ReadOnlyRecord) { FactFactory::Release.first.update!(build_seconds: 1) }
+  test "the fact_factory connection refuses writes, in Rails and in the database" do
+    assert_raises(ActiveRecord::ReadOnlyError, ActiveRecord::ReadOnlyRecord) { FactFactory::Revision.first.update!(reason: "x") }
     error = assert_raises(ActiveRecord::StatementInvalid, ActiveRecord::ReadOnlyError) do
-      FactFactoryRecord.connection.raw_connection.exec("DELETE FROM api.releases")
+      FactFactoryRecord.connection.raw_connection.exec("DELETE FROM fact_factory.registry_revisions")
     rescue PG::ReadOnlySqlTransaction => e
       raise ActiveRecord::StatementInvalid, e.message
     end

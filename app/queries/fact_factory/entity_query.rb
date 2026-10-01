@@ -1,5 +1,5 @@
 module FactFactory
-  # Entities, identifiers, relationships and lineage as of one release. Shared
+  # Entities, identifiers, relationships and lineage as of one registry revision. Shared
   # by the REST controllers and the MCP server (WS-G), so the two can't drift.
   #
   # Person entities (entity_class person, phase 2) are served like any other
@@ -10,22 +10,26 @@ module FactFactory
     # phase 2's contract and are not served until the enum has them.
     PREDICATES = %w[governs located_within covers party_to administrative_part_of reports_to_minister owned_by controlled_by member_of succeeded_by].freeze
 
-    attr_reader :release
+    T_ENTITIES = FactFactoryRecord.table("entities")
+    T_IDENTIFIERS = FactFactoryRecord.table("entity_identifiers")
+    T_RELATIONSHIPS = FactFactoryRecord.table("entity_relationships")
 
-    def initialize(release:)
-      @release = release
+    attr_reader :revision
+
+    def initialize(revision:)
+      @revision = revision
     end
 
     def find(entity_id)
-      Entity.find_by_sql([ "SELECT * FROM api.entities e WHERE e.entity_id = :id AND #{current('e')} LIMIT 1", binds(id: entity_id) ]).first
+      Entity.find_by_sql([ "SELECT * FROM #{T_ENTITIES} e WHERE e.entity_id = :id AND #{current('e')} LIMIT 1", binds(id: entity_id) ]).first
     end
 
-    # {entity_id => Entity} for the ones current in the release.
+    # {entity_id => Entity} for the ones current as of the revision.
     def refs(entity_ids)
       ids = entity_ids.compact.uniq
       return {} if ids.empty?
 
-      Entity.find_by_sql([ "SELECT * FROM api.entities e WHERE e.entity_id IN (:ids) AND #{current('e')}", binds(ids:) ])
+      Entity.find_by_sql([ "SELECT * FROM #{T_ENTITIES} e WHERE e.entity_id IN (:ids) AND #{current('e')}", binds(ids:) ])
         .index_by(&:entity_id)
     end
 
@@ -41,13 +45,13 @@ module FactFactory
           values[:after_id] = after[0]
         end
       end
-      sql = "SELECT e.* FROM api.entities e WHERE #{where.join(' AND ')} ORDER BY #{order} LIMIT :limit"
+      sql = "SELECT e.* FROM #{T_ENTITIES} e WHERE #{where.join(' AND ')} ORDER BY #{order} LIMIT :limit"
       Entity.find_by_sql([ sql, binds(**values, limit: limit + 1) ])
     end
 
     def count(filters:)
       where, values = list_conditions(filters)
-      Entity.connection.select_value(Entity.sanitize_sql_array([ "SELECT count(*) FROM api.entities e WHERE #{where.join(' AND ')}", binds(**values) ])).to_i
+      Entity.connection.select_value(Entity.sanitize_sql_array([ "SELECT count(*) FROM #{T_ENTITIES} e WHERE #{where.join(' AND ')}", binds(**values) ])).to_i
     end
 
     def identifiers(entity_id, namespace: nil, limit: nil, after: nil)
@@ -61,7 +65,7 @@ module FactFactory
         where << "(i.namespace, i.value, i.row_id) > (:a_ns, :a_value, :a_row)"
         values.merge!(a_ns: after[0], a_value: after[1], a_row: after[2])
       end
-      sql = "SELECT i.* FROM api.identifiers i WHERE #{where.join(' AND ')} ORDER BY i.namespace, i.value, i.row_id"
+      sql = "SELECT i.* FROM #{T_IDENTIFIERS} i WHERE #{where.join(' AND ')} ORDER BY i.namespace, i.value, i.row_id"
       sql += " LIMIT :limit" if limit
       Identifier.find_by_sql([ sql, binds(**values, limit: limit.to_i + 1) ])
     end
@@ -69,8 +73,8 @@ module FactFactory
     # Holders of one identifier (GET /v1/identifiers/{namespace}/{value}).
     def holders(namespace, value)
       sql = <<~SQL
-        SELECT i.* FROM api.identifiers i
-        JOIN api.entities e ON e.entity_id = i.entity_id AND #{current('e')}
+        SELECT i.* FROM #{T_IDENTIFIERS} i
+        JOIN #{T_ENTITIES} e ON e.entity_id = i.entity_id AND #{current('e')}
         WHERE i.namespace = :namespace AND i.value = :value AND #{current('i')}
         ORDER BY i.entity_id, i.row_id
       SQL
@@ -85,8 +89,8 @@ module FactFactory
       return [] if values[:predicates].empty?
 
       sides = []
-      sides << "SELECT r.*, 'out' AS direction FROM api.relationships r WHERE r.subject_id = :id AND r.predicate IN (:predicates) AND #{current('r')}" if direction.in?(%w[out both])
-      sides << "SELECT r.*, 'in' AS direction FROM api.relationships r WHERE r.object_id = :id AND r.predicate IN (:predicates) AND #{current('r')}" if direction.in?(%w[in both])
+      sides << "SELECT r.*, 'out' AS direction FROM #{T_RELATIONSHIPS} r WHERE r.subject_id = :id AND r.predicate IN (:predicates) AND #{current('r')}" if direction.in?(%w[out both])
+      sides << "SELECT r.*, 'in' AS direction FROM #{T_RELATIONSHIPS} r WHERE r.object_id = :id AND r.predicate IN (:predicates) AND #{current('r')}" if direction.in?(%w[in both])
       where = [ "TRUE" ]
       if valid_on
         where << valid_on_condition("s")
@@ -114,18 +118,18 @@ module FactFactory
       sql = <<~SQL
         WITH RECURSIVE walk(entity_id, depth, row_id, path) AS (
           SELECT r.#{far}, 1, r.row_id, ARRAY[CAST(:id AS text), r.#{far}]
-          FROM api.relationships r
+          FROM #{T_RELATIONSHIPS} r
           WHERE r.predicate = 'succeeded_by' AND r.#{near} = :id AND r.#{far} IS NOT NULL AND #{current('r')}
           UNION ALL
           SELECT r.#{far}, w.depth + 1, r.row_id, w.path || r.#{far}
           FROM walk w
-          JOIN api.relationships r ON r.predicate = 'succeeded_by' AND r.#{near} = w.entity_id AND #{current('r')}
+          JOIN #{T_RELATIONSHIPS} r ON r.predicate = 'succeeded_by' AND r.#{near} = w.entity_id AND #{current('r')}
           WHERE w.depth < :max_depth AND r.#{far} IS NOT NULL AND NOT r.#{far} = ANY(w.path)
         ), steps AS (
           SELECT DISTINCT ON (w.row_id) w.row_id, w.depth, w.entity_id AS step_entity_id FROM walk w ORDER BY w.row_id, w.depth
         )
         SELECT s.* FROM (
-          SELECT r.*, st.depth, st.step_entity_id FROM steps st JOIN api.relationships r ON r.row_id = st.row_id
+          SELECT r.*, st.depth, st.step_entity_id FROM steps st JOIN #{T_RELATIONSHIPS} r ON r.row_id = st.row_id
         ) s
         WHERE #{page}
         ORDER BY s.depth, s.row_id
@@ -134,11 +138,11 @@ module FactFactory
       Relationship.find_by_sql([ sql, binds(**values, limit: limit + 1) ])
     end
 
-    def current(table_alias) = FactFactoryRecord.in_release(table_alias)
+    def current(table_alias) = FactFactoryRecord.as_of(table_alias)
 
     private
 
-    def binds(**values) = values.merge(n: release)
+    def binds(**values) = values.merge(n: revision)
 
     def list_conditions(filters)
       where = [ current("e") ]

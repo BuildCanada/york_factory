@@ -2,22 +2,22 @@ require "openssl"
 
 module PublicApi
   # Opaque, signed pagination cursors (docs/public-interface-design.md §3.1):
-  # `c1.<base64url JSON>.<base64url HMAC>`. The JSON holds the release the page
+  # `c1.<base64url JSON>.<base64url HMAC>`. The JSON holds the revision the page
   # was read from (`r`), the sort key and last ID of the page (`k`), and a
   # fingerprint of the request's other parameters (`f`), so a cursor sent with
   # different filters is refused instead of returning a wrong page. A cursor
-  # never expires: it names its release, and releases are immutable.
+  # never expires: it names its revision, and committed revisions are immutable.
   module Cursor
     VERSION = "c1".freeze
 
-    Decoded = Data.define(:release, :keys, :fingerprint)
+    Decoded = Data.define(:revision, :keys, :fingerprint)
 
     class Invalid < StandardError; end
 
     module_function
 
-    def encode(release:, keys:, fingerprint:)
-      payload = Base64.urlsafe_encode64({ r: release, k: keys, f: fingerprint }.to_json, padding: false)
+    def encode(revision:, keys:, fingerprint:)
+      payload = Base64.urlsafe_encode64({ r: revision, k: keys, f: fingerprint }.to_json, padding: false)
       [ VERSION, payload, sign(payload) ].join(".")
     end
 
@@ -29,7 +29,7 @@ module PublicApi
       data = JSON.parse(Base64.urlsafe_decode64(payload))
       raise Invalid, "not a cursor from this API" unless data.is_a?(Hash) && data["k"].is_a?(Array)
 
-      Decoded.new(release: data["r"], keys: data["k"], fingerprint: data["f"])
+      Decoded.new(revision: data["r"], keys: data["k"], fingerprint: data["f"])
     rescue ArgumentError, JSON::ParserError
       raise Invalid, "not a cursor from this API"
     end

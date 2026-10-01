@@ -13,7 +13,7 @@ module PublicApi
     #    Worker signed it (the Worker limits and meters then);
     # 4. has its parameters checked against the contract (400 invalid_parameter);
     # 5. is answered in the `{data, meta, links}` envelope, with ETag and 304 for
-    #    release-pinned data, or as an RFC 9457 problem.
+    #    revision-pinned data, or as an RFC 9457 problem.
     #
     # Every response says what it cost in BC-Usage-Units and BC-Operation (§5.5):
     # the operation's x-bc-units, 0 for a 304, 429 or 5xx, and 1 for other errors.
@@ -25,7 +25,7 @@ module PublicApi
       SHORT_CACHE = "public, max-age=30".freeze
       PRIVATE_CACHE = "private, no-store".freeze
       UPGRADE_URL = "https://auth.buildcanada.com/developers/plan".freeze
-      BULK_URL = "https://data.buildcanada.com/v1/exports".freeze
+      BULK_URL = "https://data.buildcanada.com/api/concepts/bulk-access.md".freeze
 
       class_attribute :operation_ids, instance_writer: false, default: {}
 
@@ -114,34 +114,44 @@ module PublicApi
         @parameters = Parameters.parse(operation, query: request.query_parameters, path: request.path_parameters.except(:controller, :action, :format))
       end
 
-      # ---------- releases and as_of ----------
+      # ---------- revisions and as_of ----------
 
-      def releases = FactFactory::ReleaseQuery.served
+      def served = FactFactory::RevisionQuery.served
 
-      # The release that answers: as_of, else the cursor's release, else the
-      # latest. A cursor from another release than as_of is 409.
+      # The revision that answers: as_of, else the cursor's revision, else the
+      # latest served. A cursor from another revision than as_of is 409.
       def as_of
         @as_of ||= begin
-          resolved = AsOf.resolve(parameters["as_of"], releases:)
+          resolved = AsOf.resolve(parameters["as_of"], served:)
           cursor = decoded_cursor
-          if cursor&.release
+          if cursor&.revision
             if parameters["as_of"].nil?
-              resolved = AsOf.resolve(cursor.release.to_s, releases:)
-            elsif cursor.release != resolved.release
-              raise Problem.new(:release_mismatch,
-                "This cursor belongs to release #{cursor.release}. Repeat with as_of=#{cursor.release}, or drop the cursor to start again.",
-                cursor_release: cursor.release)
+              resolved = AsOf.resolve(cursor.revision.to_s, served:)
+            elsif cursor.revision != resolved.revision
+              raise Problem.new(:revision_mismatch,
+                "This cursor belongs to revision #{cursor.revision}. Repeat with as_of=#{cursor.revision}, or drop the cursor to start again.",
+                cursor_revision: cursor.revision)
             end
           end
           resolved
         end
       end
 
-      def release = as_of.release
+      def revision = as_of.revision
 
-      def latest_release = releases.last&.number
+      def snapshot = as_of.snapshot
 
-      def context = @context ||= Context.new(release:, locale:)
+      def context = @context ||= Context.new(revision:, snapshot:, locale:)
+
+      # 410 for an operation that reads spending occurrences, at a revision
+      # older than fact-factory's retention horizon (its occurrence versions
+      # were pruned; RUNBOOK "Public API access").
+      def require_occurrences!
+        return unless served.pruned?(revision)
+
+        raise Problem.new(:retired, "Revision #{revision} is older than fact-factory's retention horizon: its spending occurrences were pruned. " \
+          "Repeat with a newer as_of, or a held snapshot (GET /v1/snapshots).")
+      end
 
       def locale
         preferred = request.headers["Accept-Language"].to_s.split(",").first.to_s.strip.downcase
@@ -171,25 +181,30 @@ module PublicApi
       def after = decoded_cursor&.keys
 
       # The parameters a cursor must be sent with again: everything but the
-      # cursor, the page size and as_of (the cursor pins its release).
+      # cursor, the page size and as_of (the cursor pins its revision).
       def cursor_fingerprint
         Cursor.fingerprint(parameters.sent.except("cursor", "limit", "as_of").merge("_path" => request.path))
       end
 
       # [page, next cursor]: `rows` holds up to limit + 1 rows; `key` gives a
       # row's sort key.
-      def paginate(rows, cursor_release: release, &key)
+      def paginate(rows, cursor_revision: revision, &key)
         page = rows.first(limit)
         next_cursor = if rows.size > limit
-          Cursor.encode(release: cursor_release, keys: key.call(page.last), fingerprint: cursor_fingerprint)
+          Cursor.encode(revision: cursor_revision, keys: key.call(page.last), fingerprint: cursor_fingerprint)
         end
         [ page, next_cursor ]
       end
 
       # ---------- responses ----------
 
-      def meta(caveats: [], release: self.release, as_of: release.to_s)
-        { release:, as_of:, request_id: @request_id, caveats: caveats.uniq { |c| c[:code] } }
+      def meta(caveats: [], revision: self.revision, snapshot: revision && self.snapshot, as_of: revision.to_s)
+        { revision:, snapshot:, as_of:, request_id: @request_id, caveats: caveats.uniq { |c| c[:code] } }
+      end
+
+      # Meta for data not versioned by revision (elections): read now.
+      def current_meta(**options)
+        meta(revision: nil, snapshot: nil, as_of: Format.timestamp(@read_at ||= Time.current), **options)
       end
 
       def list_meta(next_cursor:, count: nil, **options)
@@ -199,27 +214,27 @@ module PublicApi
       # This request's parameters as sent, with as_of pinned last, for links.
       def self_link(pin: operation.parameter("as_of").present?, extra: {})
         sent = parameters.sent.except("as_of").merge(extra.transform_keys(&:to_s))
-        sent["as_of"] = release if pin
+        sent["as_of"] = revision if pin
         Links.url(request.path.chomp("/").presence || "/v1", sent)
       end
 
       def page_links(next_cursor, pin: operation.parameter("as_of").present?)
         {
           self: self_link(pin:),
-          next: next_cursor && Links.url(request.path, parameters.sent.except("as_of", "cursor").merge(pin ? { "as_of" => release } : {}).merge("cursor" => next_cursor))
+          next: next_cursor && Links.url(request.path, parameters.sent.except("as_of", "cursor").merge(pin ? { "as_of" => revision } : {}).merge("cursor" => next_cursor))
         }
       end
 
       # Renders `payload` (data, meta, links) as 200 with the operation's cache
-      # rules: release data gets a strong ETag over everything but the request
+      # rules: revision data gets a strong ETag over everything but the request
       # ID, and If-None-Match answers 304.
-      def render_data(payload, release: self.release, pinned: as_of_pinned?)
+      def render_data(payload, revision: self.revision, pinned: as_of_pinned?)
         cache = operation.cache
         headers = {}
-        if cache == "release"
-          etag = etag_for(payload, release)
+        if cache == "revision"
+          etag = etag_for(payload, revision)
           headers["ETag"] = etag
-          headers["BC-Release"] = release.to_s
+          headers["BC-Revision"] = revision.to_s
         end
         headers["Cache-Control"] = cache_control(cache, pinned:)
         if etag && etag_matches?(etag)
@@ -233,7 +248,7 @@ module PublicApi
       end
 
       def as_of_pinned?
-        return true if decoded_cursor&.release
+        return true if decoded_cursor&.revision
 
         @as_of ? @as_of.pinned : false
       end
@@ -245,10 +260,10 @@ module PublicApi
         pinned ? PINNED_CACHE : LATEST_CACHE
       end
 
-      def etag_for(payload, release)
+      def etag_for(payload, revision)
         stable = payload.deep_dup
         stable[:meta] = stable[:meta].except(:request_id) if stable[:meta]
-        %("r#{release}-#{OpenSSL::Digest::SHA256.hexdigest(JSON.generate([ locale, stable ]))[0, 12]}")
+        %("r#{revision}-#{OpenSSL::Digest::SHA256.hexdigest(JSON.generate([ locale, stable ]))[0, 12]}")
       end
 
       def etag_matches?(etag)
@@ -310,7 +325,7 @@ module PublicApi
 
       def render_statement_timeout(error)
         Rails.logger.warn("[public_api] statement timeout in #{operation.id}: #{error.message.lines.first}")
-        render_problem(Problem.new(:query_too_broad, "The query took too long. Narrow it (filters, a smaller page), or use the bulk files at #{BULK_URL}."))
+        render_problem(Problem.new(:query_too_broad, "The query took too long. Narrow it (filters, a smaller page); #{BULK_URL} covers high-volume needs."))
       end
 
       def render_unexpected(error)
@@ -336,8 +351,8 @@ module PublicApi
         item.select { |key, _| keep.include?(key) }
       end
 
-      # 404 for an ID nothing in the release has.
-      def not_found!(what) = raise(Problem.not_found("No #{what} in release #{release}."))
+      # 404 for an ID nothing in the revision has.
+      def not_found!(what) = raise(Problem.not_found("No #{what} in revision #{revision}."))
     end
   end
 end

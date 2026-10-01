@@ -84,22 +84,34 @@ module PublicApi
         }
       end
 
-      # Provenance of a registry row version: the release that first published
-      # it, when fact-factory recorded it, and the roster row it came from.
+      # Provenance of a registry row version: the revision that first wrote
+      # it, when fact-factory recorded it, and the roster capture and row it
+      # came from.
       def provenance(row, asset)
-        source = record_source(row.source)
+        raw = json_object(row.source)
+        source = record_source(raw)
         {
-          asset:, release: row.release_from, snapshot_id: nil, recorded_at: Format.timestamp(row.recorded_at),
-          capture: nil, locator: source&.dig(:row_number) ? { row: source[:row_number] } : nil, source:,
+          asset:, revision: row.revision_id, publication: nil, recorded_at: Format.timestamp(row.recorded_at),
+          capture: roster_capture(raw), locator: source&.dig(:row_number) ? { row: source[:row_number] } : nil, source:,
           parser_version: nil, license: REGISTRY_LICENSE
         }
+      end
+
+      # The roster capture a roster row came from: its digest and the
+      # content-addressed URL fact-factory recorded. The registry's record has
+      # no retrieval time or publisher URL.
+      def roster_capture(raw)
+        sha = raw["origin"] == "roster" && Format.sha256(raw["capture_sha256"]) or return nil
+
+        { sha256: sha, url: raw["capture_url"].presence || Format.capture_url(sha), source_url: nil, retrieved_at: nil }
       end
 
       # RecordSource: `roster` for rows built from a roster capture; anything
       # else (resolution, creation, reviewed decisions) was made by entity
       # resolution.
       def record_source(source)
-        return nil unless source.is_a?(Hash)
+        source = json_object(source)
+        return nil if source.empty?
 
         roster = source["origin"] == "roster"
         row = source["row_number"].to_i
@@ -119,7 +131,7 @@ module PublicApi
         else
           ctx.fr? ? "; établie par la résolution d'entités" : "; from entity resolution"
         end
-        lead = ctx.fr? ? "Registre des entités de Build Canada, version #{ctx.release}" : "Build Canada entity registry release #{ctx.release}"
+        lead = ctx.fr? ? "Registre des entités de Build Canada, #{ctx.version_label}" : "Build Canada entity registry #{ctx.version_label}"
         "#{lead}, #{what}#{from}."
       end
 

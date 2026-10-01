@@ -19,7 +19,7 @@ get:
     count_exact: 2
   x-bc-scopes:
   - read:public
-  x-bc-cache: release
+  x-bc-cache: revision
   x-fern-pagination:
     cursor: "$request.cursor"
     next_cursor: "$response.meta.next_cursor"
@@ -82,7 +82,7 @@ get:
   - name: q
     in: query
     required: false
-    description: Full-text match on title, description, program and party names as published.
+    description: Full-text match on title, description, program and the single-valued party names as published (payer, recipient, research_org, principal_investigator); the `recipients` list is not searched.
     schema:
       type: string
       minLength: 2
@@ -150,8 +150,8 @@ get:
           "$ref": "../components/headers.yaml#/ETag"
         Cache-Control:
           "$ref": "../components/headers.yaml#/CacheControl"
-        BC-Release:
-          "$ref": "../components/headers.yaml#/BCRelease"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
         RateLimit:
           "$ref": "../components/headers.yaml#/RateLimit"
         RateLimit-Policy:
@@ -206,8 +206,12 @@ get:
                   is_latest_revision: true
                   provenance:
                     asset: sources/ca/tbs/proactive_grants
-                    release: 11
-                    snapshot_id: '2534519102996296639'
+                    revision: 31
+                    publication:
+                      id: 412
+                      version: 78
+                      resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                      committed_at: '2026-10-01T02:10:44Z'
                     recorded_at:
                     capture:
                       sha256: 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
@@ -223,11 +227,12 @@ get:
                     license: OGL-Canada-2.0
                   cite: >-
                     Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions,
-                    retrieved 2026-09-26, row 48,213 (sha256 0d9b2894). Build Canada data release 11,
+                    retrieved 2026-09-26, row 48,213 (sha256 0d9b2894). Build Canada data revision 31,
                     gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats:
                   - code: agreement_value_not_paid
@@ -241,7 +246,7 @@ get:
                   count:
                 links:
                   self: >-
-                    /v1/spending?source=proactive_grants&payer=01J9ZK3A1B2C3D4E5F6G7H8J9K&recipient=01J9ZK4T6M8Q2R5V7X3B1N0C4D&as_of=11
+                    /v1/spending?source=proactive_grants&payer=01J9ZK3A1B2C3D4E5F6G7H8J9K&recipient=01J9ZK4T6M8Q2R5V7X3B1N0C4D&as_of=31
                   next:
             individual_recipient:
               summary: 'An individual recipient: named as published, never linked to an entity'
@@ -286,8 +291,12 @@ get:
                   is_latest_revision: true
                   provenance:
                     asset: sources/ca/tbs/proactive_grants
-                    release: 11
-                    snapshot_id: '2534519102996296639'
+                    revision: 31
+                    publication:
+                      id: 412
+                      version: 78
+                      resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                      committed_at: '2026-10-01T02:10:44Z'
                     recorded_at:
                     capture:
                       sha256: 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
@@ -303,7 +312,7 @@ get:
                     license: OGL-Canada-2.0
                   cite: >-
                     Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions,
-                    retrieved 2026-09-26, row 902,117 (sha256 0d9b2894). Build Canada data release 11,
+                    retrieved 2026-09-26, row 902,117 (sha256 0d9b2894). Build Canada data revision 31,
                     gid://buildcanada/SpendingRecord/M7P2R4T6V8X0Z2B4D6F8H0K2N4.
                   parties:
                   - occurrence_id: e68fbe80da758122bceb9097532263485b3115f96c832c3622d5074c565fe255
@@ -320,8 +329,9 @@ get:
                     candidates: []
                     rule_version: resolution-v5+occurrences-v3+names-v2+matching-v4
                 meta:
-                  release: 11
-                  as_of: '11'
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats:
                   - code: agreement_value_not_paid
@@ -334,7 +344,7 @@ get:
                   next_cursor:
                   count:
                 links:
-                  self: "/v1/spending?source=proactive_grants&q=digital+adoption&expand=parties&as_of=11"
+                  self: "/v1/spending?source=proactive_grants&q=digital+adoption&expand=parties&as_of=31"
                   next:
     '304':
       "$ref": "../components/responses.yaml#/NotModified"
@@ -348,6 +358,8 @@ get:
       "$ref": "../components/problems.yaml#/NotFound"
     '409':
       "$ref": "../components/problems.yaml#/Conflict"
+    '410':
+      "$ref": "../components/problems.yaml#/Gone"
     '422':
       "$ref": "../components/problems.yaml#/UnprocessableEntity"
     '429':

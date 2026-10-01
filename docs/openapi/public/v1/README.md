@@ -22,9 +22,9 @@ Tooling: `.spectral.yaml` (repo root), `docs/openapi/redocly.yaml`, `docs/openap
 
 These are enforced by the linters. Changes that break one fail CI.
 
-- **Envelope.** Every 2xx body is `{ data, meta, links }`. `meta` always has `release`, `as_of`, `request_id` and `caveats[]` (empty, never missing). Lists add `meta.limit`, `meta.next_cursor` and `meta.count`, which is null unless the request sent `count=exact`.
-- **`as_of`.** Every data operation takes `as_of`: a release number, or an RFC 3339 timestamp or a date that resolves to a release. `links.self` always carries the resolved `as_of`, so it returns the same bytes forever.
-- **Pagination.** Lists use a cursor only: `limit` (default 50, max 200) and an opaque, signed `cursor` bound to its release (409 `release_mismatch` otherwise). No offsets. Every paginated operation declares `x-fern-pagination`.
+- **Envelope.** Every 2xx body is `{ data, meta, links }`. `meta` always has `revision`, `snapshot`, `as_of`, `request_id` and `caveats[]` (empty, never missing). Lists add `meta.limit`, `meta.next_cursor` and `meta.count`, which is null unless the request sent `count=exact`.
+- **`as_of`.** Every registry and spending operation takes `as_of`: a revision number, a snapshot name, or an RFC 3339 timestamp or a date that resolves to a revision. Elections operations are current state and take none. `links.self` always carries the resolved `as_of`, so it returns the same bytes forever.
+- **Pagination.** Lists use a cursor only: `limit` (default 50, max 200) and an opaque, signed `cursor` bound to its revision (409 `revision_mismatch` otherwise). No offsets. Every paginated operation declares `x-fern-pagination`.
 - **Errors.** Every 301, 4xx and 5xx response is `application/problem+json` using the `Problem` schema. It has a stable `code`, and `type` is a docs URL. Add new problem types to `components/problems.yaml` and to the `Problem.code` enum.
 - **Provenance and citation.** Fact-bearing objects (`x-bc-record: true`) carry `provenance` and a ready-to-paste `cite`.
 - **Data fields name dictionary terms.** Every property of an `x-bc-record` schema has `x-bc-dictionary: <term>` or `x-bc-structural: true`. Structural means envelope-like: links, provenance, cite, embedded objects. `bin/openapi-check-dictionary` checks each term against `dictionary-terms.json` or the pending list.
@@ -32,13 +32,13 @@ These are enforced by the linters. Changes that break one fail CI.
 - **Examples.** Every operation has named examples on its 2xx response, every parameter has an example, and schema-level `examples` go on primitives. The test validates every one against its schema.
 - **Money.** Money is a decimal string (`Amount`) with a sibling ISO 4217 `currency`. It is never a number. Spectral rejects `format: float|double`.
 - **IDs.** IDs are `gid://buildcanada/<Type>/<key>`. Paths accept the bare key or the percent-encoded gid.
-- **Headers.** Every 200 sends `RateLimit`, `RateLimit-Policy` and `BC-Quota-Remaining`. Release-pinned responses add `ETag`, `Cache-Control` and `BC-Release`, and support `If-None-Match` and 304.
+- **Headers.** Every 200 sends `RateLimit`, `RateLimit-Policy` and `BC-Quota-Remaining`. Revision-pinned responses add `ETag`, `Cache-Control` and `BC-Revision`, and support `If-None-Match` and 304.
 - **Operation extensions.** Every operation declares all of these:
   - `operationId`: verb first, lowerCamelCase.
   - `tags`.
   - `x-fern-sdk-group-name` and `x-fern-sdk-method-name`: the SDK shape, such as `client.entities.spending.summary`.
   - `x-bc-units`: `base`, plus `large_page` for pages over 50 and `count_exact` where supported. Rails, the edge Worker and the docs read these numbers.
-  - `x-bc-scopes`, `x-bc-phase` and `x-bc-cache` (`release`, `short` or `none`).
+  - `x-bc-scopes`, `x-bc-phase` and `x-bc-cache` (`revision`, `short` or `none`).
 - **Security.** `ApiKey` (bearer `bc_live_…`), `OAuth2` (authorization code with PKCE S256 and RFC 8707 resources), or anonymous (`{}`) on `read:public` operations.
 - **Additive enums.** Clients must accept enum values and fields they don't know. Adding a value is not a breaking change (see Versioning).
 
@@ -59,7 +59,7 @@ From the design, section 9:
 | Layer | Versioned by | Policy |
 |---|---|---|
 | API contract | URL major (`/v1`) | Additive changes ship freely. Clients must tolerate unknown fields and enum values. A breaking change needs `/v2`, run alongside `/v1` for **12+ months** |
-| Data | Releases (`as_of`) | Not an API change. Old releases stay in the API **24+ months**, and in bulk forever |
+| Data | Revisions and snapshots (`as_of`) | Not an API change. Revisions stay answerable back to fact-factory's retention horizon; held snapshots stay answerable |
 | Fields, endpoints | `deprecated: true` + `x-bc-sunset: <date>` | Responses send `Deprecation` (RFC 9745), `Sunset` (RFC 8594) and `Link: rel="deprecation"`. Fields get 6 months' notice and endpoints 12, then `410 retired` |
 | Semantics | Parser versions | A change in meaning is announced like a breaking change |
 | SDKs | Semver | SDK major = API major |

@@ -8,7 +8,7 @@ module PublicApi
   class Parameters
     HINTS = {
       "fiscal_year" => "Use YYYY-YY, e.g. 2024-25",
-      "as_of" => "Use a release number (11), a date (2026-09-01) or an RFC 3339 timestamp (2026-09-01T00:00:00Z).",
+      "as_of" => "Use a revision number (31), a snapshot name (release-14), a date (2026-10-01) or an RFC 3339 timestamp (2026-10-01T03:00:00Z).",
       "amount_min" => "Use a decimal string with 2 to 6 decimals, e.g. 125000.00",
       "amount_max" => "Use a decimal string with 2 to 6 decimals, e.g. 125000.00",
       "id" => "Use the 26-character ID or its percent-encoded gid.",

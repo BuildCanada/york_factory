@@ -41,12 +41,15 @@ amount_missing:
 archive_overlaps_live:
   en: Rows with acquisition archive_import come from an external archive and may repeat live rows.
   fr: Les lignes dont acquisition vaut archive_import proviennent d'une archive externe et peuvent répéter des lignes courantes.
-raw_unavailable:
-  en: The original source record (raw) is not in the API's read model yet. It is null here; the bulk Parquet files carry it.
-  fr: L'enregistrement source original (raw) n'est pas encore dans le modèle de lecture de l'API. Il vaut null ici; les fichiers Parquet le contiennent.
+nothing_linked:
+  en: Nothing is linked to this entity in this role as of this revision. Until fact-factory activates its match rules (after the gold set), every link is only proposed and no summary has rows.
+  fr: Rien n'est lié à cette entité dans ce rôle à cette révision. Tant que fact-factory n'active pas ses règles d'appariement (après l'ensemble de référence), chaque lien n'est que proposé et aucun sommaire n'a de lignes.
+fuzzy_unavailable:
+  en: Fuzzy name matching is not available yet (it arrives with the database's text-search extension), so mode=fuzzy answered like mode=exact.
+  fr: La recherche approximative par nom n'est pas encore offerte (elle arrive avec l'extension de recherche de la base de données); mode=fuzzy a répondu comme mode=exact.
 coverage_partial:
   en: "%{detail}"
   fr: "%{detail}"
 dictionary_not_pinned:
-  en: This release was built before the read model recorded its data dictionary, so the newest dictionary is served instead.
-  fr: Cette version a été construite avant que le modèle de lecture n'enregistre son dictionnaire de données; le dictionnaire le plus récent est servi à la place.
+  en: The data dictionary is not versioned by revision, so it is served as fact-factory defines it today, whatever as_of says.
+  fr: Le dictionnaire de données n'est pas versionné par révision; il est servi tel que fact-factory le définit aujourd'hui, quel que soit as_of.

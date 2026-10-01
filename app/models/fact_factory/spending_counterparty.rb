@@ -1,7 +1,7 @@
 module FactFactory
-  # api.spending_counterparties in fact-factory's read model (serve/api_schema.sql).
+  # spending_counterparties in fact-factory's schema (db/fact_factory/schema.sql).
   class SpendingCounterparty < FactFactoryRecord
-    self.table_name = "api.spending_counterparties"
-    self.primary_key = nil
+    self.table_name = FactFactoryRecord.table("spending_counterparties")
+    self.primary_key = "id"
   end
 end

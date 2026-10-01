@@ -71,7 +71,7 @@ rules:
             items: {enum: ['read:public', 'usage:read', 'keys:manage']}
       - field: x-bc-cache
         function: enumeration
-        functionOptions: {values: [release, short, none]}
+        functionOptions: {values: [revision, short, none]}
 
   bc-operation-fern-naming:
     description: Every operation names its SDK method (x-fern-sdk-method-name).

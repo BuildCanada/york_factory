@@ -3,13 +3,13 @@ module PublicApi
   # dictionary, each dataset's and spending source's metadata, and caveat
   # text.
   #
-  # - The dictionary is the one each release was built with (api.dictionary,
-  #   fact-factory's docs/data-dictionary.yaml as `dictionary export` writes
-  #   it), so it is pinned like the data.
+  # - config/public_api/dictionary.json is fact-factory's docs/data-dictionary.yaml
+  #   in the format of `fact-factory dictionary export`, vendored at the commit
+  #   its source.repository names. It is not versioned by revision: a pinned
+  #   as_of says so (dictionary_not_pinned).
   # - config/public_api/datasets.yml has titles, publishers, licences and
-  #   cadences, which the read model doesn't carry. Which datasets a release
-  #   serves, their rows, snapshots and fiscal-year coverage come from
-  #   api.datasets, and bulk files from api.release_exports.
+  #   cadences. Rows and freshness come from the revision (the spending
+  #   publications it reads, and the registry tables as of it).
   # - config/public_api/caveats.yml has caveat text in English and French.
   module Catalog
     ROOT = Rails.root.join("config/public_api")
@@ -28,7 +28,7 @@ module PublicApi
       "global_affairs_projects" => "commitment"
     }.freeze
 
-    # A spending source. Its notes are read from a release's dictionary.
+    # A spending source. Its notes are read from the dictionary.
     Source = Data.define(:key, :asset, :title, :publisher, :record_types, :record_meaning, :caveats, :known_gaps, :license, :cadence) do
       def measure = MEASURES.fetch(key)
 
@@ -45,10 +45,9 @@ module PublicApi
       end
     end
 
-    # The data dictionary of one release. `pinned` is false when the release
-    # has none (built before api.dictionary existed) and this is the newest
-    # one the read model has instead.
-    Dictionary = Data.define(:release, :definitions, :assets, :sha256, :pinned) do
+    # The data dictionary (config/public_api/dictionary.json). `pinned` is
+    # always false: fact-factory keeps no dictionary per revision.
+    Dictionary = Data.define(:definitions, :assets, :sha256, :pinned) do
       def definition(term) = definitions[term.to_s]
 
       def asset_notes(asset)
@@ -70,23 +69,15 @@ module PublicApi
 
     module_function
 
-    # The dictionary release `release` was built with. Immutable per
-    # release, so kept in process once found; a fallback is looked up again.
-    def dictionary(release)
-      @dictionaries ||= Concurrent::Map.new
-      @dictionaries[release] || load_dictionary(release).tap { |d| @dictionaries[release] = d if d.pinned }
+    # The dictionary. Takes the revision for when fact-factory versions it.
+    def dictionary(_revision = nil)
+      @dictionary ||= begin
+        json = JSON.parse(File.read(ROOT.join("dictionary.json")))
+        Dictionary.new(definitions: json.fetch("definitions"), assets: json.fetch("assets"), sha256: json.dig("source", "sha256"), pinned: false)
+      end
     end
 
-    def reset! = @dictionaries = nil
-
-    def load_dictionary(release)
-      entries = FactFactory::DictionaryEntry
-      source = entries.where(release_id: release).exists? ? release : entries.maximum(:release_id)
-      rows = source ? entries.where(release_id: source).pluck(:section, :name, :body, :dictionary_sha256) : []
-      sections = rows.group_by(&:first).transform_values { |list| list.to_h { |_, name, body, _| [ name, body ] } }
-      Dictionary.new(release:, definitions: sections.fetch("definitions", {}), assets: sections.fetch("assets", {}),
-        sha256: rows.first&.last, pinned: source == release)
-    end
+    def reset! = nil
 
     def datasets_config
       @datasets_config ||= YAML.safe_load_file(ROOT.join("datasets.yml"))

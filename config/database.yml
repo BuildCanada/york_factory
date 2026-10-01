@@ -20,23 +20,26 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
-# fact-factory's `api` read model (docs/public-interface-design.md §5.3): the
-# allowlisted schema the public data API (/v1) serves. Read-only: Rails never
-# migrates, writes to or dumps it (database_tasks: false), and every
-# transaction is read-only with a 5 s statement timeout, as the api_reader role
-# enforces in production. In production and staging the URL comes from
-# FACT_FACTORY_API_DATABASE_URL (api_reader on a replica, port 5432, never the
-# PgBouncer port). No credentials are kept here.
-fact_factory_api: &fact_factory_api
-  adapter: postgresql
+# fact-factory's database (docs/public-interface-design.md §5.2 and §5.3): the
+# public data API (/v1) reads the fact_factory schema directly, as the read-only
+# role api_reader (fact-factory deploy/migrations/007_api_reader_role.sql: SELECT
+# on every table of the schema, search_path <schema>, public for PostGIS). Rails
+# never migrates, writes to or dumps it (database_tasks: false), and every
+# transaction is read-only with a 5 s statement timeout, as the role also
+# enforces. In production the URL comes from FACT_FACTORY_DATABASE_URL (a
+# replica, port 5432, never the PgBouncer port) and the schema name from
+# FACT_FACTORY_DB_SCHEMA (default fact_factory). No credentials are kept here.
+fact_factory: &fact_factory
+  # PostGIS, for the elections tables' geometry (fact-factory 011_postgis.sql).
+  adapter: postgis
   encoding: unicode
   database_tasks: false
   replica: true
-  schema_search_path: api
+  schema_search_path: <%= ENV.fetch("FACT_FACTORY_DB_SCHEMA", "fact_factory") %>,public
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   variables:
     default_transaction_read_only: "on"
-    statement_timeout: <%= ENV.fetch("FACT_FACTORY_API_STATEMENT_TIMEOUT", "5s") %>
+    statement_timeout: <%= ENV.fetch("FACT_FACTORY_STATEMENT_TIMEOUT", "5s") %>
 
 development:
   primary:
@@ -50,12 +53,12 @@ development:
     <<: *default
     database: york_factory_development_cache<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/cache_migrate
-  # A local fact-factory database with a built read model
-  # (`fact-factory api build`), or FACT_FACTORY_API_DATABASE_URL.
-  fact_factory_api:
-    <<: *fact_factory_api
+  # A local fact-factory database (its db.initialize), or
+  # FACT_FACTORY_DATABASE_URL.
+  fact_factory:
+    <<: *fact_factory
     database: fact_factory
-    url: <%= ENV["FACT_FACTORY_API_DATABASE_URL"] %>
+    url: <%= ENV["FACT_FACTORY_DATABASE_URL"] %>
 
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
@@ -100,13 +103,13 @@ test:
     <<: *primary_test
     database: york_factory_test_cache<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     migrations_paths: db/cache_migrate
-  # Created and loaded by the test suite itself, from fact-factory's
-  # api_schema.sql and the fixture rows in test/support/fact_factory_api
-  # (see test/support/fact_factory_api_database.rb). One database is shared
-  # by every parallel worker; tests only read it.
-  fact_factory_api:
-    <<: *fact_factory_api
-    database: york_factory_test_fact_factory_api<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
+  # Created and loaded by the test suite itself, from fact-factory's vendored
+  # schema (db/fact_factory/schema.sql) and the fixture rows in
+  # test/support/fact_factory (see test/support/fact_factory_database.rb). One
+  # database is shared by every parallel worker; tests only read it.
+  fact_factory:
+    <<: *fact_factory
+    database: york_factory_test_fact_factory<%= "_#{ENV['CONDUCTOR_WORKSPACE_NAME']}" if ENV['CONDUCTOR_WORKSPACE_NAME'] %>
     url: <%= ENV["DATABASE_URL"] %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
@@ -156,6 +159,6 @@ production:
     <<: *primary_production
     database: york_factory_cable
     migrations_paths: db/cable_migrate
-  fact_factory_api:
-    <<: *fact_factory_api
-    url: <%= ENV["FACT_FACTORY_API_DATABASE_URL"] %>
+  fact_factory:
+    <<: *fact_factory
+    url: <%= ENV["FACT_FACTORY_DATABASE_URL"] %>

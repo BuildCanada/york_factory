@@ -6,14 +6,14 @@ require "json_schemer"
 # response's schema, and each header the contract declares must match its
 # schema when present (RateLimit, ETag and friends).
 class PublicApiTestCase < ActionDispatch::IntegrationTest
-  include FactFactoryApiFixtures
+  include FactFactoryFixtures
 
   setup do
     Rails.autoloaders.main.eager_load_dir(Rails.root.join("app/controllers/public_api"))
     PublicApi::RateLimiter.store = ActiveSupport::Cache::MemoryStore.new
-    FactFactory::ReleaseQuery.reset!
+    FactFactory::RevisionQuery.reset!
     FactFactory::DatasetQuery.reset!
-    FactFactory::SearchQuery.reset!
+    FactFactory::FuzzyNames.adapter = nil
     PublicApi::Catalog.reset!
   end
 

@@ -9,7 +9,14 @@ module PublicApi
 
     module_function
 
+    # Where captures are served, content-addressed (fact-factory's
+    # FACT_FACTORY_PUBLIC_URL; files.buildcanada.com once its custom domain is
+    # live).
+    FILES_URL = ENV.fetch("PUBLIC_API_FILES_URL", "https://files.buildcanada.com").chomp("/").freeze
+
     def gid(type, key) = key.nil? ? nil : "#{GID}/#{type}/#{key}"
+
+    def capture_url(sha256) = "#{FILES_URL}/sha256/#{sha256[0, 2]}/#{sha256}"
 
     def entity_gid(entity_id) = gid("Entity", entity_id)
 

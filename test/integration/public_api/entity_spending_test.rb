@@ -7,7 +7,7 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending"
     assert_conforms("listEntitySpending", status: 200)
     assert_equal DV_ROWS, keys
-    api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", as_of: "10"
+    api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", as_of: "30"
     assert_equal DV_ROWS - [ G1_A1 ], keys
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending", latest_revision_only: "true", source: "proactive_grants"
     assert_equal [ G1_A1, G_AGGREGATE, G_BLANK ], keys, "not the archive copy of an older revision"
@@ -40,15 +40,15 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     assert_equal [ "recipient", [ "source", "fiscal_year" ], 1, 1 ], meta.values_at("role", "group_by", "aggregated_rows_excluded", "unlinked_occurrences")
     codes = meta["caveats"].map { |c| c["code"] }
     assert_equal %w[not_cross_source_total latest_revision_only linked_only aggregates_excluded amount_missing agreement_value_not_paid measure_ambiguous], codes
-    unlinked = "/v1/entities/#{DIAMOND_VALLEY}/spending/unlinked?role=recipient&as_of=11"
+    unlinked = "/v1/entities/#{DIAMOND_VALLEY}/spending/unlinked?role=recipient&as_of=31"
     assert_equal "Only linked occurrences are counted. 1 unlinked occurrences with this name: #{unlinked}.", meta["caveats"][2]["text"]
-    assert_equal({ "self" => "/v1/entities/#{DIAMOND_VALLEY}/spending/summary?as_of=11", "unlinked" => unlinked,
-                   "records" => "/v1/entities/#{DIAMOND_VALLEY}/spending?role=recipient&as_of=11" }, body["links"])
+    assert_equal({ "self" => "/v1/entities/#{DIAMOND_VALLEY}/spending/summary?as_of=31", "unlinked" => unlinked,
+                   "records" => "/v1/entities/#{DIAMOND_VALLEY}/spending?role=recipient&as_of=31" }, body["links"])
     assert_equal "3", response.headers["BC-Usage-Units"]
   end
 
   test "the summary as of release 10 counts that release's latest revision" do
-    api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", as_of: "10", group_by: "source"
+    api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", as_of: "30", group_by: "source"
     assert_conforms("getEntitySpendingSummary", status: 200)
     grants = body["data"].find { |r| r["source"] == "proactive_grants" }
     assert_equal [ nil, 2, "125000.00", 1 ], grants.values_at("fiscal_year", "records", "amount", "amount_missing")
@@ -62,7 +62,7 @@ class PublicApiEntitySpendingTest < PublicApiTestCase
     assert_equal %w[source fiscal_year], body.dig("meta", "group_by")
   end
 
-  test "group_by=counterparty, from the read model's counterparty summary, agrees with its summary" do
+  test "group_by=counterparty, from fact-factory's counterparty summary, agrees with its summary" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", group_by: "source"
     precomputed = body["data"].to_h { |r| [ r["source"], r.values_at("records", "amount", "amount_missing") ] }
     api_get "/v1/entities/#{DIAMOND_VALLEY}/spending/summary", group_by: "counterparty"

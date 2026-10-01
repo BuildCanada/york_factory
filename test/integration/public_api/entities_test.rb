@@ -7,32 +7,35 @@ class PublicApiEntitiesTest < PublicApiTestCase
     data = body["data"]
     assert_equal "gid://buildcanada/Entity/#{DIAMOND_VALLEY}", data["id"]
     assert_equal [ "Diamond Valley" ], data["aliases"]
-    assert_equal "/v1/entities/#{DIAMOND_VALLEY}/lineage?as_of=11", data.dig("links", "lineage")
+    assert_equal "/v1/entities/#{DIAMOND_VALLEY}/lineage?as_of=31", data.dig("links", "lineage")
     assert_equal({ "origin" => "roster", "source_key" => "ca-ab/municipal_affairs/municipalities", "capture_sha256" => ROSTER_SHA,
                    "row_number" => 212 }, data.dig("provenance", "source"))
     assert_equal({ "row" => 212 }, data.dig("provenance", "locator"))
-    assert_equal 11, data.dig("provenance", "release")
-    assert_equal "Build Canada entity registry release 11, gid://buildcanada/Entity/#{DIAMOND_VALLEY}; " \
+    assert_equal 31, data.dig("provenance", "revision")
+    assert_equal({ "sha256" => ROSTER_SHA, "url" => "https://files.buildcanada.com/sha256/38/#{ROSTER_SHA}", "source_url" => nil,
+                   "retrieved_at" => nil }, data.dig("provenance", "capture"))
+    assert_equal "Build Canada entity registry revision 31 (snapshot daily-2026-10-01), gid://buildcanada/Entity/#{DIAMOND_VALLEY}; " \
       "from roster ca-ab/municipal_affairs/municipalities, row 212.", data["cite"]
-    assert_equal "/v1/entities/#{DIAMOND_VALLEY}?as_of=11", body.dig("links", "self")
+    assert_equal "/v1/entities/#{DIAMOND_VALLEY}?as_of=31", body.dig("links", "self")
     assert_cache_control "public, max-age=300, stale-while-revalidate=3600"
   end
 
-  test "as_of pins the release, by number, date or timestamp" do
-    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "10"
+  test "as_of pins the revision, by number, date or timestamp" do
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "30"
     assert_conforms("getEntity", status: 200)
     assert_equal [], body.dig("data", "aliases")
-    assert_equal 10, body.dig("data", "provenance", "release")
-    assert_equal "10", body.dig("meta", "as_of")
-    assert_equal "/v1/entities/#{DIAMOND_VALLEY}?as_of=10", body.dig("links", "self")
+    assert_equal 30, body.dig("data", "provenance", "revision")
+    assert_equal "30", body.dig("meta", "as_of")
+    assert_nil body.dig("meta", "snapshot")
+    assert_equal "/v1/entities/#{DIAMOND_VALLEY}?as_of=30", body.dig("links", "self")
     assert_cache_control "public, max-age=31536000, immutable"
 
-    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2026-09-25"
-    assert_equal 10, body.dig("meta", "release")
-    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2026-09-27T06:14:02Z"
-    assert_equal 11, body.dig("meta", "release")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2026-10-01"
+    assert_equal 30, body.dig("meta", "revision")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2026-10-01T02:49:22Z"
+    assert_equal 31, body.dig("meta", "revision")
 
-    api_get "/v1/entities/#{NEW}", as_of: "10"
+    api_get "/v1/entities/#{NEW}", as_of: "30"
     assert_problem("getEntity", 404, "not_found")
     api_get "/v1/entities/#{NEW}"
     assert_conforms("getEntity", status: 200)
@@ -41,19 +44,27 @@ class PublicApiEntitiesTest < PublicApiTestCase
   test "an as_of in the future resolves to the latest but is not cached as immutable" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2099-01-01T00:00:00Z"
     assert_conforms("getEntity", status: 200)
-    assert_equal 11, body.dig("meta", "release")
+    assert_equal 31, body.dig("meta", "revision")
     assert_cache_control "public, max-age=300, stale-while-revalidate=3600"
   end
 
-  test "as_of before the first release is not_yet_published, and a bad one is invalid" do
+  test "as_of outside the served revisions is not_yet_published, and a bad one is invalid" do
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2020-01-01"
     problem = assert_problem("getEntity", 404, "not_yet_published")
-    assert_equal 10, problem["earliest_release"]
+    assert_equal [ 14, 31 ], problem.values_at("earliest_revision", "latest_revision")
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "9"
     assert_problem("getEntity", 404, "not_yet_published")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "32"
+    assert_match(/isn't served yet/, assert_problem("getEntity", 404, "not_yet_published")["detail"])
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "20"
+    assert_problem("getEntity", 404, "not_found")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "release-14"
+    assert_problem("getEntity", 404, "not_found")
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "2026-02-30"
     assert_equal "as_of", assert_problem("getEntity", 400, "invalid_parameter").dig("errors", 0, "parameter")
     api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "latest"
+    assert_problem("getEntity", 404, "not_found")
+    api_get "/v1/entities/#{DIAMOND_VALLEY}", as_of: "Latest!"
     assert_problem("getEntity", 400, "invalid_parameter")
   end
 
@@ -70,12 +81,12 @@ class PublicApiEntitiesTest < PublicApiTestCase
   test "a merged entity is 301 to its survivor, pinned, for the entity and its collections" do
     api_get "/v1/entities/#{DUP}", expand: "identifiers"
     problem = assert_problem("getEntity", 301, "redirected")
-    location = "/v1/entities/#{FOUNDATION}?expand=identifiers&as_of=11"
+    location = "/v1/entities/#{FOUNDATION}?expand=identifiers&as_of=31"
     assert_equal location, response.headers["Location"]
     assert_equal location, problem["location"]
     api_get "/v1/entities/#{DUP}/spending/summary"
     assert_problem("getEntitySpendingSummary", 301, "redirected")
-    assert_equal "/v1/entities/#{FOUNDATION}/spending/summary?as_of=11", response.headers["Location"]
+    assert_equal "/v1/entities/#{FOUNDATION}/spending/summary?as_of=31", response.headers["Location"]
   end
 
   test "expand embeds identifiers and the first outgoing relationships" do
@@ -111,7 +122,7 @@ class PublicApiEntitiesTest < PublicApiTestCase
     api_get "/v1/entities", class: "government_org", subtype: "municipal_government", status: "active"
     assert_conforms("listEntities", status: 200)
     assert_equal [ "gid://buildcanada/Entity/#{DIAMOND_VALLEY}" ], ids
-    assert_equal "/v1/entities?class=government_org&subtype=municipal_government&status=active&as_of=11", body.dig("links", "self")
+    assert_equal "/v1/entities?class=government_org&subtype=municipal_government&status=active&as_of=31", body.dig("links", "self")
   end
 
   test "entities sort by name, and count=exact counts at 2 more units" do
@@ -137,18 +148,18 @@ class PublicApiEntitiesTest < PublicApiTestCase
     assert_equal [ BLACK_DIAMOND, TURNER_VALLEY ].map { |id| "gid://buildcanada/Entity/#{id}" }.sort, ids.sort
   end
 
-  test "a cursor stays on its release and must come back with the same parameters" do
-    api_get "/v1/entities", limit: 2, as_of: "10"
+  test "a cursor stays on its revision and must come back with the same parameters" do
+    api_get "/v1/entities", limit: 2, as_of: "30"
     cursor = next_cursor
     api_get "/v1/entities", limit: 2, cursor: cursor
     assert_conforms("listEntities", status: 200)
-    assert_equal 10, body.dig("meta", "release"), "the cursor's release answers when as_of is left out"
-    assert_includes body.dig("links", "self"), "as_of=10"
+    assert_equal 30, body.dig("meta", "revision"), "the cursor's revision answers when as_of is left out"
+    assert_includes body.dig("links", "self"), "as_of=30"
     assert_cache_control "public, max-age=31536000, immutable"
 
-    api_get "/v1/entities", limit: 2, cursor: cursor, as_of: "11"
-    problem = assert_problem("listEntities", 409, "release_mismatch")
-    assert_equal 10, problem["cursor_release"]
+    api_get "/v1/entities", limit: 2, cursor: cursor, as_of: "31"
+    problem = assert_problem("listEntities", 409, "revision_mismatch")
+    assert_equal 30, problem["cursor_revision"]
     api_get "/v1/entities", limit: 2, cursor: cursor, class: "organization"
     assert_equal "cursor", assert_problem("listEntities", 400, "invalid_parameter").dig("errors", 0, "parameter")
     api_get "/v1/entities", cursor: "#{cursor}x"

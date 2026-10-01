@@ -63,7 +63,7 @@ class Warehouse::Broadcasts::DispatchCapturesJobTest < ActiveJob::TestCase
     end
 
     assert_equal "partial", recording.reload.state
-    assert_equal object.ends_at, recording.ends_at
+    assert_equal object.reload.ends_at, recording.ends_at
     assert recording.metadata.fetch("capture_complete")
     assert_not state.reload.enabled?
     assert_nil state.last_error

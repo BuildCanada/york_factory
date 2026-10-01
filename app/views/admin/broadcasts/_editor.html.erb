@@ -17,6 +17,8 @@
       <% end %>
     </div>
     <p data-broadcast-player-target="error" role="alert" class="broadcast-player-error"></p>
+    <% if @playback.audio_gaps.any? %><p class="text-muted">Some intervals in the selected audio track are unavailable and play silently. Video timing is preserved.</p><% end %>
+    <% if @caption_tracks.empty? %><p class="text-muted">No captions are available for this recording.</p><% end %>
 
     <div class="broadcast-transport" role="group" aria-label="Playback controls">
       <button type="button" class="btn" data-action="broadcast-player#playPause" data-broadcast-player-target="playButton" aria-label="Play or pause">Play</button>
@@ -65,6 +67,7 @@
       <% end %>
       <p class="text-muted">Available through <%= broadcast_timecode(@available_end) %>. Refresh to include newly processed footage.</p>
       <% @playback.gaps.each do |from, to| %><p class="broadcast-player-error">Missing footage: <%= broadcast_duration(from - @recording.starts_at) %> – <%= broadcast_duration(to - @recording.starts_at) %>.</p><% end %>
+      <% @playback.audio_gaps.each do |from, to| %><p class="text-muted">Silent audio: <%= broadcast_timecode(from - @recording.starts_at) %> – <%= broadcast_timecode(to - @recording.starts_at) %>.</p><% end %>
       <% @caption_latest.each do |track, object| %><p class="text-muted"><%= track.language.upcase %> captions: <%= object ? "processed through #{broadcast_time(object.ends_at)}#{object.metadata['empty'] ? ' (no caption text in latest part)' : ''}" : "waiting for extraction" %>.</p><% end %>
     </details>
     <p class="broadcast-shortcuts"><kbd>Space</kbd> play / pause <kbd>←</kbd> <kbd>→</kbd> seek 5s <kbd>Shift</kbd> + arrows seek 0.1s</p>

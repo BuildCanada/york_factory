@@ -16,6 +16,7 @@ module Warehouse
       class Error < StandardError; end
       class TransientError < Error; end
       class PermanentError < Error; end
+      class NotFoundError < PermanentError; end
 
       def initialize(http: nil, resolver: Resolv.method(:getaddresses), max_redirects: MAX_REDIRECTS)
         @http = http
@@ -50,8 +51,7 @@ module Warehouse
           end
 
           unless status.between?(200, 299)
-            error_class = status.in?([ 408, 429 ]) || status >= 500 ? TransientError : PermanentError
-            raise error_class, "HTTP #{status} for #{safe_url}"
+            raise status_error_class(status), "HTTP #{status} for #{safe_url}"
           end
 
           range_header = headers.find { |key, _value| key.to_s.casecmp?("Range") }&.last
@@ -71,17 +71,24 @@ module Warehouse
             status: status
           )
         end
+      rescue SafeUrl::ResolutionError, Resolv::ResolvError => error
+        raise TransientError, error.message
       rescue SafeUrl::Invalid, URI::Error => error
         raise PermanentError, error.message
       rescue HTTPX::HTTPError => error
         status = error.response.status.to_i
-        error_class = status.in?([ 408, 429 ]) || status >= 500 ? TransientError : PermanentError
-        raise error_class, "HTTP #{status} for #{current_url}"
+        raise status_error_class(status), "HTTP #{status} for #{current_url}"
       rescue HTTPX::Error, SocketError, SystemCallError, Timeout::Error => error
         raise TransientError, error.message
       end
 
       private
+
+      def status_error_class(status)
+        return NotFoundError if status == 404
+
+        status.in?([ 408, 429 ]) || status >= 500 ? TransientError : PermanentError
+      end
 
       def client
         @http || HTTPX.plugin(:stream).with(**OPTIONS)

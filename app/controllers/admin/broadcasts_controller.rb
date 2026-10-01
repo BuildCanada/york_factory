@@ -46,7 +46,7 @@ module Admin
       load_transcript_passages(scope)
       prepare_editor_timeline
       @clip_start = clip_offset(params[:clip_start], fallback: @at - @recording.starts_at)
-      @clip_end = clip_offset(params[:clip_end], fallback: [ @clip_start + 30, @available_end.positive? ? @available_end : @clip_start + 30 ].min)
+      @clip_end = clip_end_offset(@clip_start, available_end: @available_end)
       @capture_state = MediaCaptureState.find_by(media_stream_id: @recording.media_stream_id)
       @clips = MediaClip.where(user: current_user, media_recording_id: @recording.id).order(created_at: :desc).limit(20)
     rescue ArgumentError
@@ -63,7 +63,7 @@ module Admin
       state = MediaCaptureState.find_or_create_by!(media_stream_id: stream.id)
       state.with_lock do
         state.update!(enabled: !state.enabled?, next_poll_at: Time.current,
-          lease_token: nil, lease_expires_at: nil)
+          lease_token: nil, lease_expires_at: nil, last_error: nil, consecutive_failures: 0)
       end
       Warehouse::Broadcasts::CaptureJob.perform_later(stream.id) if state.enabled?
       redirect_to admin_broadcasts_path, notice: "Capture #{state.enabled? ? 'enabled' : 'paused'}."
@@ -124,10 +124,7 @@ module Admin
     private
 
     def prepare_editor_timeline
-      coverage = @recording.stream.objects.current_playback
-        .where("metadata ->> 'audio_track_id' IS NOT DISTINCT FROM ?", @audio_track&.id&.to_s)
-        .where("ends_at > ?", @recording.starts_at)
-      coverage = coverage.where("starts_at < ?", @recording.ends_at) if @recording.ends_at
+      coverage = playback_coverage(@audio_track)
       ranges = coverage.order(:starts_at).pluck(:starts_at, :ends_at).map do |from, to|
         [ [ from - @recording.starts_at, 0 ].max,
           [ to, @recording.ends_at ].compact.min - @recording.starts_at ]
@@ -154,11 +151,43 @@ module Admin
     end
 
     def default_audio(tracks, at:)
-      ids = @recording.stream.objects.current_playback
-        .where("starts_at < ? AND ends_at > ?", at + 30.minutes, at - 2.minutes)
-        .distinct.pluck(Arel.sql("metadata ->> 'audio_track_id'")).compact
+      clip_start = clip_offset(params[:clip_start], fallback: at - @recording.starts_at)
+      from = @recording.starts_at + clip_start
+      to = @recording.starts_at + clip_end_offset(clip_start, available_end: 0)
+      scope = @recording.stream.objects.current_playback
+        .where("starts_at < ? AND ends_at > ?", [ at + 30.minutes, to ].max, [ at - 2.minutes, from ].min)
+      ids = scope.distinct.pluck(Arel.sql("metadata ->> 'audio_track_id'")).compact
       available = ids.any? ? tracks.where(id: ids) : tracks
+      covered = available.select do |track|
+        last_end = playback_coverage(track).maximum(:ends_at)
+        available_end = last_end ? [ last_end, @recording.ends_at ].compact.min - @recording.starts_at : 0
+        to = @recording.starts_at + clip_end_offset(clip_start, available_end:)
+        cursor = from
+        scope.where("metadata ->> 'audio_track_id' = ?", track.id.to_s).order(:starts_at).each do |part|
+          next if part.ends_at <= cursor
+          break if part.starts_at > cursor + 0.05
+          anchor = part.metadata["requested_starts_at"] ? Time.iso8601(part.metadata["requested_starts_at"]) : part.starts_at
+          break if Array(part.metadata["audio_gaps"]).any? { |left, right| anchor + left < to && anchor + right > cursor }
+
+          cursor = [ cursor, part.ends_at ].max
+          break if cursor >= to
+        end
+        cursor >= to
+      end
+      return covered.find { |track| track.language == "en" } || covered.first if covered.any?
+
       available.find_by(language: "en") || available.first
+    end
+
+    def playback_coverage(track)
+      coverage = @recording.stream.objects.current_playback
+        .where("metadata ->> 'audio_track_id' IS NOT DISTINCT FROM ?", track&.id&.to_s)
+        .where("ends_at > ?", @recording.starts_at)
+      @recording.ends_at ? coverage.where("starts_at < ?", @recording.ends_at) : coverage
+    end
+
+    def clip_end_offset(clip_start, available_end:)
+      clip_offset(params[:clip_end], fallback: [ clip_start + 30, available_end.positive? ? available_end : clip_start + 30 ].min)
     end
 
     def parse_offset(value)

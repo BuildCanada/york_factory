@@ -8,8 +8,6 @@ module Warehouse
       MIN_POLL = 2.seconds
       MAX_POLL = 15.seconds
 
-      retry_on HttpClient::TransientError, Hls::ParseError, wait: :polynomially_longer, attempts: 6
-
       def perform(media_stream_id)
         state = MediaCaptureState.find_by(media_stream_id:)
         return unless state
@@ -47,6 +45,20 @@ module Warehouse
           })
           self.class.set(wait_until: next_poll).perform_later(state.media_stream_id) unless result.end_list
         end
+      rescue HttpClient::NotFoundError, HttpClient::TransientError, Hls::ParseError => error
+        # Live playlists and segments can disappear temporarily, or at the end
+        # of an event without ENDLIST. Keep polling until discovery confirms the
+        # event is stale; continuous channels must also be able to recover.
+        retry_at = Time.current + retry_delay(state)
+        released = state&.release_lease!(token:, now: Time.current, attrs: {
+          next_poll_at: retry_at,
+          consecutive_failures: state.consecutive_failures.to_i + 1,
+          last_error: "#{error.class}: #{error.message}".truncate(2_000)
+        }) if token
+        if released
+          ProcessJob.perform_later(state.media_stream_id) if state.last_captured_at.present?
+          self.class.set(wait_until: retry_at).perform_later(state.media_stream_id)
+        end
       rescue HttpClient::PermanentError, Hls::UnsupportedTransport => error
         state&.release_lease!(token:, now: Time.current, attrs: {
           enabled: false, next_poll_at: nil,
@@ -71,7 +83,7 @@ module Warehouse
       end
 
       def retry_delay(state)
-        [ 2**state.consecutive_failures.to_i, 5.minutes.to_i ].min.seconds
+        [ 2**[ state.consecutive_failures.to_i + 1, 9 ].min, 5.minutes.to_i ].min.seconds
       end
 
       def prelive_wait?(stream)
@@ -80,8 +92,8 @@ module Warehouse
 
       def stale_event?(state)
         stream = state.media_stream
-        stream.kind == "event" && state.last_captured_at.present? &&
-          stream.last_seen_at < EVENT_STALE_AFTER.ago && state.last_captured_at < EVENT_STALE_AFTER.ago
+        stream.kind == "event" && stream.last_seen_at < EVENT_STALE_AFTER.ago &&
+          (state.last_captured_at.nil? || state.last_captured_at < EVENT_STALE_AFTER.ago)
       end
     end
   end

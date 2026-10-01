@@ -69,6 +69,13 @@ module Warehouse::Broadcasts
       result
     end
 
+    def audio_gaps
+      parts.flat_map do |part|
+        anchor = part.metadata["requested_starts_at"] ? Time.iso8601(part.metadata["requested_starts_at"]) : part.starts_at
+        Array(part.metadata["audio_gaps"]).map { |from, to| [ anchor + from, anchor + to ] }
+      end
+    end
+
     private
 
     def storage

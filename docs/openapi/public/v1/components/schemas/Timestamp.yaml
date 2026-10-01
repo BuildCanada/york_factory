@@ -1,0 +1,6 @@
+title: Timestamp
+description: An RFC 3339 timestamp in UTC, such as 2026-09-25T18:02:11Z.
+type: string
+format: date-time
+examples:
+  - '2026-09-25T18:02:11Z'

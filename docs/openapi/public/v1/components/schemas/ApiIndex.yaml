@@ -1,0 +1,33 @@
+title: ApiIndex
+description: The API's front door. Links to everything, and names the latest revision the API serves.
+type: object
+required: [name, version, latest_revision, links]
+properties:
+  name:
+    type: string
+    description: The API's name.
+    examples: [Build Canada Data API]
+  version:
+    type: string
+    description: The contract version (info.version of the OpenAPI document).
+    examples: [1.0.0-alpha.3]
+  latest_revision:
+    $ref: RevisionNumber.yaml
+    description: The latest revision the API serves, which requests without `as_of` resolve to.
+  links:
+    type: object
+    description: Where to go next.
+    required: [openapi, docs, llms_txt, mcp, revisions, snapshots, datasets, dictionary, search, entities, spending, elections]
+    properties:
+      openapi: {type: string, description: This OpenAPI document as JSON., examples: [/v1/openapi.json]}
+      docs: {type: string, format: uri, description: The documentation site., examples: ['https://data.buildcanada.com/api']}
+      llms_txt: {type: string, format: uri, description: The agent index of the docs., examples: ['https://data.buildcanada.com/api/llms.txt']}
+      mcp: {type: string, format: uri, description: The MCP server endpoint., examples: ['https://data.buildcanada.com/mcp']}
+      revisions: {type: string, description: Registry revisions., examples: [/v1/revisions]}
+      snapshots: {type: string, description: Named registry revisions., examples: [/v1/snapshots]}
+      datasets: {type: string, description: Published datasets., examples: [/v1/datasets]}
+      dictionary: {type: string, description: The data dictionary., examples: [/v1/dictionary]}
+      search: {type: string, description: Search., examples: ['/v1/search?q={q}']}
+      entities: {type: string, description: Registry entities., examples: [/v1/entities]}
+      spending: {type: string, description: Spending rows., examples: [/v1/spending]}
+      elections: {type: string, description: "Elections, their contests, candidates and results.", examples: [/v1/elections]}

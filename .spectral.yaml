@@ -1,0 +1,153 @@
+# Spectral ruleset for the public data API contract (docs/openapi/public/v1).
+# Run bin/openapi-lint. It lints the bundled docs/openapi/dist/v1/openapi.json, because Spectral
+# mis-validates path items that $ref other files; the bundle is what clients see anyway.
+# Rules starting bc- encode the conventions in docs/openapi/public/v1/README.md.
+# The x-bc-dictionary rule lives in bin/openapi-check-dictionary: Spectral's resolver drops
+# keywords beside a $ref, which is where x-bc-dictionary sits on most fields.
+extends:
+  - [spectral:oas, all]
+
+functionsDir: docs/openapi/spectral/functions
+functions:
+  - cursorNeedsPagination
+
+rules:
+  # The spec is split across files; Spectral resolves them, so unused-component checks
+  # would flag schemas only reached through file refs.
+  oas3-unused-component: off
+  # Tag order is the docs navigation order, not alphabetical.
+  openapi-tags-alphabetical: off
+
+  bc-operation-id-camel-case:
+    description: operationId is lowerCamelCase, verb first (getEntity, listSpending).
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch]
+    then:
+      field: operationId
+      function: pattern
+      functionOptions:
+        match: '^(get|list|search|resolve)[A-Z][A-Za-z]+$'
+
+  bc-operation-summary:
+    description: Every operation has a summary of at most 60 characters.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch].summary
+    then:
+      function: length
+      functionOptions:
+        max: 60
+
+  bc-operation-units:
+    description: Every operation declares its cost in x-bc-units (base, and large_page / count_exact where they apply).
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch]
+    then:
+      field: x-bc-units
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [base]
+          additionalProperties: false
+          properties:
+            base: {type: integer, minimum: 0}
+            large_page: {type: integer, minimum: 0}
+            count_exact: {type: integer, minimum: 0}
+
+  bc-operation-phase-scopes-cache:
+    description: Every operation declares x-bc-phase, x-bc-scopes and x-bc-cache.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch]
+    then:
+      - field: x-bc-phase
+        function: enumeration
+        functionOptions: {values: [1, 2, 3]}
+      - field: x-bc-scopes
+        function: schema
+        functionOptions:
+          schema:
+            type: array
+            minItems: 1
+            items: {enum: ['read:public', 'usage:read', 'keys:manage']}
+      - field: x-bc-cache
+        function: enumeration
+        functionOptions: {values: [revision, short, none]}
+
+  bc-operation-fern-naming:
+    description: Every operation names its SDK method (x-fern-sdk-method-name).
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch]
+    then:
+      field: x-fern-sdk-method-name
+      function: pattern
+      functionOptions:
+        match: '^[a-z][A-Za-z]*$'
+
+  bc-list-pagination:
+    description: Operations that take a cursor declare x-fern-pagination.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch]
+    then:
+      function: cursorNeedsPagination
+
+  bc-parameter-example:
+    description: Every parameter has a description and an example.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch].parameters[*]
+    then:
+      - field: description
+        function: truthy
+      - function: xor
+        functionOptions:
+          properties: [example, examples]
+
+  bc-success-examples:
+    description: Every 2xx response body has named examples.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch].responses[?(@property.match(/^2/))].content[*]
+    then:
+      field: examples
+      function: truthy
+
+  bc-error-problem-json:
+    description: Every 3xx body, 4xx and 5xx response is RFC 9457 application/problem+json with an example.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch].responses[?(@property.match(/^(301|4|5)/))]
+    then:
+      - field: content.application/problem+json
+        function: truthy
+      - field: content.application/problem+json.examples
+        function: truthy
+
+  bc-ratelimit-headers:
+    description: Every 200 response sends RateLimit and RateLimit-Policy.
+    severity: error
+    given: $.paths[*][get,put,post,delete,patch].responses.200.headers
+    then:
+      - field: RateLimit
+        function: truthy
+      - field: RateLimit-Policy
+        function: truthy
+
+  bc-schema-property-description:
+    description: Every schema property has a description written for agents and people.
+    severity: error
+    given: $.components.schemas..properties[*]
+    then:
+      field: description
+      function: truthy
+
+  bc-operation-property-description:
+    description: Every inline schema property in an operation has a description.
+    severity: error
+    given: $.paths..schema..properties[*]
+    then:
+      field: description
+      function: truthy
+
+  bc-no-float-money:
+    description: No number format float or double; money is a decimal string.
+    severity: error
+    given: $..[?(@ && (@.format === 'float' || @.format === 'double'))]
+    then:
+      function: falsy

@@ -1,0 +1,14 @@
+title: MeResponse
+description: "The caller, plan, scopes and limits. The standard envelope: the object in `data`, facts about the response in `meta`, and a pinned `self` link."
+type: object
+required: [data, meta, links]
+properties:
+  data:
+    $ref: Me.yaml
+    description: The caller, plan, scopes and limits.
+  meta:
+    $ref: Meta.yaml
+    description: The revision that answered, the resolved as_of, the request ID and caveats.
+  links:
+    $ref: Links.yaml
+    description: Links for the response.

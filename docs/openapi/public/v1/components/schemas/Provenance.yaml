@@ -1,0 +1,66 @@
+title: Provenance
+description: >-
+  Where a fact came from, precisely enough to reproduce it: the fact-factory asset, the
+  registry revision, the spending publication for spending rows, the captured source file
+  and the row in it, the parser version and the licence. Present on every fact-bearing
+  object.
+type: object
+x-bc-record: true
+required: [asset, revision]
+properties:
+  asset:
+    type: string
+    description: >-
+      The fact-factory asset key that published the fact, such as
+      `sources/ca/tbs/proactive_grants` or `entities/entities`. Describe it with
+      GET /v1/datasets/{asset_key}.
+    x-bc-dictionary: asset_key
+    examples: [sources/ca/tbs/proactive_grants]
+  revision:
+    $ref: RevisionNumber.yaml
+    description: >-
+      For registry rows, the revision that first wrote this version (revision_id). For
+      spending rows, the revision that answered: its spending version holds the row.
+    x-bc-dictionary: revision_id
+  publication:
+    description: For spending rows, the publication the row is in. Null for registry rows.
+    x-bc-structural: true
+    oneOf:
+      - $ref: Publication.yaml
+      - type: 'null'
+  recorded_at:
+    description: When fact-factory first recorded this version. Not when it became true in the world. Registry rows only.
+    x-bc-dictionary: recorded_at
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'
+  capture:
+    description: The captured source file, when the fact was parsed from one.
+    x-bc-structural: true
+    oneOf:
+      - $ref: Capture.yaml
+      - type: 'null'
+  locator:
+    description: Where in the capture the fact is.
+    x-bc-structural: true
+    oneOf:
+      - $ref: Locator.yaml
+      - type: 'null'
+  source:
+    description: For registry rows, the registry's own record of where this version came from.
+    x-bc-structural: true
+    oneOf:
+      - $ref: RecordSource.yaml
+      - type: 'null'
+  parser_version:
+    type: [string, 'null']
+    description: Version of the parsing rules that produced the row. A parser change publishes a new version and keeps the old one.
+    x-bc-dictionary: parser_version
+    examples: [spending-iceberg-v5]
+  license:
+    type: [string, 'null']
+    description: >-
+      The licence the publisher releases the source under, as an SPDX-style identifier
+      such as OGL-Canada-2.0. See the dataset page for attribution wording.
+    x-bc-dictionary: license
+    examples: [OGL-Canada-2.0]

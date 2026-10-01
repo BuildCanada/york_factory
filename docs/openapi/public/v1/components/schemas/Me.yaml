@@ -1,0 +1,86 @@
+title: Me
+description: >-
+  Who the API thinks the caller is: the account, the key or OAuth client, the plan, the
+  scopes granted and the limits. Anonymous callers get plan `anonymous` and scope
+  read:public.
+type: object
+required: [authenticated, account, key, plan, scopes, limits]
+properties:
+  authenticated:
+    type: boolean
+    description: False for anonymous callers.
+    examples: [true]
+  account:
+    description: The account billed for usage, or null for anonymous callers.
+    oneOf:
+      - type: object
+        required: [id, name, kind]
+        properties:
+          id:
+            type: string
+            description: The account ID.
+            examples: [acct_42]
+          name:
+            type: string
+            description: The account's name.
+            examples: [Brendan Samek]
+          kind:
+            type: string
+            enum: [personal, organization]
+            description: Whether the account is a person's or an organization's.
+            examples: [personal]
+      - type: 'null'
+  key:
+    description: The API key used, or null for OAuth and anonymous callers.
+    oneOf:
+      - type: object
+        required: [id, name, prefix]
+        properties:
+          id:
+            type: string
+            description: The key's ID.
+            examples: [key_981]
+          name:
+            type: string
+            description: The key's name, as its owner set it.
+            examples: [newsroom-scripts]
+          prefix:
+            type: string
+            description: The first 12 characters of the key, safe to log.
+            examples: [bc_live_4fQ9]
+          expires_at:
+            description: When the key expires, or null.
+            oneOf:
+              - $ref: Timestamp.yaml
+              - type: 'null'
+      - type: 'null'
+  oauth_client:
+    description: The OAuth client the token was issued to, or null for key and anonymous callers.
+    oneOf:
+      - type: object
+        required: [client_id, name]
+        properties:
+          client_id:
+            type: string
+            description: The OAuth client ID (a URL for CIMD clients).
+            examples: ['https://claude.ai/oauth/mcp-client-metadata.json']
+          name:
+            type: string
+            description: The client's name.
+            examples: [Claude]
+      - type: 'null'
+  plan:
+    type: string
+    enum: [anonymous, free, internal, partner, paid]
+    description: The caller's plan. Paid plans are reported as `paid`.
+    examples: [free]
+  scopes:
+    type: array
+    description: The scopes granted to this key or token.
+    items:
+      type: string
+      enum: ['read:public', 'usage:read', 'keys:manage']
+    examples: [['read:public', 'usage:read']]
+  limits:
+    $ref: PlanLimits.yaml
+    description: The plan's limits and this period's usage.

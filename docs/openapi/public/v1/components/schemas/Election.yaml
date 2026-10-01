@@ -1,0 +1,100 @@
+title: Election
+description: >-
+  One election event as its administrator publishes it: a general election or a by-election,
+  with its key dates and voting rules. Dates and times are written as the administrator gives
+  them (an ISO date, or a date and time with offset).
+type: object
+required: [id, jurisdiction, administrator, kind, voting_day, links]
+properties:
+  id:
+    $ref: ElectionId.yaml
+    description: The election's ID.
+  jurisdiction:
+    $ref: Jurisdiction.yaml
+    description: The jurisdiction holding the election.
+  administrator:
+    type: string
+    description: The body running the election, such as Elections BC.
+    examples: [Elections BC]
+  kind:
+    type: string
+    description: The kind of election, such as general or by_election.
+    examples: [general]
+  called_on:
+    type: [string, 'null']
+    description: "When the election was called."
+    examples: ['2024-09-21']
+  voting_day:
+    type: string
+    description: "General voting day."
+    examples: ['2024-10-19']
+  return_day:
+    type: [string, 'null']
+    description: "When the writs are returned."
+    examples: [null]
+  nominations_close_at:
+    type: [string, 'null']
+    description: "When candidate nominations close."
+    examples: [null]
+  registration_deadline_at:
+    type: [string, 'null']
+    description: "The voter registration deadline."
+    examples: [null]
+  mail_request_deadline_at:
+    type: [string, 'null']
+    description: "The deadline to request a mail ballot."
+    examples: [null]
+  mail_return_deadline_at:
+    type: [string, 'null']
+    description: "The deadline to return a mail ballot."
+    examples: [null]
+  advance_voting_starts_at:
+    type: [string, 'null']
+    description: "When advance voting starts."
+    examples: [null]
+  advance_voting_ends_at:
+    type: [string, 'null']
+    description: "When advance voting ends."
+    examples: [null]
+  polls_open_at:
+    type: [string, 'null']
+    description: "When polls open on voting day."
+    examples: [null]
+  polls_close_at:
+    type: [string, 'null']
+    description: "When polls close on voting day."
+    examples: [null]
+  voting_notes:
+    type: [string, 'null']
+    description: "The administrator's notes on how to vote."
+    examples: [null]
+  where_to_vote_url:
+    type: [string, 'null']
+    description: "The administrator's where-to-vote page."
+    examples: [null]
+  source_url:
+    type: [string, 'null']
+    description: "The page the election's details come from."
+    examples: ['https://elections.bc.ca/']
+  capture:
+    description: The stored capture of the source page, or null.
+    oneOf:
+      - $ref: ElectionsCapture.yaml
+      - type: 'null'
+  links:
+    type: object
+    description: Relative links for the election.
+    required: [self, contests, result_reports]
+    properties:
+      self:
+        type: string
+        description: "This election."
+        examples: [/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general]
+      contests:
+        type: string
+        description: "The election's contests."
+        examples: [/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/contests]
+      result_reports:
+        type: string
+        description: "The election's result reports."
+        examples: [/v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/result-reports]

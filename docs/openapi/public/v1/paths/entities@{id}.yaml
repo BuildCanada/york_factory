@@ -1,0 +1,148 @@
+# /entities/{id}
+get:
+  operationId: getEntity
+  summary: Get an entity
+  description: |-
+    One entity as of the revision that answered, with provenance and a ready-to-paste
+    citation. `expand=identifiers,relationships` embeds them. A merged duplicate returns
+    301 to its survivor, so old IDs keep working; an entity ended by lineage returns 200
+    with valid_to set.
+  tags:
+  - Entities
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: entities
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: revision
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/EntityId"
+  - name: expand
+    in: query
+    required: false
+    description: 'Embed related objects, comma-separated: `identifiers`, `relationships` (first 50 outgoing).'
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - identifiers
+        - relationships
+    example:
+    - identifiers
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/Fields"
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  responses:
+    '200':
+      description: The entity.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/EntityResponse.yaml"
+          examples:
+            with_identifiers:
+              summary: Diamond Valley with identifiers
+              value:
+                data:
+                  id: gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D
+                  entity_class: government_org
+                  subtype: municipal_government
+                  name: Town of Diamond Valley
+                  name_fr:
+                  aliases: []
+                  anchor: ca-ab/municipal_affairs/municipalities:0417
+                  jurisdiction: ca-ab
+                  status: active
+                  redirected_to:
+                  valid_from: '2023-01-01'
+                  valid_to:
+                  attributes:
+                    municipality_type_raw: Town
+                  links:
+                    identifiers: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=31"
+                    relationships: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=31"
+                    lineage: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=31"
+                    spending: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=31"
+                  provenance:
+                    asset: entities/entities
+                    revision: 29
+                    recorded_at: '2026-09-25T18:02:11Z'
+                    capture:
+                    locator:
+                    source:
+                      origin: roster
+                      source_key: ca-ab/municipal_affairs/municipalities
+                      capture_sha256: 388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                      row_number: 212
+                    parser_version:
+                    license: OGL-Alberta-2.1
+                  cite: >-
+                    Build Canada entity registry revision 31, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D;
+                    from the Alberta municipal roster, row 212.
+                  identifiers:
+                  - namespace: ca.statcan.csd_uid
+                    value: '4806014'
+                    verified: true
+                    vintage: '2021'
+                    valid_from:
+                    valid_to:
+                    provenance:
+                      asset: entities/identifiers
+                      revision: 31
+                      recorded_at: '2026-09-27T03:10:44Z'
+                      source:
+                        origin: roster
+                        source_key: buildcanada/jurisdictions
+                        capture_sha256: 0d3e12e5a8c8144cbaa4f7358c0ec728d638bd878e79b1586d717a5761b47891
+                        row_number: 4412
+                      license: OGL-Canada-2.0
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D?expand=identifiers&as_of=31"
+    '301':
+      "$ref": "../components/problems.yaml#/MovedPermanently"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

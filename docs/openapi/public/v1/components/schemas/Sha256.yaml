@@ -1,0 +1,6 @@
+title: Sha256
+description: A SHA-256 digest as 64 lowercase hexadecimal characters.
+type: string
+pattern: '^[0-9a-f]{64}$'
+examples:
+  - 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21

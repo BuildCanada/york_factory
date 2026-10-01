@@ -1,0 +1,204 @@
+# /spending/{id}
+get:
+  operationId: getSpendingRecord
+  summary: Get a spending row
+  description: |-
+    One spending row with its typed columns, the source's amount rule, every party
+    occurrence (and why each is or is not linked), provenance down to the captured file
+    and row, and a citation. `expand=raw` adds the original source record.
+  tags:
+  - Spending
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: spending
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: revision
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: id
+    in: path
+    required: true
+    description: The row's 26-character spending key, or its percent-encoded gid.
+    schema:
+      type: string
+      pattern: "^((gid://buildcanada/SpendingRecord/)?[0-9A-HJKMNP-TV-Z]{26})$"
+    example: K3M9Q2W7XA4B8C1D5E6F0G2H3J
+  - name: expand
+    in: query
+    required: false
+    description: "`raw` adds the original source record."
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - raw
+    example:
+    - raw
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  responses:
+    '200':
+      description: The spending row.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/SpendingRecordResponse.yaml"
+          examples:
+            grant:
+              summary: A contribution to Diamond Valley
+              value:
+                data:
+                  id: gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J
+                  source: proactive_grants
+                  record_type: contribution
+                  is_aggregated: false
+                  external_id: b434d8917003f6481412a34efcda4732cdca4df9ce68af39d095edd21b7f09d3
+                  canonical_id: 8f2337472e6d96ba10f3dfab3d09be9a321b89954b3101f4b8fada522def2a91
+                  source_occurrence: 1
+                  acquisition: live
+                  resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                  source_row_id: 3e975156133f98b455e283e1a9f52849d34639d129d217c67fd6331600024195
+                  title: Canada Cultural Spaces Fund
+                  description: Renovation of the Diamond Valley community arts centre.
+                  program: Canada Cultural Spaces Fund
+                  payer: Canadian Heritage
+                  payer_code: pch
+                  recipient: Town of Diamond Valley
+                  recipients: []
+                  recipient_refs: []
+                  principal_investigator:
+                  research_org:
+                  recipient_business_number:
+                  recipient_type: G
+                  recipient_city: Diamond Valley
+                  recipient_postal_code: T0L 0H0
+                  province: AB
+                  country: CA
+                  amount: '125000.00'
+                  currency: CAD
+                  measure: agreement_value
+                  amount_note: agreement_value for that amendment. Do not sum across rows sharing a canonical_id.
+                  value_consistent:
+                  fiscal_year: 2024-25
+                  date: '2024-06-01'
+                  date_raw: '2024-06-01'
+                  revision_rank:
+                  - 0
+                  is_latest_revision: true
+                  provenance:
+                    asset: sources/ca/tbs/proactive_grants
+                    revision: 31
+                    publication:
+                      id: 412
+                      version: 78
+                      resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                      committed_at: '2026-10-01T02:10:44Z'
+                    recorded_at:
+                    capture:
+                      sha256: 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      url: >-
+                        https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      source_url: >-
+                        https://open.canada.ca/data/dataset/432527ab-7aac-45b5-81d6-7597107a7013/resource/1d15a62f-5656-49ad-8c88-f40ce689d831
+                      retrieved_at: '2026-09-26T04:59:12Z'
+                    locator:
+                      row: 48213
+                    source:
+                    parser_version: spending-iceberg-v5
+                    license: OGL-Canada-2.0
+                  cite: >-
+                    Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions,
+                    retrieved 2026-09-26, row 48,213 (sha256 0d9b2894). Build Canada data revision 31,
+                    gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.
+                  parties:
+                  - occurrence_id: ec2420462d8c2776b5a62dd3480a6733e94b5deabcae3378437357622115ff3b
+                    field: payer
+                    position: 0
+                    raw_name: Canadian Heritage
+                    normalized_name: canadian heritage
+                    party_kind: organization
+                    link_status: linked
+                    entity_id: gid://buildcanada/Entity/01J9ZK3A1B2C3D4E5F6G7H8J9K
+                    entity:
+                      id: gid://buildcanada/Entity/01J9ZK3A1B2C3D4E5F6G7H8J9K
+                      name: Canadian Heritage
+                      entity_class: government_org
+                      subtype: ministerial_department
+                      jurisdiction: ca
+                      status: active
+                    method: payer_code
+                    reason:
+                    candidates: []
+                    rule_version: resolution-v5+occurrences-v3+names-v2+matching-v4
+                  - occurrence_id: 46ed2c358b7734213c9defbdd2e6ae7128d1ea328b2e6aa9242ce13465d272db
+                    field: recipient
+                    position: 0
+                    raw_name: Town of Diamond Valley
+                    normalized_name: town of diamond valley
+                    party_kind: organization
+                    link_status: linked
+                    entity_id: gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D
+                    entity:
+                      id: gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D
+                      name: Town of Diamond Valley
+                      entity_class: government_org
+                      subtype: municipal_government
+                      jurisdiction: ca-ab
+                      status: active
+                    method: exact_name
+                    reason:
+                    candidates: []
+                    rule_version: resolution-v5+occurrences-v3+names-v2+matching-v4
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats:
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                links:
+                  self: "/v1/spending/K3M9Q2W7XA4B8C1D5E6F0G2H3J?as_of=31"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '410':
+      "$ref": "../components/problems.yaml#/Gone"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

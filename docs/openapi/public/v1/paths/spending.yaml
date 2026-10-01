@@ -1,0 +1,370 @@
+# /spending
+get:
+  operationId: listSpending
+  summary: Search spending rows
+  description: |-
+    Rows of the federal spending sources, filtered by source, linked payer or recipient
+    entity, fiscal year, record type, amount and text. Amounts are the source's own
+    measure (see /spending/sources): contract values, agreement values, payments or
+    commitments. Never add amounts across sources, and never add revisions sharing a
+    canonical_id; use /entities/{id}/spending/summary for totals.
+  tags:
+  - Spending
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name: spending
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+    count_exact: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: revision
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/SpendingSource"
+  - name: payer
+    in: query
+    required: false
+    description: Only rows whose payer occurrence is linked to this entity (ULID or gid).
+    schema:
+      type: string
+      pattern: "^((gid://buildcanada/Entity/)?[0-9A-HJKMNP-TV-Z]{26})$"
+    example: 01J9ZK4T6M8Q2R5V7X3B1N0C4D
+  - name: recipient
+    in: query
+    required: false
+    description: >-
+      Only rows with a recipient-side occurrence (recipient, recipients, research_org, principal_investigator)
+      linked to this entity.
+    schema:
+      type: string
+      pattern: "^((gid://buildcanada/Entity/)?[0-9A-HJKMNP-TV-Z]{26})$"
+    example: 01J9ZK4T6M8Q2R5V7X3B1N0C4D
+  - "$ref": "../components/parameters.yaml#/FiscalYear"
+  - name: record_type
+    in: query
+    required: false
+    description: Only rows of this record type.
+    schema:
+      type: string
+      enum:
+      - contract
+      - grant
+      - contribution
+      - transfer_payment
+      - award
+      - project
+    example: contribution
+  - name: amount_min
+    in: query
+    required: false
+    description: Only rows with amount at least this, as a decimal string. Compares within each row's
+      own currency.
+    schema:
+      "$ref": "../components/schemas/Amount.yaml"
+    example: '1000000.00'
+  - name: amount_max
+    in: query
+    required: false
+    description: Only rows with amount at most this, as a decimal string.
+    schema:
+      "$ref": "../components/schemas/Amount.yaml"
+    example: '5000000.00'
+  - name: q
+    in: query
+    required: false
+    description: Full-text match on title, description, program and the single-valued party names as published (payer, recipient, research_org, principal_investigator); the `recipients` list is not searched.
+    schema:
+      type: string
+      minLength: 2
+      maxLength: 200
+    example: cultural spaces
+  - name: latest_revision_only
+    in: query
+    required: false
+    description: 'Only rows whose is_latest_revision is true: the highest-ranked revision of each canonical_id, live rows outranking archive_import copies.'
+    schema:
+      type: boolean
+      default: false
+    example: true
+  - name: include_aggregated
+    in: query
+    required: false
+    description: Include aggregate rows (is_aggregated). Default true.
+    schema:
+      type: boolean
+      default: true
+    example: false
+  - name: sort
+    in: query
+    required: false
+    description: >-
+      Sort order: `id` (default, stable), `-amount`, `amount`, `-date` or `date`. Blank amounts and dates
+      sort last.
+    schema:
+      type: string
+      enum:
+      - id
+      - "-amount"
+      - amount
+      - "-date"
+      - date
+      default: id
+    example: "-amount"
+  - name: expand
+    in: query
+    required: false
+    description: Embed `parties` (every occurrence and its link) and `raw` (the original source record).
+    schema:
+      type: array
+      items:
+        type: string
+        enum:
+        - parties
+        - raw
+    example:
+    - parties
+    style: form
+    explode: false
+  - "$ref": "../components/parameters.yaml#/Fields"
+  - "$ref": "../components/parameters.yaml#/Count"
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: A page of spending rows.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/SpendingRecordListResponse.yaml"
+          examples:
+            large_contributions:
+              summary: Canadian Heritage contributions to Diamond Valley
+              value:
+                data:
+                - id: gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J
+                  source: proactive_grants
+                  record_type: contribution
+                  is_aggregated: false
+                  external_id: b434d8917003f6481412a34efcda4732cdca4df9ce68af39d095edd21b7f09d3
+                  canonical_id: 8f2337472e6d96ba10f3dfab3d09be9a321b89954b3101f4b8fada522def2a91
+                  source_occurrence: 1
+                  acquisition: live
+                  resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                  source_row_id: 3e975156133f98b455e283e1a9f52849d34639d129d217c67fd6331600024195
+                  title: Canada Cultural Spaces Fund
+                  description: Renovation of the Diamond Valley community arts centre.
+                  program: Canada Cultural Spaces Fund
+                  payer: Canadian Heritage
+                  payer_code: pch
+                  recipient: Town of Diamond Valley
+                  recipients: []
+                  recipient_refs: []
+                  principal_investigator:
+                  research_org:
+                  recipient_business_number:
+                  recipient_type: G
+                  recipient_city: Diamond Valley
+                  recipient_postal_code: T0L 0H0
+                  province: AB
+                  country: CA
+                  amount: '125000.00'
+                  currency: CAD
+                  measure: agreement_value
+                  amount_note: agreement_value for that amendment. Do not sum across rows sharing a canonical_id.
+                  value_consistent:
+                  fiscal_year: 2024-25
+                  date: '2024-06-01'
+                  date_raw: '2024-06-01'
+                  revision_rank:
+                  - 0
+                  is_latest_revision: true
+                  provenance:
+                    asset: sources/ca/tbs/proactive_grants
+                    revision: 31
+                    publication:
+                      id: 412
+                      version: 78
+                      resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                      committed_at: '2026-10-01T02:10:44Z'
+                    recorded_at:
+                    capture:
+                      sha256: 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      url: >-
+                        https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      source_url: >-
+                        https://open.canada.ca/data/dataset/432527ab-7aac-45b5-81d6-7597107a7013/resource/1d15a62f-5656-49ad-8c88-f40ce689d831
+                      retrieved_at: '2026-09-26T04:59:12Z'
+                    locator:
+                      row: 48213
+                    source:
+                    parser_version: spending-iceberg-v5
+                    license: OGL-Canada-2.0
+                  cite: >-
+                    Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions,
+                    retrieved 2026-09-26, row 48,213 (sha256 0d9b2894). Build Canada data revision 31,
+                    gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats:
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                  - code: not_cross_source_total
+                    text: Sources overlap. Never add amounts across sources.
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
+                  limit: 50
+                  next_cursor:
+                  count:
+                links:
+                  self: >-
+                    /v1/spending?source=proactive_grants&payer=01J9ZK3A1B2C3D4E5F6G7H8J9K&recipient=01J9ZK4T6M8Q2R5V7X3B1N0C4D&as_of=31
+                  next:
+            individual_recipient:
+              summary: 'An individual recipient: named as published, never linked to an entity'
+              value:
+                data:
+                - id: gid://buildcanada/SpendingRecord/M7P2R4T6V8X0Z2B4D6F8H0K2N4
+                  source: proactive_grants
+                  record_type: grant
+                  is_aggregated: false
+                  external_id: 497bfa5edb14261e9554634431d9ff020ad1a739bd20f39f871138babf747197
+                  canonical_id: f31a34f51f60cbbeb5c2cd319226a55323c1d543b5f16b0a5238e7439a944d34
+                  source_occurrence: 1
+                  acquisition: live
+                  resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                  source_row_id: e62b62f4609cb4b606ae46c96d56590c519810323582fd7c2cc81a7ea6f4b9db
+                  title: Canada Digital Adoption Program
+                  description:
+                  program: Canada Digital Adoption Program
+                  payer: Innovation, Science and Economic Development Canada
+                  payer_code: ised-isde
+                  recipient: Jane Q. Example
+                  recipients: []
+                  recipient_refs: []
+                  principal_investigator:
+                  research_org:
+                  recipient_business_number:
+                  recipient_type: P
+                  recipient_city: Calgary
+                  recipient_postal_code: T2P 1J9
+                  province: AB
+                  country: CA
+                  amount: '2400.00'
+                  currency: CAD
+                  measure: agreement_value
+                  amount_note: agreement_value for that amendment. Do not sum across rows sharing a canonical_id.
+                  value_consistent:
+                  fiscal_year: 2024-25
+                  date: '2024-09-12'
+                  date_raw: '2024-09-12'
+                  revision_rank:
+                  - 0
+                  is_latest_revision: true
+                  provenance:
+                    asset: sources/ca/tbs/proactive_grants
+                    revision: 31
+                    publication:
+                      id: 412
+                      version: 78
+                      resource_id: af0aaece37aa8a6303d18425ab240159609a6b4ae65d5b4f701a22bb4c743b98
+                      committed_at: '2026-10-01T02:10:44Z'
+                    recorded_at:
+                    capture:
+                      sha256: 0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      url: >-
+                        https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21
+                      source_url: >-
+                        https://open.canada.ca/data/dataset/432527ab-7aac-45b5-81d6-7597107a7013/resource/1d15a62f-5656-49ad-8c88-f40ce689d831
+                      retrieved_at: '2026-09-26T04:59:12Z'
+                    locator:
+                      row: 902117
+                    source:
+                    parser_version: spending-iceberg-v5
+                    license: OGL-Canada-2.0
+                  cite: >-
+                    Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions,
+                    retrieved 2026-09-26, row 902,117 (sha256 0d9b2894). Build Canada data revision 31,
+                    gid://buildcanada/SpendingRecord/M7P2R4T6V8X0Z2B4D6F8H0K2N4.
+                  parties:
+                  - occurrence_id: e68fbe80da758122bceb9097532263485b3115f96c832c3622d5074c565fe255
+                    field: recipient
+                    position: 0
+                    raw_name: Jane Q. Example
+                    normalized_name: jane q example
+                    party_kind: individual
+                    link_status: unlinked
+                    entity_id:
+                    entity:
+                    method:
+                    reason: excluded_individual
+                    candidates: []
+                    rule_version: resolution-v5+occurrences-v3+names-v2+matching-v4
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats:
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                  - code: not_cross_source_total
+                    text: Sources overlap. Never add amounts across sources.
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
+                  limit: 50
+                  next_cursor:
+                  count:
+                links:
+                  self: "/v1/spending?source=proactive_grants&q=digital+adoption&expand=parties&as_of=31"
+                  next:
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '410':
+      "$ref": "../components/problems.yaml#/Gone"
+    '422':
+      "$ref": "../components/problems.yaml#/UnprocessableEntity"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

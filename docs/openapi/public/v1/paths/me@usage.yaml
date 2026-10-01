@@ -111,7 +111,8 @@ get:
                   errors_4xx: 0
                   errors_5xx: 0
                 meta:
-                  release:
+                  revision:
+                  snapshot:
                   as_of: '2026-09-28T00:00:00Z'
                   request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
                   caveats: []

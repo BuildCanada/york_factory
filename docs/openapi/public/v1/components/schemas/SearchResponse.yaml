@@ -10,7 +10,7 @@ properties:
       $ref: SearchHit.yaml
   meta:
     $ref: ListMeta.yaml
-    description: The release that answered, the resolved as_of, the request ID, caveats and pagination.
+    description: The revision that answered, the resolved as_of, the request ID, caveats and pagination.
   links:
     $ref: PageLinks.yaml
     description: Links for this page and the next.

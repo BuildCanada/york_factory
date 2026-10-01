@@ -36,21 +36,24 @@ properties:
       - invalid_parameter
       - unauthenticated
       - insufficient_scope
+      - account_suspended
+      - ip_not_allowed
+      - origin_not_allowed
       - not_found
       - not_yet_published
       - redirected
-      - release_mismatch
+      - revision_mismatch
       - retired
       - query_too_broad
       - rate_limited
       - quota_exceeded
-      - release_building
+      - revision_building
       - internal_error
     description: >-
       Stable problem code. invalid_parameter (400), unauthenticated (401),
-      insufficient_scope (403), not_found and not_yet_published (404), redirected (301),
-      release_mismatch (409), retired (410), query_too_broad (422), rate_limited and
-      quota_exceeded (429), release_building (503), internal_error (500).
+      insufficient_scope, account_suspended, ip_not_allowed and origin_not_allowed (403), not_found and not_yet_published (404), redirected (301),
+      revision_mismatch (409), retired (410), query_too_broad (422), rate_limited and
+      quota_exceeded (429), revision_building (503), internal_error (500).
     examples: [rate_limited]
   docs:
     type: string
@@ -69,7 +72,7 @@ properties:
   retry_after_seconds:
     type: integer
     minimum: 0
-    description: rate_limited, quota_exceeded and release_building only. Seconds to wait before retrying; equals the Retry-After header.
+    description: rate_limited, quota_exceeded and revision_building only. Seconds to wait before retrying; equals the Retry-After header.
     examples: [17]
   plan:
     type: string
@@ -83,18 +86,21 @@ properties:
   bulk_url:
     type: string
     format: uri
-    description: rate_limited and quota_exceeded only. Bulk files that answer high-volume needs without the API.
-    examples: ['https://data.buildcanada.com/v1/exports']
+    description: rate_limited and quota_exceeded only. Where to read about bulk access for high-volume needs.
+    examples: ['https://data.buildcanada.com/api/concepts/bulk-access.md']
   location:
     type: string
     description: redirected only. The survivor's URL, equal to the Location header.
-    examples: ['/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11']
-  earliest_release:
-    $ref: ReleaseNumber.yaml
-    description: not_yet_published only. The earliest release the API serves.
-  cursor_release:
-    $ref: ReleaseNumber.yaml
-    description: release_mismatch only. The release the cursor was issued for. Repeat the request with that `as_of`, or drop the cursor.
+    examples: ['/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=31']
+  earliest_revision:
+    $ref: RevisionNumber.yaml
+    description: not_yet_published only. The earliest revision the API serves.
+  latest_revision:
+    $ref: RevisionNumber.yaml
+    description: not_yet_published only. The latest revision the API serves.
+  cursor_revision:
+    $ref: RevisionNumber.yaml
+    description: revision_mismatch only. The revision the cursor was issued for. Repeat the request with that `as_of`, or drop the cursor.
   sunset:
     type: string
     format: date

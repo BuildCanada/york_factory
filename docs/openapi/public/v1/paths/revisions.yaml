@@ -1,0 +1,100 @@
+# /revisions
+get:
+  operationId: listRevisions
+  summary: List revisions
+  description: |-
+    Committed registry revisions, newest first. Each is a version of the registry you can
+    pin with as_of; served says whether the API answers for it yet (its derived tables are
+    built at or after it).
+  tags:
+  - Revisions
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name: revisions
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List revisions.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/RevisionListResponse.yaml"
+          examples:
+            revisions:
+              summary: The newest revision
+              value:
+                data:
+                - id: gid://buildcanada/Revision/31
+                  number: 31
+                  kind: entities
+                  reason: Dagster run 4b1c2d3e
+                  committed_at: '2026-10-01T02:49:22Z'
+                  inputs:
+                    activations: 4da24a5b450e8e75567c97651371967cf3280739a8dedf8d4c6d68140f0f250a
+                  versions: null
+                  served: true
+                  snapshots: []
+                  derived:
+                    built_at: '2026-10-01T03:02:54Z'
+                    counts:
+                      entity_names:
+                        added: 0
+                        retired: 0
+                    checks:
+                    - name: summary_reconciles
+                      blocking: true
+                      passed: true
+                  links:
+                    self: /v1/revisions/31
+                meta:
+                  revision: 31
+                  snapshot: null
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 1
+                  next_cursor: c1.eyJyIjpudWxsLCJrIjpbMzFdfQ.Jq3v
+                  count: null
+                links:
+                  self: /v1/revisions?limit=1
+                  next: /v1/revisions?limit=1&cursor=c1.eyJyIjpudWxsLCJrIjpbMzFdfQ.Jq3v
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

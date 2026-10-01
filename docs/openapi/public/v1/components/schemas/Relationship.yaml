@@ -10,7 +10,7 @@ required: [id, subject_id, predicate, object_id, object_ref, direction, attribut
 properties:
   id:
     $ref: Sha256.yaml
-    description: Identifier of this relationship version (the registry row_id). A changed relationship gets a new id; the old one stays readable in earlier releases.
+    description: Identifier of this relationship version (the registry row_id). A changed relationship gets a new id; the old one stays readable in earlier revisions.
     x-bc-dictionary: row_id
   subject_id:
     $ref: EntityGid.yaml
@@ -73,4 +73,4 @@ properties:
     type: string
     description: A ready-to-paste citation for this relationship.
     x-bc-structural: true
-    examples: ['Build Canada entity registry release 11, relationship located_within of gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from Statistics Canada SGC 2021.']
+    examples: ['Build Canada entity registry revision 31, relationship located_within of gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from Statistics Canada SGC 2021.']

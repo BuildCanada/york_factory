@@ -1,0 +1,98 @@
+title: Contest
+description: >-
+  One race for an office in a district, or one referendum question, in one election.
+type: object
+required: [id, election_id, office, district, seats, method, status, links]
+properties:
+  id:
+    $ref: ElectionId.yaml
+    description: The contest's ID.
+  election_id:
+    $ref: ElectionId.yaml
+    description: The election the contest is in.
+  office:
+    description: The office contested, or null for a referendum question.
+    oneOf:
+      - type: object
+        required: [id, title, body_name, body_level, jurisdiction]
+        properties:
+          id:
+            $ref: ElectionId.yaml
+            description: "The office's ID."
+          title:
+            type: string
+            description: "The office's title."
+            examples: [Member of the Legislative Assembly]
+          title_fr:
+            type: [string, 'null']
+            description: "The French title, where published."
+            examples: [null]
+          body_name:
+            type: string
+            description: "The body the office sits in."
+            examples: [Legislative Assembly of British Columbia]
+          body_level:
+            type: string
+            description: "The body's level of government."
+            examples: [provincial_territorial]
+          jurisdiction:
+            $ref: Jurisdiction.yaml
+            description: "The office's jurisdiction."
+      - type: 'null'
+  district:
+    $ref: DistrictRef.yaml
+    description: The district the contest is held in.
+  seats:
+    type: integer
+    minimum: 0
+    description: "Seats to fill."
+    examples: [1]
+  method:
+    type: string
+    description: "The voting method, such as fptp."
+    examples: [fptp]
+  status:
+    type: string
+    description: "The contest's status, such as scheduled, acclaimed or decided."
+    examples: [scheduled]
+  voting_day:
+    type: [string, 'null']
+    description: "The contest's own voting day when it differs from the election's."
+    examples: [null]
+  question_number:
+    type: [integer, 'null']
+    description: "A referendum question's number."
+    examples: [null]
+  question_text:
+    type: [string, 'null']
+    description: "A referendum question's text."
+    examples: [null]
+  question_text_fr:
+    type: [string, 'null']
+    description: "The question's French text."
+    examples: [null]
+  threshold_as_shown:
+    type: [string, 'null']
+    description: "The passing threshold as published."
+    examples: [null]
+  links:
+    type: object
+    description: Relative links for the contest.
+    required: [self, candidacies, results, district]
+    properties:
+      self:
+        type: string
+        description: "This contest."
+        examples: [/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm]
+      candidacies:
+        type: string
+        description: "The contest's candidates."
+        examples: [/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/candidacies]
+      results:
+        type: string
+        description: "The contest's results."
+        examples: [/v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/results]
+      district:
+        type: string
+        description: "The district, with its boundary."
+        examples: [/v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm]

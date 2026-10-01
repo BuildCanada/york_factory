@@ -1,0 +1,45 @@
+title: ResultReport
+description: >-
+  One publication of results by the administrator (election night, a later count, the
+  official result). Each result row belongs to one report; a later report doesn't change an
+  earlier one.
+type: object
+required: [id, election_id, stage, retrieved_at, source_url, capture]
+properties:
+  id:
+    type: string
+    description: "The report's ID."
+    examples: [01M3TP69B6TM9F579VB93ZHFNE]
+  election_id:
+    $ref: ElectionId.yaml
+    description: "The election reported."
+  stage:
+    type: string
+    description: "Which count the report is, such as preliminary or official."
+    examples: [official]
+  polls_reported:
+    type: [integer, 'null']
+    description: "Polls counted in this report."
+    examples: [null]
+  polls_total:
+    type: [integer, 'null']
+    description: "Polls in the election."
+    examples: [null]
+  published_at:
+    type: [string, 'null']
+    description: "When the administrator published the report."
+    examples: [null]
+  published_at_as_shown:
+    type: [string, 'null']
+    description: "The publication time as the page writes it."
+    examples: [null]
+  retrieved_at:
+    $ref: Timestamp.yaml
+    description: When Build Canada retrieved the report.
+  source_url:
+    type: string
+    description: "The report's page."
+    examples: ['https://elections.bc.ca/']
+  capture:
+    $ref: ElectionsCapture.yaml
+    description: The stored capture of the report.

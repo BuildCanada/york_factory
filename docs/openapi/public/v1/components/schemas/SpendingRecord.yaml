@@ -1,8 +1,7 @@
 title: SpendingRecord
 description: >-
   One published row of a federal spending source (a contract, grant, contribution,
-  transfer payment, research award or international project), as the release's pinned
-  Iceberg snapshot holds it, with its typed columns, the source's meaning of `amount`,
+  transfer payment, research award or international project), as the spending publication the revision reads holds it, with its typed columns, the source's meaning of `amount`,
   every party occurrence and whether each is linked to an entity. Rows sharing a
   canonical_id are revisions of one agreement: never add them together.
 type: object
@@ -11,7 +10,7 @@ required: [id, source, record_type, is_aggregated, external_id, canonical_id, so
 properties:
   id:
     $ref: SpendingRecordGid.yaml
-    description: The row's global ID, stable across releases while the source row exists.
+    description: The row's global ID, stable across revisions while the source row exists.
     x-bc-dictionary: spending_key
   source:
     $ref: SourceKey.yaml
@@ -44,7 +43,7 @@ properties:
   source_occurrence:
     type: integer
     minimum: 1
-    description: 1-based count of how often this record identity has appeared in the same source release. Above 1 means the source repeated it.
+    description: 1-based count of how often this record identity has appeared in the same source file. Above 1 means the source repeated it.
     x-bc-dictionary: source_occurrence
     examples: [1]
   acquisition:
@@ -206,7 +205,10 @@ properties:
     examples: [[0]]
   is_latest_revision:
     type: boolean
-    description: True when this is the highest-ranked revision of its canonical_id, the only revision summaries count.
+    description: >-
+      True when this is the highest-ranked revision of its canonical_id in the table. Live rows outrank
+      archive_import copies: an archive_import row is the latest only when no live row has its canonical_id.
+      Summaries count the live latest revisions only.
     x-bc-dictionary: is_latest_revision
     examples: [true]
   parties:
@@ -224,10 +226,10 @@ properties:
     examples: ['{"ref_number":"001-2024-2025-Q1-00042","agreement_value":"125000.00"}']
   provenance:
     $ref: Provenance.yaml
-    description: The pinned snapshot, captured file and row this record came from.
+    description: The publication, captured file and row this record came from.
     x-bc-structural: true
   cite:
     type: string
-    description: A ready-to-paste citation naming the publisher, dataset, retrieval date, row, capture digest, release and gid.
+    description: A ready-to-paste citation naming the publisher, dataset, retrieval date, row, capture digest, revision and gid.
     x-bc-structural: true
-    examples: ['Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, retrieved 2026-09-26, row 48,213 (sha256 9f2c4e8b). Build Canada data release 11, gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.']
+    examples: ['Treasury Board of Canada Secretariat, Proactive Disclosure of Grants and Contributions, retrieved 2026-09-26, row 48,213 (sha256 9f2c4e8b). Build Canada data revision 31, gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J.']

@@ -1,12 +1,12 @@
 title: SpendingSource
 description: >-
   What one spending source's rows mean: its measure, how `amount`, `fiscal_year` and
-  revisions work, its coverage, licence and the snapshot the release pinned. Read this
+  revisions work, its coverage, licence and the spending version the revision reads. Read this
   before comparing or totalling amounts. Amounts from different sources overlap (the same
   grant can appear in proactive_grants and in transfer_payments) and must never be added.
 type: object
 x-bc-record: true
-required: [source, asset, title, publisher, measure, record_types, amount_note, fiscal_year_note, revisions_note, license, snapshot_id, caveats, links]
+required: [source, asset, title, publisher, measure, record_types, amount_note, fiscal_year_note, revisions_note, license, version, caveats, links]
 properties:
   source:
     $ref: SourceKey.yaml
@@ -14,7 +14,7 @@ properties:
     x-bc-dictionary: source_key
   asset:
     type: string
-    description: The fact-factory asset key of the source's Iceberg table.
+    description: The fact-factory asset key of the source's spending rows.
     x-bc-dictionary: asset_key
     examples: [sources/ca/tbs/proactive_grants]
   title:
@@ -59,12 +59,14 @@ properties:
     description: The publisher's licence for the source.
     x-bc-dictionary: license
     examples: [OGL-Canada-2.0]
-  snapshot_id:
-    type: string
-    pattern: '^[0-9]+$'
-    description: The Iceberg snapshot of the source table this release pinned.
+  version:
+    type: integer
+    minimum: 1
+    description: >-
+      The spending version of the source's live rows as of the revision: the rows of the
+      publications committed at or before it and not yet replaced.
     x-bc-dictionary: snapshot_id
-    examples: ['2534519102996296639']
+    examples: [78]
   caveats:
     type: array
     description: Caveats that always apply to this source.
@@ -80,8 +82,8 @@ properties:
       dataset:
         type: string
         description: The source's dataset page.
-        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=11']
+        examples: ['/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=31']
       records:
         type: string
         description: The source's rows.
-        examples: ['/v1/spending?source=proactive_grants&as_of=11']
+        examples: ['/v1/spending?source=proactive_grants&as_of=31']

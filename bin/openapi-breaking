@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compares public/v1/openapi.json with the same file on a base ref and reports breaking
+# Compares docs/openapi/dist/v1/openapi.json with the same file on a base ref and reports breaking
 # changes with oasdiff (https://github.com/oasdiff/oasdiff).
 #
 #   bin/openapi-breaking [BASE_REF]    BASE_REF defaults to origin/main
@@ -11,7 +11,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 base_ref="${1:-origin/main}"
-spec="public/v1/openapi.json"
+spec="docs/openapi/dist/v1/openapi.json"
 base="$(mktemp -d "${TMPDIR:-/tmp}/openapi-base.XXXXXX")/openapi.json"
 
 if ! git -C "$root" cat-file -e "$base_ref:$spec" 2>/dev/null; then

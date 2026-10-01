@@ -45,7 +45,10 @@ Unauthorized:
             code: unauthenticated
             docs: https://data.buildcanada.com/api/concepts/errors.md
 Forbidden:
-  description: 'insufficient_scope: the key or token lacks the scope in `required_scope`.'
+  description: >-
+    insufficient_scope: the key or token lacks the scope in `required_scope`. account_suspended: the account that
+    owns the key is suspended. ip_not_allowed and origin_not_allowed: the key is restricted to other IP addresses
+    or origins.
   headers:
     WWW-Authenticate:
       "$ref": headers.yaml#/WWWAuthenticate
@@ -71,8 +74,8 @@ Forbidden:
             required_scope: usage:read
 NotFound:
   description: >-
-    not_found: nothing has this ID in the release that answered. not_yet_published: `as_of` is before the first
-    release.
+    not_found: nothing has this ID in the revision that answered. not_yet_published: `as_of` is before the
+    earliest revision the API serves, or after the latest.
   headers:
     RateLimit:
       "$ref": headers.yaml#/RateLimit
@@ -89,7 +92,7 @@ NotFound:
             type: https://data.buildcanada.com/api/problems/not-found
             title: Not found
             status: 404
-            detail: No entity 01J9ZK4T6M8Q2R5V7X3B1N0C4E in release 11.
+            detail: No entity 01J9ZK4T6M8Q2R5V7X3B1N0C4E in revision 31.
             instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
             code: not_found
             docs: https://data.buildcanada.com/api/concepts/errors.md
@@ -99,11 +102,12 @@ NotFound:
             type: https://data.buildcanada.com/api/problems/not-yet-published
             title: Not yet published
             status: 404
-            detail: as_of 2020-01-01 is before release 1, published 2026-09-20.
+            detail: as_of 2020-01-01 is before revision 1, committed 2026-09-20.
             instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
             code: not_yet_published
             docs: https://data.buildcanada.com/api/concepts/errors.md
-            earliest_release: 1
+            earliest_revision: 1
+            latest_revision: 31
 MovedPermanently:
   description: 'redirected: the entity was merged into a survivor. Follow Location; the old ID keeps working.'
   headers:
@@ -124,13 +128,13 @@ MovedPermanently:
             type: https://data.buildcanada.com/api/problems/redirected
             title: Entity redirected
             status: 301
-            detail: Entity 01J9ZK4T6M8Q2R5V7X3B1N0C4D was merged into 01JB2C3D4E5F6G7H8J9K0M1N2P in release 11.
+            detail: Entity 01J9ZK4T6M8Q2R5V7X3B1N0C4D was merged into 01JB2C3D4E5F6G7H8J9K0M1N2P in revision 31.
             instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
             code: redirected
             docs: https://data.buildcanada.com/api/concepts/errors.md
             location: "/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11"
 Conflict:
-  description: 'release_mismatch: the cursor was issued for another release than `as_of`.'
+  description: 'revision_mismatch: the cursor was issued for another revision than `as_of`.'
   headers:
     RateLimit:
       "$ref": headers.yaml#/RateLimit
@@ -141,19 +145,21 @@ Conflict:
       schema:
         "$ref": schemas/Problem.yaml
       examples:
-        release_mismatch:
-          summary: Cursor from release 10 with as_of=11
+        revision_mismatch:
+          summary: Cursor from revision 30 with as_of=31
           value:
-            type: https://data.buildcanada.com/api/problems/release-mismatch
-            title: Cursor from another release
+            type: https://data.buildcanada.com/api/problems/revision-mismatch
+            title: Cursor from another revision
             status: 409
-            detail: This cursor belongs to release 10. Repeat with as_of=10, or drop the cursor to start again.
+            detail: This cursor belongs to revision 30. Repeat with as_of=30, or drop the cursor to start again.
             instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
-            code: release_mismatch
+            code: revision_mismatch
             docs: https://data.buildcanada.com/api/concepts/errors.md
-            cursor_release: 10
+            cursor_revision: 30
 UnprocessableEntity:
-  description: 'query_too_broad: the query would exceed the search or graph limits. Narrow it, or use bulk files.'
+  description: >-
+    query_too_broad: the query would exceed the search, graph or grouping limits, or took longer than the
+    statement timeout. Narrow it, or use bulk files.
   headers:
     RateLimit:
       "$ref": headers.yaml#/RateLimit
@@ -217,9 +223,35 @@ TooManyRequests:
             plan: free
             upgrade_url: https://auth.buildcanada.com/developers/plan
             bulk_url: https://data.buildcanada.com/v1/exports
+Gone:
+  description: >-
+    retired: the revision is older than fact-factory's retention horizon, so the spending occurrences it read
+    are no longer kept. Entities, identifiers, relationships and summaries stay answerable; repeat with a newer
+    `as_of`, or with a held snapshot.
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        retired:
+          summary: A pruned revision
+          value:
+            type: https://data.buildcanada.com/api/problems/retired
+            title: Retired
+            status: 410
+            detail: Revision 9 is older than the retention horizon (revision 14); its spending occurrences were pruned.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: retired
+            docs: https://data.buildcanada.com/api/concepts/errors.md
 ServiceUnavailable:
   description: >-
-    release_building: the read model is switching to a new release. Retry after Retry-After seconds, or pin `as_of`.
+    revision_building: no registry revision is served yet (the first derived build has not finished). Retry after
+    Retry-After seconds.
   headers:
     Retry-After:
       "$ref": headers.yaml#/RetryAfter
@@ -228,15 +260,15 @@ ServiceUnavailable:
       schema:
         "$ref": schemas/Problem.yaml
       examples:
-        release_building:
-          summary: Release swap in progress
+        revision_building:
+          summary: Nothing served yet
           value:
-            type: https://data.buildcanada.com/api/problems/release-building
-            title: Release building
+            type: https://data.buildcanada.com/api/problems/revision-building
+            title: Revision building
             status: 503
-            detail: Release 12 is being published. Retry in 30 seconds, or pin as_of=11.
+            detail: The first registry revision is still being built. Retry in 30 seconds.
             instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
-            code: release_building
+            code: revision_building
             docs: https://data.buildcanada.com/api/concepts/errors.md
             retry_after_seconds: 30
 InternalError:

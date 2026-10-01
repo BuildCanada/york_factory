@@ -10,7 +10,7 @@ required: [occurrence_id, field, position, raw_name, party_kind, link_status, en
 properties:
   occurrence_id:
     $ref: Sha256.yaml
-    description: One party on one spending row. Stable across releases.
+    description: One party on one spending row. Stable across revisions.
     x-bc-dictionary: occurrence_id
   field:
     type: string

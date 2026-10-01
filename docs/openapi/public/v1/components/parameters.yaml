@@ -4,22 +4,29 @@ AsOf:
   in: query
   required: false
   description: >-
-    Pins the answer to a point in the data's history, so the same URL returns the same
-    bytes forever. A release number (`11`) pins that release. An RFC 3339 timestamp
-    (`2026-09-01T00:00:00Z`) or a date (`2026-09-01`, read as 00:00 UTC) resolves to the
-    release current at that time. Omitted means the latest release, which the response
-    names in `meta.release` and in its `self` link; pass that back to reproduce it. A
-    value before the first release returns 404 not_yet_published.
+    Pins the answer to one registry revision, so the same URL returns the same answer
+    forever. A revision number (`31`) pins that revision. A snapshot name (`release-14`)
+    pins the revision the snapshot names. An RFC 3339 timestamp (`2026-10-01T03:00:00Z`) or
+    a date (`2026-10-01`, read as 00:00 UTC) resolves to the newest revision committed at or
+    before it. Omitted means the latest revision the API serves, which the response names
+    in `meta.revision` and in its `self` link; pass that back to reproduce it. A value
+    before the earliest served revision, or a revision committed after the latest served
+    one, returns 404 not_yet_published.
   schema:
     type: string
-    pattern: '^([1-9][0-9]*|[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2}))?)$'
+    pattern: '^([1-9][0-9]*|[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2}))?|[a-z][a-z0-9._-]*)$'
+    maxLength: 100
   examples:
-    release:
-      summary: Pin release 11
-      value: '11'
+    revision:
+      summary: Pin revision 31
+      value: '31'
+    snapshot:
+      summary: Pin the revision snapshot release-14 names
+      value: release-14
     timestamp:
-      summary: The release current at a time
-      value: '2026-09-01T00:00:00Z'
+      summary: The revision current at a time
+      value: '2026-10-01T03:00:00Z'
+
 Limit:
   name: limit
   in: query
@@ -37,8 +44,8 @@ Cursor:
   required: false
   description: >-
     The opaque `meta.next_cursor` of the previous page. Send it with the same other
-    parameters. A cursor carries its release, so pages stay consistent even after a newer
-    release publishes; sending it with a different `as_of` returns 409 release_mismatch.
+    parameters. A cursor carries its revision, so pages stay consistent while newer
+    revisions commit; sending it with a different `as_of` returns 409 revision_mismatch.
   schema:
     type: string
     maxLength: 512

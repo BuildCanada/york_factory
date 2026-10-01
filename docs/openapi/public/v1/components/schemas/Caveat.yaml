@@ -14,7 +14,8 @@ properties:
       Stable caveat code. Known codes include not_cross_source_total,
       agreement_value_not_paid, latest_revision_only, linked_only, aggregates_excluded,
       amount_missing, calendar_year_not_fiscal, archive_overlaps_live, coverage_partial,
-      person_is_clustering and observed_not_appointed.
+      person_is_clustering, observed_not_appointed, nothing_linked, fuzzy_unavailable
+      and dictionary_not_pinned.
     examples: [not_cross_source_total]
   text:
     type: string

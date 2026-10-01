@@ -1,12 +1,12 @@
 title: Provenance
 description: >-
   Where a fact came from, precisely enough to reproduce it: the fact-factory asset, the
-  release that published it, the pinned Iceberg snapshot for spending, the captured source
-  file and the row in it, the parser version and the licence. Present on every
-  fact-bearing object.
+  registry revision, the spending publication for spending rows, the captured source file
+  and the row in it, the parser version and the licence. Present on every fact-bearing
+  object.
 type: object
 x-bc-record: true
-required: [asset, release]
+required: [asset, revision]
 properties:
   asset:
     type: string
@@ -16,18 +16,18 @@ properties:
       GET /v1/datasets/{asset_key}.
     x-bc-dictionary: asset_key
     examples: [sources/ca/tbs/proactive_grants]
-  release:
-    $ref: ReleaseNumber.yaml
+  revision:
+    $ref: RevisionNumber.yaml
     description: >-
-      For registry rows, the release that first published this version (dictionary
-      release_id). For spending rows, the release whose pinned snapshot served it.
-    x-bc-dictionary: release_id
-  snapshot_id:
-    type: [string, 'null']
-    pattern: '^[0-9]+$'
-    description: The Iceberg snapshot the release pinned for this spending table. Null for registry rows.
-    x-bc-dictionary: snapshot_id
-    examples: ['2534519102996296639']
+      For registry rows, the revision that first wrote this version (revision_id). For
+      spending rows, the revision that answered: its spending version holds the row.
+    x-bc-dictionary: revision_id
+  publication:
+    description: For spending rows, the publication the row is in. Null for registry rows.
+    x-bc-structural: true
+    oneOf:
+      - $ref: Publication.yaml
+      - type: 'null'
   recorded_at:
     description: When fact-factory first recorded this version. Not when it became true in the world. Registry rows only.
     x-bc-dictionary: recorded_at

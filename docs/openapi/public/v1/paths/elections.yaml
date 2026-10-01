@@ -1,0 +1,117 @@
+# /elections
+get:
+  operationId: listElections
+  summary: List elections
+  description: |-
+    Elections fact-factory collects, newest voting day first: general elections and by-
+    elections, with their administrators and key dates. Elections data is current state, not
+    versioned by registry revision, so these operations take no as_of.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name: elections
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: jurisdiction
+    in: query
+    required: false
+    description: "Only elections in this jurisdiction."
+    schema: {"$ref": "../components/schemas/Jurisdiction.yaml"}
+    example: "ca-bc"
+  - name: kind
+    in: query
+    required: false
+    description: "Only elections of this kind, such as general or by_election."
+    schema: {"type": "string", "pattern": "^[a-z_]+$"}
+    example: "general"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List elections.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/ElectionListResponse.yaml"
+          examples:
+            elections:
+              summary: BC's 2024 general election
+              value:
+                data:
+                - id: ca/bc/elections/2024-10-19-general
+                  jurisdiction: ca-bc
+                  administrator: Elections BC
+                  kind: general
+                  called_on: '2024-09-21'
+                  voting_day: '2024-10-19'
+                  return_day: null
+                  nominations_close_at: null
+                  registration_deadline_at: null
+                  mail_request_deadline_at: null
+                  mail_return_deadline_at: null
+                  advance_voting_starts_at: null
+                  advance_voting_ends_at: null
+                  polls_open_at: null
+                  polls_close_at: null
+                  voting_notes: null
+                  where_to_vote_url: null
+                  source_url: https://elections.bc.ca/2024-provincial-general-election/
+                  capture:
+                    sha256: 388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    url: https://files.buildcanada.com/sha256/38/388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    source_url: https://elections.bc.ca/2024-provincial-general-election/
+                    retrieved_at: '2026-09-30T18:02:11Z'
+                  links:
+                    self: /v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general
+                    contests: /v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/contests
+                    result_reports: /v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/result-reports
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor: null
+                  count: null
+                links:
+                  self: /v1/elections?jurisdiction=ca-bc
+                  next: null
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

@@ -1,0 +1,38 @@
+title: EntityRef
+description: >-
+  A compact reference to an entity, used where an entity appears inside another object
+  (a relationship's object, a spending party, a lineage step). Fetch the full entity from
+  its `id`.
+type: object
+x-bc-record: true
+required: [id, name, entity_class, status]
+properties:
+  id:
+    $ref: EntityGid.yaml
+    description: The entity's global ID.
+    x-bc-dictionary: entity_id
+  name:
+    type: string
+    description: The entity's name as its roster publishes it, unchanged.
+    x-bc-dictionary: name
+    examples: [Town of Diamond Valley]
+  entity_class:
+    $ref: EntityClass.yaml
+    description: What kind of party the entity is.
+    x-bc-dictionary: entity_class
+  subtype:
+    type: [string, 'null']
+    description: The class's controlled subtype, such as municipal_government or registered_charity.
+    x-bc-dictionary: subtype
+    examples: [municipal_government]
+  jurisdiction:
+    description: The jurisdiction the entity belongs to. Null when the roster gives none, as for First Nations.
+    x-bc-dictionary: jurisdiction
+    oneOf:
+      - $ref: Jurisdiction.yaml
+      - type: 'null'
+  status:
+    type: string
+    description: The roster's own status, such as active, dissolved, inactive, not_in_roster or redirected.
+    x-bc-dictionary: status
+    examples: [active]

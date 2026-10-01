@@ -1,0 +1,98 @@
+# /contests/{contest_id}
+get:
+  operationId: getContest
+  summary: Get a contest
+  description: |-
+    One race or referendum question: the office, the district, seats, method and status.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: contests
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: contest_id
+    in: path
+    required: true
+    description: "The contest's ID. Percent-encode it in the path."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/elections/2024-10-19-general/mla/abm"
+  responses:
+    '200':
+      description: Get a contest.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/ContestResponse.yaml"
+          examples:
+            contest:
+              summary: Abbotsford-Mission, 2024
+              value:
+                data:
+                  id: ca/bc/elections/2024-10-19-general/mla/abm
+                  election_id: ca/bc/elections/2024-10-19-general
+                  office:
+                    id: ca/bc/legislative-assembly/mla
+                    title: Member of the Legislative Assembly
+                    title_fr: null
+                    body_name: Legislative Assembly of British Columbia
+                    body_level: provincial_territorial
+                    jurisdiction: ca-bc
+                  district:
+                    id: ca/bc/electoral-districts/2023/abm
+                    boundary_set_id: ca/bc/electoral-districts/2023
+                    code: ABM
+                    name_as_shown: Abbotsford-Mission
+                  seats: 1
+                  method: fptp
+                  status: decided
+                  voting_day: null
+                  question_number: null
+                  question_text: null
+                  question_text_fr: null
+                  threshold_as_shown: null
+                  links:
+                    self: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm
+                    candidacies: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/candidacies
+                    results: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/results
+                    district: /v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

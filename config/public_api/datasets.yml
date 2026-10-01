@@ -1,0 +1,99 @@
+# What each dataset of the public data API is: title, publisher, licence,
+# cadence and the caveats that always apply. The amount, fiscal_year and
+# revisions notes are read from the data dictionary (dictionary.json), so
+# they have one source. Row counts and freshness come from the revision: the
+# spending publications it reads, and the registry tables as of it.
+#
+# fact-factory keeps no dataset metadata in its tables, so this file holds it.
+# Keep it to facts the design and the dictionary already state.
+spending:
+  proactive_contracts:
+    asset: sources/ca/tbs/proactive_contracts
+    title: Proactive Disclosure of Contracts
+    publisher: Treasury Board of Canada Secretariat
+    record_types: [contract]
+    record_meaning: One row per reported federal contract or amendment over $10,000, as departments proactively disclose them.
+    caveats: [contract_value_not_paid, not_cross_source_total]
+  aggregated_contracts:
+    asset: sources/ca/tbs/aggregated_contracts
+    title: "Proactive Disclosure of Contracts: Aggregated Contracts Under $10,000"
+    publisher: Treasury Board of Canada Secretariat
+    record_types: [contract]
+    record_meaning: One row per department and year, totalling its contracts under $10,000 and its acquisition card spending.
+    caveats: [calendar_year_not_fiscal, not_cross_source_total]
+  proactive_grants:
+    asset: sources/ca/tbs/proactive_grants
+    title: Proactive Disclosure of Grants and Contributions
+    publisher: Treasury Board of Canada Secretariat
+    record_types: [grant, contribution, transfer_payment]
+    record_meaning: One row per amendment of a federal grant or contribution agreement, as departments proactively disclose them.
+    caveats: [agreement_value_not_paid, not_cross_source_total]
+    known_gaps:
+      - recipient_type is required only for agreements starting on or after 2025-12-01.
+  transfer_payments:
+    asset: sources/ca/pspc/transfer_payments
+    title: "Public Accounts of Canada: Transfer Payments"
+    publisher: Public Services and Procurement Canada
+    record_types: [transfer_payment]
+    record_meaning: One row per transfer payment recipient line of the Public Accounts of Canada, Volume III.
+    caveats: [measure_ambiguous, not_cross_source_total]
+  nserc_awards:
+    asset: sources/ca/nserc/awards
+    title: NSERC Awards Database
+    publisher: Natural Sciences and Engineering Research Council of Canada
+    record_types: [award]
+    record_meaning: One row per NSERC award and fiscal year.
+    caveats: [not_cross_source_total]
+  sshrc_awards:
+    asset: sources/ca/sshrc/awards
+    title: SSHRC Awards
+    publisher: Social Sciences and Humanities Research Council of Canada
+    record_types: [award]
+    record_meaning: One row per SSHRC award and fiscal year.
+    caveats: [not_cross_source_total]
+  cihr_awards:
+    asset: sources/ca/cihr/awards
+    title: CIHR Funding Decisions
+    publisher: Canadian Institutes of Health Research
+    record_types: [award]
+    record_meaning: One row per CIHR funding decision.
+    caveats: [not_cross_source_total]
+  global_affairs_projects:
+    asset: sources/ca/gac/iati_activities
+    title: International Assistance Projects (IATI)
+    publisher: Global Affairs Canada
+    record_types: [project]
+    record_meaning: One row per international development activity Global Affairs Canada reports to IATI.
+    caveats: [commitment_not_spending, not_cross_source_total]
+# Defaults for every spending source.
+spending_defaults:
+  license: OGL-Canada-2.0
+  cadence: daily
+
+# Registry datasets, keyed by asset. `table` names the registry table counted
+# (FactFactory::DatasetQuery::REGISTRY_TABLES).
+registry:
+  entities/entities:
+    table: entities
+    title: Build Canada entity registry
+    record_meaning: One version of one entity (a jurisdiction, government organization, Indigenous government or other organization), as of a release.
+    records: /v1/entities
+  entities/identifiers:
+    table: identifiers
+    title: Entity identifiers
+    record_meaning: One version of one external identifier (namespace and value) held by one entity.
+    records: null
+  entities/relationships:
+    table: relationships
+    title: Entity relationships
+    record_meaning: One version of one dated, cited relationship between an entity and another entity or object, lineage included.
+    records: null
+  entities/mention_occurrences:
+    table: spending_parties
+    title: Spending party occurrences
+    record_meaning: One version of one party named on one spending row, with its link outcome.
+    records: null
+registry_defaults:
+  publisher: null
+  license: OGL-Canada-2.0
+  cadence: per registry release (at least weekly)

@@ -1,0 +1,76 @@
+title: Relationship
+description: >-
+  A dated, cited relationship between an entity (the subject) and another entity or a
+  non-entity object, such as "Town of Diamond Valley located_within census subdivision
+  4806014" or "Department A succeeded_by Department B". Exactly one of object_id and
+  object_ref is set.
+type: object
+x-bc-record: true
+required: [id, subject_id, predicate, object_id, object_ref, direction, attributes, valid_from, valid_to, provenance, cite]
+properties:
+  id:
+    $ref: Sha256.yaml
+    description: Identifier of this relationship version (the registry row_id). A changed relationship gets a new id; the old one stays readable in earlier revisions.
+    x-bc-dictionary: row_id
+  subject_id:
+    $ref: EntityGid.yaml
+    description: The entity the relationship is about.
+    x-bc-dictionary: subject_id
+  predicate:
+    $ref: Predicate.yaml
+    description: The kind of relationship.
+    x-bc-dictionary: predicate
+  object_id:
+    description: The entity on the other side, or null when the object is not an entity (see object_ref).
+    x-bc-dictionary: object_id
+    oneOf:
+      - $ref: EntityGid.yaml
+      - type: 'null'
+  object_ref:
+    type: [string, 'null']
+    description: A non-entity object as `<namespace>:<value>`, such as ca.statcan.dguid:2021A00054806014, or null when the object is an entity.
+    x-bc-dictionary: object_ref
+    examples: [null]
+  object:
+    description: The object entity, compactly, when object_id is set.
+    x-bc-structural: true
+    oneOf:
+      - $ref: EntityRef.yaml
+      - type: 'null'
+  direction:
+    type: string
+    enum: [out, in]
+    description: >-
+      Relative to the entity in the request path: `out` when it is the subject, `in`
+      when it is the object.
+    x-bc-structural: true
+    examples: [out]
+  attributes:
+    type: object
+    additionalProperties: true
+    description: >-
+      Predicate-specific values, such as percent and holding_type for owned_by, or event,
+      effective_date, authority and citations for succeeded_by. Empty object when none.
+    x-bc-dictionary: attributes
+    examples: [{dguid: 2021A00054806014, vintage: '2021'}]
+  valid_from:
+    description: When the relationship became true in the world, at the source's precision.
+    x-bc-dictionary: valid_from
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  valid_to:
+    description: When the relationship stopped being true, at the source's precision. Null when still true or unknown.
+    x-bc-dictionary: valid_to
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  provenance:
+    $ref: Provenance.yaml
+    description: Where this relationship version came from.
+    x-bc-structural: true
+  cite:
+    type: string
+    description: A ready-to-paste citation for this relationship.
+    x-bc-structural: true
+    examples: ['Build Canada entity registry revision 31, relationship located_within of gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D; from Statistics Canada SGC 2021.']

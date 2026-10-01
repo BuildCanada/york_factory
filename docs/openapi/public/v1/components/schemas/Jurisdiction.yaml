@@ -1,0 +1,6 @@
+title: Jurisdiction
+description: A lowercase ISO 3166-2 code such as `ca` (federal) or `ca-on` (Ontario).
+type: string
+pattern: '^[a-z]{2}(-[a-z0-9]{1,3})?$'
+examples:
+  - ca-ab

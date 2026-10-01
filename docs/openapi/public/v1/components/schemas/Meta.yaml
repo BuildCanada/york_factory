@@ -1,0 +1,39 @@
+title: Meta
+description: >-
+  Facts about the response itself: which registry revision answered, the snapshot that
+  names it, how `as_of` was resolved, the request ID to quote in support requests, and
+  caveats that apply to the whole response.
+type: object
+required: [revision, snapshot, as_of, request_id, caveats]
+properties:
+  revision:
+    description: >-
+      The registry revision that answered, or null for data that isn't versioned by
+      revision (elections, usage). Pass it back as `as_of` to get the same answer again.
+    oneOf:
+      - $ref: RevisionNumber.yaml
+      - type: 'null'
+  snapshot:
+    description: >-
+      The name of the snapshot the request pinned, or of a snapshot that pins the revision
+      that answered; null when none does.
+    oneOf:
+      - $ref: SnapshotName.yaml
+      - type: 'null'
+  as_of:
+    type: string
+    description: >-
+      How the request's `as_of` was resolved: the revision number it pinned (for example
+      "31"), or, for data not versioned by revision, the time it was read at. Omitting
+      `as_of` resolves to the latest revision the API serves, named here.
+    examples: ['31']
+  request_id:
+    type: string
+    pattern: '^req_[0-9A-HJKMNP-TV-Z]{26}$'
+    description: Identifier of this request. Problem responses repeat it as `instance`.
+    examples: [req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C]
+  caveats:
+    type: array
+    description: Caveats that apply to this response. Empty when there are none; never omitted.
+    items:
+      $ref: Caveat.yaml

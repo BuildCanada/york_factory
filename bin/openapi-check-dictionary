@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Checks the public API spec against fact-factory's data dictionary.
+#
+# 1. Every property of a fact-bearing schema (`x-bc-record: true`) has exactly one of
+#    `x-bc-dictionary: <term>` or `x-bc-structural: true`.
+# 2. Every named term is in dictionary-terms.json (synced from fact-factory with
+#    bin/openapi-sync-dictionary), or is listed in pending-dictionary-terms.yaml as a term
+#    proposed to fact-factory and not yet defined there.
+# 3. pending-dictionary-terms.yaml lists no term the dictionary already defines and no term
+#    the spec does not use, so the list shrinks as fact-factory adds definitions.
+# 4. Every property of every schema file, at any depth, has a description.
+#
+#   bin/openapi-check-dictionary           check
+#   bin/openapi-check-dictionary --strict  also fail while any term is still pending
+
+require "json"
+require "yaml"
+
+dir = File.expand_path("../docs/openapi/public/v1", __dir__)
+terms = JSON.parse(File.read(File.join(dir, "dictionary-terms.json"))).fetch("terms")
+pending = YAML.safe_load_file(File.join(dir, "pending-dictionary-terms.yaml")).fetch("terms").keys
+strict = ARGV.include?("--strict")
+
+errors = []
+used = Hash.new { |h, k| h[k] = [] }
+
+def each_property(schema, path, &block)
+  return unless schema.is_a?(Hash)
+
+  (schema["properties"] || {}).each do |name, prop|
+    yield "#{path}.#{name}", prop
+    each_property(prop, "#{path}.#{name}", &block)
+  end
+  %w[items additionalProperties].each { |k| each_property(schema[k], "#{path}[]", &block) if schema[k].is_a?(Hash) }
+  %w[allOf oneOf anyOf].each { |k| Array(schema[k]).each { |s| each_property(s, path, &block) } }
+end
+
+Dir[File.join(dir, "components/schemas/*.yaml")].sort.each do |file|
+  name = File.basename(file, ".yaml")
+  schema = YAML.safe_load_file(file)
+
+  each_property(schema, name) do |path, prop|
+    errors << "#{path}: property has no description" if prop.is_a?(Hash) && prop["description"].to_s.strip.empty?
+  end
+
+  next unless schema["x-bc-record"] == true
+
+  (schema["properties"] || {}).each do |prop_name, prop|
+    path = "#{name}.#{prop_name}"
+    term = prop["x-bc-dictionary"]
+    structural = prop["x-bc-structural"]
+    if term && structural
+      errors << "#{path}: has both x-bc-dictionary and x-bc-structural"
+    elsif structural
+      errors << "#{path}: x-bc-structural must be true" unless structural == true
+    elsif term.nil?
+      errors << "#{path}: data field names no dictionary term (add x-bc-dictionary, or x-bc-structural: true for envelope-like fields)"
+    elsif terms.include?(term)
+      used[term] << path
+    elsif pending.include?(term)
+      used[term] << path
+      errors << "#{path}: term #{term} is still pending in fact-factory's dictionary" if strict
+    else
+      errors << "#{path}: #{term} is not a dictionary term and is not in pending-dictionary-terms.yaml"
+    end
+  end
+end
+
+(pending & terms).each { |t| errors << "pending-dictionary-terms.yaml: #{t} is now in the dictionary; remove it from the pending list" }
+(pending - used.keys).each { |t| errors << "pending-dictionary-terms.yaml: #{t} is not used by any field; remove it" }
+
+if errors.any?
+  warn errors.map { |e| "  #{e}" }.join("\n")
+  warn "openapi-check-dictionary: #{errors.size} problem(s)"
+  exit 1
+end
+
+existing = used.keys - pending
+puts "openapi-check-dictionary: #{used.values.sum(&:size)} data fields name #{used.size} terms " \
+     "(#{existing.size} defined in the dictionary, #{(used.keys & pending).size} pending)."

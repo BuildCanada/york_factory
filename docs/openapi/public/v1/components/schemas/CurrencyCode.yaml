@@ -1,0 +1,6 @@
+title: CurrencyCode
+description: An ISO 4217 currency code. CAD for every source except global_affairs_projects.
+type: string
+pattern: '^[A-Z]{3}$'
+examples:
+  - CAD

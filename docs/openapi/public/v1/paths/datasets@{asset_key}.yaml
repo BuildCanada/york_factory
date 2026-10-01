@@ -1,0 +1,118 @@
+# /datasets/{asset_key}
+get:
+  operationId: getDataset
+  summary: Get a dataset
+  description: |-
+    One dataset by its fact-factory asset key. The key contains slashes, so percent-encode
+    it in the path (`sources%2Fca%2Ftbs%2Fproactive_grants`), or follow `links.self` from
+    the list.
+  tags:
+  - Datasets
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: datasets
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: revision
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: asset_key
+    in: path
+    required: true
+    description: The percent-encoded asset key.
+    schema:
+      type: string
+      pattern: "^[a-z0-9_-]+(/[a-z0-9_-]+)*$"
+    example: sources/ca/tbs/proactive_grants
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  responses:
+    '200':
+      description: The dataset.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/DatasetResponse.yaml"
+          examples:
+            proactive_grants:
+              summary: Proactive grants
+              value:
+                data:
+                  asset_key: sources/ca/tbs/proactive_grants
+                  title: Proactive Disclosure of Grants and Contributions
+                  record_meaning: >-
+                    One row per amendment of a federal grant or contribution agreement, as departments
+                    proactively disclose them.
+                  publisher: Treasury Board of Canada Secretariat
+                  license: OGL-Canada-2.0
+                  freshness:
+                    latest_retrieved_at: '2026-09-26T04:59:12Z'
+                    cadence: daily
+                  coverage:
+                    rows: 1313276
+                    from_fiscal_year: 2005-06
+                    to_fiscal_year: 2026-27
+                    known_gaps:
+                    - recipient_type is required only for agreements starting on or after 2025-12-01.
+                  dictionary_terms:
+                  - amount
+                  - canonical_id
+                  - fiscal_year
+                  - payer
+                  - payer_code
+                  - recipient
+                  - recipient_business_number
+                  caveats:
+                  - code: agreement_value_not_paid
+                    text: proactive_grants amounts are agreement values, not money paid.
+                    docs: https://data.buildcanada.com/api/caveats#agreement_value_not_paid
+                  - code: not_cross_source_total
+                    text: Sources overlap. Never add amounts across sources.
+                    docs: https://data.buildcanada.com/api/caveats#not_cross_source_total
+                  links:
+                    self: "/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=31"
+                    records: "/v1/spending?source=proactive_grants&as_of=31"
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1/datasets/sources%2Fca%2Ftbs%2Fproactive_grants?as_of=31"
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

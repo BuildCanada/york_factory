@@ -10,22 +10,105 @@
       "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
     },
     {
-      "warning_type": "Mass Assignment",
-      "fingerprint": "8959d31382abf3fdc8f52babcd68fe10621cd0adba611d69d7f27451177f704a",
-      "check_name": "PermitAttributes",
-      "message": "Potentially dangerous key allowed for mass assignment",
-      "file": "app/controllers/admin/team_members_controller.rb",
-      "line": 76,
-      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+      "warning_type": "SQL Injection",
+      "fingerprint": "18fd6eb9d98db2068af326c831084305b7153a74d2aeadcfbc905453946391d5",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/models/warehouse/spending/scrapers/base.rb",
+      "line": 82,
+      "note": "Canonical ordering clauses are fixed string literals at the only two internal call sites; source_id is adapter-quoted and no request or user input reaches this SQL"
     },
     {
-      "warning_type": "Mass Assignment",
-      "fingerprint": "9e20a8328e9b7f5c2fda3c7a14ef1156dbd14d1d5984ec3537a25cb30d1b5c27",
-      "check_name": "PermitAttributes",
-      "message": "Potentially dangerous key allowed for mass assignment",
-      "file": "app/controllers/api/v1/team_members_controller.rb",
-      "line": 58,
-      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "3d909092b2fff0b8e09a73f4af618ee2968503d3a6f839f5fe8f8520994326ec",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 138,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Relationship.find_by_sql([\"WITH RECURSIVE walk(entity_id, depth, row_id, path) AS (\\n  SELECT r.#{far}, 1, r.row_id, ARRAY[CAST(:id AS text), r.#{far}]\\n  FROM #{T_RELATIONSHIPS} r\\n  WHERE r.predicate = 'succeeded_by' AND r.#{near} = :id AND r.#{far} IS NOT NULL AND #{current(\"r\")}\\n  UNION ALL\\n  SELECT r.#{far}, w.depth + 1, r.row_id, w.path || r.#{far}\\n  FROM walk w\\n  JOIN #{T_RELATIONSHIPS} r ON r.predicate = 'succeeded_by' AND r.#{near} = w.entity_id AND #{current(\"r\")}\\n  WHERE w.depth < :max_depth AND r.#{far} IS NOT NULL AND NOT r.#{far} = ANY(w.path)\\n), steps AS (\\n  SELECT DISTINCT ON (w.row_id) w.row_id, w.depth, w.entity_id AS step_entity_id FROM walk w ORDER BY w.row_id, w.depth\\n)\\nSELECT s.* FROM (\\n  SELECT r.*, st.depth, st.step_entity_id FROM steps st JOIN #{T_RELATIONSHIPS} r ON r.row_id = st.row_id\\n) s\\nWHERE #{(\"TRUE\" or \"(s.depth, s.row_id) > (:a_depth, :a_row)\")}\\nORDER BY s.depth, s.row_id\\nLIMIT :limit\\n\", binds(:limit => (limit + 1), :id => entity_id, :max_depth => max_depth, :a_depth => after[0], :a_row => after[1])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "lineage"
+      },
+      "user_input": "far",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "45a144b373a87cb0d6a4eefb568180ed9f4e4b30a93d45f2f0ac1d352e87f6e8",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 151,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Occurrence.find_by_sql([\"SELECT o.* FROM #{T_OCCURRENCES} o WHERE #{(where << \"o.row_id > :after\").join(\" AND \")} ORDER BY o.row_id LIMIT :limit\", binds(values).merge(:limit => (limit + 1))])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "unlinked"
+      },
+      "user_input": "(where << \"o.row_id > :after\").join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "594c282d74e2f8ad1e4f960da6332e5ee1a68e442b38324e1949dd4ea209de55",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 110,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Occurrence.find_by_sql([\"SELECT o.* FROM #{T_OCCURRENCES} o WHERE (o.source_key, o.spending_row_id) IN (#{records.map do\n [label_for(r), r.source_row_id]\n end.uniq.map do\n \"(#{t.map do\n Occurrence.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")}) AND #{current(\"o\")} ORDER BY o.field, o.position, o.occurrence_id\", binds])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "parties"
+      },
+      "user_input": "records.map do\n [label_for(r), r.source_row_id]\n end.uniq.map do\n \"(#{t.map do\n Occurrence.connection.quote(v)\n end.join(\", \")})\"\n end.join(\", \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "5e760228c2276edde0f1346246740e362b6286b69d36dd20181a7db150bec9b1",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 70,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Identifier.find_by_sql([(\"SELECT i.* FROM #{T_IDENTIFIERS} i WHERE #{\"i.entity_id = :id AND #{current(\"i\")} AND i.namespace = :namespace AND (i.namespace, i.value, i.row_id) > (:a_ns, :a_value, :a_row)\"} ORDER BY i.namespace, i.value, i.row_id\" + \" LIMIT :limit\"), binds(:limit => (limit.to_i + 1), :id => entity_id, :namespace => namespace, :a_ns => after[0], :a_value => after[1], :a_row => after[2])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "identifiers"
+      },
+      "user_input": "current(\"i\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
     },
     {
       "warning_type": "Mass Assignment",
@@ -37,6 +120,208 @@
       "note": "User#role assignment is guarded: only superadmins can set superadmin role, enforced in user_params"
     },
     {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "7ac7163f84b29114f411885eb74e4aaa881ede85dfe31adffe76704c23bea1a4",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/elections_query.rb",
+      "line": 45,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "district_scope(geometry).order(:id).limit((limit + 1)).where(:boundary_set_id => boundary_set).where(:boundary_set_id => BoundarySet.where(:jurisdiction => jurisdiction).select(:id)).where(\"#{t(\"districts\")}.id > ?\", after[0])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::ElectionsQuery",
+        "method": "districts"
+      },
+      "user_input": "t(\"districts\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "82ba1109947f9cc2a4ed162b7fedc6aa68e7cd0f6c22d5e8175f1fc50a5e7ba4",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 81,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Identifier.find_by_sql([\"SELECT i.* FROM #{T_IDENTIFIERS} i\\nJOIN #{T_ENTITIES} e ON e.entity_id = i.entity_id AND #{current(\"e\")}\\nWHERE i.namespace = :namespace AND i.value = :value AND #{current(\"i\")}\\nORDER BY i.entity_id, i.row_id\\n\", binds(:namespace => namespace, :value => value)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "holders"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "8959d31382abf3fdc8f52babcd68fe10621cd0adba611d69d7f27451177f704a",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/team_members_controller.rb",
+      "line": 76,
+      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "8a90ee79f92264c353fa3d86a6924e2e841e12717b2f00d7927145ad3e7099c2",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 49,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT e.* FROM #{T_ENTITIES} e WHERE #{((where << \"(e.name, e.entity_id) > (:after_name, :after_id)\") or (where << \"e.entity_id > :after_id\")).join(\" AND \")} ORDER BY #{(\"e.name, e.entity_id\" or \"e.entity_id\")} LIMIT :limit\", ])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "page"
+      },
+      "user_input": "((where << \"(e.name, e.entity_id) > (:after_name, :after_id)\") or (where << \"e.entity_id > :after_id\")).join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "9e20a8328e9b7f5c2fda3c7a14ef1156dbd14d1d5984ec3537a25cb30d1b5c27",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/api/v1/team_members_controller.rb",
+      "line": 58,
+      "note": "TeamMember#role is a display category (board/team/volunteer/advisor), not an authorization role"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "acc38e411e45e6b56b704d045004addf3c69f931213c16383a846b5a94c23e32",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "script/public_api/explain.rb",
+      "line": 127,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "FactFactoryRecord.connection.select_values(\"EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) #{sql}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ExplainPublicApi",
+        "method": "report"
+      },
+      "user_input": "sql",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "Developer benchmark script (script/public_api/explain.rb): EXPLAINs SQL captured from the query objects against a generated local database. Never run in production."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "aeccc6562ff68d45aa89d96ad378b7a3a3fa5e46a6ec947f47b5c2de68178935",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/spending_query.rb",
+      "line": 86,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "SpendingRecord.find_by_sql([\"SELECT r.*, r.id AS source_row_id FROM #{T_RECORDS} r WHERE #{(where << keyset(column, direction, after, values)).join(\" AND \")} ORDER BY #{(\"#{column} #{direction} NULLS LAST, r.spending_key\" or \"r.spending_key\")} LIMIT :limit\", binds(values).merge(:limit => (limit + 1))])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::SpendingQuery",
+        "method": "page"
+      },
+      "user_input": "(where << keyset(column, direction, after, values)).join(\" AND \")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "b0617f09e1b73c1434efe1063969187388407e02adaf6eb858215b1bc680061d",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 24,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT * FROM #{T_ENTITIES} e WHERE e.entity_id = :id AND #{current(\"e\")} LIMIT 1\", binds(:id => entity_id)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "find"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "b53656660b45d7b4575f1d4e1428938eb90fb6d349cd5332d46802bc1e08f7c6",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 104,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Relationship.find_by_sql([\"SELECT s.* FROM (#{\"#{\"SELECT r.*, 'out' AS direction FROM #{T_RELATIONSHIPS} r WHERE r.subject_id = :id AND r.predicate IN (:predicates) AND #{current(\"r\")}\"} UNION ALL #{\"SELECT r.*, 'in' AS direction FROM #{T_RELATIONSHIPS} r WHERE r.object_id = :id AND r.predicate IN (:predicates) AND #{current(\"r\")}\"}\"}) s WHERE #{\"TRUE AND #{valid_on_condition(\"s\")} AND (s.row_id, s.direction) > (:a_row, :a_direction)\"} ORDER BY s.row_id, s.direction LIMIT :limit\", binds(:limit => (limit + 1), :id => entity_id, :predicates => ((Array(predicates) or [\"governs\", \"located_within\", \"covers\", \"party_to\", \"administrative_part_of\", \"reports_to_minister\", \"owned_by\", \"controlled_by\", \"member_of\", \"succeeded_by\"]) & [\"governs\", \"located_within\", \"covers\", \"party_to\", \"administrative_part_of\", \"reports_to_minister\", \"owned_by\", \"controlled_by\", \"member_of\", \"succeeded_by\"]), :valid_on => valid_on, :a_row => after[0], :a_direction => after[1])])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "relationships"
+      },
+      "user_input": "current(\"r\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "c2226a79aa28d3c2fb9c93ace93d36942277a4dae7d3c733c51331e0a4af3852",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/queries/fact_factory/entity_query.rb",
+      "line": 32,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "Entity.find_by_sql([\"SELECT * FROM #{T_ENTITIES} e WHERE e.entity_id IN (:ids) AND #{current(\"e\")}\", binds(:ids => entity_ids.compact.uniq)])",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FactFactory::EntityQuery",
+        "method": "refs"
+      },
+      "user_input": "current(\"e\")",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Public API queries over fact-factory's fact_factory schema (WS-D). Interpolated fragments are fixed SQL: table names from FactFactoryRecord.table (the configured schema, not request input), the as-of-revision predicate, allow-listed sort columns and lineage directions, and composite keys passed through connection.quote. Every request value is a bound parameter."
+    },
+    {
       "warning_type": "Cross-Site Scripting",
       "fingerprint": "def12a14b24389284b4906d57517d8f41da063f9b4d2f307316d0fe1d3a95de0",
       "check_name": "LinkToHref",
@@ -44,15 +329,6 @@
       "file": "app/views/admin/trade_barriers/agreements/show.html.erb",
       "line": 15,
       "note": "Admin-only view gated by trade_barriers_editor role; Agreement#source_url is validated to require http(s):// scheme"
-    },
-    {
-      "warning_type": "SQL Injection",
-      "fingerprint": "18fd6eb9d98db2068af326c831084305b7153a74d2aeadcfbc905453946391d5",
-      "check_name": "SQL",
-      "message": "Possible SQL injection",
-      "file": "app/models/warehouse/spending/scrapers/base.rb",
-      "line": 82,
-      "note": "Canonical ordering clauses are fixed string literals at the only two internal call sites; source_id is adapter-quoted and no request or user input reaches this SQL"
     }
   ],
   "updated": "2026-08-07",

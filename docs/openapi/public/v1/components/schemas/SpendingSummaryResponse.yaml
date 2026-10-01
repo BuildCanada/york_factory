@@ -1,0 +1,62 @@
+title: SpendingSummaryResponse
+description: >-
+  An entity's linked spending, grouped. Not paginated: there is one row per group, at most
+  a few thousand. `meta.caveats` always includes not_cross_source_total,
+  latest_revision_only and linked_only.
+type: object
+required: [data, meta, links]
+properties:
+  data:
+    type: array
+    description: One row per group. Never add amounts across rows with different sources.
+    items:
+      $ref: SpendingSummaryRow.yaml
+  meta:
+    description: Standard meta plus what the summary left out.
+    allOf:
+      - $ref: Meta.yaml
+      - type: object
+        required: [role, group_by, aggregated_rows_excluded, unlinked_occurrences]
+        properties:
+          role:
+            type: string
+            enum: [payer, recipient]
+            description: The role the entity was summarized in.
+            examples: [recipient]
+          group_by:
+            type: array
+            description: The grouping keys used. `source` is always included.
+            items:
+              type: string
+              enum: [source, fiscal_year, counterparty]
+            examples: [[source, fiscal_year]]
+          aggregated_rows_excluded:
+            type: integer
+            minimum: 0
+            description: Linked aggregate rows (is_aggregated) left out of every group.
+            examples: [0]
+          unlinked_occurrences:
+            type: integer
+            minimum: 0
+            description: >-
+              Unlinked occurrences in the same role that carry the entity's normalized
+              name or an alias. Not counted in any group; list them with
+              /v1/entities/{id}/spending/unlinked.
+            examples: [38]
+  links:
+    type: object
+    description: Links for the summary.
+    required: [self, unlinked, records]
+    properties:
+      self:
+        type: string
+        description: This summary, pinned.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/summary?role=recipient&group_by=source,fiscal_year&as_of=31']
+      unlinked:
+        type: string
+        description: The unlinked occurrences counted in meta.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending/unlinked?role=recipient&as_of=31']
+      records:
+        type: string
+        description: The rows behind the summary.
+        examples: ['/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?role=recipient&as_of=31']

@@ -1,0 +1,10 @@
+title: ElectionId
+description: >-
+  The ID of an election, contest, district, office or boundary set, as fact-factory writes
+  it: a lowercase path such as `ca/bc/elections/2024-10-19-general`. Send it
+  percent-encoded in a URL path (`ca%2Fbc%2Felections%2F2024-10-19-general`).
+type: string
+pattern: '^[a-z0-9][a-z0-9/._-]*$'
+maxLength: 200
+examples:
+  - ca/bc/elections/2024-10-19-general

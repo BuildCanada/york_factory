@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Bundles the split public API spec (docs/openapi/public/v1/openapi.yaml and the files it
+# references) into docs/openapi/dist/v1/openapi.json, the single document Rails serves at
+# /v1/openapi.json and the data-api repo syncs for SDK and docs generation.
+#
+#   bin/openapi-bundle          write docs/openapi/dist/v1/openapi.json
+#   bin/openapi-bundle --check  fail if docs/openapi/dist/v1/openapi.json is out of date
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+tools="$root/docs/openapi"
+out="$root/docs/openapi/dist/v1/openapi.json"
+
+if [ ! -d "$tools/node_modules" ]; then
+  npm ci --prefix "$tools" --no-audit --no-fund >/dev/null
+fi
+
+target="$out"
+if [ "${1:-}" = "--check" ]; then
+  target="$(mktemp -d "${TMPDIR:-/tmp}/openapi-bundle.XXXXXX")/openapi.json"
+fi
+
+mkdir -p "$(dirname "$out")"
+(cd "$tools" && npx --no-install redocly bundle public/v1/openapi.yaml --output "$target" --ext json >/dev/null)
+# Stable, reviewable output: sorted keys would reorder paths, so only normalize whitespace.
+ruby -rjson -e 'path = ARGV[0]; File.write(path, JSON.pretty_generate(JSON.parse(File.read(path))) + "\n")' "$target"
+
+if [ "${1:-}" = "--check" ]; then
+  if ! cmp -s "$target" "$out"; then
+    echo "docs/openapi/dist/v1/openapi.json is out of date. Run bin/openapi-bundle and commit the result." >&2
+    diff -u "$out" "$target" | head -40 >&2 || true
+    exit 1
+  fi
+  echo "docs/openapi/dist/v1/openapi.json is up to date."
+else
+  echo "Wrote $out"
+fi

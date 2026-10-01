@@ -1,0 +1,9 @@
+title: EntityGid
+description: >-
+  Global ID of a registry entity: `gid://buildcanada/Entity/` followed by the entity's
+  26-character ULID. Minted once and never reused. Paths accept either the bare ULID or
+  the percent-encoded gid.
+type: string
+pattern: '^gid://buildcanada/Entity/[0-9A-HJKMNP-TV-Z]{26}$'
+examples:
+  - gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D

@@ -1,0 +1,110 @@
+# /districts
+get:
+  operationId: listDistricts
+  summary: List districts
+  description: |-
+    Electoral districts by ID, optionally of one boundary set or jurisdiction. Boundaries
+    are large: they come only with expand=geometry.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name: districts
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: boundary_set
+    in: query
+    required: false
+    description: "Only districts of this boundary set (its ID)."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/electoral-districts/2023"
+  - name: jurisdiction
+    in: query
+    required: false
+    description: "Only districts drawn for this jurisdiction."
+    schema: {"$ref": "../components/schemas/Jurisdiction.yaml"}
+    example: "ca-bc"
+  - name: expand
+    in: query
+    required: false
+    description: "geometry adds each district's boundary as GeoJSON."
+    schema: {"type": "array", "items": {"type": "string", "enum": ["geometry"]}}
+    style: form
+    explode: false
+    example: ["geometry"]
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List districts.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/DistrictListResponse.yaml"
+          examples:
+            districts:
+              summary: A district without its boundary
+              value:
+                data:
+                - id: ca/bc/electoral-districts/2023/abm
+                  boundary_set:
+                    id: ca/bc/electoral-districts/2023
+                    jurisdiction: ca-bc
+                    kind: district
+                    legal_instrument: null
+                    in_force_from: '2024-10-19'
+                    in_force_to: null
+                  code: ABM
+                  name_as_shown: Abbotsford-Mission
+                  geometry: null
+                  links:
+                    self: /v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor: null
+                  count: null
+                links:
+                  self: /v1/districts?boundary_set=ca%2Fbc%2Felectoral-districts%2F2023
+                  next: null
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

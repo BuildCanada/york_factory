@@ -1,0 +1,290 @@
+# RFC 9457 problem responses, one per status. Every problem type has a docs page at its `type` URL.
+BadRequest:
+  description: 'invalid_parameter: a parameter is malformed, unknown or out of range. `errors` names each one.'
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        invalid_parameter:
+          summary: A malformed fiscal year
+          value:
+            type: https://data.buildcanada.com/api/problems/invalid-parameter
+            title: Invalid parameter
+            status: 400
+            detail: fiscal_year must be a fiscal year label.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: invalid_parameter
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            errors:
+            - parameter: fiscal_year
+              detail: Use YYYY-YY, e.g. 2024-25
+Unauthorized:
+  description: 'unauthenticated: the key or token is missing where one is needed, unknown, revoked or expired.'
+  headers:
+    WWW-Authenticate:
+      "$ref": headers.yaml#/WWWAuthenticate
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        unauthenticated:
+          summary: No key on an operation that needs one
+          value:
+            type: https://data.buildcanada.com/api/problems/unauthenticated
+            title: Authentication required
+            status: 401
+            detail: This operation needs an API key or OAuth token. Get a free key at https://auth.buildcanada.com/developers.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: unauthenticated
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+Forbidden:
+  description: >-
+    insufficient_scope: the key or token lacks the scope in `required_scope`. account_suspended: the account that
+    owns the key is suspended. ip_not_allowed and origin_not_allowed: the key is restricted to other IP addresses
+    or origins.
+  headers:
+    WWW-Authenticate:
+      "$ref": headers.yaml#/WWWAuthenticate
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        insufficient_scope:
+          summary: Missing usage:read
+          value:
+            type: https://data.buildcanada.com/api/problems/insufficient-scope
+            title: Insufficient scope
+            status: 403
+            detail: This key does not have the usage:read scope.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: insufficient_scope
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            required_scope: usage:read
+NotFound:
+  description: >-
+    not_found: nothing has this ID in the revision that answered. not_yet_published: `as_of` is before the
+    earliest revision the API serves, or after the latest.
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        not_found:
+          summary: Unknown ID
+          value:
+            type: https://data.buildcanada.com/api/problems/not-found
+            title: Not found
+            status: 404
+            detail: No entity 01J9ZK4T6M8Q2R5V7X3B1N0C4E in revision 31.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: not_found
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+        not_yet_published:
+          summary: as_of before our history
+          value:
+            type: https://data.buildcanada.com/api/problems/not-yet-published
+            title: Not yet published
+            status: 404
+            detail: as_of 2020-01-01 is before revision 1, committed 2026-09-20.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: not_yet_published
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            earliest_revision: 1
+            latest_revision: 31
+MovedPermanently:
+  description: 'redirected: the entity was merged into a survivor. Follow Location; the old ID keeps working.'
+  headers:
+    Location:
+      "$ref": headers.yaml#/Location
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        redirected:
+          summary: A merged duplicate
+          value:
+            type: https://data.buildcanada.com/api/problems/redirected
+            title: Entity redirected
+            status: 301
+            detail: Entity 01J9ZK4T6M8Q2R5V7X3B1N0C4D was merged into 01JB2C3D4E5F6G7H8J9K0M1N2P in revision 31.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: redirected
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            location: "/v1/entities/01JB2C3D4E5F6G7H8J9K0M1N2P?as_of=11"
+Conflict:
+  description: 'revision_mismatch: the cursor was issued for another revision than `as_of`.'
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        revision_mismatch:
+          summary: Cursor from revision 30 with as_of=31
+          value:
+            type: https://data.buildcanada.com/api/problems/revision-mismatch
+            title: Cursor from another revision
+            status: 409
+            detail: This cursor belongs to revision 30. Repeat with as_of=30, or drop the cursor to start again.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: revision_mismatch
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            cursor_revision: 30
+UnprocessableEntity:
+  description: >-
+    query_too_broad: the query would exceed the search, graph or grouping limits, or took longer than the
+    statement timeout. Narrow it, or use bulk files.
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        query_too_broad:
+          summary: A search query that is too short
+          value:
+            type: https://data.buildcanada.com/api/problems/query-too-broad
+            title: Query too broad
+            status: 422
+            detail: q must have at least 2 characters other than spaces and punctuation.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: query_too_broad
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+TooManyRequests:
+  description: 'rate_limited: wait `retry_after_seconds`. quota_exceeded: the month is spent; upgrade or use bulk
+    files.'
+  headers:
+    Retry-After:
+      "$ref": headers.yaml#/RetryAfter
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        rate_limited:
+          summary: Per-minute rate spent
+          value:
+            type: https://data.buildcanada.com/api/problems/rate-limited
+            title: Rate limit exceeded
+            status: 429
+            detail: Key bc_live_7Hq2… used 120 of 120 request units in the current 60-second window.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: rate_limited
+            docs: https://data.buildcanada.com/api/concepts/rate-limits.md
+            retry_after_seconds: 17
+            plan: free
+            upgrade_url: https://auth.buildcanada.com/developers/plan
+            bulk_url: https://data.buildcanada.com/v1/exports
+        quota_exceeded:
+          summary: Monthly units spent
+          value:
+            type: https://data.buildcanada.com/api/problems/quota-exceeded
+            title: Monthly quota exceeded
+            status: 429
+            detail: Account acct_42 used 100,000 of 100,000 units this month. The quota resets on 2026-10-01.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: quota_exceeded
+            docs: https://data.buildcanada.com/api/concepts/rate-limits.md
+            retry_after_seconds: 172800
+            plan: free
+            upgrade_url: https://auth.buildcanada.com/developers/plan
+            bulk_url: https://data.buildcanada.com/v1/exports
+Gone:
+  description: >-
+    retired: the revision is older than fact-factory's retention horizon, so the spending occurrences it read
+    are no longer kept. Entities, identifiers, relationships and summaries stay answerable; repeat with a newer
+    `as_of`, or with a held snapshot.
+  headers:
+    RateLimit:
+      "$ref": headers.yaml#/RateLimit
+    RateLimit-Policy:
+      "$ref": headers.yaml#/RateLimitPolicy
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        retired:
+          summary: A pruned revision
+          value:
+            type: https://data.buildcanada.com/api/problems/retired
+            title: Retired
+            status: 410
+            detail: Revision 9 is older than the retention horizon (revision 14); its spending occurrences were pruned.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: retired
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+ServiceUnavailable:
+  description: >-
+    revision_building: no registry revision is served yet (the first derived build has not finished). Retry after
+    Retry-After seconds.
+  headers:
+    Retry-After:
+      "$ref": headers.yaml#/RetryAfter
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        revision_building:
+          summary: Nothing served yet
+          value:
+            type: https://data.buildcanada.com/api/problems/revision-building
+            title: Revision building
+            status: 503
+            detail: The first registry revision is still being built. Retry in 30 seconds.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: revision_building
+            docs: https://data.buildcanada.com/api/concepts/errors.md
+            retry_after_seconds: 30
+InternalError:
+  description: 'internal_error: an unexpected failure. Retry once; quote `instance` if it persists.'
+  content:
+    application/problem+json:
+      schema:
+        "$ref": schemas/Problem.yaml
+      examples:
+        internal_error:
+          summary: Unexpected failure
+          value:
+            type: https://data.buildcanada.com/api/problems/internal-error
+            title: Internal error
+            status: 500
+            detail: Something went wrong on our side. Quote req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C if it happens again.
+            instance: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+            code: internal_error
+            docs: https://data.buildcanada.com/api/concepts/errors.md

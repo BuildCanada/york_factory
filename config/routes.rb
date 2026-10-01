@@ -22,6 +22,57 @@ Rails.application.routes.draw do
 
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # The public data API, data.buildcanada.com/v1 (docs/openapi/public/v1;
+  # fact-factory docs/public-interface-design.md §3). Read-only: every route is
+  # a GET, and anything else under /v1 is a 404 problem.
+  constraints(PublicApi::HostConstraint) do
+    scope "v1", module: "public_api/v1", format: false, as: "public_api_v1" do
+      get "/", to: "discovery#index", as: :index
+      get "openapi.json", to: "discovery#openapi", as: :openapi
+      get "me", to: "discovery#me", as: :me
+      get "me/usage", to: "discovery#usage", as: :usage
+      get "revisions", to: "revisions#index", as: :revisions
+      get "revisions/latest", to: "revisions#latest", as: :latest_revision
+      get "revisions/:revision", to: "revisions#show", as: :revision
+      get "snapshots", to: "revisions#snapshots", as: :snapshots
+      get "snapshots/:name", to: "revisions#snapshot", as: :snapshot, constraints: { name: %r{[^/]+} }
+      get "datasets", to: "datasets#index", as: :datasets
+      # Asset keys have slashes: sent percent-encoded (sources%2Fca%2F...) or bare.
+      get "datasets/*asset_key", to: "datasets#show", as: :dataset
+      get "dictionary", to: "dictionary#index", as: :dictionary
+      get "dictionary/:term", to: "dictionary#show", as: :dictionary_term
+      get "search", to: "search#index", as: :search
+      get "entities", to: "entities#index", as: :entities
+      scope "entities/:id", constraints: { id: %r{[^/]+} } do
+        get "/", to: "entities#show", as: :entity
+        get "identifiers", to: "entities#identifiers", as: :entity_identifiers
+        get "relationships", to: "entities#relationships", as: :entity_relationships
+        get "lineage", to: "entities#lineage", as: :entity_lineage
+        get "spending", to: "entity_spending#index", as: :entity_spending
+        get "spending/summary", to: "entity_spending#summary", as: :entity_spending_summary
+        get "spending/unlinked", to: "entity_spending#unlinked", as: :entity_spending_unlinked
+      end
+      get "identifiers/:namespace/:value", to: "identifiers#show", as: :identifier, constraints: { namespace: %r{[^/]+}, value: %r{[^/]+} }
+      get "spending", to: "spending#index", as: :spending
+      get "spending/sources", to: "spending#sources", as: :spending_sources
+      get "spending/:id", to: "spending#show", as: :spending_record, constraints: { id: %r{[^/]+} }
+      # Elections IDs have slashes: sent percent-encoded (ca%2Fbc%2Felections%2F...).
+      id = %r{[^/]+}
+      get "elections", to: "elections#index", as: :elections
+      get "elections/:election_id", to: "elections#show", as: :election, constraints: { election_id: id }
+      get "elections/:election_id/contests", to: "elections#contests", as: :election_contests, constraints: { election_id: id }
+      get "elections/:election_id/result-reports", to: "elections#result_reports", as: :election_result_reports, constraints: { election_id: id }
+      get "contests/:contest_id", to: "elections#contest", as: :contest, constraints: { contest_id: id }
+      get "contests/:contest_id/candidacies", to: "elections#candidacies", as: :contest_candidacies, constraints: { contest_id: id }
+      get "contests/:contest_id/results", to: "elections#results", as: :contest_results, constraints: { contest_id: id }
+      get "candidacies/:candidacy_id", to: "elections#candidacy", as: :candidacy, constraints: { candidacy_id: id }
+      get "districts", to: "elections#districts", as: :districts
+      get "districts/:district_id", to: "elections#district", as: :district, constraints: { district_id: id }
+      match "*path", to: "missing#show", via: :all, as: :missing
+    end
+    match "v1", to: "public_api/v1/missing#show", via: %i[post put patch delete], format: false
+  end
+
   namespace :webhooks, constraints: { format: "json" } do
     resources :hubspot, only: [ :create ]
   end

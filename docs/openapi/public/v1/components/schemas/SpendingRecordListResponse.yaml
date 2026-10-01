@@ -1,0 +1,16 @@
+title: SpendingRecordListResponse
+description: "A page of spending rows. The standard list envelope: items in `data`, the cursor for the next page in `meta.next_cursor` and `links.next`."
+type: object
+required: [data, meta, links]
+properties:
+  data:
+    type: array
+    description: A page of spending rows.
+    items:
+      $ref: SpendingRecord.yaml
+  meta:
+    $ref: ListMeta.yaml
+    description: The revision that answered, the resolved as_of, the request ID, caveats and pagination.
+  links:
+    $ref: PageLinks.yaml
+    description: Links for this page and the next.

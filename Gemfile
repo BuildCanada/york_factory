@@ -74,6 +74,10 @@ gem "dotenv-rails", groups: [ :development, :test ]
 # CMS: i18n with column backend
 gem "mobility", "~> 1.3"
 
+# Public data API: validates /v1 request parameters against the OpenAPI 3.1
+# contract at runtime, and every example and test response against it in tests.
+gem "json_schemer", "~> 2.5"
+
 # CMS: lightweight pagination
 gem "pagy", "~> 43.4"
 

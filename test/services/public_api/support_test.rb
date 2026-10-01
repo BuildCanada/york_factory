@@ -1,0 +1,123 @@
+require "test_helper"
+
+# The public API's building blocks: the rate limiter, cursors, as_of,
+# formatting, parameter checks and fact-factory's name normalization.
+class PublicApiSupportTest < ActiveSupport::TestCase
+  Caller = Data.define(:api_key, :account, :plan) do
+    def anonymous? = api_key.nil?
+  end
+
+  def anonymous = Caller.new(api_key: nil, account: nil, plan: Plan.fetch("anonymous"))
+
+  test "the limiter counts units in minute and daily windows, and refuses without taking" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    now = Time.utc(2026, 9, 29, 12, 0, 10)
+    limiter = PublicApi::RateLimiter.new(store:, now:)
+    charge = limiter.charge(caller: anonymous, ip: "192.0.2.1", units: 29)
+    assert charge.result.allowed
+    assert_equal [ 1, 50, 971 ], [ charge.result.minute_remaining, charge.result.minute_reset, charge.result.allowance_remaining ]
+    refused = limiter.charge(caller: anonymous, ip: "192.0.2.1", units: 2)
+    refute refused.result.allowed
+    assert_equal "rate_limited", refused.result.code
+    assert_equal 1, limiter.charge(caller: anonymous, ip: "192.0.2.1", units: 1).result.minute_used - 29
+    assert_equal 30, limiter.allowance_used(caller: anonymous, ip: "192.0.2.1")
+    assert limiter.charge(caller: anonymous, ip: "192.0.2.2", units: 30).result.allowed, "per IP"
+  end
+
+  test "settling a charge gives back what the response did not cost" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    limiter = PublicApi::RateLimiter.new(store:, now: Time.utc(2026, 9, 29, 12, 0, 0))
+    charge = limiter.charge(caller: anonymous, ip: "192.0.2.1", units: 5)
+    settled = limiter.settle(charge, units: 0, rate_units: 1)
+    assert_equal [ 1, 0 ], [ settled.minute_used, settled.allowance_used ]
+    assert_equal 0, limiter.allowance_used(caller: anonymous, ip: "192.0.2.1")
+  end
+
+  test "the store is cache, memory or off" do
+    assert_same Rails.cache, PublicApi::RateLimiter.build_store("cache")
+    assert_kind_of ActiveSupport::Cache::MemoryStore, PublicApi::RateLimiter.build_store("memory")
+    assert_nil PublicApi::RateLimiter.build_store("off")
+    assert_kind_of ActiveSupport::Cache::MemoryStore, PublicApi::RateLimiter.build_store(nil), "the test cache is a null store"
+    assert_raises(ArgumentError) { PublicApi::RateLimiter.build_store("redis") }
+  end
+
+  test "cursors are signed and carry their revision, keys and parameters" do
+    cursor = PublicApi::Cursor.encode(revision: 31, keys: [ "a", nil ], fingerprint: "f")
+    assert_operator cursor.size, :<=, 512
+    decoded = PublicApi::Cursor.decode(cursor)
+    assert_equal [ 31, [ "a", nil ], "f" ], [ decoded.revision, decoded.keys, decoded.fingerprint ]
+    version, payload, signature = cursor.split(".")
+    forged = Base64.urlsafe_encode64({ r: 30, k: [ "a" ], f: "f" }.to_json, padding: false)
+    assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode([ version, forged, signature ].join(".")) }
+    assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode("c1.#{payload}") }
+    assert_raises(PublicApi::Cursor::Invalid) { PublicApi::Cursor.decode("garbage") }
+  end
+
+  test "as_of resolves revision numbers, snapshot names, dates and timestamps, and says which are pinned" do
+    served = FactFactory::RevisionQuery::Served.new(
+      latest: 31, committed: { 14 => Time.utc(2026, 9, 29, 6), 30 => Time.utc(2026, 9, 30, 6), 31 => Time.utc(2026, 10, 1, 3), 32 => Time.utc(2026, 10, 1, 4) },
+      pruned: Set[14], snapshots: { "release-14" => 14, "daily-2026-10-01" => 31 }, purged_through: nil
+    )
+    now = Time.utc(2026, 10, 2)
+    resolve = ->(v) { PublicApi::AsOf.resolve(v, served:, now:) }
+    assert_equal [ 31, false, "daily-2026-10-01" ], resolve.(nil).then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal [ 30, true, nil ], resolve.("30").then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal [ 14, true, "release-14" ], resolve.("release-14").then { |r| [ r.revision, r.pinned, r.snapshot ] }
+    assert_equal 30, resolve.("2026-10-01").revision
+    assert_equal 31, resolve.("2026-10-01T03:00:00Z").revision
+    assert_equal 31, resolve.("2026-10-01T05:00:00+01:00").revision
+    assert_equal 31, resolve.("2026-10-01T04:30:00Z").revision, "revision 32 committed then, but isn't served"
+    refute resolve.("2026-10-01T04:30:00Z").pinned, "revision 32 committed by then and will answer it once built"
+    assert resolve.("2026-10-01T03:30:00Z").pinned, "every revision committed by then is served"
+    refute resolve.("2026-10-05").pinned, "a future time can still move"
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("2026-09-01") }.code
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("9") }.code
+    assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("32") }.code
+    assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("20") }.code
+    assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("weekly-1") }.code
+    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {}, purged_through: nil)
+    assert_equal "revision_building", assert_raises(PublicApi::Problem) { PublicApi::AsOf.resolve(nil, served: empty) }.code
+  end
+
+  test "amounts and fiscal years are written as the contract says" do
+    assert_equal "125000.00", PublicApi::Format.amount(BigDecimal("125000"))
+    assert_equal "1.2345", PublicApi::Format.amount("1.234500")
+    assert_equal "-0.50", PublicApi::Format.amount(-0.5)
+    assert_equal "0.123457", PublicApi::Format.amount("0.1234567")
+    assert_equal "2024-25", PublicApi::Format.fiscal_year(2024)
+    assert_equal "1999-00", PublicApi::Format.fiscal_year(1999)
+    assert_equal 2024, PublicApi::Format.fiscal_year_start("2024-25")
+    assert_nil PublicApi::Format.fiscal_year_start("2024-26")
+  end
+
+  test "request IDs are req_ and a ULID" do
+    assert_match(/\Areq_[0-9A-HJKMNP-TV-Z]{26}\z/, PublicApi::RequestId.generate)
+    assert_operator PublicApi::RequestId.ulid(now: Time.utc(2026, 9, 29)), :<, PublicApi::RequestId.ulid(now: Time.utc(2026, 9, 30))
+  end
+
+  test "parameters are checked against the contract, all at once" do
+    op = PublicApi::Spec.operation("listSpending")
+    parsed = PublicApi::Parameters.parse(op, query: { "source" => "proactive_grants,transfer_payments", "limit" => "10", "latest_revision_only" => "true" }, path: {})
+    assert_equal [ %w[proactive_grants transfer_payments], 10, true, "id" ], parsed.values.values_at("source", "limit", "latest_revision_only", "sort")
+    error = assert_raises(PublicApi::Problem) do
+      PublicApi::Parameters.parse(op, query: { "source" => "nope", "limit" => "0", "latest_revision_only" => "yes", "x" => "1" }, path: {})
+    end
+    assert_equal %w[latest_revision_only limit source x], error.extra[:errors].map { |e| e[:parameter] }.sort
+  end
+
+  test "names normalize as fact-factory's names.py does" do
+    JSON.parse(file_fixture("fact_factory_names.json").read).each do |name, normalized, key|
+      assert_equal [ normalized, key ], [ FactFactory::Names.normalize(name), FactFactory::Names.match_key(name) ], name
+    end
+  end
+
+  test "the fact_factory connection refuses writes, in Rails and in the database" do
+    assert_raises(ActiveRecord::ReadOnlyError, ActiveRecord::ReadOnlyRecord) { FactFactory::Revision.first.update!(reason: "x") }
+    error = assert_raises(ActiveRecord::StatementInvalid, ActiveRecord::ReadOnlyError) do
+      FactFactoryRecord.connection.raw_connection.exec("DELETE FROM fact_factory.registry_revisions")
+    rescue PG::ReadOnlySqlTransaction => e
+      raise ActiveRecord::StatementInvalid, e.message
+    end
+    assert_match(/read-only/, error.message)
+  end
+end

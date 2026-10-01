@@ -1,0 +1,10 @@
+title: FiscalYear
+description: >-
+  A Government of Canada fiscal year (April 1 to March 31) as a label `YYYY-YY`, named by
+  the calendar year it starts in: "2024-25" runs from 2024-04-01 to 2025-03-31. This is the
+  dictionary's four-digit `fiscal_year` (the start year) written as a label. Each source
+  derives it differently; see `fiscal_year_note` on /v1/spending/sources.
+type: string
+pattern: '^[0-9]{4}-[0-9]{2}$'
+examples:
+  - '2024-25'

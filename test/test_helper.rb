@@ -1,5 +1,9 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
+# Before rails/test_help: with eager loading (CI), it checks every model's
+# table, the FactFactory ones included, so their database must exist and be
+# loaded first.
+require_relative "support/fact_factory_database"
 require "rails/test_help"
 
 Dir[File.expand_path("support/**/*.rb", __dir__)].each { |file| require file }

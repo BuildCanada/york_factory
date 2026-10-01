@@ -1,6 +1,0 @@
-title: ReleaseGid
-description: Global ID of a registry release, `gid://buildcanada/Release/<number>`.
-type: string
-pattern: '^gid://buildcanada/Release/[1-9][0-9]*$'
-examples:
-  - gid://buildcanada/Release/11

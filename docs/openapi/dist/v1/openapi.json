@@ -4344,7 +4344,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Full-text match on title, description, program and party names as published.",
+            "description": "Full-text match on title, description, program and the single-valued party names as published (payer, recipient, research_org, principal_investigator); the `recipients` list is not searched.",
             "schema": {
               "type": "string",
               "minLength": 2,

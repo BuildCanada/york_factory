@@ -46,7 +46,7 @@ module Admin
       load_transcript_passages(scope)
       prepare_editor_timeline
       @clip_start = clip_offset(params[:clip_start], fallback: @at - @recording.starts_at)
-      @clip_end = clip_offset(params[:clip_end], fallback: [ @clip_start + 30, @available_end.positive? ? @available_end : @clip_start + 30 ].min)
+      @clip_end = clip_end_offset(@clip_start, available_end: @available_end)
       @capture_state = MediaCaptureState.find_by(media_stream_id: @recording.media_stream_id)
       @clips = MediaClip.where(user: current_user, media_recording_id: @recording.id).order(created_at: :desc).limit(20)
     rescue ArgumentError
@@ -124,10 +124,7 @@ module Admin
     private
 
     def prepare_editor_timeline
-      coverage = @recording.stream.objects.current_playback
-        .where("metadata ->> 'audio_track_id' IS NOT DISTINCT FROM ?", @audio_track&.id&.to_s)
-        .where("ends_at > ?", @recording.starts_at)
-      coverage = coverage.where("starts_at < ?", @recording.ends_at) if @recording.ends_at
+      coverage = playback_coverage(@audio_track)
       ranges = coverage.order(:starts_at).pluck(:starts_at, :ends_at).map do |from, to|
         [ [ from - @recording.starts_at, 0 ].max,
           [ to, @recording.ends_at ].compact.min - @recording.starts_at ]
@@ -154,13 +151,17 @@ module Admin
     end
 
     def default_audio(tracks, at:)
-      from = @recording.starts_at + clip_offset(params[:clip_start], fallback: at - @recording.starts_at)
-      to = @recording.starts_at + clip_offset(params[:clip_end], fallback: from - @recording.starts_at + 0.1)
+      clip_start = clip_offset(params[:clip_start], fallback: at - @recording.starts_at)
+      from = @recording.starts_at + clip_start
+      to = @recording.starts_at + clip_end_offset(clip_start, available_end: 0)
       scope = @recording.stream.objects.current_playback
         .where("starts_at < ? AND ends_at > ?", [ at + 30.minutes, to ].max, [ at - 2.minutes, from ].min)
       ids = scope.distinct.pluck(Arel.sql("metadata ->> 'audio_track_id'")).compact
       available = ids.any? ? tracks.where(id: ids) : tracks
       covered = available.select do |track|
+        last_end = playback_coverage(track).maximum(:ends_at)
+        available_end = last_end ? [ last_end, @recording.ends_at ].compact.min - @recording.starts_at : 0
+        to = @recording.starts_at + clip_end_offset(clip_start, available_end:)
         cursor = from
         scope.where("metadata ->> 'audio_track_id' = ?", track.id.to_s).order(:starts_at).each do |part|
           next if part.ends_at <= cursor
@@ -176,6 +177,17 @@ module Admin
       return covered.find { |track| track.language == "en" } || covered.first if covered.any?
 
       available.find_by(language: "en") || available.first
+    end
+
+    def playback_coverage(track)
+      coverage = @recording.stream.objects.current_playback
+        .where("metadata ->> 'audio_track_id' IS NOT DISTINCT FROM ?", track&.id&.to_s)
+        .where("ends_at > ?", @recording.starts_at)
+      @recording.ends_at ? coverage.where("starts_at < ?", @recording.ends_at) : coverage
+    end
+
+    def clip_end_offset(clip_start, available_end:)
+      clip_offset(params[:clip_end], fallback: [ clip_start + 30, available_end.positive? ? available_end : clip_start + 30 ].min)
     end
 
     def parse_offset(value)

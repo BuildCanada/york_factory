@@ -216,6 +216,35 @@ class Admin::BroadcastsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='media_clip[audio_track_id]'][value='#{@audio.id}']"
   end
 
+  test "default audio covers the entire displayed clip including later silence" do
+    floor = @stream.tracks.create!(track_key: "floor", kind: "audio", language: "mul", role: "floor",
+      delivery: "separate", first_seen_at: @now, last_seen_at: @now)
+    [ @audio, floor ].each do |track|
+      @stream.objects.create!(kind: "playback_part", identity_key: "default-#{track.id}", object_key: "default-#{track.id}",
+        checksum: SecureRandom.hex(32), byte_size: 100, content_type: "video/mp2t", starts_at: @now, ends_at: @now + 60,
+        metadata: { "audio_track_id" => track.id.to_s, "audio_gaps" => track == @audio ? [ [ 20, 25 ], [ 55, 60 ] ] : [] })
+    end
+
+    [ {}, { clip_start: 10 }, { at: 50 } ].each do |offsets|
+      get admin_broadcast_path(@recording, **offsets)
+      assert_response :success
+      assert_select "input[name='media_clip[audio_track_id]'][value='#{floor.id}']"
+      expected_end = offsets[:at] ? 60.0 : (offsets[:clip_start] || 0) + 30.0
+      assert_select "input[name='media_clip[end_offset]'][value='#{expected_end}']"
+    end
+
+    @recording.update!(ends_at: @now + 15)
+    get admin_broadcast_path(@recording)
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{@audio.id}']"
+    assert_select "input[name='media_clip[end_offset]'][value='15.0']"
+
+    @recording.update!(ends_at: nil)
+    @stream.objects.where("metadata ->> 'audio_track_id' = ?", @audio.id.to_s).update_all(ends_at: @now + 15)
+    get admin_broadcast_path(@recording)
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{@audio.id}']"
+    assert_select "input[name='media_clip[end_offset]'][value='15.0']"
+  end
+
   test "displays padded audio gaps and prefers original audio without silence" do
     floor = @stream.tracks.create!(track_key: "floor", kind: "audio", language: "mul", role: "floor",
       delivery: "separate", first_seen_at: @now, last_seen_at: @now)

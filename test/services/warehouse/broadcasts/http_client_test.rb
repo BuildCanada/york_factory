@@ -43,6 +43,38 @@ class Warehouse::Broadcasts::HttpClientTest < ActiveSupport::TestCase
     end
   end
 
+  test "distinguishes missing resources from other permanent failures" do
+    url = "https://media.example.test/live.m3u8"
+    missing = build_client(FakeHttp.new(url => response(404, "missing")))
+    assert_raises(Warehouse::Broadcasts::HttpClient::NotFoundError) { missing.get(url) }
+
+    forbidden = build_client(FakeHttp.new(url => response(403, "forbidden")))
+    error = assert_raises(Warehouse::Broadcasts::HttpClient::PermanentError) { forbidden.get(url) }
+    assert_not_kind_of Warehouse::Broadcasts::HttpClient::NotFoundError, error
+  end
+
+  test "DNS resolution failures are transient and never issue a request" do
+    [ ->(_host) { [] }, ->(_host) { raise Resolv::ResolvError, "DNS timeout" } ].each do |resolver|
+      http = FakeHttp.new({})
+      client = Warehouse::Broadcasts::HttpClient.new(http:, resolver:)
+
+      assert_raises(Warehouse::Broadcasts::HttpClient::TransientError) do
+        client.get("https://media.example.test/live.m3u8")
+      end
+      assert_empty http.requests
+    end
+  end
+
+  test "private DNS answers remain permanent security failures" do
+    http = FakeHttp.new({})
+    client = Warehouse::Broadcasts::HttpClient.new(http:, resolver: ->(_host) { [ "127.0.0.1" ] })
+
+    assert_raises(Warehouse::Broadcasts::HttpClient::PermanentError) do
+      client.get("https://media.example.test/live.m3u8")
+    end
+    assert_empty http.requests
+  end
+
   private
 
   def response(status, body, headers = {})

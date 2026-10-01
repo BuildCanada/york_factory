@@ -31,9 +31,12 @@ class Admin::BroadcastsControllerTest < ActionDispatch::IntegrationTest
     end
     assert state.reload.enabled?
     state.update!(lease_token: "old", lease_expires_at: 2.minutes.from_now)
+    state.update!(last_error: "Warehouse::Broadcasts::HttpClient::PermanentError: host did not resolve")
     patch admin_toggle_broadcast_stream_path(@stream)
     assert_not state.reload.enabled?
     assert_nil state.lease_token
+    assert_nil state.last_error
+    assert_not state.recover_transport_failure!(now: Time.current)
   end
 
   test "rejects audio selections from a different stream" do
@@ -190,6 +193,44 @@ class Admin::BroadcastsControllerTest < ActionDispatch::IntegrationTest
     get admin_broadcast_path(@recording)
     offsets = css_select("button[data-action='broadcast-player#selectSegment']").map { |node| node["data-start"].to_f }
     assert_equal [ 10.0, 60.0 ], offsets
+  end
+
+  test "defaults to an audio track covering the requested clip instead of a nearby gapped track" do
+    floor = @stream.tracks.create!(track_key: "floor", kind: "audio", language: "mul", role: "floor",
+      delivery: "separate", first_seen_at: @now, last_seen_at: @now)
+    [ [ @audio, 65.6 ], [ floor, 0 ] ].each do |track, from|
+      @stream.objects.create!(kind: "playback_part", identity_key: "coverage-#{track.id}", object_key: "coverage-#{track.id}",
+        checksum: SecureRandom.hex(32), byte_size: 100, content_type: "video/mp2t",
+        starts_at: @now + from, ends_at: @now + 1300, metadata: { "audio_track_id" => track.id.to_s })
+    end
+
+    get admin_broadcast_path(@recording, clip_start: 45.739, clip_end: 1219.122)
+    assert_response :success
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{floor.id}']"
+    assert_select "[data-broadcast-player-gaps-value='[]']"
+
+    get admin_broadcast_path(@recording, audio_track_id: @audio.id, clip_start: 45.739, clip_end: 1219.122)
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{@audio.id}']"
+
+    get admin_broadcast_path(@recording, clip_start: 70, clip_end: 100)
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{@audio.id}']"
+  end
+
+  test "displays padded audio gaps and prefers original audio without silence" do
+    floor = @stream.tracks.create!(track_key: "floor", kind: "audio", language: "mul", role: "floor",
+      delivery: "separate", first_seen_at: @now, last_seen_at: @now)
+    [ @audio, floor ].each do |track|
+      @stream.objects.create!(kind: "playback_part", identity_key: "padded-#{track.id}", object_key: "padded-#{track.id}",
+        checksum: SecureRandom.hex(32), byte_size: 100, content_type: "video/mp2t", starts_at: @now, ends_at: @now + 60,
+        metadata: { "audio_track_id" => track.id.to_s, "audio_gaps" => track == @audio ? [ [ 0, 4.8 ] ] : [] })
+    end
+    get admin_broadcast_path(@recording)
+    assert_select "input[name='media_clip[audio_track_id]'][value='#{floor.id}']"
+
+    get admin_broadcast_path(@recording, audio_track_id: @audio.id)
+    assert_select "p", text: /play silently/
+    assert_select "p", text: "Silent audio: 00:00:00.000 – 00:00:04.800."
+    assert_select "p", text: "No captions are available for this recording."
   end
 
   private

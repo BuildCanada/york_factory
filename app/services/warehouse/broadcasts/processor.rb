@@ -15,6 +15,7 @@ module Warehouse
       end
 
       RECIPE = "cpac-playback-v2"
+      GAP_RECIPE = "cpac-playback-audio-gaps-v1"
       CAPTION_RECIPE = "cpac-a53-webvtt-v2"
       TARGET_DURATION = 60.seconds
       REPLAY_DURATION = 18.seconds
@@ -120,10 +121,9 @@ module Warehouse
       def window_pending?(window, carrier)
         playback_pending = if carrier.kind == "video"
           (audio_tracks.presence || [ nil ]).any? do |audio_track|
-            audio_objects = audio_track && covering_objects(source_objects_for(audio_track), window.starts_at, window.ends_at)
-            next false if audio_track && audio_objects.nil?
+            audio_objects, gaps = playback_audio(audio_track, window)
             objects = (window.carrier_objects + Array(audio_objects)).uniq
-            !stream.objects.exists?(identity_key: playback_identity(objects, audio_track))
+            !stream.objects.exists?(identity_key: playback_identity(objects, audio_track, gaps:))
           end
         else
           !stream.objects.exists?(identity_key: playback_identity(window.carrier_objects, carrier))
@@ -147,22 +147,21 @@ module Warehouse
         end
 
         selections.count do |audio_track|
-          audio_objects = if carrier.kind == "video" && audio_track
-            covering_objects(source_objects_for(audio_track), window.starts_at, window.ends_at)
+          audio_objects, gaps = if carrier.kind == "video" && audio_track
+            playback_audio(audio_track, window)
           elsif carrier.kind == "audio"
-            window.carrier_objects
+            [ window.carrier_objects, [] ]
           else
-            []
+            [ [], [] ]
           end
-          next false if audio_track && audio_objects.nil?
 
           source_objects = (window.carrier_objects + Array(audio_objects)).uniq
-          identity = playback_identity(source_objects, audio_track)
+          identity = playback_identity(source_objects, audio_track, gaps:)
           next false if stream.objects.exists?(identity_key: identity)
 
           files = carrier_files.merge(download_objects(Array(audio_objects) - window.carrier_objects, directory))
           output_path = File.join(directory, "playback-#{audio_track&.id || 'silent'}.ts")
-          remux_playback(window, carrier, window.carrier_objects, audio_objects, files, directory, output_path)
+          remux_playback(window, carrier, window.carrier_objects, audio_objects, files, directory, output_path, gaps:, audio_track:)
           timing = probe_media(output_path)
           starts_at = window.starts_at + timing.fetch(:start)
           ends_at = window.starts_at + timing.fetch(:finish)
@@ -185,7 +184,8 @@ module Warehouse
             epoch: source_objects.map(&:epoch).compact.max || 0,
             sequence: window.carrier_objects.first.sequence,
             metadata: {
-              "recipe" => RECIPE,
+              "recipe" => gaps.any? ? GAP_RECIPE : RECIPE,
+              "audio_gaps" => gaps,
               "source_object_ids" => source_objects.map(&:id),
               "carrier_source_object_ids" => window.carrier_objects.map(&:id),
               "audio_track_id" => audio_track&.id&.to_s,
@@ -291,6 +291,70 @@ module Warehouse
           .to_a
       end
 
+      def playback_audio(track, window)
+        return [ [], [] ] unless track
+
+        scope = source_objects_for(track)
+        complete = covering_objects(scope, window.starts_at, window.ends_at)
+        return [ complete, [] ] if complete
+
+        objects = scope.overlapping(window.starts_at, window.ends_at).to_a
+        cursor = window.starts_at
+        gaps = []
+        objects.each do |object|
+          if object.starts_at > cursor + GAP_TOLERANCE
+            gaps << [ cursor - window.starts_at, object.starts_at - window.starts_at ]
+          end
+          cursor = [ cursor, object.ends_at ].max
+        end
+        gaps << [ cursor - window.starts_at, window.duration ] if cursor < window.ends_at - GAP_TOLERANCE
+        [ objects, gaps ]
+      end
+
+      def padded_audio(window, objects, files, directory, audio_track)
+        # Decode contiguous runs separately so missing segments do not shift
+        # later speech earlier. A silence bed preserves the entire video clock.
+        runs = objects.slice_when { |left, right| boundary_between?(left, right) }.to_a
+        format_source = objects.first || source_objects_for(audio_track).first
+        format_files = files.merge(download_objects(files.key?(format_source.id) ? [] : [ format_source ], directory))
+        rate, channels = source_audio_format(format_files.fetch(format_source.id))
+
+        arguments = [ @ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
+          "-f", "lavfi", "-i", "anullsrc=r=#{rate}:cl=#{channels}c" ]
+        filters = []
+        runs.each_with_index do |run, index|
+          list = write_concat_list(run, files, directory, "audio-run-#{index}")
+          arguments.concat([ "-f", "concat", "-safe", "0", "-i", list ])
+          start = [ run.first.starts_at, window.starts_at ].max
+          finish = [ run.last.ends_at, window.ends_at ].min
+          trim = start - run.first.starts_at
+          delay = ((start - window.starts_at) * rate).round
+          filters << "[#{index + 1}:a]atrim=start=#{format('%.6f', trim)}:duration=#{format('%.6f', finish - start)}," \
+            "asetpts=PTS-STARTPTS,aformat=sample_rates=#{rate}:channel_layouts=#{channels}c,adelay=#{delay}S:all=1[a#{index}]"
+        end
+        inputs = "[0:a]" + runs.each_index.map { |index| "[a#{index}]" }.join
+        filters << "#{inputs}amix=inputs=#{runs.length + 1}:duration=first:normalize=0:dropout_transition=0[out]"
+        output = File.join(directory, "audio-padded.ts")
+        arguments.concat([ "-filter_complex", filters.join(";"), "-map", "[out]",
+          "-t", format("%.6f", window.duration), "-c:a", "aac", "-b:a", "96k",
+          "-f", "mpegts", "-muxdelay", "0", "-muxpreload", "0", "-y", output ])
+        command.run(*arguments)
+        output
+      end
+
+      def source_audio_format(path)
+        result = command.run(@ffprobe, "-v", "error", "-select_streams", "a:0",
+          "-show_entries", "stream=sample_rate,channels", "-of", "json", path)
+        format = JSON.parse(result.stdout).fetch("streams").fetch(0)
+        rate = Integer(format.fetch("sample_rate"))
+        channels = Integer(format.fetch("channels"))
+        raise InvalidOutput, "source audio has an invalid format" unless rate.positive? && channels.positive?
+
+        [ rate, channels ]
+      rescue JSON::ParserError, KeyError, IndexError, TypeError, ArgumentError
+        raise InvalidOutput, "ffprobe did not return a usable source audio format"
+      end
+
       def download_objects(objects, directory)
         objects.to_h do |object|
           extension = File.extname(object.object_key).presence || ".bin"
@@ -300,11 +364,14 @@ module Warehouse
         end
       end
 
-      def remux_playback(window, carrier, carrier_objects, audio_objects, files, directory, output_path)
+      def remux_playback(window, carrier, carrier_objects, audio_objects, files, directory, output_path, gaps: [], audio_track: nil)
         arguments = [ @ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error" ]
         carrier_list = write_concat_list(carrier_objects, files, directory, "carrier")
         arguments.concat([ "-f", "concat", "-safe", "0", "-i", carrier_list ])
-        if carrier.kind == "video" && audio_objects.present?
+        if carrier.kind == "video" && gaps.any?
+          arguments.concat([ "-i", padded_audio(window, audio_objects, files, directory, audio_track),
+            "-map", "0:v:0", "-map", "1:a:0" ])
+        elsif carrier.kind == "video" && audio_objects.present?
           audio_list = write_concat_list(audio_objects, files, directory, "audio")
           audio_trim = [ window.starts_at - audio_objects.first.starts_at, 0 ].max
           audio_input = audio_list
@@ -446,8 +513,8 @@ module Warehouse
         stream.objects.find_by!(identity_key: attributes.fetch(:identity_key))
       end
 
-      def playback_identity(objects, audio_track)
-        digest = derivation_digest(objects, "audio=#{audio_track&.id || 'none'}", RECIPE)
+      def playback_identity(objects, audio_track, gaps: [])
+        digest = derivation_digest(objects, "audio=#{audio_track&.id || 'none'}", gaps.any? ? GAP_RECIPE : RECIPE)
         "playback:#{digest}"
       end
 

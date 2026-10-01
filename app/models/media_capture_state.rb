@@ -32,6 +32,17 @@ class MediaCaptureState < ApplicationRecord
     end
   end
 
+  def recover_transport_failure!(now:)
+    with_lock do
+      return false if enabled? || next_poll_at.present? || (lease_expires_at && lease_expires_at > now)
+      return false unless media_stream.provider == "cpac" && media_stream.kind.in?(%w[event continuous])
+      return false unless last_error.to_s.match?(/\AWarehouse::Broadcasts::HttpClient::(?:PermanentError|NotFoundError): (?:HTTP 404 for https:\/\/|host did not resolve\z)/)
+
+      update!(enabled: true, next_poll_at: now, lease_token: nil, lease_expires_at: nil)
+      true
+    end
+  end
+
   def renew_lease!(token:, now:, ttl:)
     validate_positive_ttl!(ttl)
     with_lock do

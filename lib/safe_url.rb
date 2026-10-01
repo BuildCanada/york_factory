@@ -5,6 +5,7 @@ require "uri"
 
 module SafeUrl
   class Invalid < StandardError; end
+  class ResolutionError < Invalid; end
 
   TRACKING_PARAMETERS = %w[
     fbclid gclid mc_cid mc_eid ref source
@@ -46,7 +47,7 @@ module SafeUrl
       raise Invalid, "HTTP URLs are disabled" if uri.scheme == "http" && !allow_http
 
       addresses = resolver.call(uri.host)
-      raise Invalid, "host did not resolve" if addresses.empty?
+      raise ResolutionError, "host did not resolve" if addresses.empty?
 
       addresses.each do |address|
         ip = IPAddr.new(address)

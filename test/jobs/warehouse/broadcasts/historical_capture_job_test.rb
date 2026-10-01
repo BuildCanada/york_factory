@@ -109,6 +109,22 @@ class Warehouse::Broadcasts::HistoricalCaptureJobTest < ActiveJob::TestCase
       state.consecutive_failures
   end
 
+  test "a missing historical archive remains terminal rather than polling forever" do
+    TestHistoricalCaptureJob.fake_capturer = Object.new.tap do |capturer|
+      def capturer.call(**)
+        raise Warehouse::Broadcasts::HttpClient::NotFoundError, "HTTP 404 for archive"
+      end
+    end
+
+    assert_no_enqueued_jobs(only: TestHistoricalCaptureJob) do
+      TestHistoricalCaptureJob.perform_now(@stream.id, @item.id)
+    end
+
+    assert_equal "failed", @item.reload.state
+    assert_not @stream.reload.media_capture_state.enabled?
+    assert_nil @stream.media_capture_state.next_poll_at
+  end
+
   private
 
   def create_stream

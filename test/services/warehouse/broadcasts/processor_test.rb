@@ -107,6 +107,16 @@ class Warehouse::Broadcasts::ProcessorTest < ActiveJob::TestCase
     end
   end
 
+  test "invalid source audio format is classified for processing retries" do
+    [ "not json", '{"streams":[]}', '{"streams":[{"sample_rate":"48000","channels":0}]}' ].each do |body|
+      command = Object.new
+      command.define_singleton_method(:run) { |*| Struct.new(:stdout).new(body) }
+      assert_raises(Warehouse::Broadcasts::Processor::InvalidOutput) do
+        processor(command:).send(:source_audio_format, "/tmp/broadcast-audio.aac")
+      end
+    end
+  end
+
   test "exports a verified keyframe-aligned mp4 and is idempotent" do
     Dir.mktmpdir("processor-clip-") do |directory|
       3.times { |index| add_video_segment(directory, index, duration: 3) }
@@ -301,6 +311,60 @@ class Warehouse::Broadcasts::ProcessorTest < ActiveJob::TestCase
       assert_equal 1, processor(target_duration: 1).call
       assert_equal [ @video.id, replacement.id ].sort,
         @stream.objects.where(kind: "playback_part").pluck(:media_track_id).sort
+    end
+  end
+
+  test "preserves video and audio timing across missing leading and middle audio segments" do
+    Dir.mktmpdir("processor-audio-gaps-") do |directory|
+      4.times { |index| add_video_segment(directory, index, duration: 3) }
+      audio = @stream.tracks.create!(track_key: "audio:en", kind: "audio", language: "en", role: "main",
+        delivery: "separate", first_seen_at: @now, last_seen_at: @now)
+      add_audio_segment(directory, audio, "first-run", starts_at: @now + 3, ends_at: @now + 6, frequency: 440)
+      add_audio_segment(directory, audio, "second-run", starts_at: @now + 9, ends_at: @now + 12, frequency: 880)
+
+      assert_equal 1, processor(target_duration: 12).call
+      part = @stream.objects.current_playback.sole
+      assert_equal [ [ 0.0, 3.0 ], [ 6.0, 9.0 ] ], part.metadata.fetch("audio_gaps")
+      assert_in_delta 12, part.ends_at - part.starts_at, 0.1
+      assert_equal %w[audio video], part.metadata.dig("ffprobe", "streams").map { |s| s.fetch("codec_type") }.sort
+      path = File.join(directory, "padded.ts")
+      File.binwrite(path, @storage.objects.fetch(part.object_key))
+      [ [ 0.5, false ], [ 3.5, true ], [ 6.5, false ], [ 9.5, true ] ].each do |offset, audible|
+        pcm = File.join(directory, "sample-#{offset}.pcm")
+        Warehouse::Broadcasts::Command.new.run(@ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
+          "-ss", offset.to_s, "-i", path, "-map", "0:a:0", "-t", "0.25", "-ac", "1", "-ar", "8000",
+          "-f", "s16le", "-y", pcm)
+        samples = File.binread(pcm).unpack("s<*")
+        assert_not_empty samples
+        assert_operator samples.map(&:abs).max, audible ? :> : :<, audible ? 1_000 : 100
+      end
+      assert_equal 0, processor(target_duration: 12).call
+
+      add_audio_segment(directory, audio, "recovered-start", starts_at: @now, ends_at: @now + 3, frequency: 440)
+      add_audio_segment(directory, audio, "recovered-middle", starts_at: @now + 6, ends_at: @now + 9, frequency: 440)
+      assert_equal 1, processor(target_duration: 12).call
+      replacement = @stream.objects.current_playback.sole
+      assert_equal [], replacement.metadata.fetch("audio_gaps")
+      assert_equal replacement.id, part.reload.metadata.fetch("superseded_by_id")
+    end
+  end
+
+  test "a window without audio stays playable and is replaced when its audio arrives" do
+    Dir.mktmpdir("processor-missing-audio-") do |directory|
+      add_video_segment(directory, 0, duration: 3)
+      audio = @stream.tracks.create!(track_key: "audio:en", kind: "audio", language: "en", role: "main",
+        delivery: "separate", first_seen_at: @now, last_seen_at: @now)
+      add_audio_segment(directory, audio, "later", starts_at: @now + 3, ends_at: @now + 6, frequency: 440)
+
+      assert_equal 1, processor(target_duration: 3).call
+      part = @stream.objects.current_playback.sole
+      assert_equal [ [ 0.0, 3.0 ] ], part.metadata.fetch("audio_gaps")
+      assert_equal audio.id.to_s, part.metadata.fetch("audio_track_id")
+
+      add_audio_segment(directory, audio, "recovered", starts_at: @now, ends_at: @now + 3, frequency: 440)
+      assert_equal 1, processor(target_duration: 3).call
+      assert_equal [], @stream.objects.current_playback.sole.metadata.fetch("audio_gaps")
+      assert part.reload.metadata["superseded_by_id"]
     end
   end
 

@@ -63,7 +63,7 @@ module Admin
       state = MediaCaptureState.find_or_create_by!(media_stream_id: stream.id)
       state.with_lock do
         state.update!(enabled: !state.enabled?, next_poll_at: Time.current,
-          lease_token: nil, lease_expires_at: nil)
+          lease_token: nil, lease_expires_at: nil, last_error: nil, consecutive_failures: 0)
       end
       Warehouse::Broadcasts::CaptureJob.perform_later(stream.id) if state.enabled?
       redirect_to admin_broadcasts_path, notice: "Capture #{state.enabled? ? 'enabled' : 'paused'}."
@@ -154,10 +154,27 @@ module Admin
     end
 
     def default_audio(tracks, at:)
-      ids = @recording.stream.objects.current_playback
-        .where("starts_at < ? AND ends_at > ?", at + 30.minutes, at - 2.minutes)
-        .distinct.pluck(Arel.sql("metadata ->> 'audio_track_id'")).compact
+      from = @recording.starts_at + clip_offset(params[:clip_start], fallback: at - @recording.starts_at)
+      to = @recording.starts_at + clip_offset(params[:clip_end], fallback: from - @recording.starts_at + 0.1)
+      scope = @recording.stream.objects.current_playback
+        .where("starts_at < ? AND ends_at > ?", [ at + 30.minutes, to ].max, [ at - 2.minutes, from ].min)
+      ids = scope.distinct.pluck(Arel.sql("metadata ->> 'audio_track_id'")).compact
       available = ids.any? ? tracks.where(id: ids) : tracks
+      covered = available.select do |track|
+        cursor = from
+        scope.where("metadata ->> 'audio_track_id' = ?", track.id.to_s).order(:starts_at).each do |part|
+          next if part.ends_at <= cursor
+          break if part.starts_at > cursor + 0.05
+          anchor = part.metadata["requested_starts_at"] ? Time.iso8601(part.metadata["requested_starts_at"]) : part.starts_at
+          break if Array(part.metadata["audio_gaps"]).any? { |left, right| anchor + left < to && anchor + right > cursor }
+
+          cursor = [ cursor, part.ends_at ].max
+          break if cursor >= to
+        end
+        cursor >= to
+      end
+      return covered.find { |track| track.language == "en" } || covered.first if covered.any?
+
       available.find_by(language: "en") || available.first
     end
 

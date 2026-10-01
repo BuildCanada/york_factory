@@ -7,7 +7,9 @@ properties:
     type: array
     description: A page of entities.
     items:
-      $ref: Entity.yaml
+      anyOf:
+      - $ref: Entity.yaml
+      - $ref: EntityFields.yaml
   meta:
     $ref: ListMeta.yaml
     description: The revision that answered, the resolved as_of, the request ID, caveats and pagination.

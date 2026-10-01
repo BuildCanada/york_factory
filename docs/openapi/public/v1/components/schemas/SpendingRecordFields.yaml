@@ -1,0 +1,16 @@
+title: SpendingRecordFields
+description: >-
+  A spending row projected by `fields=`: only the requested top-level fields of
+  `SpendingRecord`, with `id` and `cite`, which are always returned. Each field present has its
+  `SpendingRecord` meaning and type.
+type: object
+required: [id, cite]
+properties:
+  id:
+    $ref: SpendingRecordGid.yaml
+    description: The row's global ID.
+  cite:
+    type: string
+    x-bc-structural: true
+    description: How to cite this row.
+additionalProperties: true

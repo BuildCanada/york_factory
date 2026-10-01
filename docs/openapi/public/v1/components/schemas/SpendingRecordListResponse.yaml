@@ -7,7 +7,9 @@ properties:
     type: array
     description: A page of spending rows.
     items:
-      $ref: SpendingRecord.yaml
+      anyOf:
+      - $ref: SpendingRecord.yaml
+      - $ref: SpendingRecordFields.yaml
   meta:
     $ref: ListMeta.yaml
     description: The revision that answered, the resolved as_of, the request ID, caveats and pagination.

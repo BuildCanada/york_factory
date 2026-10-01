@@ -132,7 +132,7 @@
                     "value": {
                       "data": {
                         "name": "Build Canada Data API",
-                        "version": "1.0.0-alpha.1",
+                        "version": "1.0.0-alpha.3",
                         "latest_revision": 31,
                         "links": {
                           "openapi": "/v1/openapi.json",
@@ -267,7 +267,7 @@
                       "openapi": "3.1.1",
                       "info": {
                         "title": "Build Canada Data API",
-                        "version": "1.0.0-alpha.1"
+                        "version": "1.0.0-alpha.3"
                       },
                       "paths": {}
                     }
@@ -1403,8 +1403,8 @@
                           },
                           "coverage": {
                             "rows": 1313276,
-                            "from_fiscal_year": "2005-06",
-                            "to_fiscal_year": "2026-27",
+                            "from_fiscal_year": null,
+                            "to_fiscal_year": null,
                             "known_gaps": [
                               "recipient_type is required only for agreements starting on or after 2025-12-01."
                             ]
@@ -1674,7 +1674,7 @@
         "x-bc-scopes": [
           "read:public"
         ],
-        "x-bc-cache": "revision",
+        "x-bc-cache": "short",
         "x-fern-pagination": {
           "cursor": "$request.cursor",
           "next_cursor": "$response.meta.next_cursor",
@@ -1842,7 +1842,7 @@
         "x-bc-scopes": [
           "read:public"
         ],
-        "x-bc-cache": "revision",
+        "x-bc-cache": "short",
         "security": [
           {
             "ApiKey": []
@@ -7883,7 +7883,7 @@
             "type": "string",
             "description": "The contract version (info.version of the OpenAPI document).",
             "examples": [
-              "1.0.0-alpha.1"
+              "1.0.0-alpha.3"
             ]
           },
           "latest_revision": {
@@ -9886,6 +9886,27 @@
           }
         }
       },
+      "EntityFields": {
+        "title": "EntityFields",
+        "description": "An entity projected by `fields=`: only the requested top-level fields of `Entity`, with `id` and `cite`, which are always returned. Each field present has its `Entity` meaning and type.",
+        "type": "object",
+        "required": [
+          "id",
+          "cite"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/EntityGid",
+            "description": "The entity's global ID."
+          },
+          "cite": {
+            "type": "string",
+            "x-bc-structural": true,
+            "description": "How to cite this entity."
+          }
+        },
+        "additionalProperties": true
+      },
       "EntityListResponse": {
         "title": "EntityListResponse",
         "description": "A page of entities. The standard list envelope: items in `data`, the cursor for the next page in `meta.next_cursor` and `links.next`.",
@@ -9900,7 +9921,14 @@
             "type": "array",
             "description": "A page of entities.",
             "items": {
-              "$ref": "#/components/schemas/Entity"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Entity"
+                },
+                {
+                  "$ref": "#/components/schemas/EntityFields"
+                }
+              ]
             }
           },
           "meta": {
@@ -9924,8 +9952,15 @@
         ],
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/Entity",
-            "description": "One entity."
+            "description": "One entity; with `fields=`, only the fields requested.",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Entity"
+              },
+              {
+                "$ref": "#/components/schemas/EntityFields"
+              }
+            ]
           },
           "meta": {
             "$ref": "#/components/schemas/Meta",
@@ -10327,6 +10362,27 @@
           }
         }
       },
+      "SpendingRecordFields": {
+        "title": "SpendingRecordFields",
+        "description": "A spending row projected by `fields=`: only the requested top-level fields of `SpendingRecord`, with `id` and `cite`, which are always returned. Each field present has its `SpendingRecord` meaning and type.",
+        "type": "object",
+        "required": [
+          "id",
+          "cite"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SpendingRecordGid",
+            "description": "The row's global ID."
+          },
+          "cite": {
+            "type": "string",
+            "x-bc-structural": true,
+            "description": "How to cite this row."
+          }
+        },
+        "additionalProperties": true
+      },
       "SpendingRecordListResponse": {
         "title": "SpendingRecordListResponse",
         "description": "A page of spending rows. The standard list envelope: items in `data`, the cursor for the next page in `meta.next_cursor` and `links.next`.",
@@ -10341,7 +10397,14 @@
             "type": "array",
             "description": "A page of spending rows.",
             "items": {
-              "$ref": "#/components/schemas/SpendingRecord"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SpendingRecord"
+                },
+                {
+                  "$ref": "#/components/schemas/SpendingRecordFields"
+                }
+              ]
             }
           },
           "meta": {
@@ -12578,7 +12641,7 @@
                   "retry_after_seconds": 17,
                   "plan": "free",
                   "upgrade_url": "https://auth.buildcanada.com/developers/plan",
-                  "bulk_url": "https://data.buildcanada.com/v1/exports"
+                  "bulk_url": "https://data.buildcanada.com/api/concepts/rate-limits"
                 }
               },
               "quota_exceeded": {
@@ -12594,7 +12657,7 @@
                   "retry_after_seconds": 172800,
                   "plan": "free",
                   "upgrade_url": "https://auth.buildcanada.com/developers/plan",
-                  "bulk_url": "https://data.buildcanada.com/v1/exports"
+                  "bulk_url": "https://data.buildcanada.com/api/concepts/rate-limits"
                 }
               }
             }

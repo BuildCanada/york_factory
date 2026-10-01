@@ -10,7 +10,7 @@ properties:
   version:
     type: string
     description: The contract version (info.version of the OpenAPI document).
-    examples: [1.0.0-alpha.1]
+    examples: [1.0.0-alpha.3]
   latest_revision:
     $ref: RevisionNumber.yaml
     description: The latest revision the API serves, which requests without `as_of` resolve to.

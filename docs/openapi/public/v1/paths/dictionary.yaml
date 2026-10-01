@@ -16,7 +16,7 @@ get:
     large_page: 2
   x-bc-scopes:
   - read:public
-  x-bc-cache: revision
+  x-bc-cache: short
   x-fern-pagination:
     cursor: "$request.cursor"
     next_cursor: "$response.meta.next_cursor"

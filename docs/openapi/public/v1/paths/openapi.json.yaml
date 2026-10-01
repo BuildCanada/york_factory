@@ -61,7 +61,7 @@ get:
                 openapi: 3.1.1
                 info:
                   title: Build Canada Data API
-                  version: 1.0.0-alpha.1
+                  version: 1.0.0-alpha.3
                 paths: {}
     '400':
       "$ref": "../components/problems.yaml#/BadRequest"

@@ -76,8 +76,8 @@ get:
                     cadence: daily
                   coverage:
                     rows: 1313276
-                    from_fiscal_year: 2005-06
-                    to_fiscal_year: 2026-27
+                    from_fiscal_year: null
+                    to_fiscal_year: null
                     known_gaps:
                     - recipient_type is required only for agreements starting on or after 2025-12-01.
                   dictionary_terms:

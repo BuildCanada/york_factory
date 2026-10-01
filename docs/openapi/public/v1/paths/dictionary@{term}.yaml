@@ -15,7 +15,7 @@ get:
     base: 1
   x-bc-scopes:
   - read:public
-  x-bc-cache: revision
+  x-bc-cache: short
   security:
   - ApiKey: []
   - OAuth2:

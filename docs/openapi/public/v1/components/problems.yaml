@@ -208,7 +208,7 @@ TooManyRequests:
             retry_after_seconds: 17
             plan: free
             upgrade_url: https://auth.buildcanada.com/developers/plan
-            bulk_url: https://data.buildcanada.com/v1/exports
+            bulk_url: https://data.buildcanada.com/api/concepts/rate-limits
         quota_exceeded:
           summary: Monthly units spent
           value:
@@ -222,7 +222,7 @@ TooManyRequests:
             retry_after_seconds: 172800
             plan: free
             upgrade_url: https://auth.buildcanada.com/developers/plan
-            bulk_url: https://data.buildcanada.com/v1/exports
+            bulk_url: https://data.buildcanada.com/api/concepts/rate-limits
 Gone:
   description: >-
     retired: the revision is older than fact-factory's retention horizon, so the spending occurrences it read

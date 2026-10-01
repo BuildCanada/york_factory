@@ -292,7 +292,10 @@ module FactFactory
         current("o"), "o.entity_id IS NULL", "o.field IN (:fields)",
         "coalesce(o.reason, '') NOT IN (:excluded)", "o.party_kind <> 'individual'",
         "o.normalized_name IN (SELECT n.normalized_name FROM #{T_NAMES} n WHERE n.entity_id = :entity " \
-        "AND n.normalized_name IS NOT NULL AND #{current('n')})"
+        "AND n.normalized_name IS NOT NULL AND #{current('n')})",
+        # Only occurrences on rows the revision serves: a row whose publication was
+        # replaced or purged is not in the results, so it must not be counted either.
+        "EXISTS (SELECT 1 FROM #{T_RECORDS} x WHERE x.id = o.spending_row_id AND x.publication_id IN (:pubs))"
       ]
       values = { entity: entity_id, fields: ENTITY_FIELDS.fetch(role), excluded: EXCLUDED_REASONS }
       if sources

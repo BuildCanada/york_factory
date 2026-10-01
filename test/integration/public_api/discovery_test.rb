@@ -132,7 +132,7 @@ class PublicApiDiscoveryTest < PublicApiTestCase
   end
 
   test "no served revision yet is 503 revision_building with Retry-After" do
-    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {})
+    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {}, purged_through: nil)
     FactFactory::RevisionQuery.stub(:served, empty) do
       api_get "/v1/entities"
     end

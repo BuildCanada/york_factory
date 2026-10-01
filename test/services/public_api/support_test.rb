@@ -56,7 +56,7 @@ class PublicApiSupportTest < ActiveSupport::TestCase
   test "as_of resolves revision numbers, snapshot names, dates and timestamps, and says which are pinned" do
     served = FactFactory::RevisionQuery::Served.new(
       latest: 31, committed: { 14 => Time.utc(2026, 9, 29, 6), 30 => Time.utc(2026, 9, 30, 6), 31 => Time.utc(2026, 10, 1, 3), 32 => Time.utc(2026, 10, 1, 4) },
-      pruned: Set[14], snapshots: { "release-14" => 14, "daily-2026-10-01" => 31 }
+      pruned: Set[14], snapshots: { "release-14" => 14, "daily-2026-10-01" => 31 }, purged_through: nil
     )
     now = Time.utc(2026, 10, 2)
     resolve = ->(v) { PublicApi::AsOf.resolve(v, served:, now:) }
@@ -67,13 +67,15 @@ class PublicApiSupportTest < ActiveSupport::TestCase
     assert_equal 31, resolve.("2026-10-01T03:00:00Z").revision
     assert_equal 31, resolve.("2026-10-01T05:00:00+01:00").revision
     assert_equal 31, resolve.("2026-10-01T04:30:00Z").revision, "revision 32 committed then, but isn't served"
+    refute resolve.("2026-10-01T04:30:00Z").pinned, "revision 32 committed by then and will answer it once built"
+    assert resolve.("2026-10-01T03:30:00Z").pinned, "every revision committed by then is served"
     refute resolve.("2026-10-05").pinned, "a future time can still move"
     assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("2026-09-01") }.code
     assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("9") }.code
     assert_equal "not_yet_published", assert_raises(PublicApi::Problem) { resolve.("32") }.code
     assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("20") }.code
     assert_equal "not_found", assert_raises(PublicApi::Problem) { resolve.("weekly-1") }.code
-    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {})
+    empty = FactFactory::RevisionQuery::Served.new(latest: nil, committed: {}, pruned: Set[], snapshots: {}, purged_through: nil)
     assert_equal "revision_building", assert_raises(PublicApi::Problem) { PublicApi::AsOf.resolve(nil, served: empty) }.code
   end
 

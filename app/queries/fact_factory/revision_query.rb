@@ -16,7 +16,7 @@ module FactFactory
     # The revisions the API can answer for: `numbers` (committed, ascending, up
     # to `latest`), when each committed, which retention pruned, and the
     # snapshots' names.
-    Served = Data.define(:latest, :committed, :pruned, :snapshots) do
+    Served = Data.define(:latest, :committed, :pruned, :snapshots, :purged_through) do
       def empty? = latest.nil?
 
       def earliest = committed.keys.first
@@ -31,6 +31,10 @@ module FactFactory
       def at(time)
         committed.select { |number, at| number <= latest && at && at <= time }.keys.last
       end
+
+      # Whether a revision committed at or before `time` is still waiting for its
+      # derived build: until it is served, `at(time)` answers with an earlier one.
+      def building_by?(time) = committed.any? { |number, at| number > latest && at && at <= time }
 
       # The first snapshot name pinning a revision, for meta.snapshot and cites.
       def snapshot_for(number) = snapshots.select { |_, revision| revision == number }.keys.min
@@ -57,7 +61,8 @@ module FactFactory
         committed = rows.to_h { |id, at, _| [ id, at && Time.at(at).utc ] }
         pruned = rows.filter_map { |id, _, pruned_at| id if pruned_at }.to_set
         snapshots = Snapshot.pluck(:name, :revision_id).to_h
-        Served.new(latest:, committed:, pruned:, snapshots:)
+        purged_through = SpendingPublication.maximum(:purged_at)
+        Served.new(latest:, committed:, pruned:, snapshots:, purged_through:)
       end
 
       def find(number) = Revision.find_by(id: number, state: "committed")
@@ -81,10 +86,13 @@ module FactFactory
         scope.to_a
       end
 
-      # The spending rows revision N reads (SpendingSlices). Memoized: a
-      # committed revision's inputs never change.
+      # The spending rows revision N reads (SpendingSlices). Memoized until a
+      # publication is purged: a committed revision's inputs never change, but a
+      # purge makes a slice that needed the purged rows unreadable.
       def slices(number)
-        @slices ||= {}
+        purged = served.purged_through
+        @slices = {} if @slices.nil? || @slices_purged != purged
+        @slices_purged = purged
         @slices[number] ||= SpendingSlices.load(number)
       end
     end

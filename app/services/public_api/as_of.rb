@@ -9,7 +9,8 @@ module PublicApi
   #
   # `pinned` says whether the answer can never change, which decides
   # Cache-Control: a number or a snapshot name always, a time only once it has
-  # passed (a later revision can't commit in the past).
+  # passed (a later revision can't commit in the past) and every revision
+  # committed by then is built.
   class AsOf
     Resolved = Data.define(:revision, :snapshot, :pinned, :requested) do
       def to_s = revision.to_s
@@ -64,7 +65,9 @@ module PublicApi
       revision = @served.at(time)
       raise not_yet_published("as_of #{value} is before revision #{@served.earliest}, the earliest committed.") unless revision
 
-      resolved(revision, pinned: time <= @now, requested: value)
+      # Pinned once the time has passed and every revision committed by then is
+      # served: one still building would answer it later.
+      resolved(revision, pinned: time <= @now && !@served.building_by?(time), requested: value)
     end
 
     def parse_time(value)

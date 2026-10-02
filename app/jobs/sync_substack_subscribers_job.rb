@@ -1,6 +1,8 @@
 class SyncSubstackSubscribersJob < ApplicationJob
   include ActiveJob::Continuable
 
+  class CookiesRejected < StandardError; end
+
   BATCH_SIZE = 500
 
   queue_as :default
@@ -10,6 +12,14 @@ class SyncSubstackSubscribersJob < ApplicationJob
     wait: :polynomially_longer, attempts: 8
   retry_on Metrics::SubstackClient::Error,
     wait: :polynomially_longer, attempts: 5
+
+  # Retries reuse the same rejected cookies, so report once and let the next scheduled run try again.
+  discard_on Metrics::SubstackClient::AuthenticationError do |_job, error|
+    Rails.error.report(CookiesRejected.new(
+      "Substack rejected the stored session cookies (#{error.message}). " \
+      "Refresh substack.accounts.build_canada.cookies in Rails credentials."
+    ))
+  end
 
   def perform(email_domain: nil)
     return Rails.logger.warn("[Substack] subscriber sync credentials are not configured") unless configured?

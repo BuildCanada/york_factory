@@ -19,7 +19,7 @@ class TestSyncSubstackSubscribersJob < SyncSubstackSubscribersJob
     job_class = self.class
     Object.new.tap do |fake|
       fake.define_singleton_method(:import!) do |subscribers|
-        raise Metrics::SubstackClient::Error, "import failed" if job_class.fail_import
+        raise job_class.fail_import, "import failed" if job_class.fail_import
 
         job_class.batches << subscribers.map(&:email)
         99_001
@@ -64,10 +64,23 @@ class SyncSubstackSubscribersJobTest < ActiveJob::TestCase
 
   test "does not mark subscribers when Substack rejects the import" do
     subscriber = Subscriber.create!(email: "team@buildcanada.com")
-    TestSyncSubstackSubscribersJob.fail_import = true
+    TestSyncSubstackSubscribersJob.fail_import = Metrics::SubstackClient::Error
 
     assert_enqueued_with(job: TestSyncSubstackSubscribersJob) do
       TestSyncSubstackSubscribersJob.perform_now(email_domain: "buildcanada.com")
+    end
+
+    assert_nil subscriber.reload.substack_synced_at
+  end
+
+  test "reports rejected Substack cookies once without retrying" do
+    subscriber = Subscriber.create!(email: "team@buildcanada.com")
+    TestSyncSubstackSubscribersJob.fail_import = Metrics::SubstackClient::AuthenticationError
+
+    assert_error_reported(SyncSubstackSubscribersJob::CookiesRejected) do
+      assert_no_enqueued_jobs do
+        TestSyncSubstackSubscribersJob.perform_now(email_domain: "buildcanada.com")
+      end
     end
 
     assert_nil subscriber.reload.substack_synced_at

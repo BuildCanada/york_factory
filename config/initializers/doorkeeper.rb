@@ -36,6 +36,15 @@ Doorkeeper.configure do
   # GET /api/v1/me), not by OAuth scopes.
   default_scopes :public
 
+  # `identity` adds the user's stable York id to GET /api/v1/me. Clients that
+  # key accounts on it (the member app platform) must request it explicitly;
+  # tokens without it keep the email-only profile.
+  optional_scopes :identity
+
+  # PKCE (RFC 7636) is honoured once oauth_access_grants has the
+  # code_challenge columns. Only S256; plain adds nothing over no PKCE.
+  pkce_code_challenge_methods %w[S256]
+
   # Short-lived access tokens; refresh tokens let users stay authenticated.
   access_token_expires_in 2.hours
   use_refresh_token

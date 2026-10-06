@@ -158,6 +158,106 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_equal false, response.parsed_body["admin"]
   end
 
+  test "GET /api/v1/me exposes the stable id only to identity-scoped tokens" do
+    token = Doorkeeper::AccessToken.create!(
+      application: @app,
+      scopes: "public identity",
+      resource_owner_id: @member.id,
+      expires_in: 7200
+    )
+
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{token.token}" }
+    assert_response :success
+    assert_equal @member.id.to_s, response.parsed_body["id"]
+    assert_equal "member", response.parsed_body["role"]
+  end
+
+  # ---------------------------------------------------------------------------
+  # Member app platform: identity scope + PKCE (S256)
+  # ---------------------------------------------------------------------------
+
+  test "identity scope and PKCE complete an authorization code flow" do
+    member_apps = Doorkeeper::Application.create!(
+      name: "Build Canada member apps",
+      redirect_uri: "https://buildcanada.app/auth/york/callback",
+      scopes: "public identity",
+      confidential: true,
+      trusted: true
+    )
+    verifier = SecureRandom.urlsafe_base64(32)
+    challenge = Base64.urlsafe_encode64(Digest::SHA256.digest(verifier), padding: false)
+
+    sign_in_as @admin
+    post oauth_authorization_url, params: {
+      client_id: member_apps.uid,
+      redirect_uri: member_apps.redirect_uri,
+      response_type: "code",
+      scope: "public identity",
+      state: "s1",
+      code_challenge: challenge,
+      code_challenge_method: "S256"
+    }
+    assert_response :redirect
+    code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
+    assert_not_nil code
+
+    token_params = {
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: member_apps.redirect_uri,
+      client_id: member_apps.uid,
+      client_secret: member_apps.secret
+    }
+    post oauth_token_url, params: token_params.merge(code_verifier: "wrong-#{verifier}")
+    assert_response :bad_request
+
+    # Doorkeeper revokes a grant on a failed exchange, so start a new one.
+    post oauth_authorization_url, params: {
+      client_id: member_apps.uid,
+      redirect_uri: member_apps.redirect_uri,
+      response_type: "code",
+      scope: "public identity",
+      state: "s2",
+      code_challenge: challenge,
+      code_challenge_method: "S256"
+    }
+    code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
+    post oauth_token_url, params: token_params.merge(code: code)
+    assert_response :bad_request, "a PKCE grant must not exchange without its verifier"
+
+    post oauth_authorization_url, params: {
+      client_id: member_apps.uid,
+      redirect_uri: member_apps.redirect_uri,
+      response_type: "code",
+      scope: "public identity",
+      state: "s3",
+      code_challenge: challenge,
+      code_challenge_method: "S256"
+    }
+    code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
+    post oauth_token_url, params: token_params.merge(code: code, code_verifier: verifier)
+    assert_response :success
+    access = response.parsed_body["access_token"]
+    assert_equal "public identity", response.parsed_body["scope"]
+
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{access}" }
+    assert_response :success
+    assert_equal @admin.id.to_s, response.parsed_body["id"]
+    assert_equal true, response.parsed_body["admin"]
+  end
+
+  test "plain PKCE challenges are refused" do
+    sign_in_as @member
+    post oauth_authorization_url, params: {
+      client_id: @trusted_app.uid,
+      redirect_uri: @trusted_app.redirect_uri,
+      response_type: "code",
+      code_challenge: "plain-challenge-value-plain-challenge-value-123",
+      code_challenge_method: "plain"
+    }
+    assert_no_match %r{\?code=}, response.location.to_s
+  end
+
   test "GET /api/v1/me rejects requests without a token" do
     get api_v1_me_url
     assert_response :unauthorized

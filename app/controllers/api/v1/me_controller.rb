@@ -36,9 +36,11 @@ module Api
         params.require(:user).permit(:postal_code, :name)
       end
 
-      # Deliberately no internal id — clients identify users by email.
+      # No internal id by default — most clients identify users by email. A
+      # token granted the optional `identity` scope also receives the stable
+      # York user id (as a string), for clients that must not key on email.
       def user_json(user)
-        {
+        json = {
           email: user.email,
           name: user.name,
           role: user.role,
@@ -47,6 +49,12 @@ module Api
           engagement_ready: user.engagement_ready?,
           admin: user.admin?
         }
+        json[:id] = user.id.to_s if identity_scope?
+        json
+      end
+
+      def identity_scope?
+        current_api_key.nil? && doorkeeper_token&.includes_scope?("identity")
       end
     end
   end

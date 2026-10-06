@@ -1,0 +1,61 @@
+<%# Consent for public-API clients (docs/public-interface-design.md §4.6):
+    who is asking, from where, where the code goes, and what it can do. %>
+<% app = consent.application %>
+<header class="page-header" role="banner">
+  <h1>Connect <%= app.name %> to Build Canada</h1>
+</header>
+
+<main role="main">
+  <p class="h5">
+    <strong class="text-info"><%= app.name %></strong>
+    <% if app.display_host %>(<span class="text-monospace"><%= app.display_host %></span>)<% end %>
+    wants to use <%= consent.resource_label %> as you.
+  </p>
+
+  <ul class="list-unstyled small text-muted">
+    <li>
+      <% if app.metadata_document? %>
+        Identified by its metadata document at <span class="text-monospace"><%= app.uid %></span>.
+      <% else %>
+        Registered itself automatically; Build Canada hasn't checked who runs it.
+      <% end %>
+      <% unless app.reviewed? %><strong>Unverified app.</strong><% end %>
+    </li>
+    <li>After you decide, you'll be sent to <strong class="text-monospace"><%= Oauth::RedirectUriPolicy.host_label(@pre_auth.redirect_uri) %></strong>.</li>
+  </ul>
+
+  <% if app.local_redirects_only? %>
+    <div class="alert alert-warning">
+      This app sends you back to your own computer (<span class="text-monospace"><%= Oauth::RedirectUriPolicy.host_label(@pre_auth.redirect_uri) %></span>).
+      Any program running on this computer could claim to be <%= app.name %>. Continue only if you just started connecting it yourself.
+    </div>
+  <% end %>
+
+  <div id="oauth-permissions">
+    <p>It will be able to:</p>
+    <ul>
+      <% consent.scope_rows.each do |row| %>
+        <li><%= row[:description] %></li>
+      <% end %>
+    </ul>
+    <p class="small text-muted">It can't change anything, and it never sees your password. You can revoke it any time under Developers, Authorized apps.</p>
+  </div>
+
+  <%= form_tag oauth_authorization_path, method: :post do %>
+    <% if consent.accounts.size > 1 %>
+      <div class="form-group">
+        <label for="account_id">Count its usage against</label>
+        <%= select_tag :account_id, options_from_collection_for_select(consent.accounts, :id, :name, consent.account.id), class: "form-control" %>
+      </div>
+    <% else %>
+      <%= hidden_field_tag :account_id, consent.account.id, id: nil %>
+    <% end %>
+    <%= render "oauth/authorizations/request_fields" %>
+    <%= submit_tag "Allow", class: "btn btn-success btn-lg btn-block" %>
+  <% end %>
+  <%= form_tag oauth_authorization_path, method: :delete do %>
+    <%= hidden_field_tag :account_id, consent.account.id, id: nil %>
+    <%= render "oauth/authorizations/request_fields" %>
+    <%= submit_tag "Deny", class: "btn btn-danger btn-lg btn-block" %>
+  <% end %>
+</main>

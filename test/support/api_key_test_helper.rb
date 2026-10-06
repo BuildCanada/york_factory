@@ -8,6 +8,10 @@ module ApiKeyTestHelper
     assert result.ok?, "expected the key to be issued: #{result.api_key.errors.full_messages.to_sentence}"
     result
   end
+
+  # The key with its last character changed, so the checksum fails. (Appending
+  # a fixed character after chop leaves the key unchanged 1 time in 62.)
+  def mistyped(raw) = raw.chop + (raw.end_with?("x") ? "y" : "x")
 end
 
 ActiveSupport::TestCase.include(ApiKeyTestHelper)

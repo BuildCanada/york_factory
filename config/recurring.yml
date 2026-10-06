@@ -10,6 +10,9 @@
 #     schedule: at 5am every day
 
 production:
+  prune_unused_oauth_clients:
+    class: Oauth::PruneUnusedClientsJob
+    schedule: every day at 3:40am
   discover_cpac_broadcasts:
     class: Warehouse::Broadcasts::DiscoverJob
     schedule: every 15 seconds

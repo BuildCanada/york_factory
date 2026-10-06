@@ -1,0 +1,5 @@
+<% if @client_application&.public_api? %>
+  <%= render "oauth/authorizations/consent" %>
+<% else %>
+  <%= render "oauth/authorizations/first_party" %>
+<% end %>

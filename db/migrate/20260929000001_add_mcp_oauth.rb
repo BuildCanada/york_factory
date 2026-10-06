@@ -11,9 +11,12 @@
 #   RFC 7009 revocation), not only by a user, an admin or the system.
 class AddMcpOauth < ActiveRecord::Migration[8.1]
   def up
+    # #145 (member apps) may have added the PKCE columns first. A bulk
+    # change_table ignores if_not_exists, so they are added on their own.
+    %i[code_challenge code_challenge_method].each do |column|
+      add_column :oauth_access_grants, column, :string unless column_exists?(:oauth_access_grants, column)
+    end
     change_table :oauth_access_grants, bulk: true do |t|
-      t.string :code_challenge
-      t.string :code_challenge_method
       t.string :resource
       t.bigint :account_id
     end

@@ -2073,7 +2073,9 @@ CREATE TABLE public.oauth_access_grants (
     redirect_uri text NOT NULL,
     scopes character varying DEFAULT ''::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    revoked_at timestamp(6) without time zone
+    revoked_at timestamp(6) without time zone,
+    code_challenge character varying,
+    code_challenge_method character varying
 );
 
 
@@ -11336,6 +11338,7 @@ ALTER TABLE ONLY warehouse.source_footnotes
 SET search_path TO public,warehouse;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006000001'),
 ('20260921000003'),
 ('20260921000002'),
 ('20260921000001'),

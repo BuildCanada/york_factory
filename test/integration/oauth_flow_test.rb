@@ -159,8 +159,14 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "GET /api/v1/me exposes the stable id only to identity-scoped tokens" do
+    identity_app = Doorkeeper::Application.create!(
+      name: "IdentityApp",
+      redirect_uri: "https://example.com/callback",
+      scopes: "public identity",
+      confidential: true
+    )
     token = Doorkeeper::AccessToken.create!(
-      application: @app,
+      application: identity_app,
       scopes: "public identity",
       resource_owner_id: @member.id,
       expires_in: 7200
@@ -170,6 +176,50 @@ class OauthFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal @member.id.to_s, response.parsed_body["id"]
     assert_equal "member", response.parsed_body["role"]
+  end
+
+  test "an application registered without identity cannot obtain the id" do
+    # Doorkeeper lets a blank-scope application request any configured scope,
+    # so a TradingPost-style app can be issued an identity-scoped token.
+    sign_in_as @member
+    post oauth_authorization_url, params: {
+      client_id: @trusted_app.uid,
+      redirect_uri: @trusted_app.redirect_uri,
+      response_type: "code",
+      scope: "public identity"
+    }
+    code = URI.decode_www_form(URI.parse(response.location).query).to_h["code"]
+    post oauth_token_url, params: {
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: @trusted_app.redirect_uri,
+      client_id: @trusted_app.uid,
+      client_secret: @trusted_app.secret
+    }
+    assert_response :success
+    access = response.parsed_body["access_token"]
+
+    get api_v1_me_url, headers: { "Authorization" => "Bearer #{access}" }
+    assert_response :success
+    assert_not response.parsed_body.key?("id"), "/me must not expose the id to an app not registered with identity"
+  end
+
+  test "an application registered with only public cannot request identity" do
+    tradingpost = Doorkeeper::Application.create!(
+      name: "TradingPostLike",
+      redirect_uri: "https://example.com/callback",
+      scopes: "public",
+      confidential: true,
+      trusted: true
+    )
+    sign_in_as @member
+    post oauth_authorization_url, params: {
+      client_id: tradingpost.uid,
+      redirect_uri: tradingpost.redirect_uri,
+      response_type: "code",
+      scope: "public identity"
+    }
+    assert_no_match %r{[?&]code=}, response.location.to_s
   end
 
   # ---------------------------------------------------------------------------

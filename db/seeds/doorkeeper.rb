@@ -13,7 +13,8 @@ app = Doorkeeper::Application.find_or_initialize_by(name: "TradingPost")
 
 if app.new_record?
   app.redirect_uri = redirect_uri
-  app.scopes = ""
+  # Explicit, so TradingPost cannot request optional scopes such as `identity`.
+  app.scopes = "public"
   app.confidential = true
   app.trusted = true
   app.save!
@@ -31,6 +32,6 @@ if app.new_record?
   puts "  YF_OAUTH_CALLBACK_URL=#{redirect_uri}"
   puts ""
 else
-  app.update!(redirect_uri: redirect_uri, trusted: true, scopes: "")
+  app.update!(redirect_uri: redirect_uri, trusted: true, scopes: "public")
   puts "TradingPost OAuth application already exists (uid: #{app.uid})"
 end

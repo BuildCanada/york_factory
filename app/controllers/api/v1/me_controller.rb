@@ -53,8 +53,17 @@ module Api
         json
       end
 
+      # Both the token and its application must carry `identity`. Doorkeeper
+      # lets an application registered with no scopes request any configured
+      # scope, so the token's scope alone is not enough: only applications
+      # explicitly registered with `identity` (the member app platform) see
+      # the id.
       def identity_scope?
-        current_api_key.nil? && doorkeeper_token&.includes_scope?("identity")
+        token = doorkeeper_token
+        return false if current_api_key || token.nil?
+
+        token.includes_scope?("identity") &&
+          Doorkeeper::OAuth::Scopes.from_string(token.application&.scopes.to_s).exists?("identity")
       end
     end
   end

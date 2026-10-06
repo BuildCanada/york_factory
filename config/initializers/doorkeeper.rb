@@ -37,8 +37,10 @@ Doorkeeper.configure do
   default_scopes :public
 
   # `identity` adds the user's stable York id to GET /api/v1/me. Clients that
-  # key accounts on it (the member app platform) must request it explicitly;
-  # tokens without it keep the email-only profile.
+  # key accounts on it (the member app platform) must request it, and their
+  # application must be registered with it (see Api::V1::MeController);
+  # tokens without it keep the email-only profile. Keep `identity` in this
+  # list if other optional scopes are added: a second call replaces it.
   optional_scopes :identity
 
   # PKCE (RFC 7636) is honoured once oauth_access_grants has the

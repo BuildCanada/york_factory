@@ -1,0 +1,19 @@
+title: DistrictRef
+description: A compact reference to an electoral district. Fetch it, with its boundary, from its `id`.
+type: object
+required: [id, boundary_set_id, code, name_as_shown]
+properties:
+  id:
+    $ref: ElectionId.yaml
+    description: The district's ID.
+  boundary_set_id:
+    $ref: ElectionId.yaml
+    description: The boundary set (the districts in force together) the district belongs to.
+  code:
+    type: string
+    description: The district's code as the administrator writes it.
+    examples: [ABM]
+  name_as_shown:
+    type: string
+    description: The district's name as the administrator writes it.
+    examples: [Abbotsford-Mission]

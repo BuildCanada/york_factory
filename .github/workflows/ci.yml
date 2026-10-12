@@ -119,3 +119,42 @@ jobs:
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
         run: bin/rails db:test:prepare test
+
+  openapi:
+    runs-on: ubuntu-latest
+    env:
+      OASDIFF_VERSION: 1.32.1
+    steps:
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libgeos-dev libproj-dev
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/openapi/package-lock.json
+
+      - name: Install OpenAPI tooling
+        run: |
+          npm ci --prefix docs/openapi
+          curl -sSL "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz" | sudo tar xz -C /usr/local/bin oasdiff
+
+      - name: Lint the public API spec (bundle up to date, Redocly, Spectral, dictionary terms)
+        run: bin/openapi-lint
+
+      - name: Validate every example against its schema
+        run: bundle exec ruby -Itest test/openapi/public_v1_spec_test.rb
+
+      - name: Report breaking changes against the base branch
+        run: bin/openapi-breaking "origin/${{ github.base_ref || 'main' }}"

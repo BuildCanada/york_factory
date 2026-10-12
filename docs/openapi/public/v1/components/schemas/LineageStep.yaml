@@ -1,0 +1,35 @@
+title: LineageStep
+description: >-
+  One step in an entity's lineage: a predecessor or successor linked by succeeded_by.
+  Lineage records real-world change (renamed, amalgamated, split, absorbed). It is not
+  payment attribution: a predecessor's payments stay on the predecessor.
+type: object
+x-bc-record: true
+required: [depth, entity, event, effective_date, relationship]
+properties:
+  depth:
+    type: integer
+    minimum: 1
+    maximum: 10
+    description: Steps from the requested entity; 1 is a direct predecessor or successor.
+    x-bc-structural: true
+    examples: [1]
+  entity:
+    $ref: EntityRef.yaml
+    description: The predecessor or successor.
+    x-bc-structural: true
+  event:
+    type: [string, 'null']
+    description: The kind of change, from the relationship's attributes, such as renamed, reclassified, amalgamated, split, absorbed or transferred_functions.
+    x-bc-dictionary: attributes
+    examples: [amalgamated]
+  effective_date:
+    description: The day the cited instrument came into force (not its assent), from the relationship's attributes.
+    x-bc-dictionary: attributes
+    oneOf:
+      - $ref: PartialDate.yaml
+      - type: 'null'
+  relationship:
+    $ref: Relationship.yaml
+    description: The succeeded_by relationship itself, with its authority, citations and provenance.
+    x-bc-structural: true

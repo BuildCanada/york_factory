@@ -1,0 +1,87 @@
+title: SpendingParty
+description: >-
+  One party named on a spending row (one occurrence), and whether and why it is linked to
+  a registry entity. `link_status` is linked (an active rule linked it), proposed (a rule
+  matched but is not yet active, so the entity is only the first candidate) or unlinked
+  (see reason). Never treat proposed as linked.
+type: object
+x-bc-record: true
+required: [occurrence_id, field, position, raw_name, party_kind, link_status, entity_id, method, reason, candidates]
+properties:
+  occurrence_id:
+    $ref: Sha256.yaml
+    description: One party on one spending row. Stable across revisions.
+    x-bc-dictionary: occurrence_id
+  field:
+    type: string
+    enum: [payer, recipient, recipients, principal_investigator, research_org, vendor_name]
+    description: Which party field of the row the occurrence came from.
+    x-bc-dictionary: field
+    examples: [recipient]
+  position:
+    type: integer
+    minimum: 0
+    description: 0-based position within a list field (recipients); 0 for single-valued fields.
+    x-bc-dictionary: position
+    examples: [0]
+  raw_name:
+    type: [string, 'null']
+    description: The party's name exactly as the row publishes it.
+    x-bc-dictionary: raw_name
+    examples: [Town of Diamond Valley]
+  normalized_name:
+    type: [string, 'null']
+    description: raw_name after the registry's versioned name normalization (accents and punctuation removed, casefolded, legal-form suffixes dropped).
+    x-bc-dictionary: normalized_name
+    examples: [town of diamond valley]
+  party_kind:
+    type: string
+    enum: [organization, individual, aggregate, unknown]
+    description: Whether the party is an organization, an individual, an aggregate of many recipients, or unknown. Individuals are never linked in phase 1.
+    x-bc-dictionary: party_kind
+    examples: [organization]
+  link_status:
+    type: string
+    enum: [linked, proposed, unlinked]
+    description: linked, proposed or unlinked, as above. Derived from entity_id and reason.
+    x-bc-dictionary: link_status
+    examples: [linked]
+  entity_id:
+    description: The linked entity, or null when not linked.
+    x-bc-dictionary: entity_id
+    oneOf:
+      - $ref: EntityGid.yaml
+      - type: 'null'
+  entity:
+    description: The linked entity, compactly, or null.
+    x-bc-structural: true
+    oneOf:
+      - $ref: EntityRef.yaml
+      - type: 'null'
+  method:
+    type: [string, 'null']
+    enum: [identifier, payer_code, payer_name, exact_name, ai_review, correction, null]
+    description: The rule that linked the occurrence, or that proposed a link when link_status is proposed. Null when no rule matched.
+    x-bc-dictionary: method
+    examples: [identifier]
+  reason:
+    type: [string, 'null']
+    enum: [excluded_individual, excluded_aggregate, excluded_unknown, conflict, ambiguous, period_spans_change, no_candidate, proposed, rule_retired, ai_undecided, corrected_unlinked, null]
+    description: Why the occurrence is not linked. Null when linked. Look each value up with GET /v1/dictionary/reason.
+    x-bc-dictionary: reason
+    examples: [null]
+  candidates:
+    type: array
+    description: >-
+      Entity gids (or `ca/ised/federal_corporations:<number>` anchors for corporations
+      not yet entities) the rules found for an unlinked occurrence. For proposed, the
+      proposed entity is first. Empty when linked or when there are none.
+    x-bc-dictionary: candidates
+    items:
+      type: string
+    examples: [[]]
+  rule_version:
+    type: [string, 'null']
+    description: The resolution, extraction, normalization and matching versions that produced this outcome.
+    x-bc-dictionary: rule_version
+    examples: [resolution-v5+occurrences-v3+names-v2+matching-v4]

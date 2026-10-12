@@ -1,0 +1,12 @@
+title: Measure
+description: >-
+  What a source's `amount` measures. Amounts of different measures are different
+  quantities and must never be added together. contract_value: a contract's reported
+  value, not payments. aggregated_contract_value: a total of small contracts and
+  acquisition-card spending. agreement_value: a grant or contribution agreement's value,
+  not money paid. payments_or_expenditure: transfer payments, either aggregate payments or
+  current-year expenditure (the source does not record which). award_amount: a research
+  award. commitment: international development commitments, not spending.
+type: string
+enum: [contract_value, aggregated_contract_value, agreement_value, payments_or_expenditure, award_amount, commitment]
+examples: [agreement_value]

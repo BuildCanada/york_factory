@@ -1,0 +1,12 @@
+# Shared non-error responses.
+NotModified:
+  description: The If-None-Match ETag still matches. No body. Costs 0 units but counts toward the request rate.
+  headers:
+    ETag:
+      $ref: headers.yaml#/ETag
+    Cache-Control:
+      $ref: headers.yaml#/CacheControl
+    RateLimit:
+      $ref: headers.yaml#/RateLimit
+    RateLimit-Policy:
+      $ref: headers.yaml#/RateLimitPolicy

@@ -1,0 +1,16 @@
+title: CandidacyListResponse
+description: "A page of candidacies. The standard list envelope: items in `data`, the cursor for the next page in `meta.next_cursor` and `links.next`."
+type: object
+required: [data, meta, links]
+properties:
+  data:
+    type: array
+    description: A page of candidacies.
+    items:
+      $ref: Candidacy.yaml
+  meta:
+    $ref: ListMeta.yaml
+    description: The time the data was read at, the request ID, caveats and pagination. Elections data is not versioned by revision.
+  links:
+    $ref: PageLinks.yaml
+    description: Links for this page and the next.

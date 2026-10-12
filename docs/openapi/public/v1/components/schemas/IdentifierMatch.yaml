@@ -1,0 +1,14 @@
+title: IdentifierMatch
+description: One entity that holds a resolved identifier, with the identifier row that says so.
+type: object
+x-bc-record: true
+required: [entity, identifier]
+properties:
+  entity:
+    $ref: EntityRef.yaml
+    description: The entity holding the identifier.
+    x-bc-structural: true
+  identifier:
+    $ref: Identifier.yaml
+    description: The identifier row, with its provenance.
+    x-bc-structural: true

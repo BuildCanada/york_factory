@@ -1,0 +1,38 @@
+title: Snapshot
+description: >-
+  A named registry revision. Snapshots pin the revisions people cite and measure against
+  (`release-14`, held for the gold set). `held_by` keeps a snapshot's revision answerable
+  when retention prunes older versions.
+type: object
+required: [name, revision, reason, held_by, created_at, links]
+properties:
+  name:
+    $ref: SnapshotName.yaml
+    description: The snapshot's name, the value `as_of` takes.
+  revision:
+    $ref: RevisionNumber.yaml
+    description: The revision the snapshot pins.
+  reason:
+    type: [string, 'null']
+    description: Why the snapshot was taken.
+    examples: [The last batch release]
+  held_by:
+    type: [string, 'null']
+    description: What holds the snapshot through retention, such as goldset; null when nothing does.
+    examples: [goldset]
+  created_at:
+    $ref: Timestamp.yaml
+    description: When the snapshot was named.
+  links:
+    type: object
+    description: Relative links for the snapshot.
+    required: [self, revision]
+    properties:
+      self:
+        type: string
+        description: This snapshot.
+        examples: [/v1/snapshots/release-14]
+      revision:
+        type: string
+        description: The revision it pins.
+        examples: [/v1/revisions/14]

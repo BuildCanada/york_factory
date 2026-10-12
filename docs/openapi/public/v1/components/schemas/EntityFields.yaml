@@ -1,0 +1,15 @@
+title: EntityFields
+description: >-
+  An entity projected by `fields=`: only the requested top-level fields of `Entity`, with `id`
+  and `cite`, which are always returned. Each field present has its `Entity` meaning and type.
+type: object
+required: [id, cite]
+properties:
+  id:
+    $ref: EntityGid.yaml
+    description: The entity's global ID.
+  cite:
+    type: string
+    x-bc-structural: true
+    description: How to cite this entity.
+additionalProperties: true

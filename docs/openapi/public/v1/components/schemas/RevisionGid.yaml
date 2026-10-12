@@ -1,0 +1,6 @@
+title: RevisionGid
+description: Global ID of a registry revision, `gid://buildcanada/Revision/<number>`.
+type: string
+pattern: '^gid://buildcanada/Revision/[1-9][0-9]*$'
+examples:
+  - gid://buildcanada/Revision/31

@@ -1,0 +1,61 @@
+title: District
+description: >-
+  An electoral district (or other area a contest is held in), with the boundary set it
+  belongs to and, when asked, its boundary as GeoJSON (EPSG:4326).
+type: object
+required: [id, boundary_set, code, name_as_shown, links]
+properties:
+  id:
+    $ref: ElectionId.yaml
+    description: The district's ID.
+  boundary_set:
+    type: object
+    description: The boundary set the district belongs to.
+    required: [id, jurisdiction, kind]
+    properties:
+      id:
+        $ref: ElectionId.yaml
+        description: "The boundary set's ID."
+      jurisdiction:
+        $ref: Jurisdiction.yaml
+        description: "The jurisdiction the boundaries are drawn for."
+      kind:
+        type: string
+        description: "What the set's areas are, such as district or polling_area."
+        examples: [district]
+      legal_instrument:
+        type: [string, 'null']
+        description: "The instrument that set the boundaries."
+        examples: [null]
+      in_force_from:
+        type: [string, 'null']
+        description: "When the boundaries took effect."
+        examples: ['2024-10-19']
+      in_force_to:
+        type: [string, 'null']
+        description: "When they stopped being used, or null."
+        examples: [null]
+  code:
+    type: string
+    description: The district's code as the administrator writes it.
+    examples: [ABM]
+  name_as_shown:
+    type: string
+    description: The district's name as the administrator writes it.
+    examples: [Abbotsford-Mission]
+  geometry:
+    type: [object, 'null']
+    additionalProperties: true
+    description: >-
+      The district's boundary as a GeoJSON MultiPolygon in EPSG:4326, or null when none is
+      stored. Always on GET /v1/districts/{district_id}; in lists only with `expand=geometry`.
+    examples: [{type: MultiPolygon, coordinates: []}]
+  links:
+    type: object
+    description: Relative links for the district.
+    required: [self]
+    properties:
+      self:
+        type: string
+        description: "This district."
+        examples: [/v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm]

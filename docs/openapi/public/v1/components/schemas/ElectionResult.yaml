@@ -1,0 +1,61 @@
+title: ElectionResult
+description: >-
+  One count in one result report: votes (or another measure) for a candidacy or answer, or
+  a count such as rejected ballots, in one contest, optionally for one polling area and
+  ballot type. Small units the source combined for secrecy have a blank value and name the
+  unit that includes them in `reported_under`.
+type: object
+required: [report_id, contest_id, measure, round, value]
+properties:
+  report_id:
+    type: string
+    description: "The report the count is from."
+    examples: [01M3TP69B6TM9F579VB93ZHFNE]
+  contest_id:
+    $ref: ElectionId.yaml
+    description: "The contest."
+  candidacy_id:
+    type: [string, 'null']
+    description: "The candidacy counted, or null for a count that isn't a candidate's."
+    examples: [01M3TP5P62RM2298Y7AC2WYJJ4]
+  answer:
+    type: [string, 'null']
+    description: "A referendum answer counted, or null."
+    examples: [null]
+  measure:
+    type: string
+    description: "What is counted, such as votes, rejected or turnout."
+    examples: [votes]
+  measure_as_shown:
+    type: [string, 'null']
+    description: "The measure as the source writes it."
+    examples: [null]
+  polling_area_id:
+    type: [string, 'null']
+    description: "The polling area counted, or null for a contest-wide count."
+    examples: [null]
+  unit_label_as_shown:
+    type: [string, 'null']
+    description: "The counting unit as the source labels it."
+    examples: [null]
+  ballot_type:
+    type: [string, 'null']
+    description: "The ballot type counted, such as advance or mail."
+    examples: [advance]
+  ballot_type_as_shown:
+    type: [string, 'null']
+    description: "The ballot type as the source writes it."
+    examples: [null]
+  round:
+    type: integer
+    minimum: 1
+    description: "The counting round (1 unless the method has rounds)."
+    examples: [1]
+  value:
+    type: [integer, 'null']
+    description: "The count, or null when the source combined this unit into another (see reported_under)."
+    examples: [1894]
+  reported_under:
+    type: [string, 'null']
+    description: "The unit whose count includes this one, when the source combined them."
+    examples: [null]

@@ -1,0 +1,10 @@
+title: SpendingRecordGid
+description: >-
+  Global ID of one published spending row: `gid://buildcanada/SpendingRecord/` followed by
+  its 26-character spending key. The key is the first 128 bits of
+  sha256(asset_key, acquisition, resource_id, id), written in Crockford base32. It is
+  stable for as long as the source row exists, across revisions.
+type: string
+pattern: '^gid://buildcanada/SpendingRecord/[0-9A-HJKMNP-TV-Z]{26}$'
+examples:
+  - gid://buildcanada/SpendingRecord/K3M9Q2W7XA4B8C1D5E6F0G2H3J

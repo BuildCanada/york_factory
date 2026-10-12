@@ -1,0 +1,24 @@
+title: ElectionsCapture
+description: >-
+  A source response fact-factory stored for the elections data, content-addressed in R2:
+  `url` serves the same bytes forever.
+type: object
+required: [sha256, url, source_url, retrieved_at]
+properties:
+  sha256:
+    $ref: Sha256.yaml
+    description: SHA-256 of the stored bytes.
+  url:
+    type: string
+    format: uri
+    description: Where Build Canada serves the stored bytes.
+    examples: ['https://files.buildcanada.com/sha256/0d/0d9b2894a8cae9a90053f339b2aeb87245a6d5c123ab12c1117640b735b78f21']
+  source_url:
+    type: [string, 'null']
+    description: The URL the bytes were fetched from.
+    examples: ['https://elections.bc.ca/2024-provincial-general-election/candidates/']
+  retrieved_at:
+    description: When Build Canada last retrieved these bytes.
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'

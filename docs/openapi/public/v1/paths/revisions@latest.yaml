@@ -1,0 +1,86 @@
+# /revisions/latest
+get:
+  operationId: getLatestRevision
+  summary: The latest served revision
+  description: |-
+    The latest revision the API serves: the newest revision its derived tables are built at.
+    Requests without as_of resolve to it. Pin its number to make your results reproducible.
+  tags:
+  - Revisions
+  x-fern-sdk-method-name: latest
+  x-fern-sdk-group-name: revisions
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters: []
+  responses:
+    '200':
+      description: The latest served revision.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/RevisionResponse.yaml"
+          examples:
+            latest:
+              summary: Revision 31
+              value:
+                data:
+                  id: gid://buildcanada/Revision/31
+                  number: 31
+                  kind: entities
+                  reason: Dagster run 4b1c2d3e
+                  committed_at: '2026-10-01T02:49:22Z'
+                  inputs:
+                    activations: 4da24a5b450e8e75567c97651371967cf3280739a8dedf8d4c6d68140f0f250a
+                  versions: null
+                  served: true
+                  snapshots: []
+                  derived:
+                    built_at: '2026-10-01T03:02:54Z'
+                    counts:
+                      entity_names:
+                        added: 0
+                        retired: 0
+                    checks:
+                    - name: summary_reconciles
+                      blocking: true
+                      passed: true
+                  links:
+                    self: /v1/revisions/31
+                meta:
+                  revision: 31
+                  snapshot: null
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: /v1/revisions/31
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

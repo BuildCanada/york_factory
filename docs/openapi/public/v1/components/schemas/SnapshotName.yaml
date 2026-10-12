@@ -1,0 +1,11 @@
+title: SnapshotName
+description: >-
+  The name of a registry snapshot: a named, pinned revision, such as `release-14` (the
+  last batch release, held for the gold set) or `daily-2026-10-01`. Pass it as `as_of`
+  to read the revision it pins. Names start with a letter, so they never read as a
+  revision number.
+type: string
+pattern: '^[a-z][a-z0-9._-]*$'
+maxLength: 100
+examples:
+  - release-14

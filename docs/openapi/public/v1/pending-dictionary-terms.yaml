@@ -1,0 +1,62 @@
+# Dictionary terms the public API names in x-bc-dictionary that fact-factory's
+# docs/data-dictionary.yaml does not define yet. Each entry is a proposed definition in the
+# dictionary's own format, for WS-B (derived tables) or WS-K2 (dictionary export) to add
+# to fact-factory. When a term lands there, run bin/openapi-sync-dictionary and delete it
+# here; bin/openapi-check-dictionary fails while a defined term is still listed.
+#
+# Terms describe what the API serves. Some are computed by the API rather than stored in a
+# fact-factory table.
+
+terms:
+  # Provenance and captures
+  retrieved_at:
+    meaning: When fact-factory retrieved the captured file from its publisher.
+    type: timestamp (UTC)
+    blank_means: Never blank for a capture.
+  page:
+    meaning: 1-based page of a captured document a fact was cited from.
+    type: integer
+    blank_means: The fact was not cited from a paged document.
+  license:
+    meaning: The licence the publisher releases the source under, as an SPDX-style identifier such as OGL-Canada-2.0.
+    type: string
+    blank_means: Never blank for a published asset.
+
+  # Registry
+
+  # Spending rows and parties
+  is_latest_revision:
+    meaning: True when the row is the highest-ranked revision (revision_rank_json) of its canonical_id in the pinned snapshot, the only revision summaries count.
+    type: boolean
+    blank_means: Never blank.
+  link_status:
+    meaning: Whether an occurrence is linked (entity_id set), proposed (reason proposed, so the entity is only the first candidate) or unlinked (any other reason).
+    type: string
+    values: [linked, proposed, unlinked]
+    blank_means: Never blank.
+
+  # Spending summary (spending_summary)
+
+  # Search
+  match_kind:
+    meaning: How a search result matched, identifier (the query is an identifier the entity holds), exact (a normalized name or alias equals the query) or fuzzy (approximate name similarity, once available).
+    type: string
+    values: [identifier, exact, fuzzy]
+    blank_means: Never blank.
+  match_score:
+    meaning: 1 for identifier and exact matches; the similarity, 0 to 1, for fuzzy ones.
+    type: float
+    blank_means: Never blank.
+  matched_on:
+    meaning: What a search result matched on, such as name, alias:<the alias> or identifier:<namespace>.
+    type: string
+    blank_means: Never blank.
+  # Spending publications
+  publication_id:
+    meaning: Identifier of one spending publication (spending_publications.id), one parse of one resource's capture. spending_records rows carry it.
+    type: int64
+    blank_means: Never blank.
+  committed_at:
+    meaning: When fact-factory committed a registry revision or a spending publication, after which readers see it.
+    type: timestamp (UTC)
+    blank_means: Not committed yet (an open revision or a staged publication).

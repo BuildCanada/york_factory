@@ -1,0 +1,17 @@
+title: UnlinkedOccurrence
+description: >-
+  A spending party occurrence that is not linked to the entity but carries the entity's
+  normalized name or one of its aliases: a candidate the reader may want to check. It is
+  not counted in the entity's spending or summary.
+type: object
+x-bc-record: true
+required: [party, record]
+properties:
+  party:
+    $ref: SpendingParty.yaml
+    description: The occurrence, with its reason and candidates.
+    x-bc-structural: true
+  record:
+    $ref: SpendingRecordRef.yaml
+    description: The row the occurrence is on.
+    x-bc-structural: true

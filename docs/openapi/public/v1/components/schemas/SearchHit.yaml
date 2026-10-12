@@ -1,0 +1,22 @@
+title: SearchHit
+description: >-
+  One search result. `match` says how it matched, so an agent can tell a match on an
+  identifier or an exact name from a fuzzy guess. In phase 1 every hit is an entity.
+type: object
+x-bc-record: true
+required: [type, entity, match]
+properties:
+  type:
+    type: string
+    enum: [entity]
+    description: The kind of result. Phase 2 adds corporation and document; phase 3 statcan_cube.
+    x-bc-structural: true
+    examples: [entity]
+  entity:
+    $ref: EntityRef.yaml
+    description: The matched entity.
+    x-bc-structural: true
+  match:
+    $ref: SearchMatch.yaml
+    description: How the result matched.
+    x-bc-structural: true

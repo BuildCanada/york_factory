@@ -1,0 +1,41 @@
+title: CandidateContact
+description: >-
+  A way to reach a candidate's campaign that has been verified: its value was found on the
+  page `source_url` names. Unverified contacts are unconfirmed and are not served.
+type: object
+required: [kind, platform, value, source_url]
+properties:
+  kind:
+    type: string
+    description: "What the contact is, such as email, phone, website, social or donate."
+    examples: [email]
+  platform:
+    type: [string, 'null']
+    description: "The platform of a social contact, such as x or facebook; null otherwise."
+    examples: [null]
+  value:
+    type: string
+    description: "The contact as published (an address, number, URL or handle)."
+    examples: [info@example-campaign.ca]
+  source_url:
+    type: string
+    description: "The page the value was verified on."
+    examples: ['https://example-campaign.ca/contact']
+  linked_from_url:
+    type: [string, 'null']
+    description: "The page that linked to source_url, when it was found that way."
+    examples: [null]
+  evidence_quote:
+    type: [string, 'null']
+    description: "The text on source_url that shows the value."
+    examples: [null]
+  capture_sha256:
+    description: The stored capture of source_url, or null.
+    oneOf:
+      - $ref: Sha256.yaml
+      - type: 'null'
+  checked_at:
+    description: When the value was last checked against a fresh capture.
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'

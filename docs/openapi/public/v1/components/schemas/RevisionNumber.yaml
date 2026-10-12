@@ -1,0 +1,11 @@
+title: RevisionNumber
+description: >-
+  A registry revision: fact-factory's registry commits a new revision, numbered upward,
+  whenever one of its inputs changes (a roster capture, a spending publication, a rule, a
+  decision). A committed revision never changes, so `as_of=<number>` returns the same
+  answer forever. Revision N of a registry table is every version with revision_id <= N
+  whose retired_revision_id is blank or greater than N.
+type: integer
+minimum: 1
+examples:
+  - 31

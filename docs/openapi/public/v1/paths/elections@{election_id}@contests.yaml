@@ -1,0 +1,125 @@
+# /elections/{election_id}/contests
+get:
+  operationId: listElectionContests
+  summary: List an election's contests
+  description: |-
+    The races and referendum questions of one election, by contest ID.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name:
+  - elections
+  - contests
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: election_id
+    in: path
+    required: true
+    description: "The election's ID. Percent-encode it in the path."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/elections/2024-10-19-general"
+  - name: district
+    in: query
+    required: false
+    description: "Only the contest in this district (its ID)."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/electoral-districts/2023/abm"
+  - name: office
+    in: query
+    required: false
+    description: "Only contests for this office (its ID)."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/legislative-assembly/mla"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List an election's contests.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/ContestListResponse.yaml"
+          examples:
+            contests:
+              summary: A race
+              value:
+                data:
+                - id: ca/bc/elections/2024-10-19-general/mla/abm
+                  election_id: ca/bc/elections/2024-10-19-general
+                  office:
+                    id: ca/bc/legislative-assembly/mla
+                    title: Member of the Legislative Assembly
+                    title_fr: null
+                    body_name: Legislative Assembly of British Columbia
+                    body_level: provincial_territorial
+                    jurisdiction: ca-bc
+                  district:
+                    id: ca/bc/electoral-districts/2023/abm
+                    boundary_set_id: ca/bc/electoral-districts/2023
+                    code: ABM
+                    name_as_shown: Abbotsford-Mission
+                  seats: 1
+                  method: fptp
+                  status: decided
+                  voting_day: null
+                  question_number: null
+                  question_text: null
+                  question_text_fr: null
+                  threshold_as_shown: null
+                  links:
+                    self: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm
+                    candidacies: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/candidacies
+                    results: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/results
+                    district: /v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor: null
+                  count: null
+                links:
+                  self: /v1/elections/ca%2Fbc%2Felections%2F2024-10-19-general/contests
+                  next: null
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

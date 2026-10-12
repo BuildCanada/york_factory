@@ -1,0 +1,86 @@
+title: Revision
+description: >-
+  A committed registry revision: the public version unit. fact-factory's registry commits
+  one whenever an input changes, and records what it read (`inputs`: the roster captures,
+  the spending version of each slice it resolved). Every answer given `as_of` a revision
+  is reproducible. The API serves the revisions its derived tables (search names and
+  spending summaries) are built at or before; `served` says which.
+type: object
+required: [id, number, kind, reason, committed_at, inputs, served, snapshots, derived, links]
+properties:
+  id:
+    $ref: RevisionGid.yaml
+    description: The revision's global ID.
+  number:
+    $ref: RevisionNumber.yaml
+    description: The revision number, the value `as_of` takes.
+  kind:
+    type: string
+    description: >-
+      What the revision did: roster (rebuilt the rosters), resolution (resolved spending
+      slices), decision (applied reviewed decisions), entities, full, or release (a batch
+      release from before the continuous registry, kept as revisions 1 to 14).
+    examples: [resolution]
+  reason:
+    type: [string, 'null']
+    description: Why the revision ran, in fact-factory's words.
+    examples: ['Dagster run 4b1c…']
+  committed_at:
+    description: When the revision committed. A timestamp `as_of` resolves to the newest revision committed at or before it.
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'
+  inputs:
+    type: object
+    additionalProperties: true
+    description: >-
+      What the revision read, as fact-factory recorded it: `slices` ({slice label: spending
+      version}) for each spending slice it resolved in full, `rosters` for a revision that
+      built the rosters, `activations` (the digest of the active match rules).
+    examples: [{slices: {sources/ca/tbs/proactive_grants: '78'}}]
+  versions:
+    type: [object, 'null']
+    additionalProperties: true
+    description: The rule versions the revision resolved under, per slice.
+    examples: [null]
+  served:
+    type: boolean
+    description: >-
+      True when the API can answer `as_of` this revision: its derived tables are built at
+      or after it. Later revisions are served once the next build finishes.
+    examples: [true]
+  snapshots:
+    type: array
+    description: The names of the snapshots that pin this revision.
+    items:
+      $ref: SnapshotName.yaml
+    examples: [[release-14]]
+  derived:
+    description: The derived-table build at this revision (counts and checks), or null when none was built at it.
+    oneOf:
+      - type: object
+        required: [built_at, counts, checks]
+        properties:
+          built_at:
+            $ref: Timestamp.yaml
+            description: When the build finished.
+          counts:
+            type: object
+            additionalProperties: true
+            description: What the build added and retired, per derived table.
+          checks:
+            type: array
+            description: The build's checks; it commits only when every blocking check passes.
+            items:
+              type: object
+              additionalProperties: true
+      - type: 'null'
+  links:
+    type: object
+    description: Relative links for the revision.
+    required: [self]
+    properties:
+      self:
+        type: string
+        description: This revision.
+        examples: [/v1/revisions/31]

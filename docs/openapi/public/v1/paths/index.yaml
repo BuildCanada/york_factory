@@ -1,0 +1,80 @@
+# /
+get:
+  operationId: getIndex
+  summary: API index
+  description: |-
+    The front door. Names the latest revision and links to every collection, the OpenAPI
+    document, the docs, llms.txt and the MCP server. Start here, or at
+    https://data.buildcanada.com/api/llms.txt.
+  tags:
+  - Discovery
+  x-fern-sdk-method-name: index
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters: []
+  responses:
+    '200':
+      description: The index.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/IndexResponse.yaml"
+          examples:
+            index:
+              summary: The index
+              value:
+                data:
+                  name: Build Canada Data API
+                  version: 1.0.0-alpha.3
+                  latest_revision: 31
+                  links:
+                    openapi: "/v1/openapi.json"
+                    docs: https://data.buildcanada.com/api
+                    llms_txt: https://data.buildcanada.com/api/llms.txt
+                    mcp: https://data.buildcanada.com/mcp
+                    revisions: "/v1/revisions"
+                    snapshots: "/v1/snapshots"
+                    datasets: "/v1/datasets"
+                    dictionary: "/v1/dictionary"
+                    search: "/v1/search?q={q}"
+                    entities: "/v1/entities"
+                    spending: "/v1/spending"
+                    elections: "/v1/elections"
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: "/v1"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

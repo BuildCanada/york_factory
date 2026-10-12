@@ -1,0 +1,121 @@
+# /contests/{contest_id}/candidacies
+get:
+  operationId: listContestCandidacies
+  summary: List a contest's candidates
+  description: |-
+    The candidates in one contest, by ballot name, with their verified contacts. Names and
+    addresses are served as the administrator publishes them; unverified contacts are
+    unconfirmed and are not served.
+  tags:
+  - Elections
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name:
+  - contests
+  - candidacies
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: contest_id
+    in: path
+    required: true
+    description: "The contest's ID. Percent-encode it in the path."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/elections/2024-10-19-general/mla/abm"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: List a contest's candidates.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/CandidacyListResponse.yaml"
+          examples:
+            candidacies:
+              summary: A candidate
+              value:
+                data:
+                - id: 01M3TP5P62RM2298Y7AC2WYJJ4
+                  contest_id: ca/bc/elections/2024-10-19-general/mla/abm
+                  ballot_name: Alexis, Pam
+                  legal_name: null
+                  party_key: bc-ndp
+                  party_as_shown: BC NDP
+                  status: accepted
+                  incumbent: true
+                  residence_address: null
+                  residence_city: Mission
+                  residence_province: BC
+                  residence_postal_code: null
+                  agents: []
+                  declared_result: elected
+                  person_id: null
+                  status_changed_at: null
+                  contacts:
+                  - kind: email
+                    platform: null
+                    value: pam.alexis.mla@example.ca
+                    source_url: https://example.ca/contact
+                    linked_from_url: null
+                    evidence_quote: Email pam.alexis.mla@example.ca
+                    capture_sha256: null
+                    checked_at: '2026-09-30T19:12:00Z'
+                  capture:
+                    sha256: 388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    url: https://files.buildcanada.com/sha256/38/388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                    source_url: https://elections.bc.ca/2024-provincial-general-election/
+                    retrieved_at: '2026-09-30T18:02:11Z'
+                  links:
+                    self: /v1/candidacies/01M3TP5P62RM2298Y7AC2WYJJ4
+                    contest: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 50
+                  next_cursor: null
+                  count: null
+                links:
+                  self: /v1/contests/ca%2Fbc%2Felections%2F2024-10-19-general%2Fmla%2Fabm/candidacies
+                  next: null
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

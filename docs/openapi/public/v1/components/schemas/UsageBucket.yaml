@@ -1,0 +1,41 @@
+title: UsageBucket
+description: Usage in one time bucket, for one key and operation when grouped by them.
+type: object
+required: [bucket_start, requests, units, cache_hits, errors_4xx, errors_5xx]
+properties:
+  bucket_start:
+    $ref: Timestamp.yaml
+    description: The start of the bucket (minute, hour or day, UTC).
+  key_id:
+    type: [string, 'null']
+    description: The key, when grouped by key.
+    examples: [key_981]
+  operation:
+    type: [string, 'null']
+    description: The operationId, when grouped by operation.
+    examples: [getEntity]
+  requests:
+    type: integer
+    minimum: 0
+    description: Requests made, including 304s and errors.
+    examples: [412]
+  units:
+    type: integer
+    minimum: 0
+    description: Units charged.
+    examples: [530]
+  cache_hits:
+    type: integer
+    minimum: 0
+    description: Requests answered from the edge cache.
+    examples: [288]
+  errors_4xx:
+    type: integer
+    minimum: 0
+    description: Requests answered with a 4xx status, 429s included.
+    examples: [3]
+  errors_5xx:
+    type: integer
+    minimum: 0
+    description: Requests answered with a 5xx status.
+    examples: [0]

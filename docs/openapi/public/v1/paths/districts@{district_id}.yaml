@@ -1,0 +1,95 @@
+# /districts/{district_id}
+get:
+  operationId: getDistrict
+  summary: Get a district
+  description: |-
+    One electoral district with its boundary as a GeoJSON MultiPolygon (EPSG:4326, from
+    PostGIS).
+  tags:
+  - Elections
+  x-fern-sdk-method-name: get
+  x-fern-sdk-group-name: districts
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: short
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: district_id
+    in: path
+    required: true
+    description: "The district's ID. Percent-encode it in the path."
+    schema: {"$ref": "../components/schemas/ElectionId.yaml"}
+    example: "ca/bc/electoral-districts/2023/abm"
+  responses:
+    '200':
+      description: Get a district.
+      headers:
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/DistrictResponse.yaml"
+          examples:
+            district:
+              summary: Abbotsford-Mission
+              value:
+                data:
+                  id: ca/bc/electoral-districts/2023/abm
+                  boundary_set:
+                    id: ca/bc/electoral-districts/2023
+                    jurisdiction: ca-bc
+                    kind: district
+                    legal_instrument: null
+                    in_force_from: '2024-10-19'
+                    in_force_to: null
+                  code: ABM
+                  name_as_shown: Abbotsford-Mission
+                  geometry:
+                    type: MultiPolygon
+                    coordinates:
+                    - - - - -122.3
+                          - 49.1
+                        - - -122.2
+                          - 49.1
+                        - - -122.2
+                          - 49.2
+                        - - -122.3
+                          - 49.1
+                  links:
+                    self: /v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm
+                meta:
+                  revision: null
+                  snapshot: null
+                  as_of: '2026-10-01T03:00:00Z'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                links:
+                  self: /v1/districts/ca%2Fbc%2Felectoral-districts%2F2023%2Fabm
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

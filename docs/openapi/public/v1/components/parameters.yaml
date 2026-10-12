@@ -1,0 +1,146 @@
+# Shared parameters. Referenced from paths/*.yaml as ../components/parameters.yaml#/<Name>.
+AsOf:
+  name: as_of
+  in: query
+  required: false
+  description: >-
+    Pins the answer to one registry revision, so the same URL returns the same answer
+    forever. A revision number (`31`) pins that revision. A snapshot name (`release-14`)
+    pins the revision the snapshot names. An RFC 3339 timestamp (`2026-10-01T03:00:00Z`) or
+    a date (`2026-10-01`, read as 00:00 UTC) resolves to the newest revision committed at or
+    before it. Omitted means the latest revision the API serves, which the response names
+    in `meta.revision` and in its `self` link; pass that back to reproduce it. A value
+    before the earliest served revision, or a revision committed after the latest served
+    one, returns 404 not_yet_published.
+  schema:
+    type: string
+    pattern: '^([1-9][0-9]*|[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2}))?|[a-z][a-z0-9._-]*)$'
+    maxLength: 100
+  examples:
+    revision:
+      summary: Pin revision 31
+      value: '31'
+    snapshot:
+      summary: Pin the revision snapshot release-14 names
+      value: release-14
+    timestamp:
+      summary: The revision current at a time
+      value: '2026-10-01T03:00:00Z'
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  description: Items per page, 1 to 200. Default 50. Pages over 50 cost 2 units instead of 1.
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 200
+    default: 50
+  example: 50
+Cursor:
+  name: cursor
+  in: query
+  required: false
+  description: >-
+    The opaque `meta.next_cursor` of the previous page. Send it with the same other
+    parameters. A cursor carries its revision, so pages stay consistent while newer
+    revisions commit; sending it with a different `as_of` returns 409 revision_mismatch.
+  schema:
+    type: string
+    maxLength: 512
+  example: c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
+Count:
+  name: count
+  in: query
+  required: false
+  description: Set to `exact` to return the total in `meta.count`. Costs 2 more units. Omit it when paging.
+  schema:
+    type: string
+    enum: [exact]
+  example: exact
+Fields:
+  name: fields
+  in: query
+  required: false
+  description: >-
+    Comma-separated top-level fields of each item to return, such as `id,name,status`.
+    `id` and `cite` are always returned. Unknown names return 400 invalid_parameter.
+  style: form
+  explode: false
+  schema:
+    type: array
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9_]*$'
+  example: [id, name, status]
+AcceptLanguage:
+  name: Accept-Language
+  in: header
+  required: false
+  description: Set to `fr` for French `cite` and caveat `text`. Data values are never translated; `name_fr` carries French names.
+  schema:
+    type: string
+    enum: [en, fr]
+    default: en
+  example: fr
+IfNoneMatch:
+  name: If-None-Match
+  in: header
+  required: false
+  description: An ETag from an earlier response. When it still matches, the API answers 304 Not Modified, which costs no units.
+  schema:
+    type: string
+  example: '"r11-3f9a2c4e8b1d"'
+EntityId:
+  name: id
+  in: path
+  required: true
+  description: >-
+    The entity: its bare 26-character ULID, or its percent-encoded global ID
+    (`gid%3A%2F%2Fbuildcanada%2FEntity%2F01J9ZK4T6M8Q2R5V7X3B1N0C4D`).
+  schema:
+    type: string
+    pattern: '^((gid://buildcanada/Entity/)?[0-9A-HJKMNP-TV-Z]{26})$'
+  example: 01J9ZK4T6M8Q2R5V7X3B1N0C4D
+ValidOn:
+  name: valid_on
+  in: query
+  required: false
+  description: >-
+    Only items true in the world on this date: valid_from on or before it (or blank) and
+    valid_to after it (or blank). This is real-world time; `as_of` is data history.
+  schema:
+    type: string
+    format: date
+  example: '2024-04-01'
+SpendingRole:
+  name: role
+  in: query
+  required: false
+  description: The entity's role on the rows. `recipient` (default) or `payer`.
+  schema:
+    type: string
+    enum: [payer, recipient]
+    default: recipient
+  example: recipient
+SpendingSource:
+  name: source
+  in: query
+  required: false
+  description: Only rows of these sources, comma-separated. Amounts of different sources overlap; never add them.
+  style: form
+  explode: false
+  schema:
+    type: array
+    items:
+      $ref: schemas/SourceKey.yaml
+  example: [proactive_grants]
+FiscalYear:
+  name: fiscal_year
+  in: query
+  required: false
+  description: Only rows of this Government of Canada fiscal year, as `YYYY-YY` (`2024-25` is April 2024 to March 2025).
+  schema:
+    $ref: schemas/FiscalYear.yaml
+  example: '2024-25'

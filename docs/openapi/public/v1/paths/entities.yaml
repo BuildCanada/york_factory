@@ -1,0 +1,172 @@
+# /entities
+get:
+  operationId: listEntities
+  summary: List entities
+  description: |-
+    Entities of the registry, filtered by class, subtype, jurisdiction, status and the
+    date they were valid on. To find an entity by name or identifier use /search; this
+    operation lists, it does not match names.
+  tags:
+  - Entities
+  x-fern-sdk-method-name: list
+  x-fern-sdk-group-name: entities
+  x-bc-phase: 1
+  x-bc-units:
+    base: 1
+    large_page: 2
+    count_exact: 2
+  x-bc-scopes:
+  - read:public
+  x-bc-cache: revision
+  x-fern-pagination:
+    cursor: "$request.cursor"
+    next_cursor: "$response.meta.next_cursor"
+    results: "$response.data"
+  security:
+  - ApiKey: []
+  - OAuth2:
+    - read:public
+  - {}
+  parameters:
+  - name: class
+    in: query
+    required: false
+    description: Only entities of this class.
+    schema:
+      "$ref": "../components/schemas/EntityClass.yaml"
+    example: government_org
+  - name: subtype
+    in: query
+    required: false
+    description: Only entities of this subtype, such as municipal_government.
+    schema:
+      type: string
+      pattern: "^[a-z][a-z0-9_]*$"
+    example: municipal_government
+  - name: jurisdiction
+    in: query
+    required: false
+    description: Only entities of this jurisdiction.
+    schema:
+      "$ref": "../components/schemas/Jurisdiction.yaml"
+    example: ca-ab
+  - name: status
+    in: query
+    required: false
+    description: Only entities with this roster status, such as active or dissolved.
+    schema:
+      type: string
+      pattern: "^[a-z][a-z0-9_]*$"
+    example: active
+  - "$ref": "../components/parameters.yaml#/ValidOn"
+  - name: sort
+    in: query
+    required: false
+    description: Sort order. `id` (default, stable) or `name`.
+    schema:
+      type: string
+      enum:
+      - id
+      - name
+      default: id
+    example: name
+  - "$ref": "../components/parameters.yaml#/Fields"
+  - "$ref": "../components/parameters.yaml#/Count"
+  - "$ref": "../components/parameters.yaml#/AsOf"
+  - "$ref": "../components/parameters.yaml#/AcceptLanguage"
+  - "$ref": "../components/parameters.yaml#/IfNoneMatch"
+  - "$ref": "../components/parameters.yaml#/Limit"
+  - "$ref": "../components/parameters.yaml#/Cursor"
+  responses:
+    '200':
+      description: A page of entities.
+      headers:
+        ETag:
+          "$ref": "../components/headers.yaml#/ETag"
+        Cache-Control:
+          "$ref": "../components/headers.yaml#/CacheControl"
+        BC-Revision:
+          "$ref": "../components/headers.yaml#/BCRevision"
+        RateLimit:
+          "$ref": "../components/headers.yaml#/RateLimit"
+        RateLimit-Policy:
+          "$ref": "../components/headers.yaml#/RateLimitPolicy"
+        BC-Quota-Remaining:
+          "$ref": "../components/headers.yaml#/QuotaRemaining"
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/schemas/EntityListResponse.yaml"
+          examples:
+            municipalities:
+              summary: Alberta municipal governments
+              value:
+                data:
+                - id: gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D
+                  entity_class: government_org
+                  subtype: municipal_government
+                  name: Town of Diamond Valley
+                  name_fr:
+                  aliases: []
+                  anchor: ca-ab/municipal_affairs/municipalities:0417
+                  jurisdiction: ca-ab
+                  status: active
+                  redirected_to:
+                  valid_from: '2023-01-01'
+                  valid_to:
+                  attributes:
+                    municipality_type_raw: Town
+                  links:
+                    identifiers: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/identifiers?as_of=31"
+                    relationships: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/relationships?as_of=31"
+                    lineage: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/lineage?as_of=31"
+                    spending: "/v1/entities/01J9ZK4T6M8Q2R5V7X3B1N0C4D/spending?as_of=31"
+                  provenance:
+                    asset: entities/entities
+                    revision: 29
+                    recorded_at: '2026-09-25T18:02:11Z'
+                    capture:
+                    locator:
+                    source:
+                      origin: roster
+                      source_key: ca-ab/municipal_affairs/municipalities
+                      capture_sha256: 388298822179d1c949ea92a24e651d6025055e90a421202f008931b7724167ea
+                      row_number: 212
+                    parser_version:
+                    license: OGL-Alberta-2.1
+                  cite: >-
+                    Build Canada entity registry revision 31, gid://buildcanada/Entity/01J9ZK4T6M8Q2R5V7X3B1N0C4D;
+                    from the Alberta municipal roster, row 212.
+                meta:
+                  revision: 31
+                  snapshot:
+                  as_of: '31'
+                  request_id: req_01JA8X3M2Q9R4T6V8W0Y2Z4B6C
+                  caveats: []
+                  limit: 1
+                  next_cursor: c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
+                  count:
+                links:
+                  self: "/v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=31"
+                  next: >-
+                    /v1/entities?class=government_org&subtype=municipal_government&jurisdiction=ca-ab&limit=1&as_of=31&cursor=c1.eyJyIjoxMSwiayI6IjAxSjlaSzRUNk04UTJSNVY3WDNCMU4wQzREIn0.Jq3v
+    '304':
+      "$ref": "../components/responses.yaml#/NotModified"
+    '400':
+      "$ref": "../components/problems.yaml#/BadRequest"
+    '401':
+      "$ref": "../components/problems.yaml#/Unauthorized"
+    '403':
+      "$ref": "../components/problems.yaml#/Forbidden"
+    '404':
+      "$ref": "../components/problems.yaml#/NotFound"
+    '409':
+      "$ref": "../components/problems.yaml#/Conflict"
+    '422':
+      "$ref": "../components/problems.yaml#/UnprocessableEntity"
+    '429':
+      "$ref": "../components/problems.yaml#/TooManyRequests"
+    '500':
+      "$ref": "../components/problems.yaml#/InternalError"
+    '503':
+      "$ref": "../components/problems.yaml#/ServiceUnavailable"

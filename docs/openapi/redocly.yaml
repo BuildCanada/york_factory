@@ -1,0 +1,16 @@
+# Redocly lints the split source files (Spectral lints the bundle). Structural validity and
+# example validation, with file and line numbers pointing at the source.
+extends:
+  - recommended
+rules:
+  no-invalid-media-type-examples: error
+  no-invalid-schema-examples: error
+  no-invalid-parameter-examples: error
+  operation-4xx-response: error
+  operation-operationId: error
+  operation-summary: error
+  operation-description: error
+  tag-description: error
+  security-defined: error
+  no-unused-components: off
+  info-license-strict: off

@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Refreshes docs/openapi/public/v1/dictionary-terms.json, the list of fact-factory
+# data dictionary terms the public API spec may name in x-bc-dictionary.
+#
+#   bin/openapi-sync-dictionary PATH [SOURCE_LABEL]
+#
+# PATH is fact-factory's docs/data-dictionary.yaml or its exported catalog/dictionary.json
+# (`fact-factory dictionary export`). SOURCE_LABEL records where the file came from, such as
+# "BuildCanada/fact-factory@6b102fe:docs/data-dictionary.yaml".
+
+require "json"
+require "yaml"
+
+path, label = ARGV
+abort "usage: bin/openapi-sync-dictionary PATH [SOURCE_LABEL]" unless path && File.file?(path)
+
+raw = File.read(path)
+doc = path.end_with?(".json") ? JSON.parse(raw) : YAML.safe_load(raw, aliases: true)
+definitions = doc["definitions"] || doc["terms"]
+abort "#{path} has no definitions" unless definitions
+
+terms = definitions.is_a?(Hash) ? definitions.keys : definitions.map { |t| t["term"] || t["name"] }
+out = {
+  "source" => label || path,
+  "dictionary_version" => doc["version"],
+  "synced_at" => Time.now.utc.strftime("%Y-%m-%d"),
+  "terms" => terms.compact.map(&:to_s).sort
+}
+
+target = File.expand_path("../docs/openapi/public/v1/dictionary-terms.json", __dir__)
+File.write(target, JSON.pretty_generate(out) + "\n")
+puts "Wrote #{out["terms"].size} terms to #{target}"

@@ -1,0 +1,42 @@
+title: SpendingRecordRef
+description: A compact reference to a spending row. Fetch the full row from its `id`.
+type: object
+x-bc-record: true
+required: [id, source, fiscal_year, amount, currency, payer, title]
+properties:
+  id:
+    $ref: SpendingRecordGid.yaml
+    description: The row's global ID.
+    x-bc-dictionary: spending_key
+  source:
+    $ref: SourceKey.yaml
+    description: The spending source.
+    x-bc-dictionary: source_key
+  fiscal_year:
+    description: The fiscal year the row belongs to, by the source's rule.
+    x-bc-dictionary: fiscal_year
+    oneOf:
+      - $ref: FiscalYear.yaml
+      - type: 'null'
+  amount:
+    description: The row's amount; see the source's measure. Null when the source gives no single value.
+    x-bc-dictionary: amount
+    oneOf:
+      - $ref: Amount.yaml
+      - type: 'null'
+  currency:
+    description: ISO 4217 code of amount.
+    x-bc-dictionary: currency
+    oneOf:
+      - $ref: CurrencyCode.yaml
+      - type: 'null'
+  payer:
+    type: [string, 'null']
+    description: The paying government organization as the source names it.
+    x-bc-dictionary: payer
+    examples: [Canadian Heritage]
+  title:
+    type: [string, 'null']
+    description: Short name of the contract, agreement, award or project.
+    x-bc-dictionary: title
+    examples: [Canada Cultural Spaces Fund]

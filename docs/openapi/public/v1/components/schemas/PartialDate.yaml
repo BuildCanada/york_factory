@@ -1,0 +1,9 @@
+title: PartialDate
+description: >-
+  A date at the precision the source gives it: a year (`2023`), a year and month
+  (`2023-01`) or a full ISO date (`2023-01-01`). Never padded to a false precision.
+type: string
+pattern: '^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$'
+examples:
+  - '2023-01-01'
+  - '2005'

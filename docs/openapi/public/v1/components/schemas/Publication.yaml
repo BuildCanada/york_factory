@@ -1,0 +1,34 @@
+title: Publication
+description: >-
+  One parse of one spending resource's capture, as fact-factory committed it
+  (spending_publications). A source's rows as of a revision are those of the publications
+  that revision's spending version holds; a newer capture of the resource replaces its
+  publication in a later version.
+type: object
+x-bc-record: true
+required: [id, version, resource_id, committed_at]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: The publication's ID.
+    x-bc-dictionary: publication_id
+    examples: [412]
+  version:
+    type: integer
+    minimum: 1
+    description: >-
+      The spending version that committed this publication. A revision pins one version per
+      spending slice; the publication is read from that version until a later one replaces it.
+    x-bc-dictionary: snapshot_id
+    examples: [78]
+  resource_id:
+    $ref: Sha256.yaml
+    description: The source resource (one file or feed) the publication parsed.
+    x-bc-dictionary: resource_id
+  committed_at:
+    description: When the publication was committed.
+    x-bc-dictionary: committed_at
+    oneOf:
+      - $ref: Timestamp.yaml
+      - type: 'null'

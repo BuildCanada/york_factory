@@ -1,0 +1,70 @@
+title: DictionaryTerm
+description: >-
+  One definition from fact-factory's shared data dictionary (docs/data-dictionary.yaml).
+  Every data field in this API names its term in the `x-bc-dictionary` extension of the
+  OpenAPI document. Terms describe the published column; where the API renders a value
+  differently (a fiscal year label, a boolean for 0 or 1, a timestamp for a Unix time) the
+  field's own description says so.
+type: object
+required: [term, meaning, type, values, blank_means, known_gaps, links]
+properties:
+  term:
+    type: string
+    pattern: '^[a-z][a-z0-9_]*$'
+    description: The term's name.
+    examples: [fiscal_year]
+  meaning:
+    type: string
+    description: What the value is, in plain language.
+    examples: [Four-digit year identifying the Government of Canada fiscal year (April to March) the record belongs to.]
+  type:
+    type: [string, 'null']
+    description: The physical type in the published table.
+    examples: [int32]
+  units:
+    type: [string, 'null']
+    description: Units or currency, when the value is a quantity.
+    examples: [null]
+  values:
+    type: array
+    description: The allowed values when the set is closed, each with its meaning when the dictionary gives one. Empty for open sets.
+    items:
+      type: object
+      required: [value]
+      properties:
+        value:
+          description: An allowed value.
+          type: [string, integer, boolean]
+          examples: [grant]
+        meaning:
+          type: [string, 'null']
+          description: What the value means.
+          examples: [A grant agreement.]
+  blank_means:
+    type: [string, 'null']
+    description: What a null or empty value means.
+    examples: [The source gives no parseable year.]
+  known_gaps:
+    type: [string, 'null']
+    description: Where current data does not yet meet the definition.
+    examples: [Aggregated contracts publish a calendar year here.]
+  asset_notes:
+    type: object
+    description: Per-asset differences from the definition, keyed by asset key. Present on /dictionary/{term} only.
+    additionalProperties:
+      type: string
+    examples: [{sources/ca/tbs/proactive_grants: 'The fiscal year (April to March) containing agreement_start_date, named by the calendar year it starts in.'}]
+  links:
+    type: object
+    description: Relative and documentation links for the term.
+    required: [self, docs]
+    properties:
+      self:
+        type: string
+        description: This term.
+        examples: [/v1/dictionary/fiscal_year]
+      docs:
+        type: string
+        format: uri
+        description: The term's documentation page, with a Markdown twin.
+        examples: ['https://data.buildcanada.com/api/dictionary/fiscal_year']

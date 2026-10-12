@@ -44,7 +44,7 @@ class Search::Media::DefuddlerClientTest < ActiveSupport::TestCase
       resolver: ->(_host) { [ "8.8.8.8" ] }
     )
 
-    assert_raises(Search::Media::DefuddlerClient::TransientError) do
+    assert_raises(TransientError) do
       client.convert(url: "https://nationalpost.com/a")
     end
   end
@@ -56,7 +56,7 @@ class Search::Media::DefuddlerClientTest < ActiveSupport::TestCase
       resolver: ->(_host) { [ "8.8.8.8" ] }
     )
 
-    error = assert_raises(Search::Media::DefuddlerClient::TransientError) do
+    error = assert_raises(TransientError) do
       client.convert(url: "https://nationalpost.com/a")
     end
     assert_equal "connection reset", error.message

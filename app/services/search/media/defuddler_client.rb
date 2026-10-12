@@ -7,7 +7,6 @@ module Search
 
       class Error < StandardError; end
       class ConfigurationError < Error; end
-      class TransientError < Error; end
       class InvalidResponse < Error; end
 
       def initialize(
@@ -34,7 +33,9 @@ module Search
         end
 
         status = response.status.to_i
-        raise TransientError, "Defuddler returned HTTP #{status}" if status == 408 || status == 429 || status >= 500
+        if status == 408 || status == 429 || status >= 500
+          raise TransientError.new("Defuddler returned HTTP #{status}", status: status)
+        end
         raise Error, "Defuddler returned HTTP #{status}" unless status.between?(200, 299)
 
         body = response.body.to_s

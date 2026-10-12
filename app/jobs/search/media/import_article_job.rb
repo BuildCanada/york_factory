@@ -1,7 +1,7 @@
 module Search
   module Media
     class ImportArticleJob < ApplicationJob
-      retry_on DefuddlerClient::TransientError, wait: :polynomially_longer, attempts: 6
+      retry_on TransientError, wait: :polynomially_longer, attempts: 6
       discard_on ArticleNormalizer::Invalid, SafeUrl::Invalid
 
       def perform(feed_id, feed_entry)

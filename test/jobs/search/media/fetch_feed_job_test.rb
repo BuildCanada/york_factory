@@ -3,13 +3,21 @@ require "test_helper"
 class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
   include ActiveJob::TestHelper
 
-  Fetch = Struct.new(:metadata, :started, :succeeded, keyword_init: true) do
+  Fetch = Struct.new(:metadata, :started, :succeeded, :failed, keyword_init: true) do
     def start!(at:)
       self.started = at
     end
 
     def succeed!(**attributes)
       self.succeeded = attributes
+    end
+
+    def fail!(**attributes)
+      self.failed = attributes
+    end
+
+    def persisted?
+      true
     end
   end
 
@@ -25,6 +33,10 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
   ) do
     def update!(**attributes)
       attributes.each { |name, value| public_send("#{name}=", value) }
+    end
+
+    def persisted?
+      true
     end
   end
 
@@ -43,6 +55,24 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
 
       result
     end
+  end
+
+  ErrorFetcher = Struct.new(:error) do
+    def call(**)
+      raise error
+    end
+  end
+
+  test "limits concurrent fetches by publisher across feeds" do
+    first = create_feed(name: "Publisher feed one", url: "https://news.example.com/one", domain: "example.com")
+    second = create_feed(name: "Publisher feed two", url: "https://feeds.example.com/two", domain: "example.com")
+    other = create_feed(name: "Other publisher", url: "https://other.example/feed", domain: "other.example")
+
+    first_key = Search::Media::FetchFeedJob.new(first.id).concurrency_key
+    assert_equal first_key, Search::Media::FetchFeedJob.new(second.id).concurrency_key
+    assert_not_equal first_key, Search::Media::FetchFeedJob.new(other.id).concurrency_key
+    assert_equal 1, Search::Media::FetchFeedJob.concurrency_limit
+    assert_equal 5.minutes, Search::Media::FetchFeedJob.concurrency_duration
   end
 
   test "records feed success and enqueues each article independently" do
@@ -111,5 +141,71 @@ class Search::Media::FetchFeedJobTest < ActiveJob::TestCase
     assert_equal 2, fetcher.requests.size
     assert_equal feed.fallback_url, fetcher.requests.last.fetch(:url)
     assert_equal "fallback-checksum", fetch.succeeded.fetch(:response_checksum)
+  end
+
+  test "retries a rate limit using the publisher delay without raising" do
+    fetch = Fetch.new(metadata: {})
+    feed = Feed.new(
+      id: 11,
+      enabled?: true,
+      strategy: "rss",
+      url: "https://example.com/feed",
+      language: "en",
+      allow_http?: false,
+      fetches: Fetches.new(fetch)
+    )
+    error = TransientError.new(
+      "feed returned HTTP 429",
+      retry_after: 120
+    )
+    job = Search::Media::FetchFeedJob.new(feed.id)
+    job.executions = 1
+    job.define_singleton_method(:feed_for) { |_id| feed }
+    job.define_singleton_method(:feed_fetcher) { ErrorFetcher.new(error) }
+
+    assert_enqueued_with(job: Search::Media::FetchFeedJob, args: [ feed.id ], at: 120.seconds.from_now) do
+      job.perform(feed.id)
+    end
+
+    assert_equal "TransientError: feed returned HTTP 429", fetch.failed.fetch(:error)
+  end
+
+  test "stops retrying a rate limit after the final attempt without raising" do
+    fetch = Fetch.new(metadata: {})
+    feed = Feed.new(
+      id: 12,
+      enabled?: true,
+      strategy: "rss",
+      url: "https://example.com/feed",
+      language: "en",
+      allow_http?: false,
+      fetches: Fetches.new(fetch)
+    )
+    error = TransientError.new("feed returned HTTP 429", retry_after: 120)
+    job = Search::Media::FetchFeedJob.new(feed.id)
+    job.executions = Search::Media::FetchFeedJob::MAX_TRANSIENT_ATTEMPTS
+    job.define_singleton_method(:feed_for) { |_id| feed }
+    job.define_singleton_method(:feed_fetcher) { ErrorFetcher.new(error) }
+
+    assert_no_enqueued_jobs only: Search::Media::FetchFeedJob do
+      job.perform(feed.id)
+    end
+
+    assert fetch.failed
+  end
+
+  private
+
+  def create_feed(name:, url:, domain:)
+    Warehouse::MediaFeed.create!(
+      name: name,
+      strategy: "rss",
+      url: url,
+      publisher_name: name,
+      publisher_domain: domain,
+      language: "en",
+      cadence_seconds: 300,
+      next_fetch_at: 1.minute.ago
+    )
   end
 end

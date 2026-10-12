@@ -6,7 +6,7 @@ module Metrics
     ACCOUNT_DAILY_PLATFORMS = %w[linkedin tiktok].freeze
     ACCOUNT_DAILY_HISTORY_DAYS = 365
     ACCOUNT_DAILY_LOOKBACK_DAYS = 7
-    LINKEDIN_DAILY_WINDOW_DAYS = 89
+    LINKEDIN_DAILY_WINDOW_DAYS = 88
     TIKTOK_DAILY_WINDOW_DAYS = 180
 
     LINKEDIN_DAILY_FIELDS = %w[
@@ -237,7 +237,8 @@ module Metrics
     def each_date_window(from_date, to_date, days)
       window_start = from_date
       while window_start <= to_date
-        window_end = [ window_start + days - 1, to_date ].min
+        year_end = Date.new(window_start.year, 12, 31)
+        window_end = [ window_start + days - 1, year_end, to_date ].min
         yield window_start, window_end
         window_start = window_end + 1
       end

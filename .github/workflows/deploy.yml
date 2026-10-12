@@ -1,0 +1,158 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://yorkfactory.buildcanada.com
+    env:
+      RAILS_ENV: production
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify the tested commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          if [[ "$actual_sha" != "$DEPLOY_SHA" ]]; then
+            echo "Expected tested commit $DEPLOY_SHA, checked out $actual_sha" >&2
+            exit 1
+          fi
+
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libgeos-dev libproj-dev
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Configure deployment credentials
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${RAILS_MASTER_KEY:?RAILS_MASTER_KEY is required}"
+          : "${SSH_PRIVATE_KEY:?SSH_PRIVATE_KEY is required}"
+          : "${SSH_KNOWN_HOSTS:?SSH_KNOWN_HOSTS is required}"
+
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          install -m 600 /dev/null ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          install -m 600 /dev/null config/master.key
+          printf '%s\n' "$RAILS_MASTER_KEY" > config/master.key
+
+      - name: Deploy the tested commit to production
+        id: deploy
+        run: bin/kamal deploy
+
+      - name: Register release in PostHog (non-blocking)
+        id: posthog
+        if: steps.deploy.outcome == 'success'
+        continue-on-error: true
+        env:
+          DEPLOY_ACTOR: ${{ github.event.workflow_run.actor.login }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          posthog_project_id="$(bin/rails credentials:fetch posthog.project_id)"
+          posthog_personal_api_key="$(bin/rails credentials:fetch posthog.personal_api_key)"
+          posthog_api_host="$(bin/rails credentials:fetch posthog.api_host 2>/dev/null || true)"
+          posthog_api_host="${posthog_api_host:-https://us.posthog.com}"
+          release_url="${posthog_api_host%/}/api/projects/${posthog_project_id}/error_tracking/releases"
+
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${posthog_personal_api_key}" \
+            "${release_url}/hash/${DEPLOY_SHA}/")"
+
+          case "$status" in
+            200)
+              echo "PostHog release ${DEPLOY_SHA} already exists"
+              ;;
+            404)
+              jq --null-input \
+                --arg version "$DEPLOY_SHA" \
+                --arg project "york_factory" \
+                --arg repository "$GITHUB_REPOSITORY" \
+                --arg commit_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$DEPLOY_SHA" \
+                --arg actor "$DEPLOY_ACTOR" \
+                --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+                '{
+                  version: $version,
+                  project: $project,
+                  hash_id: $version,
+                  metadata: {
+                    environment: "production",
+                    repository: $repository,
+                    commit_url: $commit_url,
+                    deployed_by: $actor,
+                    deployment_url: $run_url
+                  }
+                }' |
+                curl --fail-with-body --silent --show-error \
+                  --request POST \
+                  --header "Authorization: Bearer ${posthog_personal_api_key}" \
+                  --header "Content-Type: application/json" \
+                  --data-binary @- \
+                  "${release_url}/"
+              ;;
+            *)
+              echo "Could not check for an existing PostHog release (HTTP ${status})" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Report deployment result
+        if: always()
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          POSTHOG_OUTCOME: ${{ steps.posthog.outcome }}
+        shell: bash
+        run: |
+          if [[ "$DEPLOY_OUTCOME" == "success" ]]; then
+            echo "Deployed ${DEPLOY_SHA} to production." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$POSTHOG_OUTCOME" != "success" ]]; then
+              echo "::warning::Production deployed successfully, but PostHog release registration failed."
+              echo "PostHog release registration failed and should be retried separately." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "Production deployment did not complete successfully." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Remove local credential files
+        if: always()
+        shell: bash
+        run: |
+          rm -f config/master.key ~/.ssh/id_ed25519

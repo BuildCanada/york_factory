@@ -18,12 +18,23 @@ else
   PostHog.init(api_key: nil, silence_disabled_client_error: true)
 end
 
+# Console and runner processes are interactive: an ad-hoc typo raises on the
+# operator's terminal, so capturing it adds only triage noise. bin/rails
+# console / runner load these command classes before the app boots; a server
+# or job process never does.
+module InteractiveProcess
+  def self.detected?
+    defined?(Rails::Command::ConsoleCommand).present? ||
+      defined?(Rails::Command::RunnerCommand).present?
+  end
+end
+
 PostHog::Rails.configure do |config|
   # Auto-capture unhandled exceptions in controllers
-  config.auto_capture_exceptions = true
+  config.auto_capture_exceptions = !InteractiveProcess.detected?
 
   # Also capture exceptions that Rails rescues (e.g. ActiveRecord::RecordNotFound)
-  config.report_rescued_exceptions = true
+  config.report_rescued_exceptions = !InteractiveProcess.detected?
 
   # Auto-instrument ActiveJob failures
   config.auto_instrument_active_job = true

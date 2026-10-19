@@ -17,9 +17,8 @@ engagements or slugs. No existing memo records are migrated into polls.
 4. Review the crosstabs and chart data for disclosure before publication.
    Surveyor's administrative export has **unsuppressed small cells**. Replace the
    attached JSON and chart rows with the reviewed public versions as needed.
-5. Save the analysis markdown to generate a branded PDF automatically. Upload the
-   reviewed crosstabs JSON to generate Excel with a Summary & Index sheet followed
-   by one sheet per question. Refresh the editor to check generated downloads.
+5. Upload the Report PDF printed by Surveyor (`npm run poll -- print`) and the
+   crosstabs JSON. The Report PDF is the poll's public download; nothing is generated.
 6. Add the bilingual news release, subscriber email subject/body, and short tweet.
    Use the normal draft preview and publication controls to publish the report.
 7. Copy the approved email into the existing subscriber campaign workflow
@@ -97,8 +96,11 @@ Authenticated `POST /api/v1/polls` and `PATCH /api/v1/polls/:slug` accept a
 - `fieldwork_start`, `fieldwork_end` (ISO dates, end must not precede start).
 - `methodology_en/fr`, `news_release_en/fr`, `subscriber_email_en/fr` (markdown).
 - `email_subject_en/fr`, `tweet_en/fr` (text).
-- Uploads: `crosstabs_json` (Surveyor schema v2); optional legacy `crosstabs_pdf_en/fr`.
-  Analysis PDFs and `crosstabs_xlsx` are generated, not uploaded.
+- Uploads: `crosstabs_json` (Surveyor schema v2) and `report_pdf_en/fr` (the report
+  Surveyor prints with `npm run poll -- print`). Analysis PDFs and `crosstabs_xlsx` are
+  no longer generated; older polls keep the ones they have. When a report PDF is
+  attached it is the poll's only public report download (served as `analysis_pdf`),
+  replacing any analysis PDF and the crosstab Excel/JSON.
   Send file uploads as multipart or use ActiveStorage signed blob IDs. PDF and JSON
   content types are validated; attachments are limited to 100 MB each.
 
@@ -111,33 +113,19 @@ URLs. English PDFs are used when a French version is missing; JSON is bilingual.
 an authenticated admin preview. It is absent from public responses.
 
 `GET /api/v1/polls/:slug/downloads/:asset` serves `analysis_markdown`,
-`analysis_pdf_en/fr`, `crosstabs_xlsx`, `crosstabs_json`, or legacy `crosstabs_pdf_en/fr`. Every request checks
+`analysis_pdf_en/fr`, `report_pdf_en/fr`, `crosstabs_xlsx` or `crosstabs_json`. Every request checks
 publication and preview access. Draft/scheduled/unpublished assets return 404 to
 public callers. TradingPost proxies downloads to preserve admin preview credentials;
 responses are not cached. `/polls/:slug.md` is a public, complete
 markdown representation including methodology, news release and download links.
 
-## Automatic report generation
+## Report files
 
-`Polls::GenerateArtifactsJob` runs on the existing default queue after a successful
-save. Analysis markdown, takeaways, methodology, appendix, titles, dates and research
-metadata determine the PDF version. The crosstabs blob checksum, titles and release
-date determine the workbook version. Unchanged files are reused. Concurrent edits
-cannot be overwritten by older render jobs. Missing/obsolete generated files are
-omitted from the public download map; a direct request returns 503 until ready.
-The editor shows generation errors and retrying a save queues another attempt.
-
-The PDF has a cover, repeating Build Canada letterhead, page numbers, embedded
-Söhne/Financier/Founders fonts, takeaways, analysis, vector charts, methodology and
-appendix. Launch copy is excluded. The report template is
-`app/views/polls/reports/analysis.html.erb`; its fonts/logo reuse the website assets
-in `vendor/poll_reports`. Chart fences render with the pinned charts CLI. Images
-must be uploaded through the CMS editor; report rendering makes no external network
-requests. English and French reports are generated when their analysis exists.
-
-Excel keeps numeric percentages, counts, missing values and weighting/base notes,
-with bilingual question/answer labels, split variants, a linked index and frozen
-headers. Text is escaped as text, never executed as an Excel formula. Filenames use
+York Factory does not generate report files. A poll's report is the Report PDF
+printed by Surveyor (`npm run poll -- print`) and uploaded as `report_pdf_en/fr`;
+when attached it is the only public report download. Polls published before this
+keep the analysis PDF and crosstabs workbook that were generated for them, served
+as before, and editors can remove them on the poll's edit page. Filenames use
 `Build Canada - YYYY-MM-DD - Poll title - Report.pdf` or `... - Crosstabs.json/xlsx`.
 Unreleased previews use `Draft` in place of a release date.
 
@@ -150,25 +138,12 @@ prefixed with that question's number. The Summary & Index sheet lists them under
 
 ## Rollout and verification
 
-Deploy York Factory with `bin/rails db:migrate`, then TradingPost. Keep the existing
-default-queue worker running (`bin/jobs`, or `SOLID_QUEUE_IN_PUMA=1`). The Docker
-image includes Chromium, Node 22 and the pinned charts CLI. For local development,
-install Chromium/Chrome, run `npm ci --prefix reports` and start `bin/jobs`.
-`CHROME_PATH` and `CHARTS_BIN` can override executable locations. Docker uses
-`CHROME_NO_SANDBOX=1` inside the app container; local Chrome retains its sandbox.
-
-No bcds change is required. To regenerate after a template change, increment
-`PollArtifacts::VERSION` and save the affected polls. Verify a generated PDF with
-Poppler, including all pages and embedded charts, and open the workbook in Excel.
-
-Run the poll model/API/admin, generation-job, PDF-template and workbook tests;
+Deploy York Factory, then TradingPost. Run the poll model, API and admin tests;
 TradingPost's chart/download tests and browser checks cover the public presentation.
-
-Reports use an edge-to-edge linen background. The cover has the Build Canada | Polling wordmark, survey scope, title and release date (Month Day, YYYY). Methodology markdown starts on page two, followed by takeaways and analysis. Subsequent pages show the Build Canada | Polling wordmark at top right and the poll’s public URL in the footer.
 
 ### Customer crosstabs and split-ballot results
 
-JSON downloads and Excel generation pass through `Polls::CrosstabsExport`. Each
+JSON downloads pass through `Polls::CrosstabsExport`. Each
 question/subgroup (including each arm/subgroup) needs at least 50 unweighted
 respondents. Below 50, or when no unweighted base is supplied, every value in
 that column is null in JSON and marked Suppressed in Excel. Exactly 50 is
@@ -181,9 +156,8 @@ each arm on its question sheet. Older uploads supply only arm-total columns; tho
 are transposed without inventing arm-by-demographic results. Re-export from
 Surveyor and replace the upload to populate the detailed arm breakdowns.
 
-Uploaded crosstab PDFs are not served by the customer download endpoint because
-their values cannot be automatically suppressed. Source uploads remain editor
-assets; customer JSON and regenerated Excel are the supported downloads.
+The Report PDF is published as uploaded; review it before attaching. Polls without
+one serve the customer JSON and any previously generated Excel.
 
 The same suppression projection applies to `dependentTables`, including nested arm results.
 

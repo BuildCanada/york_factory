@@ -30,11 +30,10 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "Private email"
   end
 
-  test "published poll Excel downloads are available without authentication" do
-    bytes = Polls::CrosstabsWorkbook.new(@poll).render
+  test "previously generated Excel downloads stay available without authentication" do
+    bytes = "PK previously generated workbook"
     @poll.crosstabs_xlsx.attach(io: StringIO.new(bytes), filename: "crosstabs.xlsx",
-      content_type: PollArtifacts::XLSX_TYPE, identify: false,
-      metadata: { source_digest: @poll.artifact_digest("crosstabs_xlsx") })
+      content_type: PollArtifacts::XLSX_TYPE, identify: false)
 
     get api_v1_polls_url
     assert_response :success
@@ -58,11 +57,10 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_equal markdown, response.body
   end
 
-  test "generated report links select French with English fallback and branded filenames" do
+  test "previously generated report links select French with English fallback and branded filenames" do
     @poll.update!(body_fr: "## Analyse")
     %w[analysis_pdf_en analysis_pdf_fr].each do |asset|
-      @poll.public_send(asset).attach(io: StringIO.new("%PDF-1.4 #{asset}"), filename: "#{asset}.pdf", content_type: "application/pdf", identify: false,
-        metadata: { source_digest: @poll.artifact_digest(asset) })
+      @poll.public_send(asset).attach(io: StringIO.new("%PDF-1.4 #{asset}"), filename: "#{asset}.pdf", content_type: "application/pdf", identify: false)
     end
     %w[en fr].each do |locale|
       get api_v1_poll_url(@poll.slug), params: { locale: locale }
@@ -75,14 +73,30 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
       assert_includes response.headers["Content-Disposition"], @poll.published_at.to_date.iso8601
       assert_includes response.headers["Content-Disposition"], "Poll"
     end
-    @poll.update!(body_fr: nil)
+    @poll.analysis_pdf_fr.purge
     get api_v1_poll_url(@poll.slug), params: { locale: "fr" }
     assert_includes response.parsed_body.dig("poll", "downloads", "analysis_pdf"), "analysis_pdf_en"
-    @poll.update!(body_en: "Changed")
-    get download_api_v1_poll_url(@poll.slug, asset: "analysis_pdf_en")
-    assert_response :service_unavailable
+  end
+
+  test "an uploaded report PDF replaces the generated report and crosstab downloads" do
+    @poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 generated"), filename: "a.pdf", content_type: "application/pdf", identify: false)
+    @poll.report_pdf_en.attach(io: StringIO.new("%PDF-1.4 report"), filename: "report.pdf", content_type: "application/pdf", identify: false)
+
+    %w[en fr].each do |locale|
+      get api_v1_poll_url(@poll.slug), params: { locale: locale }
+      downloads = response.parsed_body.dig("poll", "downloads")
+      assert_equal %w[analysis_markdown analysis_pdf], downloads.keys.sort
+      assert_includes URI(downloads["analysis_pdf"]).path, "/downloads/report_pdf_en"
+      get downloads["analysis_pdf"]
+      assert_response :success
+      assert_equal "%PDF-1.4 report", response.body
+      assert_includes response.headers["Content-Disposition"], "Report"
+    end
+
+    @poll.report_pdf_en.purge
     get api_v1_poll_url(@poll.slug)
-    assert_not response.parsed_body.dig("poll", "downloads").key?("analysis_pdf")
+    assert response.parsed_body.dig("poll", "downloads", "crosstabs_json")
+    assert_includes response.parsed_body.dig("poll", "downloads", "analysis_pdf"), "analysis_pdf_en"
   end
 
   test "poll index excludes memos and hides drafts" do

@@ -97,8 +97,11 @@ Authenticated `POST /api/v1/polls` and `PATCH /api/v1/polls/:slug` accept a
 - `fieldwork_start`, `fieldwork_end` (ISO dates, end must not precede start).
 - `methodology_en/fr`, `news_release_en/fr`, `subscriber_email_en/fr` (markdown).
 - `email_subject_en/fr`, `tweet_en/fr` (text).
-- Uploads: `crosstabs_json` (Surveyor schema v2); optional legacy `crosstabs_pdf_en/fr`.
-  Analysis PDFs and `crosstabs_xlsx` are generated, not uploaded.
+- Uploads: `crosstabs_json` (Surveyor schema v2) and `report_pdf_en/fr` (the report
+  Surveyor prints with `npm run poll -- print`). Analysis PDFs and `crosstabs_xlsx` are
+  generated, not uploaded. When a report PDF is attached it is the poll's only public
+  report download (served as `analysis_pdf`), replacing the generated analysis PDF and
+  the crosstab Excel/JSON; polls without one keep those downloads.
   Send file uploads as multipart or use ActiveStorage signed blob IDs. PDF and JSON
   content types are validated; attachments are limited to 100 MB each.
 
@@ -111,7 +114,7 @@ URLs. English PDFs are used when a French version is missing; JSON is bilingual.
 an authenticated admin preview. It is absent from public responses.
 
 `GET /api/v1/polls/:slug/downloads/:asset` serves `analysis_markdown`,
-`analysis_pdf_en/fr`, `crosstabs_xlsx`, `crosstabs_json`, or legacy `crosstabs_pdf_en/fr`. Every request checks
+`analysis_pdf_en/fr`, `report_pdf_en/fr`, `crosstabs_xlsx` or `crosstabs_json`. Every request checks
 publication and preview access. Draft/scheduled/unpublished assets return 404 to
 public callers. TradingPost proxies downloads to preserve admin preview credentials;
 responses are not cached. `/polls/:slug.md` is a public, complete

@@ -8,12 +8,10 @@ class PollPublicationTest < ActiveSupport::TestCase
     assert poll.errors[:fieldwork_end].any?
   end
 
-  test "survey scope is constrained and changing it invalidates the report" do
+  test "survey scope is constrained" do
     poll = Poll.new(slug: "scope", title_en: "Poll", survey_slug: "survey", body_en: "Analysis")
-    original = poll.artifact_digest("analysis_pdf_en")
     poll.survey_scope = "municipal"
     assert poll.valid?
-    assert_not_equal original, poll.artifact_digest("analysis_pdf_en")
     poll.survey_scope = "other"
     assert_not poll.valid?
     assert poll.errors[:survey_scope].any?
@@ -21,7 +19,7 @@ class PollPublicationTest < ActiveSupport::TestCase
 
   test "PDF downloads fall back to English and JSON is shared across locales" do
     poll = Poll.new(slug: "poll", title_en: "Poll", survey_slug: "survey", body_en: "Report")
-    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 test"), filename: "analysis.pdf", content_type: "application/pdf", identify: false, metadata: { source_digest: poll.artifact_digest("analysis_pdf_en") })
+    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 test"), filename: "analysis.pdf", content_type: "application/pdf", identify: false)
     poll.crosstabs_json.attach(io: StringIO.new("{}"), filename: "crosstabs.json", content_type: "application/json", identify: false)
     I18n.with_locale(:fr) do
       assert_equal({ "analysis_pdf" => "analysis_pdf_en", "crosstabs_json" => "crosstabs_json", "analysis_markdown" => "analysis_markdown" }, poll.poll_downloads)

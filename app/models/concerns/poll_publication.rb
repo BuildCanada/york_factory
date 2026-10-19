@@ -35,11 +35,12 @@ module PollPublication
       downloads["analysis_markdown"] = "analysis_markdown" if body.present?
       return downloads
     end
+    # Older polls: the analysis PDF and workbook generated before Report PDFs existed.
     downloads = {}
-    pdf = artifact_current?("analysis_pdf_#{locale}") ? "analysis_pdf_#{locale}" : "analysis_pdf_en"
-    downloads["analysis_pdf"] = pdf if artifact_current?(pdf)
+    pdf = [ "analysis_pdf_#{locale}", "analysis_pdf_en" ].find { |name| public_send(name).attached? }
+    downloads["analysis_pdf"] = pdf if pdf
     downloads["crosstabs_json"] = "crosstabs_json" if crosstabs_json.attached?
-    downloads["crosstabs_xlsx"] = "crosstabs_xlsx" if artifact_current?("crosstabs_xlsx")
+    downloads["crosstabs_xlsx"] = "crosstabs_xlsx" if crosstabs_xlsx.attached?
     downloads["analysis_markdown"] = "analysis_markdown" if body.present?
     downloads
   end

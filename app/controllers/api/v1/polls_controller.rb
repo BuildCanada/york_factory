@@ -29,9 +29,6 @@ module Api
           return send_data @poll.body.to_s, filename: @poll.download_filename(name), type: "text/markdown", disposition: "attachment"
         end
         raise ActiveRecord::RecordNotFound unless (PollPublication::DOWNLOADS + [ "crosstabs_xlsx" ]).include?(name)
-        if PollArtifacts::GENERATED.include?(name) && !@poll.artifact_current?(name)
-          return head :service_unavailable
-        end
         attachment = @poll.public_send(name)
         raise ActiveRecord::RecordNotFound unless attachment.attached?
 

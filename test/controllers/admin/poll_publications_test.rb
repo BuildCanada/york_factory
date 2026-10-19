@@ -83,6 +83,24 @@ class Admin::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_poll_path(poll)
     assert_not poll.reload.report_pdf_en.attached?
   end
+  test "previously generated downloads can be removed and are not regenerated" do
+    sign_in_admin
+    poll = Poll.create!(slug: "generated-remove-test", title_en: "Poll", survey_slug: "survey", body_en: "## Findings", published_at: 1.day.ago)
+    poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 generated"), filename: "a.pdf", content_type: "application/pdf", identify: false)
+    poll.crosstabs_xlsx.attach(io: StringIO.new("PK workbook"), filename: "c.xlsx", content_type: PollArtifacts::XLSX_TYPE, identify: false)
+
+    get edit_admin_poll_path(poll)
+    assert_select "input[name='poll[purge_analysis_pdf_en]']"
+    assert_select "input[name='poll[purge_crosstabs_xlsx]']"
+
+    patch admin_poll_path(poll), params: { poll: { purge_analysis_pdf_en: "1", purge_crosstabs_xlsx: "1", body_en: "## Changed" } }
+    assert_redirected_to admin_poll_path(poll)
+    poll.reload
+    assert_not poll.analysis_pdf_en.attached?
+    assert_not poll.crosstabs_xlsx.attached?
+    assert_empty poll.poll_downloads.except("analysis_markdown")
+  end
+
   test "admin creates and previews a separate poll without creating a memo" do
     sign_in_admin
     assert_no_difference "Memo.count" do

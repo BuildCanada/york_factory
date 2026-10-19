@@ -20,7 +20,7 @@
       </div>
     <% end %>
     <%= render "admin/shared/translated_rich_text", form: form, field: :methodology %>
-    <p>The analysis PDF is generated automatically after you save the markdown. Excel is generated when crosstabs JSON changes. Upload the crosstabs JSON below. Surveyor's administrative exports contain unsuppressed small cells; complete disclosure review before publishing them.</p>
+    <p>The analysis PDF is generated automatically after you save the markdown. Excel is generated when crosstabs JSON changes. Upload the crosstabs JSON below. Surveyor's administrative exports contain unsuppressed small cells; complete disclosure review before publishing them. A Report PDF (from Surveyor's <code>npm run poll -- print</code>) replaces the generated report and the crosstab Excel/JSON as this poll's public download.</p>
     <% PollPublication::UPLOADS.each do |name| %>
       <div class="form-group">
         <%= form.label name %>

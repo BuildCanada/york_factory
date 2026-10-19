@@ -85,6 +85,28 @@ class Api::V1::PollPublicationsTest < ActionDispatch::IntegrationTest
     assert_not response.parsed_body.dig("poll", "downloads").key?("analysis_pdf")
   end
 
+  test "an uploaded report PDF replaces the generated report and crosstab downloads" do
+    @poll.analysis_pdf_en.attach(io: StringIO.new("%PDF-1.4 generated"), filename: "a.pdf", content_type: "application/pdf", identify: false,
+      metadata: { source_digest: @poll.artifact_digest("analysis_pdf_en") })
+    @poll.report_pdf_en.attach(io: StringIO.new("%PDF-1.4 report"), filename: "report.pdf", content_type: "application/pdf", identify: false)
+
+    %w[en fr].each do |locale|
+      get api_v1_poll_url(@poll.slug), params: { locale: locale }
+      downloads = response.parsed_body.dig("poll", "downloads")
+      assert_equal %w[analysis_markdown analysis_pdf], downloads.keys.sort
+      assert_includes URI(downloads["analysis_pdf"]).path, "/downloads/report_pdf_en"
+      get downloads["analysis_pdf"]
+      assert_response :success
+      assert_equal "%PDF-1.4 report", response.body
+      assert_includes response.headers["Content-Disposition"], "Report"
+    end
+
+    @poll.report_pdf_en.purge
+    get api_v1_poll_url(@poll.slug)
+    assert response.parsed_body.dig("poll", "downloads", "crosstabs_json")
+    assert_includes response.parsed_body.dig("poll", "downloads", "analysis_pdf"), "analysis_pdf_en"
+  end
+
   test "poll index excludes memos and hides drafts" do
     get api_v1_polls_url
     assert_equal [ @poll.slug ], response.parsed_body["data"].map { |item| item["slug"] }

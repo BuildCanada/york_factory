@@ -2,8 +2,12 @@
 module PollPublication
   extend ActiveSupport::Concern
 
-  DOWNLOADS = %w[analysis_pdf_en analysis_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
-  UPLOADS = %w[crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
+  # report_pdf_* is the published report from Surveyor's `poll print` (methodology,
+  # toplines and every banner table). When attached it is the poll's only public
+  # report download, replacing the generated analysis PDF and the crosstab
+  # Excel/JSON; polls without one keep those downloads.
+  DOWNLOADS = %w[analysis_pdf_en analysis_pdf_fr report_pdf_en report_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
+  UPLOADS = %w[report_pdf_en report_pdf_fr crosstabs_pdf_en crosstabs_pdf_fr crosstabs_json].freeze
   SURVEY_SCOPES = %w[national provincial municipal].freeze
   PARAMS = %i[survey_scope survey_slug survey_campaign_id pollster sample_size fieldwork_start fieldwork_end
     methodology_en methodology_fr news_release_en news_release_fr subscriber_email_en subscriber_email_fr
@@ -25,6 +29,12 @@ module PollPublication
 
   def poll_downloads
     locale = I18n.locale == :fr ? "fr" : "en"
+    report = [ "report_pdf_#{locale}", "report_pdf_en" ].find { |name| public_send(name).attached? }
+    if report
+      downloads = { "analysis_pdf" => report }
+      downloads["analysis_markdown"] = "analysis_markdown" if body.present?
+      return downloads
+    end
     downloads = {}
     pdf = artifact_current?("analysis_pdf_#{locale}") ? "analysis_pdf_#{locale}" : "analysis_pdf_en"
     downloads["analysis_pdf"] = pdf if artifact_current?(pdf)

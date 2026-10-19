@@ -28,6 +28,14 @@ class PollPublicationTest < ActiveSupport::TestCase
     end
   end
 
+  test "a French report PDF is preferred in French and English is the fallback" do
+    poll = Poll.new(slug: "poll", title_en: "Poll", survey_slug: "survey")
+    poll.report_pdf_en.attach(io: StringIO.new("%PDF-1.4 en"), filename: "en.pdf", content_type: "application/pdf", identify: false)
+    I18n.with_locale(:fr) { assert_equal({ "analysis_pdf" => "report_pdf_en" }, poll.poll_downloads) }
+    poll.report_pdf_fr.attach(io: StringIO.new("%PDF-1.4 fr"), filename: "fr.pdf", content_type: "application/pdf", identify: false)
+    I18n.with_locale(:fr) { assert_equal({ "analysis_pdf" => "report_pdf_fr" }, poll.poll_downloads) }
+  end
+
   test "rejects non PDF attachments and invalid sample sizes" do
     poll = Poll.new(slug: "poll", title_en: "Poll", survey_slug: "survey", sample_size: 0)
     poll.analysis_pdf_en.attach(io: StringIO.new("hello"), filename: "analysis.txt", content_type: "text/plain", identify: false)

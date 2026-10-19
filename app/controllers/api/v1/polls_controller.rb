@@ -36,7 +36,8 @@ module Api
         raise ActiveRecord::RecordNotFound unless attachment.attached?
 
         # Uploaded crosstab PDFs cannot be reliably redacted. Only the generated
-        # workbook and the filtered JSON are exposed as customer crosstabs.
+        # workbook and the filtered JSON are exposed as customer crosstabs. A
+        # report PDF (report_pdf_*) is the reviewed public report and is served.
         raise ActiveRecord::RecordNotFound if name.start_with?("crosstabs_pdf")
         bytes = name == "crosstabs_json" ? JSON.pretty_generate(Polls::CrosstabsExport.new(attachment.download).render) : attachment.download
         send_data bytes, filename: @poll.download_filename(name),

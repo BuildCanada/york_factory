@@ -36,7 +36,7 @@ module PollArtifacts
     title = public_send("title_#{locale}").presence || title_en.presence || slug
     title = title.gsub(/[\\\/:*?"<>|\r\n]/, " ").squish.truncate(140, omission: "")
     date = published_at&.to_date&.iso8601 || "Draft"
-    suffix = name.start_with?("analysis") ? "Report#{locale == :fr ? ' FR' : ''}" : "Crosstabs"
+    suffix = name.start_with?("analysis", "report") ? "Report#{locale == :fr ? ' FR' : ''}" : "Crosstabs"
     ext = name == "crosstabs_json" ? "json" : name == "crosstabs_xlsx" ? "xlsx" : name == "analysis_markdown" ? "md" : "pdf"
     "Build Canada - #{date} - #{title} - #{suffix}.#{ext}"
   end

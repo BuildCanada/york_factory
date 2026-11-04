@@ -23,6 +23,7 @@ module Search
       end
 
       class ResponseFormatError < Error; end
+      class ConnectionError < Error; end
 
       def initialize(endpoint: nil, api_key: nil, model: nil, dimensions: DIMENSIONS,
         include_input_type: true, document_input_type: "document", query_input_type: "query",
@@ -115,11 +116,12 @@ module Search
 
         begin
           response = yield
+          raise ConnectionError, "Azure Cohere embedding request failed: #{response.error.message}" if response.is_a?(HTTPX::ErrorResponse)
           return response unless retryable_status?(response.status) && attempts < @max_retries
 
           attempts += 1
           @sleeper.call(retry_delay(attempts, response.headers))
-        rescue HTTPX::Error, EOFError, IOError, SocketError, SystemCallError
+        rescue ConnectionError, HTTPX::Error, EOFError, IOError, SocketError, SystemCallError
           raise if attempts >= @max_retries
 
           attempts += 1

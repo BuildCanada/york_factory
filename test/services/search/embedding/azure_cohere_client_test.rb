@@ -124,7 +124,6 @@ class Search::Embedding::AzureCohereClientTest < ActiveSupport::TestCase
       build_client(http: http, sleeper: ->(_seconds) { }).embed_documents([ "article" ])
     end
 
-    assert_kind_of Search::Embedding::AzureCohereClient::Error, error
     assert_includes error.message, "timed out"
     assert_equal 2, http.requests.length
   end

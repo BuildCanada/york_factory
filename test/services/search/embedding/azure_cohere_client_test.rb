@@ -3,6 +3,12 @@ require "test_helper"
 class Search::Embedding::AzureCohereClientTest < ActiveSupport::TestCase
   Response = Data.define(:status, :headers, :body)
 
+  class ErrorResponse < HTTPX::ErrorResponse
+    def initialize(error)
+      @error = error
+    end
+  end
+
   class FakeHttp
     attr_reader :requests
 
@@ -92,6 +98,34 @@ class Search::Embedding::AzureCohereClientTest < ActiveSupport::TestCase
     assert_equal [ @vector ], result.vectors
     assert_equal 2, http.requests.length
     assert_equal [ 0.01 ], sleeps
+  end
+
+  test "retries connection failures and succeeds" do
+    sleeps = []
+    http = FakeHttp.new(
+      ErrorResponse.new(HTTPX::ConnectionError.new("connection reset")),
+      success_response([ @vector ])
+    )
+
+    result = build_client(http: http, sleeper: ->(seconds) { sleeps << seconds }).embed_documents([ "article" ])
+
+    assert_equal [ @vector ], result.vectors
+    assert_equal 2, http.requests.length
+    assert_equal 1, sleeps.length
+  end
+
+  test "raises a client error when connection failures exhaust retries" do
+    http = FakeHttp.new(
+      ErrorResponse.new(HTTPX::ConnectionError.new("connection reset")),
+      ErrorResponse.new(HTTPX::TimeoutError.new(60, "timed out"))
+    )
+
+    error = assert_raises(Search::Embedding::AzureCohereClient::ConnectionError) do
+      build_client(http: http, sleeper: ->(_seconds) { }).embed_documents([ "article" ])
+    end
+
+    assert_includes error.message, "timed out"
+    assert_equal 2, http.requests.length
   end
 
   test "does not include a response body in raised API errors" do
